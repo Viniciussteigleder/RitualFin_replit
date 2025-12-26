@@ -1,0 +1,784 @@
+act as UX design expert as jony ive, Luke Wroblewski, Aarron Walter, Steve Krug
+
+You are designing the UX + UI for a web app called RitualFin (MVP v1). Desktop-first, responsive, clean, minimal, and audit-friendly. Prioritize clarity, low friction, and “Lazy Mode”: the app does the heavy lifting; the user only confirms exceptions. Avoid “magic” behavior; always explain what happens and why.
+
+Your output must be concrete and buildable:
+
+List every screen for MVP v1 (with screen IDs).
+
+For each screen: goal, primary user question it answers, key components, layout grid, states (empty/loading/error), and key microcopy (PT-BR).
+
+Provide navigation (sidebar IA) + routing map.
+
+Provide the end-to-end primary flow (Login → Upload → Processing → Confirm Queue → Dashboard).
+
+Provide a component inventory (tables, cards, filters, drawers, modals, toasts, badges).
+
+Provide interaction details: bulk actions, rule creation from confirmations, dedupe logic visibility, filters (Processed default), month selector, drill-down behavior.
+
+Provide validation/error copy for CSV import with actionable diagnostics.
+
+Provide responsive behavior guidelines (desktop/tablet/mobile), but desktop-first.
+
+Use a neutral, “zero-blame” tone in PT-BR (“Precisa de revisão”, “Próximo passo”, “Não foi possível validar o arquivo”).
+
+Keep copy short, scannable, and consistent.
+
+Assume stack: Next.js + TypeScript + Tailwind + Supabase Auth.
+
+Design constraints:
+
+Language/locale fixed: PT-BR; currency EUR.
+
+v1 has no onboarding. User lands directly into the app.
+
+v1 supports only Miles & More CSV upload (1 file at a time).
+
+Confirm Queue is central: unresolved items must always show the next step.
+
+Dashboard must be simple, reliable, and transparent (projection breakdown visible).
+
+“Interno” is visible but excluded from budget by default.
+
+“Saque” belongs to Outros with a per-transaction toggle exclude_from_budget.
+
+Deliverable format:
+
+Information Architecture (sidebar + routes)
+
+Screen list (IDs + short purpose)
+
+Detailed screen specs (one by one)
+
+Primary flow walkthrough (step-by-step)
+
+State matrix (per screen: empty/loading/error/success)
+
+Component inventory (with props/variants)
+
+Microcopy library (PT-BR snippets)
+
+Analytics/Audit cues (what gets logged and how shown without clutter)
+
+Important: include the following PRD context verbatim inside your reasoning and ensure every UI decision maps back to it:
+
+PRD — RitualFin (MVP v1)
+1. Visão e objetivo
+RitualFin v1 é um app web (desktop-first, responsivo) que permite:
+
+Login (Google ou Email) → upload de 1 CSV do Miles & More → normaliza e consolida transações → categorização por regras (keywords) → fila de confirmação para exceções → dashboard mensal com orçamento (spent + remaining) e visão simples do mês.
+
+Objetivos do v1 (o que precisa funcionar muito bem)
+Importar CSV M&M sem fricção (com validação e erro claro).
+
+Construir um ledger canônico por mês usando Authorised on como “truth date”.
+
+Aplicar regras de keyword para classificar em Tipo (Receita/Despesa), Fixo/Var, Categoria (I) e sugestão de Categoria II.
+
+Confirm Queue para: sem match, conflito de regras, suspeita de duplicata “não-trivial”.
+
+Dashboard mensal: spent por categoria + receitas + orçamento (spent + remaining) + projeção simples e transparente.
+
+Não-objetivos (fora do v1)
+Apple Login (v1 não).
+
+Multi-upload e OCR/fotos (v2).
+
+Amex/Sparkasse/PayPal (v2).
+
+AI categorization (v2).
+
+Merge automático de duplicatas “ambíguas” (v1 é manual).
+
+Onboarding guiado (v1: direto no app, PT-BR, €).
+
+2. Usuário-alvo
+Você (conta individual).
+
+Futuro: conta casal (unificar 2 emails) como passo posterior (v2+).
+
+3. Fluxo principal v1 (Jobs-to-be-done)
+Entrar via Google ou Email (básico).
+
+Uploads → enviar 1 CSV do M&M.
+
+Sistema valida e, se ok, processa:
+
+cria colunas extras (Fonte, Key_MM, Key_MM_Desc, + versões normalizadas)
+
+dedupe “estrito” por Key_MM (reimport não duplica)
+
+consolida em ledger canônico
+
+roda regras de categorização
+
+Você vai em Confirmar para resolver exceções:
+
+atribuir categoria/Tipo/FixoVar
+
+aplicar em lote
+
+ao confirmar, cria/atualiza regra automaticamente
+
+Você vê o Painel do mês: orçamento (spent + remaining), categorias, recentes, e uma projeção simples.
+
+4. Requisitos funcionais v1
+4.1 Autenticação
+Login: Google OAuth + Email/Password (básico).
+
+Idioma/locale fixo: PT-BR; moeda padrão EUR.
+
+Sem onboarding.
+
+Critérios de aceite
+
+Usuário consegue criar conta e logar.
+
+Sessão persiste (refresh não desloga).
+
+Logout funciona.
+
+4.2 Upload e validação (M&M)
+Upload
+
+Apenas 1 arquivo por vez (v1).
+
+Tela “Uploads” com histórico: nome do arquivo, data, status (processing/ready/duplicate/error), contagem de linhas importadas, e mês(s) afetado(s).
+
+Validação com erro claro
+
+Se colunas obrigatórias faltarem: recusa e mostra:
+
+quais colunas faltam
+
+exemplo do header esperado
+
+Deve aceitar:
+
+decimal com vírgula (mantém “,” na exibição; parse interno para número)
+
+datas dd.MM.yyyy
+
+Colunas obrigatórias (M&M)
+
+Authorised on, Processed on, Amount, Currency, Description, Payment type, Status
+
+E se vierem: Amount in foreign currency, Currency (foreign), Exchange rate
+
+Status
+
+“Status completo”: importar todas as transações, independente do status (Processed/Pending/Declined etc).
+
+No dashboard, permitir filtro “somente Processed” (default: Processed) — recomendado para não poluir o mês.
+
+Critérios de aceite
+
+Upload com CSV válido gera import “ready”.
+
+Upload com CSV inválido retorna erro com diagnóstico.
+
+Histórico lista execuções.
+
+4.3 Enriquecimento (colunas extras) no raw M&M
+Adicionar colunas (armazenadas no banco, não só em memória):
+
+Fonte: "M&M"
+
+Key_MM: chave única (ver abaixo)
+
+Key_MM_Desc: descrição composta
+
+Desc_raw: Key_MM_Desc (para display)
+
+Desc_norm: versão normalizada para match (lower + remove acentos + normaliza whitespace)
+
+Construção (v1)
+
+Key_MM_Desc (não-normalizada) =
+
+Description -- Payment type -- Status -- M&M - Description [-- compra internacional em {CurrencyForeign}]
+
+Key_MM =
+
+{Key_MM_Desc} -- {Amount} -- {AuthorisedOn_ISO}
+
+(sem currency extra, como você decidiu)
+
+Normalização
+
+Criar duas colunas: uma normalizada e outra não:
+
+desc_raw (original)
+
+desc_norm (para regras)
+
+Critérios de aceite
+
+Para cada linha importada, as colunas extras são geradas consistentemente.
+
+“compra internacional” aparece quando houver Amount in foreign currency.
+
+4.4 Ledger canônico (consolidado)
+Tabela consolidada v1 (mínimo)
+
+payment_date (Authorised on)
+
+imported_at
+
+account_source (= “M&M”)
+
+desc_raw (descrição completa)
+
+desc_norm
+
+amount (número interno)
+
+amount_display (string no formato original com vírgula, opcional)
+
+currency (EUR)
+
+foreign_amount, foreign_currency, exchange_rate (se vierem)
+
+key (= Key_MM)
+
+type (Despesa/Receita)
+
+fix_var (Fixo/Variável)
+
+category_1 (sua lista: Receitas, Moradia, Mercado, Compras Online, Transporte, Saúde, Lazer, Outros, Interno)
+
+category_2 (opcional no v1; mas já suportar campo)
+
+manual_override (bool) + manual_note (opcional)
+
+flags:
+
+internal_transfer (bool)
+
+exclude_from_budget (bool)
+
+needs_review (bool)
+
+rule_id_applied (nullable)
+
+Dedupe
+
+Dedupe “estrito”: key é único (reimport do mesmo arquivo não duplica).
+
+Dedupe “suspeita” (não automática): se desc_norm igual em múltiplas linhas no mesmo mês, marcar needs_review=true e listar em Confirmar (você decide caso a caso).
+
+Critérios de aceite
+
+Importar duas vezes o mesmo CSV não duplica transações.
+
+Ledger é estável por mês e consistente.
+
+4.5 Motor de regras (keyword mapping)
+Entrada
+
+Match acontece em desc_norm.
+
+Keywords são separadas por ; e podem ser palavras ou frases.
+
+Lógica v1
+
+Matching: contains case-insensitive + whitespace-normalized (sem regex no v1).
+
+Se 1 regra bate: aplica Tipo + Fixo/Var + Categoria I + (Categoria II se existir).
+
+Se mais de 1 regra bate: needs_review=true e vai para Confirmar (não escolhe automaticamente).
+
+Se nenhuma regra bate: vai para Confirmar como “Não classificado”.
+
+Regras especiais
+
+Interno é categoria visível, com internal_transfer=true e exclude_from_budget=true.
+
+Saque entra como Categoria Outros, mas o usuário pode incluir/excluir do orçamento (toggle por transação).
+
+Critérios de aceite
+
+Regras aplicam de forma determinística.
+
+Conflitos e não-classificados aparecem em Confirmar.
+
+Confirmar em lote cria/atualiza regras.
+
+4.6 Confirm Queue (exceções + batch + auto-regra)
+Entra em Confirmar quando:
+
+sem match
+
+conflito (2+ regras)
+
+suspeita de duplicata (mesmo desc_norm) — “mostrar e decidir manualmente”
+
+Ações na fila
+
+editar: Tipo, Fixo/Var, Categoria I, Categoria II (opcional)
+
+toggle: exclude_from_budget (especialmente para saque)
+
+confirmar em lote (por “mesmo merchant/keyword sugerida”)
+
+ao confirmar: criar/atualizar regra automaticamente com granularidade:
+
+Tipo + Fixo/Var + Categoria I
+
+e sugerir Categoria II (campo opcional)
+
+Critérios de aceite
+
+Selecionar N itens → aplicar mudança em lote.
+
+Confirmar gera regra e reclassifica transações futuras compatíveis.
+
+4.7 Dashboard mensal (Painel)
+Conteúdo v1 (simples e confiável)
+
+Seletor de mês (calendar month).
+
+Cards:
+
+Spent so far (despesas excluindo exclude_from_budget=true)
+
+Receitas do mês
+
+Orçamento do mês (por categoria e total) + Remaining
+
+Projeção do mês (simples, explicada)
+
+Compromissos restantes (proxy v1: itens Fixo do mês + próximos 30 dias estimados)
+
+Gráfico de gasto por Categoria I + lista de transações recentes
+
+Drill-down: clicar numa categoria abre lista filtrada + search
+
+Projeção (v1, transparente)
+
+projection = spent_so_far + expected_fixed_remaining + (variable_run_rate * days_remaining)
+
+Mostrar breakdown, sem “mágica”.
+
+Critérios de aceite
+
+Totais excluem Interno por padrão.
+
+Refunds (valores positivos em cartão ou reversões) reduzem gasto da categoria quando categorizados.
+
+Drill-down funciona.
+
+5. Dados e arquitetura (Supabase)
+5.1 Tabelas (mínimo)
+users
+
+accounts (no v1 pode ser só “M&M”, mas já modela)
+
+uploads (status, filename, rows_total, rows_imported, error_message, started_at, finished_at)
+
+raw_mm_transactions (espelho do CSV + colunas extras + desc_norm)
+
+transactions (ledger canônico consolidado)
+
+rules (keyword mapping)
+
+rule_keywords (opcional; ou keywords em um campo único “;” no v1)
+
+budgets (month, category_1, amount)
+
+audit_log (alterações manuais, batch confirm, regras criadas)
+
+5.2 Pipeline (server-side)
+Upload CSV → armazenar arquivo (storage) + criar uploads status=processing
+
+Parse CSV → validar header → gravar raw_mm_transactions
+
+Gerar Fonte, Key_MM_Desc, Key_MM, desc_norm
+
+Upsert em transactions por key (dedupe estrito)
+
+Apply rules → marcar needs_review quando necessário
+
+Upload status=ready + métricas
+
+5.3 APIs/serviços (sugestão)
+POST /upload/mm (recebe arquivo, cria job)
+
+GET /uploads (histórico)
+
+GET /transactions?month=YYYY-MM
+
+GET /confirm-queue?month=YYYY-MM
+
+POST /confirm (bulk update + create/update rule)
+
+GET /dashboard?month=YYYY-MM
+
+6. Frontend (estrutura sugerida)
+Stack sugerida: Next.js + TypeScript + Tailwind + TanStack Query, Supabase Auth.
+
+IA (navegação)
+Desktop: sidebar fixa
+
+Painel
+
+Uploads
+
+Confirmar (badge)
+
+Regras
+
+Configurações
+
+Mobile: pode ser responsivo simples no v1 (sem bottom nav completo ainda).
+
+Componentes-chave
+Upload card (drag/drop)
+
+Upload history table
+
+Confirm queue table (bulk select + inline edit)
+
+Dashboard cards + chart + drilldown table
+
+Rules editor (tabela simples + modal “Affected N”)
+
+UX spec v1 (princípios + padrões)
+Vou descrever em “linguagem de design”, sem excesso, mas bem acionável.
+
+Princípios
+Lazy Mode: o app faz o pesado; você só confirma exceções.
+
+Zero-blame: copy neutra (“Precisa de revisão”, “Próximo passo”).
+
+Progressive disclosure: Painel simples; detalhe no drill-down.
+
+Auditável sem poluir: “por que caiu nessa categoria?” aparece sob demanda.
+
+Consistência visual: cards limpos, grid claro, tipografia Inter, espaçamento generoso.
+
+Densidade certa: tabelas com boa legibilidade, mas sem ruído.
+
+Padrões de interação (bem Steve Krug)
+Cada tela responde uma pergunta:
+
+Uploads: “meus dados entraram?”
+
+Confirmar: “o que está ambíguo?”
+
+Painel: “como está o mês?”
+
+Sempre mostrar o próximo passo quando houver exceção.
+
+Confirm Queue (micro-UX)
+Linha mostra:
+
+Descrição, data, valor, sugestão de regra (se houver), tags: “sem categoria”, “conflito”, “suspeita duplicata”
+Ações rápidas:
+
+dropdown Categoria I
+
+toggle exclude_from_budget (para saque)
+
+botão “Aplicar a X similares” (batch)
+
+checkbox “Criar regra com esta palavra-chave” (default ON)
+
+Dashboard (micro-UX)
+Primeiro bloco: Spent / Budget / Remaining
+
+Depois: categorias (mercado, moradia etc.) com barras “gordinhas”
+
+Por fim: recentes + drill-down
+
+Outlook v2 (para documento completo)
+v2.1 Import multi-fontes + multi-arquivos
+Upload múltiplos arquivos de uma vez
+
+Detectores: Amex + Sparkasse + (talvez PayPal)
+
+Consolidado multi-conta
+
+Regras cross-source usando Key_*_Desc unificada
+
+v2.2 AI categorization (com guardrails)
+Quando regras não batem:
+
+AI sugere categoria + confidence + rationale
+
+threshold (ex: 0.75): abaixo disso fica “Outros + needs_review”
+
+“No merchant guessing”: se descrição genérica, pede revisão
+
+Sempre respeita Interno / Saque / Mercado vs Saúde (suas regras)
+
+v2.3 OCR (prints)
+Upload de fotos/prints
+
+OCR extrai: data/valor/moeda/merchant
+
+Entra como “evidence” no ledger, sem dupla contagem
+
+v2.4 Casal (conta única com 2 emails)
+Link accounts (Google + Email)
+
+Permissões simples: owner / partner
+
+Audit log por pessoa (“feito por Erica/Vinicius”)
+
+v2.5 Calendário + recorrências (commitments)
+Detectar recorrência e sugerir “virar compromisso”
+
+Próxima ocorrência estimada + aprendizado
+
+Projeção do mês passa a usar calendário como base (mais confiável)
+
+Markdown — Catálogo de Regras (para você manter tudo em um lugar)
+
+# RitualFin — Regras de Categorização (v1)
+
+## Categorias (Categoria I)
+
+- Receitas
+
+- Moradia
+
+- Mercado
+
+- Compras Online
+
+- Transporte
+
+- Saúde
+
+- Lazer
+
+- Outros
+
+- Interno
+
+## Conceitos especiais
+
+- **Interno**: pagamentos de cartão e transferências internas.
+
+  - `internal_transfer = true`
+
+  - `exclude_from_budget = true`
+
+- **Saque**: categoria **Outros**, mas com toggle `exclude_from_budget` editável.
+
+## Matching (v1)
+
+- Campo de match: `desc_norm` (normalizado)
+
+- Tipo: `contains`, case-insensitive
+
+- Keywords separadas por `;`
+
+- Se 2+ regras baterem: `needs_review = true` (não aplica automático)
+
+- Se nenhuma regra bater: vai para Confirmar (não classificado)
+
+## Normalização (`desc_norm`)
+
+- lowercase
+
+- remove acentos (NFD)
+
+- normaliza whitespace (múltiplos espaços → 1)
+
+- mantém símbolos úteis (`*`, `--`) se você quiser (decidir na implementação)
+
+---
+
+## Tabela de Regras (formato)
+
+Cada regra tem:
+
+- Tipo: `Despesa` | `Receita`
+
+- Fixo/Var: `Fixo` | `Variável`
+
+- Categoria I: uma das categorias listadas
+
+- Categoria II: opcional (pode ser sugestão no v1)
+
+- Keywords: `kw1; kw2; kw3`
+
+> Prioridade: no v1, conflito vai para Confirmar.
+
+> (Se quiser prioridade no futuro: ordem da regra ou “mais específica vence”.)
+
+---
+
+## Regras — Receitas
+
+| Tipo | Fixo/Var | Categoria I | Categoria II | Keywords |
+
+|---|---|---|---|---|
+
+| Receita | Fixo | Receitas |  | Entgelt 71336818 |
+
+| Receita | Variável | Receitas |  | Bonus |
+
+| Receita | Variável | Receitas |  | Arbeit - Familien kasse; Bundesagentur |
+
+| Receita | Fixo | Receitas |  | Miete incl. Nebenkosten |
+
+| Receita | Fixo | Receitas |  | Haus Karlsruhe NK |
+
+| Receita | Variável | Receitas |  | Paypal |
+
+| Receita | Variável | Receitas |  | Mangopay; Kleinanzeigen |
+
+| Receita | Variável | Receitas |  | Finanzamt Fuerstenfeldbruck Finanzkasse |
+
+| Receita | Variável | Receitas |  | Bosch GmbHTvl Exp |
+
+| Receita | Variável | Receitas |  | Andressa Vilas Boas Nogueira Lima; Bianca De Freitas Lima; biancaflima; Flavia Frattini; Dr. Marco Rocha Curado; Marcelo Guida Tavares; Bettina Tavares; Marilia Duarte Viana |
+
+## Regras — Moradia
+
+| Tipo | Fixo/Var | Categoria I | Categoria II | Keywords |
+
+|---|---|---|---|---|
+
+| Despesa | Fixo | Moradia |  | 7060327031D660501010022518260 |
+
+| Despesa | Fixo | Moradia |  | DARLEHENSABSCHLUSS IBAN DE20701694600020137367; R + V LEBENSVERSICHERUNG |
+
+| Despesa | Fixo | Moradia |  | Haushaltsstelle:06001/10000/Steigleder; AGF Immobilien und Services GmbH |
+
+| Despesa | Fixo | Moradia |  | Vertragsnr 250014203; Fernwärme |
+
+| Despesa | Fixo | Moradia |  | Grundsteuer; Grundsteuer B |
+
+| Despesa | Fixo | Moradia |  | WEG loswohnen II; HG Vorauszahlung |
+
+| Despesa | Fixo | Moradia |  | Vertragskonto 210672822 |
+
+| Despesa | Fixo | Moradia |  | Schroeder; Monatsmiete |
+
+| Despesa | Fixo | Moradia |  | Rundfunk ARD; bayerischer Rundfunk |
+
+| Despesa | Fixo | Moradia |  | LichtBlick; VATTENFALL; Strom |
+
+| Despesa | Variável | Moradia |  | Reparatur; Manutenção; Material; Serviços |
+
+## Regras — Mercado
+
+| Tipo | Fixo/Var | Categoria I | Categoria II | Keywords |
+
+|---|---|---|---|---|
+
+| Despesa | Variável | Mercado |  | REWE; EDEKA; LIDL; ALDI; NETTO |
+
+| Despesa | Variável | Mercado |  | DM Drogerie; DM-DROGERIE MARKT |
+
+| Despesa | Variável | Mercado |  | ROSSMANN |
+
+| Despesa | Variável | Mercado |  | MUELLER |
+
+| Despesa | Variável | Mercado |  | Asia Markt; Norma |
+
+| Despesa | Variável | Mercado |  | Backstube; Baeckerei; Ihle; Rischarts; Backzeit |
+
+## Regras — Compras Online
+
+| Tipo | Fixo/Var | Categoria I | Categoria II | Keywords |
+
+|---|---|---|---|---|
+
+| Despesa | Variável | Compras Online |  | AMAZON; AMZN; AMZ* |
+
+| Despesa | Variável | Compras Online |  | TEMU.COM |
+
+| Despesa | Variável | Compras Online |  | ZALANDO; ABOUT YOU; HM.COM; DECATHLON |
+
+| Despesa | Variável | Compras Online |  | MEDIAMARKT; SATURN |
+
+| Despesa | Variável | Compras Online |  | Kleinanzeigen |
+
+| Despesa | Variável | Compras Online |  | MOEMAX; JYSK; TEDI |
+
+## Regras — Transporte
+
+| Tipo | Fixo/Var | Categoria I | Categoria II | Keywords |
+
+|---|---|---|---|---|
+
+| Despesa | Variável | Transporte |  | Tankstelle; ALLGUTH |
+
+| Despesa | Variável | Transporte |  | KFZ-Steuer |
+
+| Despesa | Variável | Transporte |  | Kfz-Versicherung |
+
+| Despesa | Variável | Transporte |  | Parkhaus; HandyParken; Parkgarage |
+
+| Despesa | Variável | Transporte |  | Stadt Mannheim |
+
+| Despesa | Variável | Transporte |  | MVV TICKETSHOP LOGPAY; VOI DE |
+
+## Regras — Saúde
+
+| Tipo | Fixo/Var | Categoria I | Categoria II | Keywords |
+
+|---|---|---|---|---|
+
+| Despesa | Variável | Saúde |  | Apotheke |
+
+| Despesa | Variável | Saúde |  | Zahnarzt; Zahnarztpraxis |
+
+| Despesa | Variável | Saúde |  | Labor Augsburg MVZ |
+
+| Despesa | Variável | Saúde |  | Hautarzt; Praxis; Arzt |
+
+| Despesa | Variável | Saúde |  | APOLLO OPTIK |
+
+| Despesa | Variável | Saúde |  | Botox; Colageno; Estetica |
+
+## Regras — Lazer
+
+| Tipo | Fixo/Var | Categoria I | Categoria II | Keywords |
+
+|---|---|---|---|---|
+
+| Despesa | Variável | Lazer |  | Restaurant; McDonalds; Pizza Hut; Boteco; Steakhouse |
+
+| Despesa | Variável | Lazer |  | Prime Video; Cinema |
+
+| Despesa | Variável | Lazer |  | ROBLOX.COM |
+
+| Despesa | Variável | Lazer |  | Oktoberfest; Parques; Piscina |
+
+| Despesa | Variável | Lazer |  | Ferias; London; Europapark; Brasil |
+
+## Regras — Outros
+
+| Tipo | Fixo/Var | Categoria I | Categoria II | Keywords |
+
+|---|---|---|---|---|
+
+| Despesa | Fixo | Outros |  | NETFLIX; Disney Plus; Paramount+; Google One |
+
+| Despesa | Fixo | Outros |  | OPENAI *CHATGPT SUBSCR |
+
+| Despesa | Fixo | Outros |  | ACTIVECAMP; Canva; CapCut |
+
+| Despesa | Fixo | Outros |  | DEVK; AOK; Versicherung |
+
+| Despesa | Fixo | Outros |  | ZINSBELASTUNG; Entgeltabschluss |
+
+| Despesa | Variável | Outros |  | Passaporte |
+
+| Despesa | Variável | Outros |  | Pets; Fressnapf |
+
+| Despesa | Variável | Outros |  | Projekt; BOG |
+
+| Despesa | Variável | Outros |  | Schule; Bücher; Schülerhilfe |
+
+## Regras — Interno (exclui orçamento)
+
+| Tipo | Fixo/Var | Categoria I | Categoria II | Keywords |
+
+|---|---|---|---|---|
