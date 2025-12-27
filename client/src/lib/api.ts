@@ -111,3 +111,153 @@ export const dashboardApi = {
 export const budgetsApi = {
   list: (month?: string) => fetchApi<any[]>(`/budgets${month ? `?month=${month}` : ""}`),
 };
+
+// Goals
+export const goalsApi = {
+  list: (month?: string) =>
+    fetchApi<{
+      goals: Array<{
+        id: string;
+        userId: string;
+        month: string;
+        estimatedIncome: number;
+        totalPlanned: number;
+        createdAt: string;
+      }>;
+    }>(`/goals${month ? `?month=${month}` : ""}`),
+  create: (data: { month: string; estimatedIncome: number; totalPlanned: number }) =>
+    fetchApi<{
+      id: string;
+      userId: string;
+      month: string;
+      estimatedIncome: number;
+      totalPlanned: number;
+      createdAt: string;
+    }>("/goals", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  update: (id: string, data: { estimatedIncome?: number; totalPlanned?: number }) =>
+    fetchApi<any>(`/goals/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    fetchApi<{ success: boolean; deletedGoalId: string; deletedCategoryGoalsCount: number }>(
+      `/goals/${id}`,
+      {
+        method: "DELETE",
+      }
+    ),
+  getProgress: (id: string) =>
+    fetchApi<{
+      goal: {
+        id: string;
+        month: string;
+        estimatedIncome: number;
+        totalPlanned: number;
+      };
+      progress: {
+        totalActualSpent: number;
+        totalTarget: number;
+        remainingBudget: number;
+        percentSpent: number;
+        categories: Array<{
+          category1: string;
+          targetAmount: number;
+          actualSpent: number;
+          remaining: number;
+          percentSpent: number;
+          status: "under" | "over" | "on-track";
+        }>;
+      };
+    }>(`/goals/${id}/progress`),
+};
+
+// Category Goals
+export const categoryGoalsApi = {
+  list: (goalId: string) =>
+    fetchApi<{
+      categoryGoals: Array<{
+        id: string;
+        goalId: string;
+        category1: string;
+        targetAmount: number;
+        previousMonthSpent: number | null;
+        averageSpent: number | null;
+      }>;
+    }>(`/goals/${goalId}/categories`),
+  create: (
+    goalId: string,
+    data: {
+      category1: string;
+      targetAmount: number;
+      previousMonthSpent?: number | null;
+      averageSpent?: number | null;
+    }
+  ) =>
+    fetchApi<any>(`/goals/${goalId}/categories`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    fetchApi<{ success: boolean; deletedCategoryGoalId: string }>(`/category-goals/${id}`, {
+      method: "DELETE",
+    }),
+};
+
+// Rituals
+export const ritualsApi = {
+  list: (type?: string, period?: string) => {
+    const params = new URLSearchParams();
+    if (type) params.append("type", type);
+    if (period) params.append("period", period);
+    const query = params.toString();
+    return fetchApi<{
+      rituals: Array<{
+        id: string;
+        userId: string;
+        type: string;
+        period: string;
+        completedAt: string | null;
+        notes: string | null;
+        createdAt: string;
+      }>;
+    }>(`/rituals${query ? `?${query}` : ""}`);
+  },
+  create: (data: { type: string; period: string; completedAt?: string | null; notes?: string | null }) =>
+    fetchApi<{
+      id: string;
+      userId: string;
+      type: string;
+      period: string;
+      completedAt: string | null;
+      notes: string | null;
+      createdAt: string;
+    }>("/rituals", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  update: (id: string, data: { type?: string; period?: string; completedAt?: string | null; notes?: string | null }) =>
+    fetchApi<any>(`/rituals/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    fetchApi<{ success: boolean }>(`/rituals/${id}`, {
+      method: "DELETE",
+    }),
+  complete: (id: string, notes?: string) =>
+    fetchApi<{
+      id: string;
+      userId: string;
+      type: string;
+      period: string;
+      completedAt: string | null;
+      notes: string | null;
+      createdAt: string;
+    }>(`/rituals/${id}/complete`, {
+      method: "POST",
+      body: JSON.stringify({ notes }),
+    }),
+};

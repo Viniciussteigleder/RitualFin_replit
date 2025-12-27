@@ -32,6 +32,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMonth } from "@/lib/month-context";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { goalsApi, categoryGoalsApi } from "@/lib/api";
 
 const CATEGORY_ICONS: Record<string, any> = {
   "Moradia": Home,
@@ -74,9 +75,32 @@ export default function GoalsPage() {
   const { month, formatMonth } = useMonth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   const [estimatedIncome, setEstimatedIncome] = useState("8500");
   const [categoryBudgets, setCategoryBudgets] = useState<Record<string, string>>({});
+
+  // Fetch existing goal for current month
+  const { data: goalsData, isLoading: goalsLoading } = useQuery({
+    queryKey: ["goals", month],
+    queryFn: () => goalsApi.list(month),
+  });
+
+  const currentGoal = goalsData?.goals?.[0];
+
+  // Fetch category goals if goal exists
+  const { data: categoryGoalsData } = useQuery({
+    queryKey: ["categoryGoals", currentGoal?.id],
+    queryFn: () => categoryGoalsApi.list(currentGoal!.id),
+    enabled: !!currentGoal?.id,
+  });
+
+  // Fetch progress if goal exists
+  const { data: progressData } = useQuery({
+    queryKey: ["goalProgress", currentGoal?.id],
+    queryFn: () => goalsApi.getProgress(currentGoal!.id),
+    enabled: !!currentGoal?.id,
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
 
   const { data: dashboard } = useQuery({
     queryKey: ["dashboard", month],
@@ -96,6 +120,24 @@ export default function GoalsPage() {
     }
   });
 
+  // Load goal data into state when fetched
+  useEffect(() => {
+    if (currentGoal) {
+      setEstimatedIncome(currentGoal.estimatedIncome.toString());
+    }
+  }, [currentGoal]);
+
+  // Load category goals into state when fetched
+  useEffect(() => {
+    if (categoryGoalsData?.categoryGoals) {
+      const budgets: Record<string, string> = {};
+      categoryGoalsData.categoryGoals.forEach((cg) => {
+        budgets[cg.category1] = cg.targetAmount.toString();
+      });
+      setCategoryBudgets(budgets);
+    }
+  }, [categoryGoalsData]);
+
   function getPreviousMonth(m: string) {
     const [year, mon] = m.split("-").map(Number);
     const d = new Date(year, mon - 2, 1);
@@ -103,13 +145,20 @@ export default function GoalsPage() {
   }
 
   const categoryData: CategoryBudget[] = CATEGORIES.map(cat => {
-    const currentSpent = dashboard?.spentByCategory?.find((c: any) => c.category === cat)?.amount || 0;
-    const prevSpent = previousMonth?.spentByCategory?.find((c: any) => c.category === cat)?.amount || 0;
+    // Use progress data if available, otherwise fall back to dashboard
+    const progressCat = progressData?.progress.categories.find((c) => c.category1 === cat);
+    const currentSpent = progressCat?.actualSpent || dashboard?.spentByCategory?.find((c: any) => c.category === cat)?.amount || 0;
+
+    // Get historical data from category goals
+    const categoryGoal = categoryGoalsData?.categoryGoals?.find((cg) => cg.category1 === cat);
+    const prevSpent = categoryGoal?.previousMonthSpent || previousMonth?.spentByCategory?.find((c: any) => c.category === cat)?.amount || 0;
+    const avgSpent = categoryGoal?.averageSpent || prevSpent;
+
     return {
       category: cat,
-      targetAmount: parseFloat(categoryBudgets[cat] || "0") || prevSpent || 0,
+      targetAmount: parseFloat(categoryBudgets[cat] || "0") || 0,
       previousMonthSpent: prevSpent,
-      averageSpent: prevSpent,
+      averageSpent: avgSpent,
       currentSpent
     };
   }).filter(c => c.targetAmount > 0 || c.previousMonthSpent > 0 || c.currentSpent > 0);
@@ -121,8 +170,61 @@ export default function GoalsPage() {
 
   const saveGoals = useMutation({
     mutationFn: async () => {
-      toast({ title: "Metas salvas com sucesso!" });
-    }
+      try {
+        // Create or update goal
+        let goalId = currentGoal?.id;
+
+        if (!currentGoal) {
+          // Create new goal
+          const newGoal = await goalsApi.create({
+            month,
+            estimatedIncome: totalIncome,
+            totalPlanned,
+          });
+          goalId = newGoal.id;
+        } else if (currentGoal.estimatedIncome !== totalIncome || currentGoal.totalPlanned !== totalPlanned) {
+          // Update existing goal
+          await goalsApi.update(currentGoal.id, {
+            estimatedIncome: totalIncome,
+            totalPlanned,
+          });
+        }
+
+        // Save category goals
+        if (goalId) {
+          await Promise.all(
+            Object.entries(categoryBudgets)
+              .filter(([_, amount]) => parseFloat(amount || "0") > 0)
+              .map(([category, amount]) =>
+                categoryGoalsApi.create(goalId!, {
+                  category1: category,
+                  targetAmount: parseFloat(amount),
+                })
+              )
+          );
+        }
+
+        return { success: true };
+      } catch (error: any) {
+        throw new Error(error.message || "Failed to save goals");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["goals", month] });
+      queryClient.invalidateQueries({ queryKey: ["categoryGoals"] });
+      queryClient.invalidateQueries({ queryKey: ["goalProgress"] });
+      toast({
+        title: "Metas salvas com sucesso!",
+        description: "Suas metas financeiras foram atualizadas."
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao salvar metas",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   const copyFromPreviousMonth = () => {
@@ -160,13 +262,22 @@ export default function GoalsPage() {
           </div>
           
           <div className="flex flex-wrap items-center gap-3">
-            <Button variant="outline" className="gap-2" onClick={copyFromPreviousMonth}>
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={copyFromPreviousMonth}
+              disabled={saveGoals.isPending}
+            >
               <Copy className="h-4 w-4" />
               Copiar anterior
             </Button>
-            <Button className="bg-primary hover:bg-primary/90 gap-2" onClick={() => saveGoals.mutate()}>
+            <Button
+              className="bg-primary hover:bg-primary/90 gap-2"
+              onClick={() => saveGoals.mutate()}
+              disabled={saveGoals.isPending || goalsLoading}
+            >
               <Save className="h-4 w-4" />
-              Salvar Metas
+              {saveGoals.isPending ? "Salvando..." : "Salvar Metas"}
             </Button>
           </div>
         </div>
