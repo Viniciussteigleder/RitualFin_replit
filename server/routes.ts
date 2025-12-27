@@ -107,8 +107,9 @@ export async function registerRoutes(
           continue;
         }
 
-        // Categorize using rules
+        // Categorize using rules with confidence level
         const categorization = categorizeTransaction(parsed.descNorm, rules);
+        const keyword = suggestKeyword(parsed.descNorm);
 
         try {
           await storage.createTransaction({
@@ -124,6 +125,7 @@ export async function registerRoutes(
             exchangeRate: parsed.exchangeRate,
             key: parsed.key,
             uploadId: upload.id,
+            suggestedKeyword: keyword,
             ...categorization
           });
           importedCount++;
