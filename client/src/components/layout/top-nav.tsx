@@ -4,11 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Upload, Bell, User, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { transactionsApi } from "@/lib/api";
-
-interface TopNavProps {
-  month: string;
-  onMonthChange: (month: string) => void;
-}
+import { useMonth } from "@/lib/month-context";
 
 const NAV_TABS = [
   { label: "Painel", href: "/dashboard" },
@@ -16,8 +12,9 @@ const NAV_TABS = [
   { label: "Orcamento", href: "/rules" },
 ];
 
-export function TopNav({ month, onMonthChange }: TopNavProps) {
+export function TopNav() {
   const [location] = useLocation();
+  const { month, setMonth, formatMonth } = useMonth();
 
   const { data: confirmQueue = [] } = useQuery({
     queryKey: ["confirm-queue"],
@@ -26,22 +23,16 @@ export function TopNav({ month, onMonthChange }: TopNavProps) {
 
   const pendingCount = confirmQueue.length;
 
-  const formatMonth = (m: string) => {
-    const [year, monthNum] = m.split("-");
-    const months = ["Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-    return `${months[parseInt(monthNum) - 1]} ${year}`;
-  };
-
   const prevMonth = () => {
     const [year, m] = month.split("-").map(Number);
     const newDate = new Date(year, m - 2, 1);
-    onMonthChange(`${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, "0")}`);
+    setMonth(`${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, "0")}`);
   };
 
   const nextMonth = () => {
     const [year, m] = month.split("-").map(Number);
     const newDate = new Date(year, m, 1);
-    onMonthChange(`${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, "0")}`);
+    setMonth(`${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, "0")}`);
   };
 
   return (
