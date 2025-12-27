@@ -159,26 +159,28 @@ export default function DashboardPage() {
     if (prevDashboard && dashboard) {
       dashboard.spentByCategory?.forEach((cat: any) => {
         const prevCat = prevDashboard.spentByCategory?.find((p: any) => p.category === cat.category);
-        if (prevCat) {
+        if (prevCat && prevCat.amount > 0) {
           const change = ((cat.amount - prevCat.amount) / prevCat.amount) * 100;
-          if (change < -10) {
-            insights.push({
-              id: `save-${cat.category}`,
-              type: "positive",
-              title: `Economia em ${cat.category}`,
-              description: `Você economizou ${Math.abs(change).toFixed(0)}% em ${cat.category} comparado ao mês anterior.`,
-              category: cat.category,
-              percentage: Math.abs(change)
-            });
-          } else if (change > 20) {
-            insights.push({
-              id: `warn-${cat.category}`,
-              type: "warning",
-              title: `Atenção com ${cat.category}`,
-              description: `Seus gastos em ${cat.category} aumentaram ${change.toFixed(0)}% este mês.`,
-              category: cat.category,
-              percentage: change
-            });
+          if (isFinite(change)) {
+            if (change < -10) {
+              insights.push({
+                id: `save-${cat.category}`,
+                type: "positive",
+                title: `Economia em ${cat.category}`,
+                description: `Você economizou ${Math.abs(change).toFixed(0)}% em ${cat.category} comparado ao mês anterior.`,
+                category: cat.category,
+                percentage: Math.abs(change)
+              });
+            } else if (change > 20) {
+              insights.push({
+                id: `warn-${cat.category}`,
+                type: "warning",
+                title: `Atenção com ${cat.category}`,
+                description: `Seus gastos em ${cat.category} aumentaram ${change.toFixed(0)}% este mês.`,
+                category: cat.category,
+                percentage: change
+              });
+            }
           }
         }
       });
