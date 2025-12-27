@@ -110,6 +110,20 @@ export const dashboardApi = {
 // Budgets
 export const budgetsApi = {
   list: (month?: string) => fetchApi<any[]>(`/budgets${month ? `?month=${month}` : ""}`),
+  create: (data: { month: string; category1: string; amount: number }) =>
+    fetchApi<any>("/budgets", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  update: (id: string, data: { amount?: number }) =>
+    fetchApi<any>(`/budgets/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    fetchApi<{ success: boolean }>(`/budgets/${id}`, {
+      method: "DELETE",
+    }),
 };
 
 // Goals
@@ -259,5 +273,21 @@ export const ritualsApi = {
     }>(`/rituals/${id}/complete`, {
       method: "POST",
       body: JSON.stringify({ notes }),
+    }),
+};
+
+// Event Occurrences
+export const eventOccurrencesApi = {
+  list: (eventId: string) =>
+    fetchApi<any[]>(`/calendar-events/${eventId}/occurrences`),
+  create: (data: { eventId: string; date: string; amount: number; status?: string; transactionId?: string }) =>
+    fetchApi<any>("/event-occurrences", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  update: (id: string, data: { status?: string; transactionId?: string }) =>
+    fetchApi<any>(`/event-occurrences/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
     }),
 };

@@ -479,6 +479,35 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/budgets/:id", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+      const { id } = req.params;
+      const updated = await storage.updateBudget(id, user.id, req.body);
+      if (!updated) {
+        return res.status(404).json({ error: "Budget not found" });
+      }
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/budgets/:id", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+      const { id } = req.params;
+      await storage.deleteBudget(id, user.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // ===== GOALS =====
   app.get("/api/goals", async (req: Request, res: Response) => {
     const startTime = Date.now();
@@ -1086,6 +1115,28 @@ export async function registerRoutes(
     try {
       const occurrences = await storage.getEventOccurrences(req.params.id);
       res.json(occurrences);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/event-occurrences", async (req: Request, res: Response) => {
+    try {
+      const occurrence = await storage.createEventOccurrence(req.body);
+      res.status(201).json(occurrence);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/event-occurrences/:id", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const updated = await storage.updateEventOccurrence(id, req.body);
+      if (!updated) {
+        return res.status(404).json({ error: "Occurrence not found" });
+      }
+      res.json(updated);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
