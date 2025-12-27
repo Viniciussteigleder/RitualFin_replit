@@ -1,0 +1,660 @@
+# Design
+
+## Design Preferences, Design System & Brand Manifesto
+
+**Versão consolidada**
+
+---
+
+## 1. Preferências de Design — Visão Geral Atualizada
+
+### 1.1 Princípio central
+
+> RitualFin não é um app de controle financeiro.É um app de rituais financeiros.
+> 
+
+O design existe para:
+
+- Criar **constância**
+- Reduzir atrito
+- Tornar decisões financeiras **previsíveis, calmas e conscientes**
+- Ajudar o usuário a **voltar sempre**, sem desgaste emocional
+
+---
+
+## 2. Impacto Imediato no Design e Produto (obrigatório)
+
+### 2.1 Naming & Branding
+
+**Nome oficial:** **RitualFin**
+
+**Significado aplicado ao design:**
+
+- Ritual = repetição intencional
+- Fin = finanças tratadas com maturidade
+- O app não “cobra”, não “pressiona”, não “alerta demais”
+
+Tudo comunica:
+
+- Continuidade
+- Processo
+- Evolução gradual
+
+---
+
+### 2.2 Tom visual
+
+**Tom dominante:**
+
+- Adulto
+- Calmo
+- Confiável
+- Premium discreto
+
+**Evitar explicitamente:**
+
+- Visual infantil
+- Gamificação
+- Cores gritantes
+- Ícones caricatos
+- Emojis decorativos
+
+**Preferir:**
+
+- Cores suaves
+- Contraste funcional
+- Espaço em branco
+- Ritmo visual previsível
+
+> Menos “controle”, mais “processo consciente”.
+> 
+
+---
+
+### 2.3 UX semântica (como o usuário interpreta o app)
+
+As telas **não são tarefas isoladas**.
+
+Elas são **momentos de um ritual financeiro contínuo**.
+
+| Tela | Leitura semântica |
+| --- | --- |
+| Revisão Semanal | “Pausa para olhar a semana” |
+| Ritual Mensal | “Fechamento e preparação do próximo ciclo” |
+| Pendências | “Caixa de entrada financeira” |
+| Metas | “Intenção para o próximo período” |
+| Dashboard | “Visão tranquila do momento atual” |
+
+Nada soa como:
+
+- “Erro”
+- “Falha”
+- “Problema”
+
+Tudo soa como:
+
+- Ajuste
+- Revisão
+- Preparação
+
+---
+
+### 2.4 Microcopy (linguagem)
+
+**Diretriz obrigatória:**
+
+- Linguagem orientada a **rotina**
+- Verbos suaves e humanos
+- Sem termos técnicos desnecessários
+
+**Preferir verbos como:**
+
+- Revisar
+- Ajustar
+- Fechar
+- Preparar
+- Confirmar
+- Continuar
+
+**Evitar:**
+
+- Corrigir
+- Resolver erro
+- Consertar
+- Alerta crítico
+- Falha detectada
+
+---
+
+### 2.5 Arquitetura do produto
+
+A arquitetura visual **comunica ritmo**, não apenas informação.
+
+**Elementos-chave:**
+
+- Sidebar fixa → sensação de estabilidade
+- Barras de progresso → passagem do tempo
+- Cards → “capítulos” do ritual
+- Histórico → continuidade, não julgamento
+
+Nada “pisca”, nada “grita”.
+
+---
+
+## 3. Preferências de Layout e Estrutura
+
+### 3.1 Navegação
+
+- **Sidebar lateral fixa** (desktop-first)
+- Menu superior NÃO é usado como navegação principal
+- Estado ativo sempre claramente visível
+- Ícones consistentes em todas as telas
+- Perfil + Configurações + Sair no rodapé da sidebar
+
+Objetivo:
+
+> O usuário nunca precisa “pensar onde está”.
+> 
+
+---
+
+### 3.2 Hierarquia visual
+
+1. **Valor financeiro** (maior destaque)
+2. **Contexto** (mês, categoria, período)
+3. **Ação possível**
+4. **Detalhes**
+
+Valores:
+
+- Sempre grandes
+- Sempre em negrito
+- Sempre com espaço visual
+
+---
+
+### 3.3 Cards e containers
+
+- Bordas arredondadas médias
+- Sombras leves
+- Separação clara entre blocos
+- Nunca “cards empilhados sem respiro”
+
+---
+
+## 4. Cores e Contraste
+
+### 4.1 Paleta semântica
+
+- **Verde** → progresso, equilíbrio, economia
+- **Cinza escuro** → texto principal
+- **Cinza claro** → contexto
+- **Vermelho suave** → atenção, nunca pânico
+
+O verde:
+
+- Nunca domina a tela inteira
+- Nunca compromete legibilidade
+- Sempre funcional
+
+---
+
+## 5. Componentes e Interações
+
+### 5.1 Escolhas do usuário
+
+- Preferir **botões, toggles e seletores visuais**
+- Evitar dropdowns para decisões simples
+- Fixo / Variável → escolha direta, visual
+
+### 5.2 Feedback
+
+- Feedback imediato
+- Visualmente discreto
+- Sem mensagens agressivas
+
+---
+
+## 6. Gráficos e dados
+
+- Barras **não finas**
+- Progresso sempre visível
+- Gráficos simples
+- Histórico como aprendizado, não cobrança
+
+---
+
+# 7. DESIGN SYSTEM – RitualFin (escrito)
+
+## 7.1 Fundamentos
+
+- **Fonte:** Manrope
+- **Ícones:** Material Symbols (outline como padrão)
+- **Grid:** amplo, respirável
+- **Motion:** suave, curta, funcional
+
+---
+
+## 7.2 Componentes obrigatórios
+
+### Botões
+
+- Primário: verde suave
+- Secundário: neutro
+- Destrutivo: raro, discreto
+
+### Cards
+
+- Sempre com título claro
+- Um objetivo por card
+
+### Barras de progresso
+
+- Altura média
+- Animação suave
+- Representam tempo, não performance
+
+---
+
+## 8. Narrativa de Produto – RitualFin
+
+### 8.1 One-liner
+
+**RitualFin** é o app que transforma finanças em um ritual simples, consciente e contínuo.
+
+---
+
+### 8.2 Tagline (opções)
+
+- “Finanças claras, todos os ciclos.”
+- “Seu ritual financeiro, sem estresse.”
+- “Menos controle. Mais consciência.”
+- “Onde finanças viram hábito.”
+
+---
+
+### 8.3 Positioning
+
+RitualFin não compete com apps de controle financeiro agressivos.
+
+Ele ocupa o espaço de:
+
+> Finanças para adultos que valorizam constância, clareza e tranquilidade.
+> 
+
+---
+
+## 9. Microcopy-chave (revisada para RitualFin)
+
+### Antes → Depois
+
+- “Resolver pendências” → **“Revisar pendências”**
+- “Erro na transação” → **“Precisa de revisão”**
+- “Finalizar orçamento” → **“Fechar o mês”**
+- “Configurar metas” → **“Preparar o próximo ciclo”**
+- “Dashboard” → **“Seu momento atual”**
+
+---
+
+## 10. BRAND & UX MANIFESTO – RitualFin
+
+> Finanças não precisam ser urgentes.
+> 
+> 
+> Precisam ser constantes.
+> 
+
+> RitualFin acredita que clareza vem da repetição,
+> 
+> 
+> não da pressão.
+> 
+
+> Cada tela existe para convidar, não exigir.
+> 
+> 
+> Cada número existe para orientar, não julgar.
+> 
+
+> O design respeita o tempo do usuário.
+> 
+> 
+> A interface cria pausas.
+> 
+> O produto constrói hábitos.
+> 
+
+> RitualFin não grita.
+> 
+> 
+> Ele acompanha.
+> 
+
+---
+
+## UI Design — Descrições Técnicas e Preferências
+
+---
+
+## 1. Sistema de Cores (UI-level)
+
+### 1.1 Paleta funcional (não decorativa)
+
+**Primary (verde RitualFin)**
+
+- Uso: CTA principal, progresso positivo, highlights semânticos
+- Nunca usado como fundo de tela inteira
+- Nunca usado para erro ou alerta
+
+```
+Primary / Success Highlight
+BG: green-50 / green-100
+Text: green-700 ou text-main
+
+```
+
+**Neutros**
+
+- Background: cinza muito claro (quase branco)
+- Superfícies (cards): branco puro
+- Texto principal: cinza muito escuro (não preto absoluto)
+- Texto secundário: cinza médio
+
+**Erro / Atenção**
+
+- Vermelho dessaturado
+- Sempre combinado com ícone
+- Sem animações agressivas
+
+---
+
+## 2. Highlight Semântico (ex.: ECONOMIA)
+
+### 2.1 Componente: Semantic Highlight Badge
+
+**Estrutura**
+
+- Container: `inline-flex`
+- Padding: 4–8px vertical / 10–14px horizontal
+- Border-radius: full (pill)
+- Fonte: small, semibold
+
+```
+Height: 20–24px
+Font-size: 11–12px
+Font-weight: 600
+Letter-spacing: +2% (opcional)
+
+```
+
+**Regras**
+
+- Máx. 1 badge por card
+- Sempre acima do título
+- Texto curto (1 palavra ou conceito)
+
+---
+
+## 3. Tipografia (UI token)
+
+### 3.1 Escala tipográfica
+
+**Títulos principais**
+
+```
+Font-size: 24–32px
+Font-weight: 700–800
+Line-height: 1.2
+
+```
+
+**Valores financeiros**
+
+```
+Font-size: 28–40px
+Font-weight: 800
+Letter-spacing: -0.5%
+
+```
+
+**Texto base**
+
+```
+Font-size: 14–16px
+Font-weight: 400–500
+Line-height: 1.5
+
+```
+
+**Texto auxiliar**
+
+```
+Font-size: 11–12px
+Color: text-secondary
+
+```
+
+**Regras**
+
+- Valores sempre maiores que títulos
+- Nunca usar itálico
+- Nunca usar caps longos (apenas labels curtos)
+
+---
+
+## 4. Cards e Containers
+
+### 4.1 Card padrão
+
+```
+Background: surface-white
+Border-radius: 12–16px
+Border: 1px solid neutral-100
+Shadow: soft (y: 4–8px, blur: 16–24px, opacity baixa)
+Padding: 16–24px
+
+```
+
+**Regras**
+
+- Um objetivo por card
+- Nunca empilhar mais de 2 níveis de informação
+- Cards nunca “gritam” (sem cores saturadas)
+
+---
+
+## 5. Layout e Grid
+
+### 5.1 Grid base
+
+- Desktop-first
+- Conteúdo centralizado
+- Margens generosas
+
+```
+Max-width content: 1200–1280px
+Gutter: 24px
+Gap entre cards: 16–24px
+
+```
+
+---
+
+## 6. Sidebar (componente estrutural)
+
+### 6.1 Sidebar fixa
+
+```
+Width: 240–280px
+Position: fixed / sticky
+Background: surface-white
+Border-right: 1px solid neutral-100
+
+```
+
+**Item ativo**
+
+- Fundo verde claro
+- Texto escuro
+- Ícone preenchido ou destacado
+
+**Rodapé da sidebar**
+
+- Perfil
+- Configurações
+- Sair
+
+Sempre nessa ordem.
+
+---
+
+## 7. Botões
+
+### 7.1 Botão Primário
+
+```
+Background: primary
+Text: dark-on-green
+Height: 40–48px
+Radius: 10–12px
+Font-weight: 600–700
+
+```
+
+Hover:
+
+- Leve escurecimento
+- Micro elevação (2–4px)
+
+### 7.2 Botão Secundário
+
+- Background neutro
+- Borda leve
+- Sem sombra
+
+---
+
+## 8. Inputs e Seletores
+
+### 8.1 Inputs
+
+```
+Height: 40px
+Radius: 10px
+Border: 1px neutral-200
+Focus: ring verde suave
+
+```
+
+### 8.2 Escolhas binárias
+
+**Nunca usar dropdown.**
+
+Usar:
+
+- Toggle
+- Button group
+- Pills selecionáveis
+
+---
+
+## 9. Barras de Progresso
+
+### 9.1 Progress Bar
+
+```
+Height: 6–10px
+Radius: full
+BG: neutral-100
+Fill: primary
+
+```
+
+**Regras**
+
+- Sempre animar suavemente (300–600ms)
+- Nunca usar porcentagem como julgamento
+- Sempre associar a tempo/ciclo
+
+---
+
+## 10. Tabelas (ex.: Pendências)
+
+### 10.1 Estrutura
+
+- Cabeçalho fixo
+- Linhas com hover suave
+- Ações à direita
+- Valores alinhados à direita
+
+```
+Row height: 56–64px
+Divider: neutral-100
+Hover: neutral-50
+
+```
+
+---
+
+## 11. Ícones
+
+### 11.1 Sistema
+
+- Material Symbols
+- Outline como padrão
+- Filled apenas para estado ativo
+
+```
+Size padrão: 20–24px
+Color: herda do texto
+
+```
+
+---
+
+## 12. Motion & Feedback
+
+### 12.1 Animações permitidas
+
+- Fade-in curto
+- Slide leve
+- Micro feedback em CTA
+
+```
+Duration: 150–300ms
+Easing: ease-out
+
+```
+
+**Nunca usar**
+
+- Bounce exagerado
+- Animações longas
+- Loop decorativo
+
+---
+
+## 13. Microcopy (UI-level)
+
+### 13.1 Padrão de escrita
+
+- Frases curtas
+- Tom calmo
+- Sempre orientado a ciclo
+
+**Exemplos**
+
+- “Revisar pendências”
+- “Fechar o mês”
+- “Preparar próximo ciclo”
+
+---
+
+## 14. Anti-patterns (proibidos)
+
+- Emojis decorativos
+- Ilustrações infantis
+- Verde saturado em fundo grande
+- Mensagens de culpa
+- Alertas agressivos
+- Overlays desnecessários

@@ -84,9 +84,11 @@ export function Sidebar() {
             {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-primary to-emerald-600 rounded-lg flex items-center justify-center">
-              <Sparkles className="h-4 w-4 text-white" />
-            </div>
+            <img 
+              src="/ritualfin-logo.png" 
+              alt="RitualFin" 
+              className="w-8 h-8 rounded-lg"
+            />
             <span className="font-semibold text-lg tracking-tight">RitualFin</span>
           </div>
         </div>
@@ -118,9 +120,11 @@ export function Sidebar() {
           isCollapsed ? "px-4 justify-center" : "px-5"
         )}>
           <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gradient-to-br from-primary to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
-              <Sparkles className="h-4 w-4 text-white" />
-            </div>
+            <img 
+              src="/ritualfin-logo.png" 
+              alt="RitualFin" 
+              className="w-9 h-9 rounded-xl shadow-lg"
+            />
             {!isCollapsed && (
               <span className="font-bold text-lg text-white tracking-tight">RitualFin</span>
             )}

@@ -83,6 +83,10 @@ export const rulesApi = {
     fetchApi<{ success: boolean; appliedCount: number }>(`/rules/${id}/apply`, {
       method: "POST",
     }),
+  reapplyAll: () =>
+    fetchApi<{ success: boolean; total: number; categorized: number; stillPending: number }>("/rules/reapply-all", {
+      method: "POST",
+    }),
   seed: () =>
     fetchApi<{ success: boolean; count: number }>("/rules/seed", {
       method: "POST",

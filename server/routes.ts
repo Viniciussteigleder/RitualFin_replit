@@ -312,6 +312,47 @@ export async function registerRoutes(
     }
   });
 
+  // Re-apply ALL rules to pending transactions
+  app.post("/api/rules/reapply-all", async (_req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      const rules = await storage.getRules(user.id);
+      const transactions = await storage.getTransactionsByNeedsReview(user.id);
+      
+      let categorizedCount = 0;
+      let stillPendingCount = 0;
+
+      for (const tx of transactions) {
+        const result = categorizeTransaction(tx.descNorm, rules);
+        
+        if (result.confidence && result.confidence > 0) {
+          await storage.updateTransaction(tx.id, {
+            ...result,
+            needsReview: result.confidence < 80
+          });
+          if (result.confidence >= 80) {
+            categorizedCount++;
+          } else {
+            stillPendingCount++;
+          }
+        } else {
+          stillPendingCount++;
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        total: transactions.length,
+        categorized: categorizedCount,
+        stillPending: stillPendingCount
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Apply rules to existing transactions
   app.post("/api/rules/:id/apply", async (req: Request, res: Response) => {
     try {
