@@ -193,6 +193,8 @@ export class DatabaseStorage implements IStorage {
     totalSpent: number;
     totalIncome: number;
     pendingReviewCount: number;
+    fixedExpenses: number;
+    variableExpenses: number;
   }> {
     const startDate = new Date(`${month}-01`);
     const endDate = new Date(startDate);
@@ -209,25 +211,36 @@ export class DatabaseStorage implements IStorage {
     let totalSpent = 0;
     let totalIncome = 0;
     let pendingReviewCount = 0;
+    let fixedExpenses = 0;
+    let variableExpenses = 0;
 
     for (const tx of txs) {
       if (tx.needsReview) pendingReviewCount++;
       if (tx.excludeFromBudget || tx.internalTransfer) continue;
 
       if (tx.amount < 0) {
-        totalSpent += Math.abs(tx.amount);
+        const absAmount = Math.abs(tx.amount);
+        totalSpent += absAmount;
         const cat = tx.category1 || "Outros";
-        spentByCategory[cat] = (spentByCategory[cat] || 0) + Math.abs(tx.amount);
+        spentByCategory[cat] = (spentByCategory[cat] || 0) + absAmount;
+        
+        if (tx.fixVar === "Fixo") {
+          fixedExpenses += absAmount;
+        } else {
+          variableExpenses += absAmount;
+        }
       } else {
         totalIncome += tx.amount;
       }
     }
 
     return {
-      spentByCategory: Object.entries(spentByCategory).map(([category, amount]) => ({ category, amount })),
+      spentByCategory: Object.entries(spentByCategory).map(([category, amount]) => ({ category, amount })).sort((a, b) => b.amount - a.amount),
       totalSpent,
       totalIncome,
       pendingReviewCount,
+      fixedExpenses,
+      variableExpenses,
     };
   }
 }

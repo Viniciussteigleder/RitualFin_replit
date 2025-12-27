@@ -31,10 +31,18 @@ export const authApi = {
 // Uploads
 export const uploadsApi = {
   list: () => fetchApi<any[]>("/uploads"),
-  create: (data: { filename: string; rowsTotal: number; monthAffected: string }) =>
-    fetchApi<any>("/uploads", {
+  process: (filename: string, csvContent: string) =>
+    fetchApi<{
+      success: boolean;
+      uploadId: string;
+      rowsTotal: number;
+      rowsImported: number;
+      duplicates: number;
+      monthAffected: string;
+      errors?: string[];
+    }>("/uploads/process", {
       method: "POST",
-      body: JSON.stringify(data),
+      body: JSON.stringify({ filename, csvContent }),
     }),
 };
 
@@ -48,7 +56,7 @@ export const transactionsApi = {
       body: JSON.stringify(data),
     }),
   confirm: (ids: string[], data: any) =>
-    fetchApi<{ success: boolean; count: number }>("/transactions/confirm", {
+    fetchApi<{ success: boolean; count: number; ruleCreated?: boolean; ruleId?: string }>("/transactions/confirm", {
       method: "POST",
       body: JSON.stringify({ ids, ...data }),
     }),
@@ -71,6 +79,10 @@ export const rulesApi = {
     fetchApi<{ success: boolean }>(`/rules/${id}`, {
       method: "DELETE",
     }),
+  apply: (id: string) =>
+    fetchApi<{ success: boolean; appliedCount: number }>(`/rules/${id}/apply`, {
+      method: "POST",
+    }),
 };
 
 // Dashboard
@@ -81,6 +93,8 @@ export const dashboardApi = {
       totalSpent: number;
       totalIncome: number;
       pendingReviewCount: number;
+      fixedExpenses: number;
+      variableExpenses: number;
       month: string;
     }>(`/dashboard${month ? `?month=${month}` : ""}`),
 };
