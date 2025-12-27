@@ -5,6 +5,12 @@ import { insertRuleSchema } from "@shared/schema";
 import { z } from "zod";
 import { parseCSV, type ParsedTransaction } from "./csv-parser";
 import { categorizeTransaction, suggestKeyword, AI_SEED_RULES } from "./rules-engine";
+import OpenAI from "openai";
+
+const openai = new OpenAI({
+  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+});
 
 export async function registerRoutes(
   httpServer: Server,
@@ -542,6 +548,166 @@ export async function registerRoutes(
       const occurrences = await storage.getEventOccurrences(req.params.id);
       res.json(occurrences);
     } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===== AI KEYWORD ANALYSIS =====
+  app.post("/api/ai/analyze-keywords", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        return res.status(401).json({ error: "Usuário não encontrado" });
+      }
+
+      // Get all uncategorized transactions
+      const uncategorized = await storage.getUncategorizedTransactions(user.id);
+      
+      if (uncategorized.length === 0) {
+        return res.json({ suggestions: [], message: "Nenhuma transação pendente de categorização" });
+      }
+
+      // Group by suggested keyword
+      const grouped: Record<string, { count: number; total: number; samples: string[] }> = {};
+      for (const tx of uncategorized) {
+        const keyword = tx.suggestedKeyword || suggestKeyword(tx.descNorm);
+        if (!grouped[keyword]) {
+          grouped[keyword] = { count: 0, total: 0, samples: [] };
+        }
+        grouped[keyword].count++;
+        grouped[keyword].total += Math.abs(tx.amount);
+        if (grouped[keyword].samples.length < 3) {
+          grouped[keyword].samples.push(tx.descRaw);
+        }
+      }
+
+      // Get AI suggestions for all keywords
+      const keywordList = Object.entries(grouped)
+        .filter(([_, data]) => data.count >= 1)
+        .map(([keyword, data]) => ({
+          keyword,
+          count: data.count,
+          total: data.total,
+          samples: data.samples
+        }));
+
+      const categories = ["Moradia", "Mercado", "Compras Online", "Transporte", "Saúde", "Lazer", "Receitas", "Interno", "Outros"];
+
+      const systemPrompt = `Você é um assistente financeiro especializado em categorização de transações bancárias.
+Analise a lista de palavras-chave e exemplos de transações e sugira a categoria mais adequada para cada uma.
+
+Categorias disponíveis: ${categories.join(", ")}
+
+Para cada palavra-chave, retorne um JSON com:
+- keyword: a palavra-chave
+- suggestedCategory: a categoria sugerida
+- suggestedType: "Despesa" ou "Receita"
+- suggestedFixVar: "Fixo" ou "Variável"
+- confidence: número de 0 a 100 indicando sua confiança
+- reason: explicação breve em português
+
+Retorne APENAS um array JSON válido, sem markdown ou texto adicional.`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: JSON.stringify(keywordList, null, 2) }
+        ],
+        temperature: 0.3,
+        max_tokens: 4000
+      });
+
+      const content = response.choices[0]?.message?.content || "[]";
+      let suggestions = [];
+      try {
+        suggestions = JSON.parse(content.replace(/```json\n?|\n?```/g, ""));
+      } catch (e) {
+        console.error("Failed to parse AI response:", content);
+        suggestions = keywordList.map(k => ({
+          keyword: k.keyword,
+          suggestedCategory: "Outros",
+          suggestedType: "Despesa",
+          suggestedFixVar: "Variável",
+          confidence: 50,
+          reason: "Sugestão automática"
+        }));
+      }
+
+      // Merge with transaction counts
+      const enriched = suggestions.map((s: any) => {
+        const data = grouped[s.keyword];
+        return {
+          ...s,
+          count: data?.count || 0,
+          total: data?.total || 0,
+          samples: data?.samples || []
+        };
+      });
+
+      res.json({ suggestions: enriched, total: uncategorized.length });
+    } catch (error: any) {
+      console.error("AI analysis error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Apply AI suggestions as rules
+  app.post("/api/ai/apply-suggestions", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        return res.status(401).json({ error: "Usuário não encontrado" });
+      }
+
+      const { suggestions } = req.body;
+      if (!suggestions || !Array.isArray(suggestions)) {
+        return res.status(400).json({ error: "Sugestões inválidas" });
+      }
+
+      const created = [];
+      const updated = [];
+
+      for (const s of suggestions) {
+        // Create rule
+        const rule = await storage.createRule({
+          userId: user.id,
+          name: `AI: ${s.keyword}`,
+          keywords: s.keyword.toLowerCase(),
+          type: s.suggestedType || "Despesa",
+          fixVar: s.suggestedFixVar || "Variável",
+          category1: s.suggestedCategory || "Outros",
+          category2: null,
+          priority: 600,
+          strict: false,
+          isSystem: false
+        });
+        created.push(rule);
+
+        // Apply to matching transactions
+        const transactions = await storage.getTransactionsByKeyword(user.id, s.keyword.toLowerCase());
+        for (const tx of transactions) {
+          if (tx.needsReview && !tx.manualOverride) {
+            await storage.updateTransaction(tx.id, {
+              type: s.suggestedType || "Despesa",
+              fixVar: s.suggestedFixVar || "Variável",
+              category1: s.suggestedCategory || "Outros",
+              needsReview: false,
+              confidence: s.confidence || 80,
+              ruleIdApplied: rule.id
+            });
+            updated.push(tx.id);
+          }
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        rulesCreated: created.length, 
+        transactionsUpdated: updated.length 
+      });
+    } catch (error: any) {
+      console.error("Apply suggestions error:", error);
       res.status(500).json({ error: error.message });
     }
   });

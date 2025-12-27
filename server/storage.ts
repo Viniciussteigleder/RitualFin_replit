@@ -34,6 +34,8 @@ export interface IStorage {
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   updateTransaction(id: string, data: Partial<Transaction>): Promise<Transaction | undefined>;
   bulkUpdateTransactions(ids: string[], data: Partial<Transaction>): Promise<void>;
+  getUncategorizedTransactions(userId: string): Promise<Transaction[]>;
+  getTransactionsByKeyword(userId: string, keyword: string): Promise<Transaction[]>;
   
   // Rules
   getRules(userId: string): Promise<Rule[]>;
@@ -297,6 +299,27 @@ export class DatabaseStorage implements IStorage {
   async createEventOccurrence(occurrence: InsertEventOccurrence): Promise<EventOccurrence> {
     const [created] = await db.insert(eventOccurrences).values(occurrence).returning();
     return created;
+  }
+
+  // Get all uncategorized transactions (needsReview = true and no category)
+  async getUncategorizedTransactions(userId: string): Promise<Transaction[]> {
+    return db.select().from(transactions)
+      .where(and(
+        eq(transactions.userId, userId),
+        eq(transactions.needsReview, true),
+        or(isNull(transactions.category1), eq(transactions.category1, "Outros"))
+      ))
+      .orderBy(desc(transactions.paymentDate));
+  }
+
+  // Get transactions matching a keyword in descNorm
+  async getTransactionsByKeyword(userId: string, keyword: string): Promise<Transaction[]> {
+    return db.select().from(transactions)
+      .where(and(
+        eq(transactions.userId, userId),
+        like(transactions.descNorm, `%${keyword}%`)
+      ))
+      .orderBy(desc(transactions.paymentDate));
   }
 }
 
