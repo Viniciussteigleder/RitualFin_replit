@@ -97,6 +97,8 @@ export const transactions = pgTable("transactions", {
   needsReview: boolean("needs_review").notNull().default(true),
   ruleIdApplied: varchar("rule_id_applied"),
   uploadId: varchar("upload_id").references(() => uploads.id),
+  confidence: integer("confidence"),
+  suggestedKeyword: text("suggested_keyword"),
 });
 
 export const transactionsRelations = relations(transactions, ({ one }) => ({

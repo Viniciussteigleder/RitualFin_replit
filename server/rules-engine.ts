@@ -1,4 +1,4 @@
-// Rules Engine for AI-powered transaction categorization
+// Rules Engine for AI-powered transaction categorization with confidence levels
 
 import type { Rule, Transaction } from "@shared/schema";
 
@@ -11,12 +11,14 @@ export interface RuleMatch {
   priority: number;
   strict: boolean;
   isSystem: boolean;
+  matchedKeyword?: string;
 }
 
 export interface CategorizationResult {
   needsReview: boolean;
   matches: RuleMatch[];
   appliedRule?: RuleMatch;
+  confidence: number;
   reason?: string;
 }
 
@@ -41,9 +43,9 @@ export function matchRules(descNorm: string, rules: Rule[]): CategorizationResul
       .map(k => normalizeForMatch(k))
       .filter(k => k.length > 0);
     
-    const hasMatch = keywords.some(keyword => haystack.includes(keyword));
+    const matchedKeyword = keywords.find(keyword => haystack.includes(keyword));
     
-    if (hasMatch) {
+    if (matchedKeyword) {
       const match: RuleMatch = {
         ruleId: rule.id,
         type: rule.type,
@@ -52,7 +54,8 @@ export function matchRules(descNorm: string, rules: Rule[]): CategorizationResul
         category2: rule.category2 || undefined,
         priority: rule.priority || 500,
         strict: rule.strict || false,
-        isSystem: rule.isSystem || false
+        isSystem: rule.isSystem || false,
+        matchedKeyword
       };
 
       if (rule.strict) {
@@ -60,7 +63,8 @@ export function matchRules(descNorm: string, rules: Rule[]): CategorizationResul
           needsReview: false,
           matches: [match],
           appliedRule: match,
-          reason: "Regra estrita aplicada"
+          confidence: 100,
+          reason: "Regra estrita aplicada automaticamente"
         };
       }
 
@@ -72,24 +76,74 @@ export function matchRules(descNorm: string, rules: Rule[]): CategorizationResul
     return {
       needsReview: true,
       matches: [],
+      confidence: 0,
       reason: "Nenhuma regra encontrada"
     };
   }
 
+  if (matches.length === 1) {
+    const match = matches[0];
+    const confidence = calculateConfidence(match);
+    const autoApply = confidence >= 80;
+    
+    return {
+      needsReview: !autoApply,
+      matches,
+      appliedRule: match,
+      confidence,
+      reason: autoApply 
+        ? `Alta confianca (${confidence}%) - aplicado automaticamente`
+        : `Confianca media (${confidence}%) - revisar`
+    };
+  }
+
+  const topMatches = matches.filter(m => m.priority === matches[0].priority);
+  
+  if (topMatches.length === 1) {
+    const match = topMatches[0];
+    const confidence = Math.min(calculateConfidence(match) - 10, 85);
+    const autoApply = confidence >= 80;
+    
+    return {
+      needsReview: !autoApply,
+      matches,
+      appliedRule: match,
+      confidence,
+      reason: autoApply
+        ? `Multiplas regras mas prioridade clara (${confidence}%)`
+        : `Multiplas regras (${confidence}%) - revisar`
+    };
+  }
+
   return {
-    needsReview: false,
+    needsReview: true,
     matches,
-    appliedRule: matches[0]
+    appliedRule: matches[0],
+    confidence: 50,
+    reason: `Conflito: ${matches.length} regras com mesma prioridade`
   };
+}
+
+function calculateConfidence(match: RuleMatch): number {
+  let confidence = 70;
+  
+  if (match.isSystem) confidence += 10;
+  if (match.priority >= 800) confidence += 15;
+  else if (match.priority >= 600) confidence += 10;
+  else if (match.priority >= 500) confidence += 5;
+  
+  if (match.strict) confidence = 100;
+  
+  return Math.min(confidence, 100);
 }
 
 export function categorizeTransaction(
   descNorm: string, 
   rules: Rule[]
-): Partial<Transaction> {
+): Partial<Transaction> & { confidence?: number } {
   const result = matchRules(descNorm, rules);
   
-  if (result.appliedRule) {
+  if (result.appliedRule && !result.needsReview) {
     const rule = result.appliedRule;
     const isInterno = rule.category1 === "Interno";
     
@@ -101,12 +155,31 @@ export function categorizeTransaction(
       needsReview: false,
       ruleIdApplied: rule.ruleId,
       internalTransfer: isInterno,
-      excludeFromBudget: isInterno
+      excludeFromBudget: isInterno,
+      confidence: result.confidence
+    };
+  }
+
+  if (result.appliedRule && result.needsReview) {
+    const rule = result.appliedRule;
+    const isInterno = rule.category1 === "Interno";
+    
+    return {
+      type: rule.type,
+      fixVar: rule.fixVar,
+      category1: rule.category1 as any,
+      category2: rule.category2,
+      needsReview: true,
+      ruleIdApplied: rule.ruleId,
+      internalTransfer: isInterno,
+      excludeFromBudget: isInterno,
+      confidence: result.confidence
     };
   }
 
   return {
-    needsReview: true
+    needsReview: true,
+    confidence: 0
   };
 }
 
