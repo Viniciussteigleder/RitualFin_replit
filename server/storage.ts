@@ -7,7 +7,7 @@ import {
   type Budget, type InsertBudget
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, sql, like, gte, lt } from "drizzle-orm";
+import { eq, and, desc, sql, like, gte, lt, or, isNull } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -148,8 +148,8 @@ export class DatabaseStorage implements IStorage {
   // Rules
   async getRules(userId: string): Promise<Rule[]> {
     return db.select().from(rules)
-      .where(eq(rules.userId, userId))
-      .orderBy(desc(rules.createdAt));
+      .where(or(eq(rules.userId, userId), isNull(rules.userId)))
+      .orderBy(desc(rules.priority), desc(rules.createdAt));
   }
 
   async getRule(id: string): Promise<Rule | undefined> {

@@ -1,0 +1,228 @@
+Below are **build instructions only** (why + how) and a **complete, seed-ready example set** for your **“contains / case-insensitive”** rules—using your exact consolidated dictionary.
+
+I’m giving you:
+
+1. **How to model the rules (DB)**
+2. **How to apply them (engine)**
+3. **Complete examples** in a form you can directly seed:
+
+   * **Normalized keyword strings**
+   * **One rule per category** (exactly as you want: consolidated)
+   * **Extra “strict guardrails”** for DM/Rossmann/Müller and INTERNO
+
+---
+
+# 1) Why this structure (v1)
+
+* **One rule per category** keeps maintenance simple.
+* **Case-insensitive contains** is robust for bank statement noise.
+* **Priority** lets you enforce “INTERNO wins” and strict guardrails.
+* **Dedupe + determinism** makes it predictable and testable.
+
+---
+
+# 2) DB table (minimal) for v1 rules
+
+Use **one table** where each row = one category rule.
+
+**Table:** `category_rules`
+
+Required fields:
+
+* `category` (e.g., `MERCADO`)
+* `priority` (INTERNO highest)
+* `match_type` fixed = `contains`
+* `keywords` as **one string** with `;` separators (seed-friendly)
+* optional `direction` (income/expense/any)
+* optional `strict` boolean for “do not override” guardrail categories (MERCADO, INTERNO)
+
+---
+
+# 3) How to build the rule engine (v1)
+
+## 3.1 Normalize transaction text
+
+**Input:** `description + " " + merchant`
+**Normalization:**
+
+* `UPPER()`
+* trim
+* replace multiple spaces
+
+Result: `haystack`
+
+## 3.2 Normalize keywords (once)
+
+When seeding:
+
+* keep as you wrote (mixed languages ok)
+* engine will:
+
+  * split on `;`
+  * trim
+  * uppercase
+  * drop empty entries
+
+## 3.3 Match + winner selection
+
+* Evaluate rules in descending `priority`.
+* A rule matches if **any keyword** is found in `haystack` via `includes()`.
+* First matching rule wins.
+
+## 3.4 Guardrails
+
+* **INTERNO is strict:** if it matches, stop immediately.
+* **MERCADO is strict:** if it matches, stop immediately (prevents DM/Rossmann/Müller drifting into saúde/outros).
+
+---
+
+# 4) Complete seed-ready examples (MOST IMPORTANT)
+
+## 4.1 Seed rows (one per category)
+
+You can seed as **one row per category**, exactly with your consolidated keyword list.
+
+### RECEITAS
+
+* `category`: `RECEITAS`
+* `priority`: `800`
+* `direction`: `income`
+* `strict`: `false`
+* `keywords`:
+
+```
+ENTGELT; SALARIO; BONUS; KINDERGELD; ARBEIT - FAMILIEN KASSE; BUNDESAGENTUR; MIETE INCL. NEBENKOSTEN; HAUS KARLSRUHE MIETE; HAUS KARLSRUHE NK; FINANZAMT; STEUERERKLÄRUNG; BOSCH GMBHTVL EXP; REEMBOLSO BOSCH; MANGOPAY; ANDRESSA VILAS BOAS NOGUEIRA LIMA; BIANCA DE FREITAS LIMA; BIANCaflima; FLAVIA FRATTINI; DR. MARCO ROCHA CURADO; MARCELO GUIDA TAVARES; BETTINA TAVARES; MARILIA DUARTE VIANA
+```
+
+### MORADIA
+
+* `category`: `MORADIA`
+* `priority`: `700`
+* `direction`: `expense`
+* `strict`: `false`
+* `keywords`:
+
+```
+DARLEHENSABSCHLUSS; FINANCIAMENTO; IBAN DE20701694600020137367; R + V LEBENSVERSICHERUNG; WEG LOSWOHNEN; HG VORAUSZAHLUNG; GRUNDSTEUER; GRUNDSTEUER B; FERNWÄRME; VERTRAGSNR; STROM; LICHTBLICK; VATTENFALL; WASSER; VERTRAGSKONTO; MONATSMIETE; SCHROEDER; DAUERAUFTRAG; RUNDFUNK ARD; BAYERISCHER RUNDFUNK; AGF IMMOBILIEN; HAUSHALTSSTELLE; REPARATUR; MANUTENÇÃO; MATERIAL; SERVICOS; DANKE BZO OLCHING GMBH
+```
+
+### MERCADO (strict)
+
+* `category`: `MERCADO`
+* `priority`: `900` (high to prevent misclassification)
+* `direction`: `expense`
+* `strict`: `true`
+* `keywords`:
+
+```
+REWE; EDEKA; ALDI; LIDL; NETTO; NORMA; DM; DM-DROGERIE; ROSSMANN; MUELLER; MÜLLER; ASIA MARKT; MADE IN PORTUGAL; BACKSTUBE; BAECKEREI; IHLE; RISCHARTS; BACKZEIT; WUENSCHE
+```
+
+### COMPRAS ONLINE
+
+* `category`: `COMPRAS ONLINE`
+* `priority`: `650`
+* `direction`: `expense`
+* `strict`: `false`
+* `keywords`:
+
+```
+AMAZON; AMZN; AMZ*; TEMU; ZALANDO; ABOUT YOU; HM.COM; DECATHLON; MEDIAMARKT; SATURN; KLEINANZEIGEN; JYSK; MOEMAX; TEDI; IDEA
+```
+
+### TRANSPORTE
+
+* `category`: `TRANSPORTE`
+* `priority`: `600`
+* `direction`: `expense`
+* `strict`: `false`
+* `keywords`:
+
+```
+TANKSTELLE; ALLGUTH; KFZ-STEUER; KFZ-VERSICHERUNG; PARKHAUS; HANDYPARKEN; PARKGARAGE; PARKEN OLYMPIA; STADT MANNHEIM; MVV; TICKETSHOP LOGPAY; VOI
+```
+
+### SAÚDE
+
+* `category`: `SAÚDE`
+* `priority`: `620`
+* `direction`: `expense`
+* `strict`: `false`
+* `keywords`:
+
+```
+APOTHEKE; ZAHNARZT; ZAHNARZTPRAXIS; KINDERZAHNHEILKUNDE; PRAXIS; ARZT; HAUTARZT; LABOR; LABOR AUGSBURG MVZ; APOLLO OPTIK; PALMILHA; AGM MUELLER; BOTOX; COLAGENO; LIMPEZA DE PELE; NATALIA.FERTSC; L'OCCITANE
+```
+
+### LAZER
+
+* `category`: `LAZER`
+* `priority`: `580`
+* `direction`: `expense`
+* `strict`: `false`
+* `keywords`:
+
+```
+RESTAURANT; MCDONALDS; PIZZA HUT; RISTORANTE; EISCAFE; BELMONDO; HANS IM TAL; BOTECO; ABACCOS; DING TEA; I LOVE LEO; WEINTREFF; GAUCHO STEAKHOUSE; PRIME VIDEO; CINEMA; ROBLOX; OKTOBERFEST; FERIAS; FLUGSTRECKE; LONDON; EUROPAPARK; BRASIL; THISTLEMARBLE; WARNER BROS; WOLFSSCHLUCHT; BJJ; TENNIS; SCHWIMM; SV; OLC-; GEORGI KRANCHEV; TANJA MAYR
+```
+
+### OUTROS
+
+* `category`: `OUTROS`
+* `priority`: `500`
+* `direction`: `expense`
+* `strict`: `false`
+* `keywords`:
+
+```
+APPLE.COM/BILL; GOOGLE*GOOGLE ONE; NETFLIX; DISNEY; PARAMOUNT; AMZNPRIME; AUDIBLE; OPENAI *CHATGPT; ACTIVECAMP; CANVA; CAPCUT; INSTORIES; DEVK; AOK; VERSICHERUNG; ZINSBELASTUNG; ENTGELTABSCHLUSS; KARTENPREIS; 1,95%; ING-DIBA; RAHMENKREDIT; POSTBANK; DARLEHENSRATE; GYMNASIUM; SCHULHILFE; BUCHLADEN; EINSUNDZWEI; FRESSNAPF; FUTALIS; MITGLIEDSBEITRAG; BRUEDERLICHKEIT; BARGELDAUSZAHLUNG; GELDAUTOMAT; TRANSFERWISE; WISE; WESTERN UNION
+```
+
+### INTERNO (strict, exclude from budget)
+
+* `category`: `INTERNO`
+* `priority`: `1000` (highest)
+* `direction`: `any`
+* `strict`: `true`
+* `keywords`:
+
+```
+AMEX - ZAHLUNG; ZAHLUNG ERHALTEN; PAGAMENTO AMEX; PAGAMENTO M&M; AMERICAN EXPRESS ZAHLUNG; DEUTSCHE KREDITBANK AKTIENGESELLSCHAFT
+```
+
+---
+
+# 5) How to seed (instructions)
+
+## 5.1 Store this exactly as rows
+
+* One row per category.
+* Keep keywords as a single `text` field (with `;` separators).
+* Keep `priority` as defined above.
+* Mark `strict = true` for `INTERNO` and `MERCADO`.
+
+## 5.2 Run-time evaluation order (instructions)
+
+* Load rules ordered by `priority DESC`.
+* For each rule:
+
+  * split keywords by `;`
+  * if any keyword is in haystack → match
+  * if match and rule.strict → return immediately
+  * else return first match anyway (because priority order already enforces correctness)
+* If none matches → default category = `OUTROS` or `UNCATEGORIZED` (your choice).
+
+---
+
+# 6) Examples of real matching behavior (quick sanity)
+
+* `"DM-DROGERIE MÜNCHEN"` → **MERCADO** (strict, blocks Saúde)
+* `"APOTHEKE AM GARTEN"` → **SAÚDE**
+* `"AMEX - ZAHLUNG 1234"` → **INTERNO** (exclude from budget)
+* `"AMAZON EU SARL"` → **COMPRAS ONLINE**
+* `"REWE CENTER"` → **MERCADO**
+* `"ENTGELT BOSCH"` → **RECEITAS**
+
+---
+
+If you want, I can convert the above into **exact seed payloads** in the format you’re using (Supabase SQL `INSERT`, Supabase seed JSON, or Prisma seed) — but the category-by-category examples above are already in the most seed-friendly form (single row per category, keywords separated by `;`).
