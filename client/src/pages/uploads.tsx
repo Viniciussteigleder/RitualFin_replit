@@ -4,14 +4,82 @@ import { Card, CardContent } from "@/components/ui/card";
 import { UploadCloud, FileSpreadsheet, CheckCircle2, XCircle, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { uploadsApi } from "@/lib/api";
+import { useRef, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function UploadsPage() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
   const { data: uploads = [], isLoading } = useQuery({
     queryKey: ["uploads"],
     queryFn: uploadsApi.list,
   });
+
+  const uploadMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const content = await file.text();
+      return uploadsApi.process(file.name, content);
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["uploads"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["confirm-queue"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      
+      if (result.rowsImported > 0) {
+        toast({
+          title: "Importação concluída",
+          description: `${result.rowsImported} transações importadas${result.duplicates > 0 ? `, ${result.duplicates} duplicatas ignoradas` : ""}`
+        });
+      } else if (result.duplicates > 0) {
+        toast({
+          title: "Arquivo já importado",
+          description: `Todas as ${result.duplicates} transações já existem no sistema`,
+          variant: "destructive"
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro na importação",
+        description: error.message || "Falha ao processar o arquivo",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleFileSelect = (file: File) => {
+    if (!file.name.endsWith(".csv")) {
+      toast({
+        title: "Formato inválido",
+        description: "Por favor, selecione um arquivo CSV",
+        variant: "destructive"
+      });
+      return;
+    }
+    uploadMutation.mutate(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFileSelect(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
 
   return (
     <AppLayout>
@@ -22,19 +90,53 @@ export default function UploadsPage() {
         </div>
 
         {/* Upload Area */}
-        <Card className="border-dashed border-2 border-muted-foreground/20 bg-muted/5 shadow-none hover:bg-muted/10 transition-colors">
+        <Card 
+          className={cn(
+            "border-dashed border-2 bg-muted/5 shadow-none transition-colors cursor-pointer",
+            isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/20 hover:bg-muted/10"
+          )}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onClick={() => fileInputRef.current?.click()}
+        >
           <CardContent className="flex flex-col items-center justify-center py-12 text-center space-y-4">
-            <div className="p-4 bg-background rounded-full shadow-sm">
-              <UploadCloud className="h-8 w-8 text-primary/80" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="font-semibold text-lg">Arraste seu CSV aqui</h3>
-              <p className="text-sm text-muted-foreground">ou clique para selecionar o arquivo</p>
-            </div>
-            <Button className="mt-4" data-testid="btn-select-file">Selecionar Arquivo</Button>
-            <p className="text-xs text-muted-foreground/60 max-w-xs pt-4">
-              Aceita apenas CSV exportado do Miles & More. O sistema detecta duplicatas automaticamente.
-            </p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleFileSelect(file);
+                e.target.value = "";
+              }}
+              data-testid="input-file"
+            />
+            
+            {uploadMutation.isPending ? (
+              <>
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-lg">Processando...</h3>
+                  <p className="text-sm text-muted-foreground">Validando e importando transações</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="p-4 bg-background rounded-full shadow-sm">
+                  <UploadCloud className="h-8 w-8 text-primary/80" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-lg">Arraste seu CSV aqui</h3>
+                  <p className="text-sm text-muted-foreground">ou clique para selecionar o arquivo</p>
+                </div>
+                <Button className="mt-4" data-testid="btn-select-file">Selecionar Arquivo</Button>
+                <p className="text-xs text-muted-foreground/60 max-w-xs pt-4">
+                  Aceita apenas CSV exportado do Miles & More. O sistema detecta duplicatas automaticamente.
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 

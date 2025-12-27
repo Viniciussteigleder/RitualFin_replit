@@ -1,0 +1,192 @@
+* to no app, PT-BR, €).
+
+2. Usuário-alvo
+Você (conta individual). Futuro: conta casal (unificar 2 emails) como passo posterior (v2+).
+
+3. Fluxo principal v1 (Jobs-to-be-done)
+1. Entrar via Google ou Email (básico).
+2. Uploads → enviar 1 CSV do M&M.
+3. Sistema valida e, se ok, processa:
+    * cria colunas extras (Fonte, Key_MM, Key_MM_Desc, + versões normalizadas)
+    * dedupe “estrito” por Key_MM (reimport não duplica)
+    * consolida em ledger canônico
+    * roda regras de categorização
+4. Você vai em Confirmar para resolver exceções:
+    * atribuir categoria/Tipo/FixoVar
+    * aplicar em lote
+    * ao confirmar, cria/atualiza regra automaticamente
+5. Você vê o Painel do mês: orçamento (spent + remaining), categorias, recentes, e uma projeção simples.
+
+4. Requisitos funcionais v1
+4.1 Autenticação
+* Login: Google OAuth + Email/Password (básico).
+* Idioma/locale fixo: PT-BR; moeda padrão EUR.
+* Sem onboarding.
+Critérios de aceite
+* Usuário consegue criar conta e logar.
+* Sessão persiste (refresh não desloga).
+* Logout funciona.
+
+4.2 Upload e validação (M&M)
+Upload
+* Apenas 1 arquivo por vez (v1).
+* Tela “Uploads” com histórico: nome do arquivo, data, status (processing/ready/duplicate/error), contagem de linhas importadas, e mês(s) afetado(s).
+Validação com erro claro
+* Se colunas obrigatórias faltarem: recusa e mostra:
+    * quais colunas faltam
+    * exemplo do header esperado
+* Deve aceitar:
+    * decimal com vírgula (mantém “,” na exibição; parse interno para número)
+    * datas dd.MM.yyyy
+Colunas obrigatórias (M&M)
+* Authorised on, Processed on, Amount, Currency, Description, Payment type, Status
+* E se vierem: Amount in foreign currency, Currency (foreign), Exchange rate
+Status
+* “Status completo”: importar todas as transações, independente do status (Processed/Pending/Declined etc).
+* No dashboard, permitir filtro “somente Processed” (default: Processed) — recomendado para não poluir o mês.
+Critérios de aceite
+* Upload com CSV válido gera import “ready”.
+* Upload com CSV inválido retorna erro com diagnóstico.
+* Histórico lista execuções.
+
+4.3 Enriquecimento (colunas extras) no raw M&M
+Adicionar colunas (armazenadas no banco, não só em memória):
+* Fonte: "M&M"
+* Key_MM: chave única (ver abaixo)
+* Key_MM_Desc: descrição composta
+* Desc_raw: Key_MM_Desc (para display)
+* Desc_norm: versão normalizada para match (lower + remove acentos + normaliza whitespace)
+Construção (v1)
+* Key_MM_Desc (não-normalizada) = Description -- Payment type -- Status -- M&M - Description [-- compra internacional em {CurrencyForeign}]
+* Key_MM = {Key_MM_Desc} -- {Amount} -- {AuthorisedOn_ISO} (sem currency extra, como você decidiu)
+Normalização
+* Criar duas colunas: uma normalizada e outra não:
+    * desc_raw (original)
+    * desc_norm (para regras)
+Critérios de aceite
+* Para cada linha importada, as colunas extras são geradas consistentemente.
+* “compra internacional” aparece quando houver Amount in foreign currency.
+
+4.4 Ledger canônico (consolidado)
+Tabela consolidada v1 (mínimo)
+* payment_date (Authorised on)
+* imported_at
+* account_source (= “M&M”)
+* desc_raw (descrição completa)
+* desc_norm
+* amount (número interno)
+* amount_display (string no formato original com vírgula, opcional)
+* currency (EUR)
+* foreign_amount, foreign_currency, exchange_rate (se vierem)
+* key (= Key_MM)
+* type (Despesa/Receita)
+* fix_var (Fixo/Variável)
+* category_1 (sua lista: Receitas, Moradia, Mercado, Compras Online, Transporte, Saúde, Lazer, Outros, Interno)
+* category_2 (opcional no v1; mas já suportar campo)
+* manual_override (bool) + manual_note (opcional)
+* flags:
+    * internal_transfer (bool)
+    * exclude_from_budget (bool)
+    * needs_review (bool)
+    * rule_id_applied (nullable)
+Dedupe
+* Dedupe “estrito”: key é único (reimport do mesmo arquivo não duplica).
+* Dedupe “suspeita” (não automática): se desc_norm igual em múltiplas linhas no mesmo mês, marcar needs_review=true e listar em Confirmar (você decide caso a caso).
+Critérios de aceite
+* Importar duas vezes o mesmo CSV não duplica transações.
+* Ledger é estável por mês e consistente.
+
+4.5 Motor de regras (keyword mapping)
+Entrada
+* Match acontece em desc_norm.
+* Keywords são separadas por ; e podem ser palavras ou frases.
+Lógica v1
+* Matching: contains case-insensitive + whitespace-normalized (sem regex no v1).
+* Se 1 regra bate: aplica Tipo + Fixo/Var + Categoria I + (Categoria II se existir).
+* Se mais de 1 regra bate: needs_review=true e vai para Confirmar (não escolhe automaticamente).
+* Se nenhuma regra bate: vai para Confirmar como “Não classificado”.
+Regras especiais
+* Interno é categoria visível, com internal_transfer=true e exclude_from_budget=true.
+* Saque entra como Categoria Outros, mas o usuário pode incluir/excluir do orçamento (toggle por transação).
+Critérios de aceite
+* Regras aplicam de forma determinística.
+* Conflitos e não-classificados aparecem em Confirmar.
+* Confirmar em lote cria/atualiza regras.
+
+4.6 Confirm Queue (exceções + batch + auto-regra)
+Entra em Confirmar quando:
+* sem match
+* conflito (2+ regras)
+* suspeita de duplicata (mesmo desc_norm) — “mostrar e decidir manualmente”
+Ações na fila
+* editar: Tipo, Fixo/Var, Categoria I, Categoria II (opcional)
+* toggle: exclude_from_budget (especialmente para saque)
+* confirmar em lote (por “mesmo merchant/keyword sugerida”)
+* ao confirmar: criar/atualizar regra automaticamente com granularidade:
+    * Tipo + Fixo/Var + Categoria I
+    * e sugerir Categoria II (campo opcional)
+Critérios de aceite
+* Selecionar N itens → aplicar mudança em lote.
+* Confirmar gera regra e reclassifica transações futuras compatíveis.
+
+4.7 Dashboard mensal (Painel)
+Conteúdo v1 (simples e confiável)
+* Seletor de mês (calendar month).
+* Cards:
+    1. Spent so far (despesas excluindo exclude_from_budget=true)
+    2. Receitas do mês
+    3. Orçamento do mês (por categoria e total) + Remaining
+    4. Projeção do mês (simples, explicada)
+    5. Compromissos restantes (proxy v1: itens Fixo do mês + próximos 30 dias estimados)
+* Gráfico de gasto por Categoria I + lista de transações recentes
+* Drill-down: clicar numa categoria abre lista filtrada + search
+Projeção (v1, transparente)
+* projection = spent_so_far + expected_fixed_remaining + (variable_run_rate * days_remaining)
+* Mostrar breakdown, sem “mágica”.
+Critérios de aceite
+* Totais excluem Interno por padrão.
+* Refunds (valores positivos em cartão ou reversões) reduzem gasto da categoria quando categorizados.
+* Drill-down funciona.
+
+5. Dados e arquitetura (Supabase)
+5.1 Tabelas (mínimo)
+* users
+* accounts (no v1 pode ser só “M&M”, mas já modela)
+* uploads (status, filename, rows_total, rows_imported, error_message, started_at, finished_at)
+* raw_mm_transactions (espelho do CSV + colunas extras + desc_norm)
+* transactions (ledger canônico consolidado)
+* rules (keyword mapping)
+* rule_keywords (opcional; ou keywords em um campo único “;” no v1)
+* budgets (month, category_1, amount)
+* audit_log (alterações manuais, batch confirm, regras criadas)
+5.2 Pipeline (server-side)
+1. Upload CSV → armazenar arquivo (storage) + criar uploads status=processing
+2. Parse CSV → validar header → gravar raw_mm_transactions
+3. Gerar Fonte, Key_MM_Desc, Key_MM, desc_norm
+4. Upsert em transactions por key (dedupe estrito)
+5. Apply rules → marcar needs_review quando necessário
+6. Upload status=ready + métricas
+5.3 APIs/serviços (sugestão)
+* POST /upload/mm (recebe arquivo, cria job)
+* GET /uploads (histórico)
+* GET /transactions?month=YYYY-MM
+* GET /confirm-queue?month=YYYY-MM
+* POST /confirm (bulk update + create/update rule)
+* GET /dashboard?month=YYYY-MM
+
+6. Frontend (estrutura sugerida)
+Stack sugerida: Next.js + TypeScript + Tailwind + TanStack Query, Supabase Auth.
+IA (navegação)
+* Desktop: sidebar fixa
+    * Painel
+    * Uploads
+    * Confirmar (badge)
+    * Regras
+    * Configurações
+* Mobile: pode ser responsivo simples no v1 (sem bottom nav completo ainda).
+Componentes-chave
+* Upload card (drag/drop)
+* Upload history table
+* Confirm queue table (bulk select + inline edit)
+* Dashboard cards + chart + drilldown table
+* Rules editor (tabela simples + modal “Affected N”)
