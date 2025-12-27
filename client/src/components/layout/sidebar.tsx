@@ -7,23 +7,54 @@ import {
   Settings, 
   LogOut,
   Menu,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight,
+  BookOpen,
+  Sparkles,
+  TrendingUp,
+  Calendar
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { transactionsApi } from "@/lib/api";
+import { useMonth } from "@/lib/month-context";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const NAV_ITEMS = [
-  { label: "Painel", icon: LayoutDashboard, href: "/dashboard" },
-  { label: "Uploads", icon: Upload, href: "/uploads" },
-  { label: "Confirmar", icon: CheckCircle2, href: "/confirm", showBadge: true },
-  { label: "Regras", icon: Settings, href: "/rules" },
+  { 
+    label: "Painel", 
+    icon: LayoutDashboard, 
+    href: "/dashboard",
+    description: "Visao geral do mes"
+  },
+  { 
+    label: "Uploads", 
+    icon: Upload, 
+    href: "/uploads",
+    description: "Importar CSV"
+  },
+  { 
+    label: "Confirmar", 
+    icon: CheckCircle2, 
+    href: "/confirm", 
+    showBadge: true,
+    description: "Transacoes pendentes"
+  },
+  { 
+    label: "Regras", 
+    icon: BookOpen, 
+    href: "/rules",
+    description: "Categorizacao automatica"
+  },
 ];
 
 export function Sidebar() {
   const [location] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { month, setMonth, formatMonth } = useMonth();
 
   const { data: confirmQueue = [] } = useQuery({
     queryKey: ["confirm-queue"],
@@ -31,70 +62,253 @@ export function Sidebar() {
   });
 
   const pendingCount = confirmQueue.length;
+  const highConfidenceCount = confirmQueue.filter((t: any) => (t.confidence || 0) >= 80).length;
+
+  const prevMonth = () => {
+    const [year, m] = month.split("-").map(Number);
+    const newDate = new Date(year, m - 2, 1);
+    setMonth(`${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, "0")}`);
+  };
+
+  const nextMonth = () => {
+    const [year, m] = month.split("-").map(Number);
+    const newDate = new Date(year, m, 1);
+    setMonth(`${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, "0")}`);
+  };
 
   return (
     <>
-      {/* Mobile Toggle */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b z-50 flex items-center px-4 justify-between">
-        <span className="font-semibold text-lg tracking-tight">RitualFin</span>
-        <Button variant="ghost" size="icon" onClick={() => setIsOpen(!isOpen)}>
-          {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </Button>
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-white/95 backdrop-blur-sm border-b z-50 flex items-center px-4 justify-between">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setIsOpen(!isOpen)}>
+            {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-gradient-to-br from-primary to-emerald-600 rounded-lg flex items-center justify-center">
+              <Sparkles className="h-4 w-4 text-white" />
+            </div>
+            <span className="font-semibold text-lg tracking-tight">RitualFin</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 bg-muted/50 rounded-lg px-2 py-1">
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={prevMonth}>
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </Button>
+          <span className="text-xs font-medium min-w-[80px] text-center">{formatMonth(month)}</span>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={nextMonth}>
+            <ChevronRight className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       </div>
 
-      {/* Sidebar Overlay for Mobile */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}
 
-      {/* Sidebar Content */}
       <aside className={cn(
-        "fixed lg:static inset-y-0 left-0 z-50 w-64 bg-sidebar border-r border-sidebar-border transition-transform duration-200 transform lg:transform-none flex flex-col",
-        isOpen ? "translate-x-0" : "-translate-x-full"
+        "fixed lg:sticky lg:top-0 inset-y-0 left-0 z-50 bg-slate-900 transition-all duration-300 flex flex-col h-screen",
+        isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+        isCollapsed ? "w-[72px]" : "w-64"
       )}>
-        <div className="h-16 flex items-center px-6 border-b border-sidebar-border/50">
-          <span className="font-bold text-xl tracking-tight text-sidebar-foreground">RitualFin</span>
+        <div className={cn(
+          "h-16 flex items-center border-b border-white/10",
+          isCollapsed ? "px-4 justify-center" : "px-5"
+        )}>
+          <Link href="/dashboard" className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-gradient-to-br from-primary to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
+              <Sparkles className="h-4 w-4 text-white" />
+            </div>
+            {!isCollapsed && (
+              <span className="font-bold text-lg text-white tracking-tight">RitualFin</span>
+            )}
+          </Link>
         </div>
 
-        <nav className="flex-1 py-6 px-3 space-y-1">
+        {!isCollapsed && (
+          <div className="px-4 py-4 border-b border-white/10">
+            <div className="bg-white/5 rounded-xl p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] uppercase tracking-wider text-white/50 font-medium">Periodo</span>
+                <Calendar className="h-3.5 w-3.5 text-primary" />
+              </div>
+              <div className="flex items-center gap-1">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-7 w-7 text-white/70 hover:text-white hover:bg-white/10" 
+                  onClick={prevMonth}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="flex-1 text-center text-sm font-semibold text-white">
+                  {formatMonth(month)}
+                </span>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-7 w-7 text-white/70 hover:text-white hover:bg-white/10" 
+                  onClick={nextMonth}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
           {NAV_ITEMS.map((item) => {
             const isActive = location === item.href;
             const badge = item.showBadge && pendingCount > 0 ? pendingCount : null;
-            return (
+            
+            const NavLink = (
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={() => setIsOpen(false)}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors group relative",
+                  "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group relative",
                   isActive 
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground" 
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                    ? "bg-primary text-white shadow-lg shadow-primary/30" 
+                    : "text-white/70 hover:bg-white/10 hover:text-white"
                 )}
+                data-testid={`nav-${item.label.toLowerCase()}`}
               >
-                <item.icon className={cn("h-4 w-4", isActive ? "text-primary" : "text-muted-foreground")} />
-                {item.label}
-                {badge && (
-                  <span className="ml-auto bg-amber-100 text-amber-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                    {badge}
+                <item.icon className={cn(
+                  "h-5 w-5 transition-colors",
+                  isActive ? "text-white" : "text-white/60 group-hover:text-white"
+                )} />
+                {!isCollapsed && (
+                  <>
+                    <span className="flex-1">{item.label}</span>
+                    {badge && (
+                      <span className={cn(
+                        "text-[10px] font-bold px-2 py-0.5 rounded-full",
+                        isActive 
+                          ? "bg-white/20 text-white" 
+                          : "bg-amber-500/20 text-amber-400"
+                      )}>
+                        {badge > 99 ? "99+" : badge}
+                      </span>
+                    )}
+                  </>
+                )}
+                {isCollapsed && badge && (
+                  <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                    {badge > 9 ? "9+" : badge}
                   </span>
                 )}
               </Link>
             );
+
+            if (isCollapsed) {
+              return (
+                <Tooltip key={item.href} delayDuration={0}>
+                  <TooltipTrigger asChild>{NavLink}</TooltipTrigger>
+                  <TooltipContent side="right" className="font-medium">
+                    {item.label}
+                    {badge && <span className="ml-2 text-amber-500">({badge})</span>}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            }
+
+            return NavLink;
           })}
         </nav>
 
-        <div className="p-4 border-t border-sidebar-border/50">
-          <Link
-            href="/login"
-            className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-destructive/80 hover:bg-destructive/10 hover:text-destructive transition-colors"
-          >
-            <LogOut className="h-4 w-4" />
-            Sair
-          </Link>
+        {!isCollapsed && pendingCount > 0 && (
+          <div className="mx-3 mb-4 p-3 bg-gradient-to-r from-amber-500/20 to-orange-500/20 rounded-xl border border-amber-500/30">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                <TrendingUp className="h-4 w-4 text-amber-400" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-amber-400">Lazy Mode</p>
+                <p className="text-[11px] text-white/60 mt-0.5">
+                  {highConfidenceCount > 0 
+                    ? `${highConfidenceCount} com alta confianca`
+                    : `${pendingCount} aguardando revisao`
+                  }
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="p-3 border-t border-white/10 space-y-1">
+          {isCollapsed ? (
+            <>
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <Link
+                    href="/settings"
+                    className={cn(
+                      "flex items-center justify-center p-2.5 rounded-xl text-sm font-medium transition-colors",
+                      location === "/settings"
+                        ? "bg-white/10 text-white"
+                        : "text-white/60 hover:bg-white/5 hover:text-white"
+                    )}
+                  >
+                    <Settings className="h-5 w-5" />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right">Configuracoes</TooltipContent>
+              </Tooltip>
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <Link
+                    href="/login"
+                    className="flex items-center justify-center p-2.5 rounded-xl text-sm font-medium text-rose-400/80 hover:bg-rose-500/10 hover:text-rose-400 transition-colors"
+                  >
+                    <LogOut className="h-5 w-5" />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right">Sair</TooltipContent>
+              </Tooltip>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/settings"
+                onClick={() => setIsOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
+                  location === "/settings"
+                    ? "bg-white/10 text-white"
+                    : "text-white/60 hover:bg-white/5 hover:text-white"
+                )}
+                data-testid="nav-settings"
+              >
+                <Settings className="h-5 w-5" />
+                Configuracoes
+              </Link>
+              <Link
+                href="/login"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-rose-400/80 hover:bg-rose-500/10 hover:text-rose-400 transition-colors"
+                data-testid="nav-logout"
+              >
+                <LogOut className="h-5 w-5" />
+                Sair
+              </Link>
+            </>
+          )}
         </div>
+
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="hidden lg:flex absolute -right-3 top-20 w-6 h-6 bg-slate-800 border border-white/10 rounded-full items-center justify-center text-white/60 hover:text-white hover:bg-slate-700 transition-colors"
+        >
+          {isCollapsed ? (
+            <ChevronRight className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronLeft className="h-3.5 w-3.5" />
+          )}
+        </button>
       </aside>
     </>
   );
