@@ -8,6 +8,7 @@ import LoginPage from "@/pages/login";
 import DashboardPage from "@/pages/dashboard";
 import UploadsPage from "@/pages/uploads";
 import ConfirmPage from "@/pages/confirm";
+import RulesPage from "@/pages/rules";
 
 function Router() {
   return (
@@ -17,6 +18,7 @@ function Router() {
       <Route path="/dashboard" component={DashboardPage} />
       <Route path="/uploads" component={UploadsPage} />
       <Route path="/confirm" component={ConfirmPage} />
+      <Route path="/rules" component={RulesPage} />
       <Route component={NotFound} />
     </Switch>
   );
