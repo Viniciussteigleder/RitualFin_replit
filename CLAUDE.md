@@ -1,0 +1,162 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+RitualFin is a personal finance management application built for Portuguese (Brazil) users with EUR currency. The app follows a "Lazy Mode" philosophy - automating as much categorization and processing as possible to minimize manual work.
+
+## Development Commands
+
+### Running the Application
+```bash
+npm run dev              # Start dev server (Express + Vite HMR on port 5000)
+npm run dev:client       # Client-only dev mode (if needed)
+npm run build            # Build for production (client + server bundle)
+npm start                # Run production build
+npm run check            # TypeScript type checking
+```
+
+### Database
+```bash
+npm run db:push          # Push schema changes to PostgreSQL (no migrations)
+```
+
+**Important**: This project uses `drizzle-kit push` for schema updates, NOT traditional migrations. The schema is in `shared/schema.ts`, and changes are applied directly to the database.
+
+## Architecture
+
+### Monorepo Structure
+- **`client/`** - React frontend (Vite)
+- **`server/`** - Express backend (TypeScript ESM)
+- **`shared/`** - Shared types and database schema (Drizzle ORM)
+- **`script/`** - Build scripts
+
+### TypeScript Path Aliases
+- `@/*` → `client/src/*`
+- `@shared/*` → `shared/*`
+
+### Key Technologies
+- **Frontend**: React 19, Wouter (routing), TanStack Query, shadcn/ui, Tailwind CSS v4
+- **Backend**: Express, Passport (local auth), OpenAI API
+- **Database**: PostgreSQL via Drizzle ORM
+- **Build**: Vite (client), esbuild (server)
+
+## Core Data Model
+
+### Schema Location
+All database tables are defined in `shared/schema.ts` using Drizzle ORM with PostgreSQL enums.
+
+### Transaction Categorization System
+Transactions use a hierarchical categorization model:
+- `type`: "Despesa" (Expense) | "Receita" (Income)
+- `fix_var`: "Fixo" (Fixed) | "Variável" (Variable)
+- `category_1`: Primary category (see `category1Enum` in schema)
+- `category_2`: Optional subcategory (free text)
+
+Special transaction flags:
+- `internal_transfer`: Marks internal account movements (excluded from budgets)
+- `exclude_from_budget`: Manual per-transaction budget exclusion
+- `needs_review`: True when transaction requires manual confirmation
+- `manual_override`: User has manually edited categorization
+
+### Key Tables
+- **`transactions`** - Canonical ledger with categorization fields
+- **`rules`** - Keyword-based auto-categorization rules (AI-assisted)
+- **`uploads`** - CSV import history with status tracking
+- **`budgets`** - Monthly budget targets per category
+- **`calendar_events`** - Recurring payment tracking
+- **`goals`** - Monthly financial targets with category breakdowns
+
+## CSV Import Flow
+
+1. User uploads Miles & More bank CSV via `/uploads` page
+2. Backend parses CSV using `server/csv-parser.ts`
+3. Each transaction is processed through `server/rules-engine.ts`:
+   - Keyword matching against user rules
+   - AI-powered keyword suggestion (OpenAI API)
+   - Bulk categorization for multiple similar transactions
+4. Transactions with low confidence → `needs_review = true`
+5. User reviews and confirms via `/confirm` page
+6. Confirmed transactions update existing rules or create new ones
+
+### CSV Parser
+- Expects Miles & More format (Portuguese headers)
+- Required columns: "Authorised on", "Amount", "Currency", "Description", "Payment type", "Status"
+- Generates unique `key` field for duplicate detection (user_id + date + desc + amount)
+
+### Rules Engine
+- Matches keywords using normalized text (uppercase, no accents)
+- Priority-based rule application (higher priority wins)
+- "Strict" rules auto-categorize without review
+- Confidence levels (0-100) determine if review is needed
+
+## API Structure
+
+All backend routes are in `server/routes.ts`:
+
+**Authentication** (auto-creates demo user if missing):
+- `POST /api/auth/login` - Login/create user
+- `GET /api/auth/me` - Get current user
+
+**Core Features**:
+- `GET /api/uploads` - List upload history
+- `POST /api/uploads/process` - Process CSV file
+- `GET /api/transactions` - List transactions (with filters)
+- `GET /api/transactions/confirm-queue` - Get pending review items
+- `POST /api/transactions/bulk-confirm` - Batch confirmation
+- `GET /api/rules` - List categorization rules
+- `POST /api/rules` - Create new rule
+- `GET /api/dashboard` - Monthly spending overview with projections
+
+**AI Features**:
+- `POST /api/ai/suggest-keyword` - Get AI keyword suggestion for transaction
+- `POST /api/ai/bulk-categorize` - Categorize multiple similar transactions at once
+
+## Frontend Pages
+
+Located in `client/src/pages/`:
+- **`dashboard.tsx`** - Monthly spending overview with budget projections
+- **`uploads.tsx`** - CSV file upload interface
+- **`confirm.tsx`** - Transaction confirmation queue (needs_review items)
+- **`rules.tsx`** - Manage categorization rules
+- **`calendar.tsx`** - Recurring payment tracking
+- **`goals.tsx`** - Monthly budget planning
+- **`ai-keywords.tsx`** - Bulk AI-powered keyword analysis
+
+## Development Notes
+
+### Environment Variables
+- `DATABASE_URL` - PostgreSQL connection string (required)
+- `OPENAI_API_KEY` - For AI categorization features
+- `NODE_ENV` - Set automatically by scripts
+
+### Authentication
+The app currently uses a simplified auth system that auto-creates a "demo" user. All data is scoped to `userId` in database queries.
+
+### Session Storage
+- Development: In-memory store (memorystore)
+- Production: Should use connect-pg-simple with PostgreSQL
+
+### Build Process
+`script/build.ts` performs a two-stage build:
+1. Vite builds client → `dist/`
+2. esbuild bundles server → `dist/index.cjs` (with select deps bundled to reduce cold start time)
+
+### AI Integration
+The app uses OpenAI API for:
+- **Keyword suggestion**: Analyzing transaction descriptions to suggest categorization keywords
+- **Bulk categorization**: Processing multiple similar transactions at once
+- Users must provide their own OpenAI API key in settings
+
+### Currency & Locale
+- Default currency: EUR
+- Locale: Portuguese (Brazil) - pt-BR
+- Date format: DD.MM.YYYY (Miles & More format)
+
+## Testing Approach
+
+When adding tests, note:
+- No test framework is currently configured
+- Manual testing via `/confirm` queue is primary validation
+- Database operations use Drizzle ORM typed queries
