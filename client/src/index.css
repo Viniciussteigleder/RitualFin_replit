@@ -51,14 +51,13 @@
   --color-sidebar-border: hsl(var(--sidebar-border));
   --color-sidebar-ring: hsl(var(--sidebar-ring));
 
-  --font-sans: "Inter", sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
 :root {
-  /* Minimalist, clean palette - Slate based */
-  --background: 210 40% 98%; /* Very light slate gray/blue tint */
-  --foreground: 222 47% 11%; /* Deep slate */
+  --background: 140 20% 97%;
+  --foreground: 222 47% 11%;
 
   --card: 0 0% 100%;
   --card-foreground: 222 47% 11%;
@@ -66,86 +65,86 @@
   --popover: 0 0% 100%;
   --popover-foreground: 222 47% 11%;
 
-  --primary: 222 47% 11%; /* Dark Slate - Serious */
-  --primary-foreground: 210 40% 98%;
+  --primary: 142 71% 45%;
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 210 40% 96.1%;
+  --secondary: 140 20% 96%;
   --secondary-foreground: 222 47% 11%;
 
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
+  --muted: 140 10% 96%;
+  --muted-foreground: 215 16% 47%;
 
-  --accent: 210 40% 96.1%;
+  --accent: 140 20% 96%;
   --accent-foreground: 222 47% 11%;
 
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
 
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 222 47% 11%;
+  --border: 220 13% 91%;
+  --input: 220 13% 91%;
+  --ring: 142 71% 45%;
 
   --radius: 0.5rem;
 
-  --chart-1: 221.2 83.2% 53.3%;
-  --chart-2: 212 95% 68%;
-  --chart-3: 216 92% 60%;
-  --chart-4: 210 98% 78%;
-  --chart-5: 212 97% 87%;
+  --chart-1: 142 71% 45%;
+  --chart-2: 142 60% 55%;
+  --chart-3: 142 50% 65%;
+  --chart-4: 142 40% 75%;
+  --chart-5: 142 30% 85%;
 
   --sidebar: 0 0% 100%;
-  --sidebar-foreground: 240 5.3% 26.1%;
-  --sidebar-primary: 240 5.9% 10%;
-  --sidebar-primary-foreground: 0 0% 98%;
-  --sidebar-accent: 240 4.8% 95.9%;
-  --sidebar-accent-foreground: 240 5.9% 10%;
+  --sidebar-foreground: 222 47% 11%;
+  --sidebar-primary: 142 71% 45%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 140 20% 96%;
+  --sidebar-accent-foreground: 222 47% 11%;
   --sidebar-border: 220 13% 91%;
-  --sidebar-ring: 217.2 91.2% 59.8%;
+  --sidebar-ring: 142 71% 45%;
 }
 
 .dark {
-  --background: 222.2 84% 4.9%;
+  --background: 222 84% 5%;
   --foreground: 210 40% 98%;
 
-  --card: 222.2 84% 4.9%;
+  --card: 222 84% 5%;
   --card-foreground: 210 40% 98%;
 
-  --popover: 222.2 84% 4.9%;
+  --popover: 222 84% 5%;
   --popover-foreground: 210 40% 98%;
 
-  --primary: 210 40% 98%;
-  --primary-foreground: 222.2 47.4% 11.2%;
+  --primary: 142 71% 45%;
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 217.2 32.6% 17.5%;
+  --secondary: 217 33% 18%;
   --secondary-foreground: 210 40% 98%;
 
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
+  --muted: 217 33% 18%;
+  --muted-foreground: 215 20% 65%;
 
-  --accent: 217.2 32.6% 17.5%;
+  --accent: 217 33% 18%;
   --accent-foreground: 210 40% 98%;
 
-  --destructive: 0 62.8% 30.6%;
+  --destructive: 0 63% 31%;
   --destructive-foreground: 210 40% 98%;
 
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 212.7 26.8% 83.9%;
+  --border: 217 33% 18%;
+  --input: 217 33% 18%;
+  --ring: 142 71% 45%;
   
-  --chart-1: 220 70% 50%;
-  --chart-2: 160 60% 45%;
-  --chart-3: 30 80% 55%;
-  --chart-4: 280 65% 60%;
-  --chart-5: 340 75% 55%;
+  --chart-1: 142 71% 45%;
+  --chart-2: 142 60% 55%;
+  --chart-3: 142 50% 65%;
+  --chart-4: 142 40% 75%;
+  --chart-5: 142 30% 85%;
 
-  --sidebar: 240 5.9% 10%;
-  --sidebar-foreground: 240 4.8% 95.9%;
-  --sidebar-primary: 224.3 76.3% 48%;
+  --sidebar: 222 84% 5%;
+  --sidebar-foreground: 210 40% 98%;
+  --sidebar-primary: 142 71% 45%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 240 3.7% 15.9%;
-  --sidebar-accent-foreground: 240 4.8% 95.9%;
-  --sidebar-border: 240 3.7% 15.9%;
-  --sidebar-ring: 217.2 91.2% 59.8%;
+  --sidebar-accent: 217 33% 18%;
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-border: 217 33% 18%;
+  --sidebar-ring: 142 71% 45%;
 }
 
 @layer base {
@@ -156,7 +155,6 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
   
-  /* Custom Scrollbar for "Lazy Mode" clean feel */
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
