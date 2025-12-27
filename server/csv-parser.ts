@@ -49,7 +49,7 @@ function normalizeText(text: string): string {
   return text
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // Remove accents
+    .replace(/[\u0300-\u036f]/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -57,15 +57,13 @@ function normalizeText(text: string): string {
 function parseDate(dateStr: string): Date | null {
   if (!dateStr || dateStr.trim() === "") return null;
   
-  // Format: dd.MM.yy or dd.MM.yyyy
   const parts = dateStr.trim().split(".");
   if (parts.length !== 3) return null;
   
   let day = parseInt(parts[0], 10);
-  let month = parseInt(parts[1], 10) - 1; // JS months are 0-indexed
+  let month = parseInt(parts[1], 10) - 1;
   let year = parseInt(parts[2], 10);
   
-  // Handle 2-digit years
   if (year < 100) {
     year += year < 50 ? 2000 : 1900;
   }
@@ -78,8 +76,7 @@ function parseDate(dateStr: string): Date | null {
 function parseAmount(amountStr: string): number {
   if (!amountStr || amountStr.trim() === "") return 0;
   
-  // Handle European format with comma as decimal separator
-  const normalized = amountStr.trim().replace(",", ".");
+  const normalized = amountStr.trim().replace(/\./g, "").replace(",", ".");
   const amount = parseFloat(normalized);
   return isNaN(amount) ? 0 : amount;
 }
@@ -98,8 +95,28 @@ function buildDescRaw(row: MilesAndMoreRow): string {
   return desc;
 }
 
+function findHeaderLine(lines: string[]): { headerIndex: number; headers: string[]; cardInfo: string } {
+  let cardInfo = "";
+  
+  for (let i = 0; i < Math.min(5, lines.length); i++) {
+    const line = lines[i];
+    const cols = line.split(";").map(c => c.trim());
+    
+    if (cols.some(c => c.toLowerCase() === "authorised on")) {
+      return { headerIndex: i, headers: cols, cardInfo };
+    }
+    
+    if (i === 0 && (line.toLowerCase().includes("miles") || line.toLowerCase().includes("credit card"))) {
+      cardInfo = line;
+    }
+  }
+  
+  return { headerIndex: -1, headers: [], cardInfo };
+}
+
 export function parseCSV(csvContent: string): ParseResult {
-  const lines = csvContent.split(/\r?\n/).filter(line => line.trim() !== "");
+  const allLines = csvContent.split(/\r?\n/);
+  const lines = allLines.filter(line => line.trim() !== "");
   
   if (lines.length === 0) {
     return {
@@ -112,11 +129,22 @@ export function parseCSV(csvContent: string): ParseResult {
     };
   }
   
-  // Parse header - semicolon separated
-  const headerLine = lines[0];
-  const headers = headerLine.split(";").map(h => h.trim());
+  const { headerIndex, headers, cardInfo } = findHeaderLine(lines);
   
-  // Validate required columns
+  if (headerIndex === -1) {
+    return {
+      success: false,
+      transactions: [],
+      errors: [
+        `Colunas obrigatorias nao encontradas: ${REQUIRED_COLUMNS.join(", ")}`,
+        `Formato esperado: CSV do Miles & More com cabecalho de colunas`
+      ],
+      rowsTotal: lines.length,
+      rowsImported: 0,
+      monthAffected: ""
+    };
+  }
+  
   const missingColumns = REQUIRED_COLUMNS.filter(col => 
     !headers.some(h => h.toLowerCase() === col.toLowerCase())
   );
@@ -126,16 +154,15 @@ export function parseCSV(csvContent: string): ParseResult {
       success: false,
       transactions: [],
       errors: [
-        `Colunas obrigatórias faltando: ${missingColumns.join(", ")}`,
-        `Header esperado: ${REQUIRED_COLUMNS.join("; ")}`
+        `Colunas obrigatorias faltando: ${missingColumns.join(", ")}`,
+        `Header encontrado: ${headers.join("; ")}`
       ],
-      rowsTotal: lines.length - 1,
+      rowsTotal: lines.length - headerIndex - 1,
       rowsImported: 0,
       monthAffected: ""
     };
   }
   
-  // Map column indices
   const colIndex: Record<string, number> = {};
   headers.forEach((h, i) => {
     colIndex[h.toLowerCase()] = i;
@@ -145,7 +172,11 @@ export function parseCSV(csvContent: string): ParseResult {
   const errors: string[] = [];
   const months = new Set<string>();
   
-  for (let i = 1; i < lines.length; i++) {
+  const accountSource = cardInfo 
+    ? cardInfo.split(";")[0].trim() || "M&M"
+    : "M&M";
+  
+  for (let i = headerIndex + 1; i < lines.length; i++) {
     const line = lines[i];
     if (line.trim() === "") continue;
     
@@ -160,12 +191,18 @@ export function parseCSV(csvContent: string): ParseResult {
       const paymentType = cols[colIndex["payment type"]] || "";
       const status = cols[colIndex["status"]] || "";
       
-      // Optional columns
-      const foreignAmountStr = cols[colIndex["amount in foreign currency"]] || "";
-      const foreignCurrency = cols[colIndex["currency"]]?.[1] || cols[headers.findIndex(h => 
-        h.toLowerCase().includes("currency") && headers.indexOf(h) !== colIndex["currency"]
-      )] || "";
-      const exchangeRateStr = cols[colIndex["exchange rate"]] || "";
+      const foreignAmountIdx = headers.findIndex(h => h.toLowerCase() === "amount in foreign currency");
+      const foreignAmountStr = foreignAmountIdx >= 0 ? cols[foreignAmountIdx] || "" : "";
+      
+      const currencyIndices = headers.reduce((acc: number[], h, idx) => {
+        if (h.toLowerCase() === "currency") acc.push(idx);
+        return acc;
+      }, []);
+      const foreignCurrencyIdx = currencyIndices.length > 1 ? currencyIndices[1] : -1;
+      const foreignCurrency = foreignCurrencyIdx >= 0 ? cols[foreignCurrencyIdx] || "" : "";
+      
+      const exchangeRateIdx = headers.findIndex(h => h.toLowerCase() === "exchange rate");
+      const exchangeRateStr = exchangeRateIdx >= 0 ? cols[exchangeRateIdx] || "" : "";
       
       const row: MilesAndMoreRow = {
         authorisedOn,
@@ -180,16 +217,15 @@ export function parseCSV(csvContent: string): ParseResult {
         exchangeRate: exchangeRateStr ? parseAmount(exchangeRateStr) : undefined
       };
       
-      // Use Authorised on as payment date, fallback to Processed on
       const paymentDate = parseDate(row.authorisedOn) || parseDate(row.processedOn);
       
       if (!paymentDate) {
-        errors.push(`Linha ${i + 1}: Data inválida`);
+        errors.push(`Linha ${i + 1}: Data invalida`);
         continue;
       }
       
       if (!row.description) {
-        errors.push(`Linha ${i + 1}: Descrição vazia`);
+        errors.push(`Linha ${i + 1}: Descricao vazia`);
         continue;
       }
       
@@ -211,7 +247,7 @@ export function parseCSV(csvContent: string): ParseResult {
         foreignCurrency: row.foreignCurrency,
         exchangeRate: row.exchangeRate,
         key,
-        accountSource: "M&M"
+        accountSource
       });
     } catch (err) {
       errors.push(`Linha ${i + 1}: Erro ao processar`);
@@ -225,7 +261,7 @@ export function parseCSV(csvContent: string): ParseResult {
     success: transactions.length > 0,
     transactions,
     errors,
-    rowsTotal: lines.length - 1,
+    rowsTotal: lines.length - headerIndex - 1,
     rowsImported: transactions.length,
     monthAffected
   };
