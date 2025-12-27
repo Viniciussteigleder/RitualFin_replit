@@ -470,7 +470,7 @@ function parseAmex(lines: string[]): ParseResult {
       if (row.weitereDetails && row.weitereDetails.includes("Foreign Spend Amount")) {
         const foreignMatch = row.weitereDetails.match(/Foreign Spend Amount:\s*([\d.,]+)\s*(\w+)/i);
         const rateMatch = row.weitereDetails.match(/Currency Exchange Rate:\s*([\d.,]+)/i);
-        
+
         if (foreignMatch) {
           foreignAmount = parseAmountGerman(foreignMatch[1]);
           foreignCurrency = foreignMatch[2];
@@ -479,7 +479,13 @@ function parseAmex(lines: string[]): ParseResult {
           exchangeRate = parseAmountGerman(rateMatch[1]);
         }
       }
-      
+
+      // Build accountSource from cardholder name + account number
+      const firstName = row.karteninhaber.split(" ")[0];
+      const capitalizedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+      const accountLast4 = row.konto.replace(/[^0-9]/g, "").slice(-4);
+      const accountSource = `Amex - ${capitalizedFirstName} (${accountLast4})`;
+
       transactions.push({
         paymentDate,
         descRaw,
@@ -490,7 +496,7 @@ function parseAmex(lines: string[]): ParseResult {
         foreignCurrency,
         exchangeRate,
         key,
-        accountSource: "American Express"
+        accountSource
       });
     } catch (err) {
       errors.push(`Linha ${i + 1}: Erro ao processar`);
