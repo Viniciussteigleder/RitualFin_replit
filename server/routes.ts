@@ -474,5 +474,77 @@ export async function registerRoutes(
     }
   });
 
+  // ===== CALENDAR EVENTS =====
+  app.get("/api/calendar-events", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.json([]);
+      
+      const events = await storage.getCalendarEvents(user.id);
+      res.json(events);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/calendar-events/:id", async (req: Request, res: Response) => {
+    try {
+      const event = await storage.getCalendarEvent(req.params.id);
+      if (!event) {
+        return res.status(404).json({ error: "Evento nao encontrado" });
+      }
+      res.json(event);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/calendar-events", async (req: Request, res: Response) => {
+    try {
+      let user = await storage.getUserByUsername("demo");
+      if (!user) {
+        user = await storage.createUser({ username: "demo", password: "demo" });
+      }
+      
+      const event = await storage.createCalendarEvent({
+        ...req.body,
+        userId: user.id
+      });
+      res.json(event);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/calendar-events/:id", async (req: Request, res: Response) => {
+    try {
+      const updated = await storage.updateCalendarEvent(req.params.id, req.body);
+      if (!updated) {
+        return res.status(404).json({ error: "Evento nao encontrado" });
+      }
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/calendar-events/:id", async (req: Request, res: Response) => {
+    try {
+      await storage.deleteCalendarEvent(req.params.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/calendar-events/:id/occurrences", async (req: Request, res: Response) => {
+    try {
+      const occurrences = await storage.getEventOccurrences(req.params.id);
+      res.json(occurrences);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   return httpServer;
 }

@@ -127,3 +127,103 @@ export const budgetsRelations = relations(budgets, ({ one }) => ({
 export const insertBudgetSchema = createInsertSchema(budgets).omit({ id: true });
 export type InsertBudget = z.infer<typeof insertBudgetSchema>;
 export type Budget = typeof budgets.$inferSelect;
+
+// Recurrence enum for calendar events
+export const recurrenceEnum = pgEnum("recurrence", ["none", "weekly", "biweekly", "monthly", "yearly"]);
+
+// Calendar Events table
+export const calendarEvents = pgTable("calendar_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(),
+  amount: real("amount").notNull(),
+  category1: category1Enum("category_1").notNull(),
+  category2: text("category_2"),
+  recurrence: recurrenceEnum("recurrence").notNull().default("none"),
+  nextDueDate: timestamp("next_due_date").notNull(),
+  paymentMethod: text("payment_method"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const calendarEventsRelations = relations(calendarEvents, ({ one }) => ({
+  user: one(users, { fields: [calendarEvents.userId], references: [users.id] }),
+}));
+
+export const insertCalendarEventSchema = createInsertSchema(calendarEvents).omit({ id: true, createdAt: true });
+export type InsertCalendarEvent = z.infer<typeof insertCalendarEventSchema>;
+export type CalendarEvent = typeof calendarEvents.$inferSelect;
+
+// Event Occurrences table (history of payments for recurring events)
+export const eventOccurrences = pgTable("event_occurrences", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id").notNull().references(() => calendarEvents.id),
+  date: timestamp("date").notNull(),
+  amount: real("amount").notNull(),
+  status: text("status").notNull().default("pending"),
+  transactionId: varchar("transaction_id").references(() => transactions.id),
+});
+
+export const eventOccurrencesRelations = relations(eventOccurrences, ({ one }) => ({
+  event: one(calendarEvents, { fields: [eventOccurrences.eventId], references: [calendarEvents.id] }),
+  transaction: one(transactions, { fields: [eventOccurrences.transactionId], references: [transactions.id] }),
+}));
+
+export const insertEventOccurrenceSchema = createInsertSchema(eventOccurrences).omit({ id: true });
+export type InsertEventOccurrence = z.infer<typeof insertEventOccurrenceSchema>;
+export type EventOccurrence = typeof eventOccurrences.$inferSelect;
+
+// Goals table (financial targets)
+export const goals = pgTable("goals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  month: text("month").notNull(),
+  estimatedIncome: real("estimated_income").notNull().default(0),
+  totalPlanned: real("total_planned").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const goalsRelations = relations(goals, ({ one }) => ({
+  user: one(users, { fields: [goals.userId], references: [users.id] }),
+}));
+
+export const insertGoalSchema = createInsertSchema(goals).omit({ id: true, createdAt: true });
+export type InsertGoal = z.infer<typeof insertGoalSchema>;
+export type Goal = typeof goals.$inferSelect;
+
+// Category Goals table (budget per category)
+export const categoryGoals = pgTable("category_goals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  goalId: varchar("goal_id").notNull().references(() => goals.id),
+  category1: category1Enum("category_1").notNull(),
+  targetAmount: real("target_amount").notNull(),
+  previousMonthSpent: real("previous_month_spent"),
+  averageSpent: real("average_spent"),
+});
+
+export const categoryGoalsRelations = relations(categoryGoals, ({ one }) => ({
+  goal: one(goals, { fields: [categoryGoals.goalId], references: [goals.id] }),
+}));
+
+export const insertCategoryGoalSchema = createInsertSchema(categoryGoals).omit({ id: true });
+export type InsertCategoryGoal = z.infer<typeof insertCategoryGoalSchema>;
+export type CategoryGoal = typeof categoryGoals.$inferSelect;
+
+// Rituals table (weekly/monthly review tracking)
+export const rituals = pgTable("rituals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  type: text("type").notNull(),
+  period: text("period").notNull(),
+  completedAt: timestamp("completed_at"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const ritualsRelations = relations(rituals, ({ one }) => ({
+  user: one(users, { fields: [rituals.userId], references: [users.id] }),
+}));
+
+export const insertRitualSchema = createInsertSchema(rituals).omit({ id: true, createdAt: true });
+export type InsertRitual = z.infer<typeof insertRitualSchema>;
+export type Ritual = typeof rituals.$inferSelect;

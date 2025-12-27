@@ -13,7 +13,8 @@ import {
   BookOpen,
   Sparkles,
   TrendingUp,
-  Calendar
+  Calendar,
+  Target
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -24,10 +25,22 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 const NAV_ITEMS = [
   { 
-    label: "Painel", 
+    label: "Dashboard", 
     icon: LayoutDashboard, 
     href: "/dashboard",
     description: "Visao geral do mes"
+  },
+  { 
+    label: "Calendario", 
+    icon: Calendar, 
+    href: "/calendar",
+    description: "Eventos e compromissos"
+  },
+  { 
+    label: "Metas", 
+    icon: Target, 
+    href: "/goals",
+    description: "Planejamento financeiro"
   },
   { 
     label: "Uploads", 

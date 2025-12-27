@@ -11,6 +11,10 @@ import UploadsPage from "@/pages/uploads";
 import ConfirmPage from "@/pages/confirm";
 import RulesPage from "@/pages/rules";
 import SettingsPage from "@/pages/settings";
+import CalendarPage from "@/pages/calendar";
+import EventDetailPage from "@/pages/event-detail";
+import GoalsPage from "@/pages/goals";
+import RitualsPage from "@/pages/rituals";
 
 function Router() {
   return (
@@ -18,6 +22,10 @@ function Router() {
       <Route path="/" component={LoginPage} />
       <Route path="/login" component={LoginPage} />
       <Route path="/dashboard" component={DashboardPage} />
+      <Route path="/calendar" component={CalendarPage} />
+      <Route path="/calendar/:id" component={EventDetailPage} />
+      <Route path="/goals" component={GoalsPage} />
+      <Route path="/rituals" component={RitualsPage} />
       <Route path="/uploads" component={UploadsPage} />
       <Route path="/confirm" component={ConfirmPage} />
       <Route path="/rules" component={RulesPage} />
