@@ -3,8 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { 
   ArrowLeft, 
@@ -23,7 +21,12 @@ import {
   TrendingUp,
   AlertTriangle,
   MoreHorizontal,
-  Lightbulb
+  Lightbulb,
+  Package,
+  Film,
+  Plane,
+  Music,
+  Dumbbell
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -37,7 +40,12 @@ const CATEGORY_ICONS: Record<string, any> = {
   "Mercado": ShoppingCart,
   "Transporte": Car,
   "Saúde": Heart,
-  "Lazer": Coffee,
+  "Lazer": Film,
+  "Compras Online": Package,
+  "Viagem": Plane,
+  "Streaming": Music,
+  "Academia": Dumbbell,
+  "Outros": CreditCard
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -46,15 +54,18 @@ const CATEGORY_COLORS: Record<string, string> = {
   "Transporte": "#3b82f6",
   "Lazer": "#a855f7",
   "Saúde": "#ef4444",
+  "Compras Online": "#ec4899",
+  "Viagem": "#06b6d4",
+  "Streaming": "#f43f5e",
   "Receitas": "#10b981",
   "Outros": "#6b7280"
 };
 
 const RECURRENCE_LABELS: Record<string, string> = {
-  "none": "Unico",
+  "none": "Único",
   "weekly": "Toda semana",
   "biweekly": "Quinzenal",
-  "monthly": "Todo mes",
+  "monthly": "Todo mês",
   "yearly": "Todo ano"
 };
 
@@ -89,7 +100,7 @@ export default function EventDetailPage() {
     queryKey: ["calendar-event", id],
     queryFn: async () => {
       const res = await fetch(`/api/calendar-events/${id}`);
-      if (!res.ok) throw new Error("Evento nao encontrado");
+      if (!res.ok) throw new Error("Evento não encontrado");
       return res.json();
     },
     enabled: !!id
@@ -112,7 +123,7 @@ export default function EventDetailPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
-      toast({ title: "Evento excluido com sucesso" });
+      toast({ title: "Evento excluído com sucesso" });
       navigate("/calendar");
     }
   });
@@ -127,7 +138,7 @@ export default function EventDetailPage() {
     );
   }
 
-  const Icon = CATEGORY_ICONS[event.category1] || ShoppingCart;
+  const Icon = CATEGORY_ICONS[event.category1] || CreditCard;
   const color = CATEGORY_COLORS[event.category1] || "#6b7280";
   const dueDate = new Date(event.nextDueDate);
 
@@ -140,7 +151,7 @@ export default function EventDetailPage() {
     <AppLayout>
       <div className="space-y-6">
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <Link href="/calendar" className="hover:text-primary transition-colors">Calendario</Link>
+          <Link href="/calendar" className="hover:text-primary transition-colors">Calendário</Link>
           <span>/</span>
           <Link href="/calendar" className="hover:text-primary transition-colors">Eventos</Link>
           <span>/</span>
@@ -175,7 +186,7 @@ export default function EventDetailPage() {
                     </Badge>
                   </div>
                   <p className="text-muted-foreground text-sm">
-                    Proximo vencimento: <span className="font-semibold text-foreground">{format(dueDate, "dd 'de' MMMM", { locale: ptBR })}</span>
+                    Próximo vencimento: <span className="font-semibold text-foreground">{format(dueDate, "dd 'de' MMMM", { locale: ptBR })}</span>
                   </p>
                   <div className="mt-3">
                     <span className="text-4xl md:text-5xl font-black text-foreground">
@@ -202,10 +213,10 @@ export default function EventDetailPage() {
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Confirmar Exclusao</DialogTitle>
+                      <DialogTitle>Confirmar Exclusão</DialogTitle>
                     </DialogHeader>
                     <p className="text-muted-foreground py-4">
-                      Tem certeza que deseja excluir o evento "{event.name}"? Esta acao nao pode ser desfeita.
+                      Tem certeza que deseja excluir o evento "{event.name}"? Esta ação não pode ser desfeita.
                     </p>
                     <div className="flex gap-3 justify-end">
                       <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>Cancelar</Button>
@@ -222,7 +233,7 @@ export default function EventDetailPage() {
           <div className="lg:col-span-2 space-y-6">
             <Card className="bg-white border-0 shadow-sm">
               <CardHeader className="border-b">
-                <CardTitle className="text-lg font-semibold">Informacoes Detalhadas</CardTitle>
+                <CardTitle className="text-lg font-semibold">Informações Detalhadas</CardTitle>
               </CardHeader>
               <CardContent className="p-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -234,7 +245,7 @@ export default function EventDetailPage() {
                     </div>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Recorrencia</p>
+                    <p className="text-sm text-muted-foreground mb-1">Recorrência</p>
                     <div className="flex items-center gap-2">
                       <Repeat className="h-4 w-4 text-muted-foreground" />
                       <span className="font-semibold">{RECURRENCE_LABELS[event.recurrence]}</span>
@@ -242,7 +253,7 @@ export default function EventDetailPage() {
                   </div>
                   {event.paymentMethod && (
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">Metodo de Pagamento</p>
+                      <p className="text-sm text-muted-foreground mb-1">Método de Pagamento</p>
                       <div className="flex items-center gap-2">
                         <CreditCard className="h-4 w-4 text-muted-foreground" />
                         <span className="font-semibold">{event.paymentMethod}</span>
@@ -255,15 +266,15 @@ export default function EventDetailPage() {
 
             <Card className="bg-white border-0 shadow-sm">
               <CardHeader className="border-b flex flex-row items-center justify-between">
-                <CardTitle className="text-lg font-semibold">Historico de Ocorrencias</CardTitle>
+                <CardTitle className="text-lg font-semibold">Histórico de Ocorrências</CardTitle>
                 <Button variant="ghost" size="sm" className="text-primary">Ver tudo</Button>
               </CardHeader>
               <CardContent className="p-0">
                 {occurrences.length === 0 ? (
                   <div className="p-8 text-center text-muted-foreground">
                     <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>Nenhum historico de pagamentos</p>
-                    <p className="text-xs mt-1">O historico sera criado conforme os pagamentos forem registrados</p>
+                    <p>Nenhum histórico de pagamentos</p>
+                    <p className="text-xs mt-1">O histórico será criado conforme os pagamentos forem registrados</p>
                   </div>
                 ) : (
                   <table className="w-full">
@@ -272,7 +283,7 @@ export default function EventDetailPage() {
                         <th className="px-6 py-3 text-left">Data</th>
                         <th className="px-6 py-3 text-left">Valor</th>
                         <th className="px-6 py-3 text-left">Status</th>
-                        <th className="px-6 py-3 text-right">Acao</th>
+                        <th className="px-6 py-3 text-right">Ação</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
@@ -327,9 +338,9 @@ export default function EventDetailPage() {
               <CardContent>
                 <div className="space-y-3">
                   <div className="p-3 bg-white/50 rounded-lg">
-                    <p className="text-sm font-semibold text-amber-900">Gasto acima da media</p>
+                    <p className="text-sm font-semibold text-amber-900">Gasto acima da média</p>
                     <p className="text-xs text-amber-700 mt-1">
-                      Este evento representou <span className="font-bold">12%</span> dos gastos totais do ultimo mes. Considere revisar.
+                      Este evento representou <span className="font-bold">12%</span> dos gastos totais do último mês. Considere revisar.
                     </p>
                   </div>
                 </div>
@@ -338,11 +349,11 @@ export default function EventDetailPage() {
 
             <Card className="bg-white border-0 shadow-sm">
               <CardHeader>
-                <CardTitle className="text-base font-semibold">Tendencia de Gastos</CardTitle>
+                <CardTitle className="text-base font-semibold">Tendência de Gastos</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-sm text-muted-foreground">Media</span>
+                  <span className="text-sm text-muted-foreground">Média</span>
                   <span className="font-semibold">
                     {avgAmount.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
                   </span>

@@ -28,10 +28,10 @@ const NAV_ITEMS = [
     label: "Dashboard", 
     icon: LayoutDashboard, 
     href: "/dashboard",
-    description: "Visao geral do mes"
+    description: "Visão geral do mês"
   },
   { 
-    label: "Calendario", 
+    label: "Calendário", 
     icon: Calendar, 
     href: "/calendar",
     description: "Eventos e compromissos"
@@ -41,6 +41,12 @@ const NAV_ITEMS = [
     icon: Target, 
     href: "/goals",
     description: "Planejamento financeiro"
+  },
+  { 
+    label: "Rituais", 
+    icon: Sparkles, 
+    href: "/rituals",
+    description: "Revisão semanal e mensal"
   },
   { 
     label: "Uploads", 
@@ -53,13 +59,13 @@ const NAV_ITEMS = [
     icon: CheckCircle2, 
     href: "/confirm", 
     showBadge: true,
-    description: "Transacoes pendentes"
+    description: "Transações pendentes"
   },
   { 
     label: "Regras", 
     icon: BookOpen, 
     href: "/rules",
-    description: "Categorizacao automatica"
+    description: "Categorização automática"
   },
 ];
 
@@ -148,7 +154,7 @@ export function Sidebar() {
           <div className="px-4 py-4 border-b border-white/10">
             <div className="bg-white/5 rounded-xl p-3">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] uppercase tracking-wider text-white/50 font-medium">Periodo</span>
+                <span className="text-[10px] uppercase tracking-wider text-white/50 font-medium">Período</span>
                 <Calendar className="h-3.5 w-3.5 text-primary" />
               </div>
               <div className="flex items-center gap-1">
