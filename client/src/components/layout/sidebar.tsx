@@ -14,7 +14,8 @@ import {
   Sparkles,
   TrendingUp,
   Calendar,
-  Target
+  Target,
+  Brain
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -66,6 +67,12 @@ const NAV_ITEMS = [
     icon: BookOpen, 
     href: "/rules",
     description: "Categorização automática"
+  },
+  { 
+    label: "IA Keywords", 
+    icon: Brain, 
+    href: "/ai-keywords",
+    description: "Análise inteligente em lote"
   },
 ];
 

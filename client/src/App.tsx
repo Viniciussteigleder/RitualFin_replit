@@ -15,6 +15,7 @@ import CalendarPage from "@/pages/calendar";
 import EventDetailPage from "@/pages/event-detail";
 import GoalsPage from "@/pages/goals";
 import RitualsPage from "@/pages/rituals";
+import AIKeywordsPage from "@/pages/ai-keywords";
 
 function Router() {
   return (
@@ -29,6 +30,7 @@ function Router() {
       <Route path="/uploads" component={UploadsPage} />
       <Route path="/confirm" component={ConfirmPage} />
       <Route path="/rules" component={RulesPage} />
+      <Route path="/ai-keywords" component={AIKeywordsPage} />
       <Route path="/settings" component={SettingsPage} />
       <Route component={NotFound} />
     </Switch>
