@@ -11,17 +11,26 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { transactionsApi } from "@/lib/api";
 
 const NAV_ITEMS = [
   { label: "Painel", icon: LayoutDashboard, href: "/dashboard" },
   { label: "Uploads", icon: Upload, href: "/uploads" },
-  { label: "Confirmar", icon: CheckCircle2, href: "/confirm", badge: 3 }, // Mock badge
+  { label: "Confirmar", icon: CheckCircle2, href: "/confirm", showBadge: true },
   { label: "Regras", icon: Settings, href: "/rules" },
 ];
 
 export function Sidebar() {
   const [location] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+
+  const { data: confirmQueue = [] } = useQuery({
+    queryKey: ["confirm-queue"],
+    queryFn: transactionsApi.confirmQueue,
+  });
+
+  const pendingCount = confirmQueue.length;
 
   return (
     <>
@@ -53,33 +62,37 @@ export function Sidebar() {
         <nav className="flex-1 py-6 px-3 space-y-1">
           {NAV_ITEMS.map((item) => {
             const isActive = location === item.href;
+            const badge = item.showBadge && pendingCount > 0 ? pendingCount : null;
             return (
-              <Link key={item.href} href={item.href}>
-                <a className={cn(
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors group relative",
                   isActive 
                     ? "bg-sidebar-accent text-sidebar-accent-foreground" 
                     : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                )}>
-                  <item.icon className={cn("h-4 w-4", isActive ? "text-primary" : "text-muted-foreground")} />
-                  {item.label}
-                  {item.badge && (
-                    <span className="ml-auto bg-amber-100 text-amber-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                      {item.badge}
-                    </span>
-                  )}
-                </a>
+                )}
+              >
+                <item.icon className={cn("h-4 w-4", isActive ? "text-primary" : "text-muted-foreground")} />
+                {item.label}
+                {badge && (
+                  <span className="ml-auto bg-amber-100 text-amber-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                    {badge}
+                  </span>
+                )}
               </Link>
             );
           })}
         </nav>
 
         <div className="p-4 border-t border-sidebar-border/50">
-          <Link href="/login">
-            <a className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-destructive/80 hover:bg-destructive/10 hover:text-destructive transition-colors">
-              <LogOut className="h-4 w-4" />
-              Sair
-            </a>
+          <Link
+            href="/login"
+            className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-destructive/80 hover:bg-destructive/10 hover:text-destructive transition-colors"
+          >
+            <LogOut className="h-4 w-4" />
+            Sair
           </Link>
         </div>
       </aside>
