@@ -34,6 +34,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { eventOccurrencesApi } from "@/lib/api";
 
 const CATEGORY_ICONS: Record<string, any> = {
   "Moradia": Home,
@@ -126,6 +127,15 @@ export default function EventDetailPage() {
       toast({ title: "Evento excluído com sucesso" });
       navigate("/calendar");
     }
+  });
+
+  const updateOccurrence = useMutation({
+    mutationFn: ({ occId, status }: { occId: string; status: string }) =>
+      eventOccurrencesApi.update(occId, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["event-occurrences", id] });
+      toast({ title: "Status atualizado" });
+    },
   });
 
   if (isLoading || !event) {
@@ -314,8 +324,19 @@ export default function EventDetailPage() {
                             </Badge>
                           </td>
                           <td className="px-6 py-4 text-right">
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                updateOccurrence.mutate({
+                                  occId: occurrence.id,
+                                  status: occurrence.status === "paid" ? "pending" : "paid",
+                                })
+                              }
+                              disabled={updateOccurrence.isPending}
+                              className="text-xs"
+                            >
+                              {occurrence.status === "paid" ? "Marcar pendente" : "Marcar pago"}
                             </Button>
                           </td>
                         </tr>

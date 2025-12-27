@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertRuleSchema } from "@shared/schema";
+import { insertRuleSchema, insertGoalSchema, insertCategoryGoalSchema, insertRitualSchema } from "@shared/schema";
 import { z } from "zod";
 import { parseCSV, type ParsedTransaction } from "./csv-parser";
 import { categorizeTransaction, suggestKeyword, AI_SEED_RULES } from "./rules-engine";
@@ -468,13 +468,582 @@ export async function registerRoutes(
       if (!user) {
         user = await storage.createUser({ username: "demo", password: "demo" });
       }
-      
+
       const budget = await storage.createBudget({
         ...req.body,
         userId: user.id
       });
       res.json(budget);
     } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/budgets/:id", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+      const { id } = req.params;
+      const updated = await storage.updateBudget(id, user.id, req.body);
+      if (!updated) {
+        return res.status(404).json({ error: "Budget not found" });
+      }
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/budgets/:id", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+      const { id } = req.params;
+      await storage.deleteBudget(id, user.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===== GOALS =====
+  app.get("/api/goals", async (req: Request, res: Response) => {
+    const startTime = Date.now();
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        console.log(JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: "INFO",
+          endpoint: `${req.method} ${req.path}`,
+          userId: "none",
+          action: "get_goals_no_user",
+          metadata: {}
+        }));
+        return res.json({ goals: [] });
+      }
+
+      const month = req.query.month as string | undefined;
+
+      // Validate month format if provided
+      if (month && !/^\d{4}-\d{2}$/.test(month)) {
+        console.log(JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: "WARN",
+          endpoint: `${req.method} ${req.path}`,
+          userId: user.id,
+          action: "validation_failed",
+          metadata: { error: "Invalid month format", month }
+        }));
+        return res.status(400).json({ error: `Invalid month format. Expected YYYY-MM, got '${month}'` });
+      }
+
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "INFO",
+        endpoint: `${req.method} ${req.path}`,
+        userId: user.id,
+        action: "get_goals",
+        metadata: { month }
+      }));
+
+      const goals = await storage.getGoals(user.id, month);
+
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "INFO",
+        endpoint: `${req.method} ${req.path}`,
+        userId: user.id,
+        action: "get_goals_success",
+        metadata: { goalsCount: goals.length },
+        duration: Date.now() - startTime
+      }));
+
+      res.json({ goals });
+    } catch (error: any) {
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "ERROR",
+        endpoint: `${req.method} ${req.path}`,
+        userId: "unknown",
+        action: "database_error",
+        error: error.message
+      }));
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/goals", async (req: Request, res: Response) => {
+    const startTime = Date.now();
+    try {
+      let user = await storage.getUserByUsername("demo");
+      if (!user) {
+        user = await storage.createUser({ username: "demo", password: "demo" });
+      }
+
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "INFO",
+        endpoint: `${req.method} ${req.path}`,
+        userId: user.id,
+        action: "create_goal",
+        metadata: { month: req.body.month }
+      }));
+
+      // Validate request body
+      const validatedData = insertGoalSchema.parse({
+        ...req.body,
+        userId: user.id
+      });
+
+      // Check for duplicate (goal already exists for this month)
+      const existing = await storage.getGoals(user.id, validatedData.month);
+      if (existing.length > 0) {
+        console.log(JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: "WARN",
+          endpoint: `${req.method} ${req.path}`,
+          userId: user.id,
+          action: "duplicate_goal",
+          metadata: { month: validatedData.month }
+        }));
+        return res.status(409).json({ error: `Goal already exists for month ${validatedData.month}` });
+      }
+
+      const goal = await storage.createGoal(validatedData);
+
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "INFO",
+        endpoint: `${req.method} ${req.path}`,
+        userId: user.id,
+        action: "create_goal_success",
+        metadata: { goalId: goal.id, month: goal.month },
+        duration: Date.now() - startTime
+      }));
+
+      res.status(201).json(goal);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        console.log(JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: "WARN",
+          endpoint: `${req.method} ${req.path}`,
+          userId: "unknown",
+          action: "validation_failed",
+          metadata: { errors: error.errors }
+        }));
+        return res.status(400).json({ error: "Validation failed", details: error.errors });
+      }
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "ERROR",
+        endpoint: `${req.method} ${req.path}`,
+        userId: "unknown",
+        action: "database_error",
+        error: error.message
+      }));
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/goals/:id", async (req: Request, res: Response) => {
+    const startTime = Date.now();
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+      const goalId = req.params.id;
+
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "INFO",
+        endpoint: `${req.method} ${req.path}`,
+        userId: user.id,
+        action: "update_goal",
+        metadata: { goalId }
+      }));
+
+      // Validate partial update
+      const updateSchema = insertGoalSchema.partial().omit({ userId: true });
+      const validatedData = updateSchema.parse(req.body);
+
+      const updated = await storage.updateGoal(goalId, user.id, validatedData);
+
+      if (!updated) {
+        console.log(JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: "WARN",
+          endpoint: `${req.method} ${req.path}`,
+          userId: user.id,
+          action: "goal_not_found",
+          metadata: { goalId }
+        }));
+        return res.status(404).json({ error: "Goal not found" });
+      }
+
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "INFO",
+        endpoint: `${req.method} ${req.path}`,
+        userId: user.id,
+        action: "update_goal_success",
+        metadata: { goalId },
+        duration: Date.now() - startTime
+      }));
+
+      res.json(updated);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation failed", details: error.errors });
+      }
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "ERROR",
+        endpoint: `${req.method} ${req.path}`,
+        userId: "unknown",
+        action: "database_error",
+        error: error.message
+      }));
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/goals/:id", async (req: Request, res: Response) => {
+    const startTime = Date.now();
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+      const goalId = req.params.id;
+
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "INFO",
+        endpoint: `${req.method} ${req.path}`,
+        userId: user.id,
+        action: "delete_goal",
+        metadata: { goalId }
+      }));
+
+      const result = await storage.deleteGoal(goalId, user.id);
+
+      if (!result.success) {
+        console.log(JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: "WARN",
+          endpoint: `${req.method} ${req.path}`,
+          userId: user.id,
+          action: "goal_not_found",
+          metadata: { goalId }
+        }));
+        return res.status(404).json({ error: "Goal not found" });
+      }
+
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "INFO",
+        endpoint: `${req.method} ${req.path}`,
+        userId: user.id,
+        action: "delete_goal_success",
+        metadata: {
+          goalId,
+          deletedCategoryGoalsCount: result.deletedCategoryGoalsCount
+        },
+        duration: Date.now() - startTime
+      }));
+
+      res.json({
+        success: true,
+        deletedGoalId: goalId,
+        deletedCategoryGoalsCount: result.deletedCategoryGoalsCount
+      });
+    } catch (error: any) {
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "ERROR",
+        endpoint: `${req.method} ${req.path}`,
+        userId: "unknown",
+        action: "database_error",
+        error: error.message
+      }));
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/goals/:goalId/categories", async (req: Request, res: Response) => {
+    const startTime = Date.now();
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.json({ categoryGoals: [] });
+
+      const goalId = req.params.goalId;
+
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "INFO",
+        endpoint: `${req.method} ${req.path}`,
+        userId: user.id,
+        action: "get_category_goals",
+        metadata: { goalId }
+      }));
+
+      // Verify goal exists and belongs to user
+      const goal = await storage.getGoalById(goalId, user.id);
+      if (!goal) {
+        console.log(JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: "WARN",
+          endpoint: `${req.method} ${req.path}`,
+          userId: user.id,
+          action: "goal_not_found",
+          metadata: { goalId }
+        }));
+        return res.status(404).json({ error: "Goal not found" });
+      }
+
+      const categoryGoals = await storage.getCategoryGoals(goalId);
+
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "INFO",
+        endpoint: `${req.method} ${req.path}`,
+        userId: user.id,
+        action: "get_category_goals_success",
+        metadata: { goalId, categoryGoalsCount: categoryGoals.length },
+        duration: Date.now() - startTime
+      }));
+
+      res.json({ categoryGoals });
+    } catch (error: any) {
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "ERROR",
+        endpoint: `${req.method} ${req.path}`,
+        userId: "unknown",
+        action: "database_error",
+        error: error.message
+      }));
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/goals/:goalId/categories", async (req: Request, res: Response) => {
+    const startTime = Date.now();
+    try {
+      let user = await storage.getUserByUsername("demo");
+      if (!user) {
+        user = await storage.createUser({ username: "demo", password: "demo" });
+      }
+
+      const goalId = req.params.goalId;
+
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "INFO",
+        endpoint: `${req.method} ${req.path}`,
+        userId: user.id,
+        action: "create_category_goal",
+        metadata: { goalId, category1: req.body.category1 }
+      }));
+
+      // Verify goal exists and belongs to user
+      const goal = await storage.getGoalById(goalId, user.id);
+      if (!goal) {
+        console.log(JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: "WARN",
+          endpoint: `${req.method} ${req.path}`,
+          userId: user.id,
+          action: "goal_not_found",
+          metadata: { goalId }
+        }));
+        return res.status(404).json({ error: "Parent goal not found" });
+      }
+
+      // Validate request body
+      const validatedData = insertCategoryGoalSchema.parse({
+        ...req.body,
+        goalId
+      });
+
+      // Calculate historical spending if not provided
+      let previousMonthSpent = validatedData.previousMonthSpent ?? null;
+      let averageSpent = validatedData.averageSpent ?? null;
+
+      if (previousMonthSpent === null || averageSpent === null) {
+        const historical = await storage.calculateHistoricalSpending(
+          user.id,
+          goal.month,
+          validatedData.category1
+        );
+        previousMonthSpent = historical.previousMonthSpent;
+        averageSpent = historical.averageSpent;
+      }
+
+      const categoryGoal = await storage.upsertCategoryGoal(goalId, {
+        ...validatedData,
+        previousMonthSpent,
+        averageSpent
+      });
+
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "INFO",
+        endpoint: `${req.method} ${req.path}`,
+        userId: user.id,
+        action: "create_category_goal_success",
+        metadata: {
+          goalId,
+          categoryGoalId: categoryGoal.id,
+          category1: categoryGoal.category1
+        },
+        duration: Date.now() - startTime
+      }));
+
+      res.status(201).json(categoryGoal);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        console.log(JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: "WARN",
+          endpoint: `${req.method} ${req.path}`,
+          userId: "unknown",
+          action: "validation_failed",
+          metadata: { errors: error.errors }
+        }));
+        return res.status(400).json({ error: "Validation failed", details: error.errors });
+      }
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "ERROR",
+        endpoint: `${req.method} ${req.path}`,
+        userId: "unknown",
+        action: "database_error",
+        error: error.message
+      }));
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/category-goals/:id", async (req: Request, res: Response) => {
+    const startTime = Date.now();
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+      const categoryGoalId = req.params.id;
+
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "INFO",
+        endpoint: `${req.method} ${req.path}`,
+        userId: user.id,
+        action: "delete_category_goal",
+        metadata: { categoryGoalId }
+      }));
+
+      // Verify category goal exists
+      const existing = await storage.getCategoryGoal(categoryGoalId);
+      if (!existing) {
+        console.log(JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: "WARN",
+          endpoint: `${req.method} ${req.path}`,
+          userId: user.id,
+          action: "category_goal_not_found",
+          metadata: { categoryGoalId }
+        }));
+        return res.status(404).json({ error: "Category goal not found" });
+      }
+
+      await storage.deleteCategoryGoal(categoryGoalId);
+
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "INFO",
+        endpoint: `${req.method} ${req.path}`,
+        userId: user.id,
+        action: "delete_category_goal_success",
+        metadata: { categoryGoalId },
+        duration: Date.now() - startTime
+      }));
+
+      res.json({
+        success: true,
+        deletedCategoryGoalId: categoryGoalId
+      });
+    } catch (error: any) {
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "ERROR",
+        endpoint: `${req.method} ${req.path}`,
+        userId: "unknown",
+        action: "database_error",
+        error: error.message
+      }));
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/goals/:id/progress", async (req: Request, res: Response) => {
+    const startTime = Date.now();
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+      const goalId = req.params.id;
+
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "INFO",
+        endpoint: `${req.method} ${req.path}`,
+        userId: user.id,
+        action: "get_goal_progress",
+        metadata: { goalId }
+      }));
+
+      const progressData = await storage.getGoalProgress(goalId, user.id);
+
+      if (!progressData) {
+        console.log(JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: "WARN",
+          endpoint: `${req.method} ${req.path}`,
+          userId: user.id,
+          action: "goal_not_found",
+          metadata: { goalId }
+        }));
+        return res.status(404).json({ error: "Goal not found" });
+      }
+
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "INFO",
+        endpoint: `${req.method} ${req.path}`,
+        userId: user.id,
+        action: "get_goal_progress_success",
+        metadata: {
+          goalId,
+          categoriesCount: progressData.progress.categories.length,
+          totalTarget: progressData.progress.totalTarget,
+          totalActualSpent: progressData.progress.totalActualSpent
+        },
+        duration: Date.now() - startTime
+      }));
+
+      res.json(progressData);
+    } catch (error: any) {
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "ERROR",
+        endpoint: `${req.method} ${req.path}`,
+        userId: "unknown",
+        action: "database_error",
+        error: error.message
+      }));
       res.status(500).json({ error: error.message });
     }
   });
@@ -547,6 +1116,318 @@ export async function registerRoutes(
       const occurrences = await storage.getEventOccurrences(req.params.id);
       res.json(occurrences);
     } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/event-occurrences", async (req: Request, res: Response) => {
+    try {
+      const occurrence = await storage.createEventOccurrence(req.body);
+      res.status(201).json(occurrence);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/event-occurrences/:id", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const updated = await storage.updateEventOccurrence(id, req.body);
+      if (!updated) {
+        return res.status(404).json({ error: "Occurrence not found" });
+      }
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===== RITUALS =====
+  app.get("/api/rituals", async (req: Request, res: Response) => {
+    const startTime = Date.now();
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        console.log(JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: "INFO",
+          endpoint: `${req.method} ${req.path}`,
+          userId: "none",
+          action: "get_rituals_no_user",
+          metadata: {}
+        }));
+        return res.json({ rituals: [] });
+      }
+
+      const type = req.query.type as string | undefined;
+      const period = req.query.period as string | undefined;
+
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "INFO",
+        endpoint: `${req.method} ${req.path}`,
+        userId: user.id,
+        action: "get_rituals",
+        metadata: { type, period }
+      }));
+
+      const rituals = await storage.getRituals(user.id, type, period);
+
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "INFO",
+        endpoint: `${req.method} ${req.path}`,
+        userId: user.id,
+        action: "get_rituals_success",
+        metadata: { ritualsCount: rituals.length },
+        duration: Date.now() - startTime
+      }));
+
+      res.json({ rituals });
+    } catch (error: any) {
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "ERROR",
+        endpoint: `${req.method} ${req.path}`,
+        userId: "unknown",
+        action: "database_error",
+        error: error.message
+      }));
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/rituals", async (req: Request, res: Response) => {
+    const startTime = Date.now();
+    try {
+      let user = await storage.getUserByUsername("demo");
+      if (!user) {
+        user = await storage.createUser({ username: "demo", password: "demo" });
+      }
+
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "INFO",
+        endpoint: `${req.method} ${req.path}`,
+        userId: user.id,
+        action: "create_ritual",
+        metadata: { type: req.body.type, period: req.body.period }
+      }));
+
+      // Validate request body
+      const validatedData = insertRitualSchema.parse({
+        ...req.body,
+        userId: user.id
+      });
+
+      const ritual = await storage.createRitual(validatedData);
+
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "INFO",
+        endpoint: `${req.method} ${req.path}`,
+        userId: user.id,
+        action: "create_ritual_success",
+        metadata: { ritualId: ritual.id, type: ritual.type, period: ritual.period },
+        duration: Date.now() - startTime
+      }));
+
+      res.status(201).json(ritual);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        console.log(JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: "WARN",
+          endpoint: `${req.method} ${req.path}`,
+          userId: "unknown",
+          action: "validation_failed",
+          metadata: { errors: error.errors }
+        }));
+        return res.status(400).json({ error: "Validation failed", details: error.errors });
+      }
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "ERROR",
+        endpoint: `${req.method} ${req.path}`,
+        userId: "unknown",
+        action: "database_error",
+        error: error.message
+      }));
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/rituals/:id", async (req: Request, res: Response) => {
+    const startTime = Date.now();
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+      const ritualId = req.params.id;
+
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "INFO",
+        endpoint: `${req.method} ${req.path}`,
+        userId: user.id,
+        action: "update_ritual",
+        metadata: { ritualId }
+      }));
+
+      // Validate partial update
+      const updateSchema = insertRitualSchema.partial().omit({ userId: true });
+      const validatedData = updateSchema.parse(req.body);
+
+      const updated = await storage.updateRitual(ritualId, user.id, validatedData);
+
+      if (!updated) {
+        console.log(JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: "WARN",
+          endpoint: `${req.method} ${req.path}`,
+          userId: user.id,
+          action: "ritual_not_found",
+          metadata: { ritualId }
+        }));
+        return res.status(404).json({ error: "Ritual not found" });
+      }
+
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "INFO",
+        endpoint: `${req.method} ${req.path}`,
+        userId: user.id,
+        action: "update_ritual_success",
+        metadata: { ritualId },
+        duration: Date.now() - startTime
+      }));
+
+      res.json(updated);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation failed", details: error.errors });
+      }
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "ERROR",
+        endpoint: `${req.method} ${req.path}`,
+        userId: "unknown",
+        action: "database_error",
+        error: error.message
+      }));
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/rituals/:id", async (req: Request, res: Response) => {
+    const startTime = Date.now();
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+      const ritualId = req.params.id;
+
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "INFO",
+        endpoint: `${req.method} ${req.path}`,
+        userId: user.id,
+        action: "delete_ritual",
+        metadata: { ritualId }
+      }));
+
+      // Verify ritual exists
+      const existing = await storage.getRitualById(ritualId, user.id);
+      if (!existing) {
+        console.log(JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: "WARN",
+          endpoint: `${req.method} ${req.path}`,
+          userId: user.id,
+          action: "ritual_not_found",
+          metadata: { ritualId }
+        }));
+        return res.status(404).json({ error: "Ritual not found" });
+      }
+
+      await storage.deleteRitual(ritualId, user.id);
+
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "INFO",
+        endpoint: `${req.method} ${req.path}`,
+        userId: user.id,
+        action: "delete_ritual_success",
+        metadata: { ritualId },
+        duration: Date.now() - startTime
+      }));
+
+      res.json({ success: true, deletedRitualId: ritualId });
+    } catch (error: any) {
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "ERROR",
+        endpoint: `${req.method} ${req.path}`,
+        userId: "unknown",
+        action: "database_error",
+        error: error.message
+      }));
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/rituals/:id/complete", async (req: Request, res: Response) => {
+    const startTime = Date.now();
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+      const ritualId = req.params.id;
+      const { notes } = req.body;
+
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "INFO",
+        endpoint: `${req.method} ${req.path}`,
+        userId: user.id,
+        action: "complete_ritual",
+        metadata: { ritualId, hasNotes: !!notes }
+      }));
+
+      const completed = await storage.completeRitual(ritualId, user.id, notes);
+
+      if (!completed) {
+        console.log(JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: "WARN",
+          endpoint: `${req.method} ${req.path}`,
+          userId: user.id,
+          action: "ritual_not_found",
+          metadata: { ritualId }
+        }));
+        return res.status(404).json({ error: "Ritual not found" });
+      }
+
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "INFO",
+        endpoint: `${req.method} ${req.path}`,
+        userId: user.id,
+        action: "complete_ritual_success",
+        metadata: { ritualId },
+        duration: Date.now() - startTime
+      }));
+
+      res.json(completed);
+    } catch (error: any) {
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "ERROR",
+        endpoint: `${req.method} ${req.path}`,
+        userId: "unknown",
+        action: "database_error",
+        error: error.message
+      }));
       res.status(500).json({ error: error.message });
     }
   });

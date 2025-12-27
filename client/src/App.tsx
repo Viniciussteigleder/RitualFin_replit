@@ -15,6 +15,7 @@ import CalendarPage from "@/pages/calendar";
 import EventDetailPage from "@/pages/event-detail";
 import GoalsPage from "@/pages/goals";
 import RitualsPage from "@/pages/rituals";
+import BudgetsPage from "@/pages/budgets";
 import AIKeywordsPage from "@/pages/ai-keywords";
 
 function Router() {
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/calendar" component={CalendarPage} />
       <Route path="/calendar/:id" component={EventDetailPage} />
       <Route path="/goals" component={GoalsPage} />
+      <Route path="/budgets" component={BudgetsPage} />
       <Route path="/rituals" component={RitualsPage} />
       <Route path="/uploads" component={UploadsPage} />
       <Route path="/confirm" component={ConfirmPage} />

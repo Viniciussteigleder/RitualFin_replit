@@ -67,6 +67,50 @@ export interface IStorage {
   // Event Occurrences
   getEventOccurrences(eventId: string): Promise<EventOccurrence[]>;
   createEventOccurrence(occurrence: InsertEventOccurrence): Promise<EventOccurrence>;
+
+  // Goals
+  getGoals(userId: string, month?: string): Promise<Goal[]>;
+  getGoalById(goalId: string, userId: string): Promise<Goal | undefined>;
+  createGoal(goal: InsertGoal): Promise<Goal>;
+  updateGoal(goalId: string, userId: string, data: Partial<Goal>): Promise<Goal | undefined>;
+  deleteGoal(goalId: string, userId: string): Promise<{ success: boolean; deletedCategoryGoalsCount: number }>;
+
+  // Category Goals
+  getCategoryGoals(goalId: string): Promise<CategoryGoal[]>;
+  getCategoryGoal(categoryGoalId: string): Promise<CategoryGoal | undefined>;
+  upsertCategoryGoal(goalId: string, data: InsertCategoryGoal): Promise<CategoryGoal>;
+  deleteCategoryGoal(categoryGoalId: string): Promise<void>;
+
+  // Progress calculation
+  calculateHistoricalSpending(userId: string, month: string, category1: string): Promise<{
+    previousMonthSpent: number | null;
+    averageSpent: number | null;
+  }>;
+  getGoalProgress(goalId: string, userId: string): Promise<{
+    goal: Goal;
+    progress: {
+      totalActualSpent: number;
+      totalTarget: number;
+      remainingBudget: number;
+      percentSpent: number;
+      categories: Array<{
+        category1: string;
+        targetAmount: number;
+        actualSpent: number;
+        remaining: number;
+        percentSpent: number;
+        status: "under" | "over" | "on-track";
+      }>;
+    };
+  } | null>;
+
+  // Rituals
+  getRituals(userId: string, type?: string, period?: string): Promise<Ritual[]>;
+  getRitualById(ritualId: string, userId: string): Promise<Ritual | undefined>;
+  createRitual(ritual: InsertRitual): Promise<Ritual>;
+  updateRitual(ritualId: string, userId: string, data: Partial<Ritual>): Promise<Ritual | undefined>;
+  deleteRitual(ritualId: string, userId: string): Promise<void>;
+  completeRitual(ritualId: string, userId: string, notes?: string): Promise<Ritual | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -320,6 +364,298 @@ export class DatabaseStorage implements IStorage {
         like(transactions.descNorm, `%${keyword}%`)
       ))
       .orderBy(desc(transactions.paymentDate));
+  }
+
+  // Goals
+  async getGoals(userId: string, month?: string): Promise<Goal[]> {
+    if (month) {
+      return db.select().from(goals)
+        .where(and(eq(goals.userId, userId), eq(goals.month, month)))
+        .orderBy(desc(goals.createdAt));
+    }
+    return db.select().from(goals)
+      .where(eq(goals.userId, userId))
+      .orderBy(desc(goals.createdAt));
+  }
+
+  async getGoalById(goalId: string, userId: string): Promise<Goal | undefined> {
+    const [goal] = await db.select().from(goals)
+      .where(and(eq(goals.id, goalId), eq(goals.userId, userId)));
+    return goal || undefined;
+  }
+
+  async createGoal(goal: InsertGoal): Promise<Goal> {
+    const [created] = await db.insert(goals).values(goal).returning();
+    return created;
+  }
+
+  async updateGoal(goalId: string, userId: string, data: Partial<Goal>): Promise<Goal | undefined> {
+    const [updated] = await db.update(goals)
+      .set(data)
+      .where(and(eq(goals.id, goalId), eq(goals.userId, userId)))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteGoal(goalId: string, userId: string): Promise<{ success: boolean; deletedCategoryGoalsCount: number }> {
+    // First, delete all associated category goals
+    const deletedCategoryGoals = await db.delete(categoryGoals)
+      .where(eq(categoryGoals.goalId, goalId))
+      .returning();
+
+    // Then delete the goal itself
+    const [deletedGoal] = await db.delete(goals)
+      .where(and(eq(goals.id, goalId), eq(goals.userId, userId)))
+      .returning();
+
+    return {
+      success: !!deletedGoal,
+      deletedCategoryGoalsCount: deletedCategoryGoals.length
+    };
+  }
+
+  // Category Goals
+  async getCategoryGoals(goalId: string): Promise<CategoryGoal[]> {
+    return db.select().from(categoryGoals)
+      .where(eq(categoryGoals.goalId, goalId));
+  }
+
+  async getCategoryGoal(categoryGoalId: string): Promise<CategoryGoal | undefined> {
+    const [catGoal] = await db.select().from(categoryGoals)
+      .where(eq(categoryGoals.id, categoryGoalId));
+    return catGoal || undefined;
+  }
+
+  async upsertCategoryGoal(goalId: string, data: InsertCategoryGoal): Promise<CategoryGoal> {
+    // Check if category goal already exists for this goal + category1
+    const [existing] = await db.select().from(categoryGoals)
+      .where(and(
+        eq(categoryGoals.goalId, goalId),
+        eq(categoryGoals.category1, data.category1)
+      ));
+
+    if (existing) {
+      // Update existing
+      const [updated] = await db.update(categoryGoals)
+        .set({
+          targetAmount: data.targetAmount,
+          previousMonthSpent: data.previousMonthSpent ?? existing.previousMonthSpent,
+          averageSpent: data.averageSpent ?? existing.averageSpent
+        })
+        .where(eq(categoryGoals.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      // Create new
+      const [created] = await db.insert(categoryGoals)
+        .values({ ...data, goalId })
+        .returning();
+      return created;
+    }
+  }
+
+  async deleteCategoryGoal(categoryGoalId: string): Promise<void> {
+    await db.delete(categoryGoals).where(eq(categoryGoals.id, categoryGoalId));
+  }
+
+  // Progress calculation helpers
+  async calculateHistoricalSpending(userId: string, month: string, category1: string): Promise<{
+    previousMonthSpent: number | null;
+    averageSpent: number | null;
+  }> {
+    // Parse the month (YYYY-MM format)
+    const [year, monthNum] = month.split('-').map(Number);
+
+    // Calculate previous month
+    const prevDate = new Date(year, monthNum - 2, 1); // monthNum - 2 because months are 0-indexed
+    const prevMonth = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+
+    // Get previous month spending
+    const prevMonthTxs = await this.getTransactions(userId, prevMonth);
+    const previousMonthSpent = prevMonthTxs
+      .filter(tx =>
+        tx.category1 === category1 &&
+        tx.amount < 0 &&
+        !tx.excludeFromBudget &&
+        !tx.internalTransfer
+      )
+      .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+
+    // Calculate 3-month average
+    const months: string[] = [];
+    for (let i = 1; i <= 3; i++) {
+      const d = new Date(year, monthNum - 1 - i, 1);
+      months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+    }
+
+    let totalSpent = 0;
+    let monthsWithData = 0;
+
+    for (const m of months) {
+      const txs = await this.getTransactions(userId, m);
+      const monthSpent = txs
+        .filter(tx =>
+          tx.category1 === category1 &&
+          tx.amount < 0 &&
+          !tx.excludeFromBudget &&
+          !tx.internalTransfer
+        )
+        .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+
+      if (monthSpent > 0) {
+        totalSpent += monthSpent;
+        monthsWithData++;
+      }
+    }
+
+    const averageSpent = monthsWithData > 0 ? totalSpent / monthsWithData : null;
+
+    return {
+      previousMonthSpent: previousMonthSpent > 0 ? previousMonthSpent : null,
+      averageSpent
+    };
+  }
+
+  async getGoalProgress(goalId: string, userId: string): Promise<{
+    goal: Goal;
+    progress: {
+      totalActualSpent: number;
+      totalTarget: number;
+      remainingBudget: number;
+      percentSpent: number;
+      categories: Array<{
+        category1: string;
+        targetAmount: number;
+        actualSpent: number;
+        remaining: number;
+        percentSpent: number;
+        status: "under" | "over" | "on-track";
+      }>;
+    };
+  } | null> {
+    // Get the goal
+    const goal = await this.getGoalById(goalId, userId);
+    if (!goal) return null;
+
+    // Get category goals for this goal
+    const catGoals = await this.getCategoryGoals(goalId);
+
+    // Get all transactions for this month
+    const monthTxs = await this.getTransactions(userId, goal.month);
+
+    // Calculate spending by category
+    const spendingByCategory: Record<string, number> = {};
+    for (const tx of monthTxs) {
+      if (tx.excludeFromBudget || tx.internalTransfer || tx.amount >= 0) continue;
+
+      const cat = tx.category1 || "Outros";
+      spendingByCategory[cat] = (spendingByCategory[cat] || 0) + Math.abs(tx.amount);
+    }
+
+    // Build category progress
+    const categories = catGoals.map(catGoal => {
+      const actualSpent = spendingByCategory[catGoal.category1] || 0;
+      const remaining = catGoal.targetAmount - actualSpent;
+      const percentSpent = catGoal.targetAmount > 0
+        ? (actualSpent / catGoal.targetAmount) * 100
+        : 0;
+
+      let status: "under" | "over" | "on-track";
+      if (percentSpent < 90) {
+        status = "under";
+      } else if (percentSpent > 110) {
+        status = "over";
+      } else {
+        status = "on-track";
+      }
+
+      return {
+        category1: catGoal.category1,
+        targetAmount: catGoal.targetAmount,
+        actualSpent,
+        remaining,
+        percentSpent,
+        status
+      };
+    });
+
+    // Calculate totals
+    const totalTarget = catGoals.reduce((sum, cg) => sum + cg.targetAmount, 0);
+    const totalActualSpent = categories.reduce((sum, c) => sum + c.actualSpent, 0);
+    const remainingBudget = totalTarget - totalActualSpent;
+    const percentSpent = totalTarget > 0 ? (totalActualSpent / totalTarget) * 100 : 0;
+
+    return {
+      goal,
+      progress: {
+        totalActualSpent,
+        totalTarget,
+        remainingBudget,
+        percentSpent,
+        categories
+      }
+    };
+  }
+
+  // Rituals
+  async getRituals(userId: string, type?: string, period?: string): Promise<Ritual[]> {
+    let query = db.select().from(rituals).where(eq(rituals.userId, userId));
+
+    if (type && period) {
+      return db.select().from(rituals)
+        .where(and(
+          eq(rituals.userId, userId),
+          eq(rituals.type, type),
+          eq(rituals.period, period)
+        ))
+        .orderBy(desc(rituals.createdAt));
+    } else if (type) {
+      return db.select().from(rituals)
+        .where(and(
+          eq(rituals.userId, userId),
+          eq(rituals.type, type)
+        ))
+        .orderBy(desc(rituals.createdAt));
+    }
+
+    return db.select().from(rituals)
+      .where(eq(rituals.userId, userId))
+      .orderBy(desc(rituals.createdAt));
+  }
+
+  async getRitualById(ritualId: string, userId: string): Promise<Ritual | undefined> {
+    const [ritual] = await db.select().from(rituals)
+      .where(and(eq(rituals.id, ritualId), eq(rituals.userId, userId)));
+    return ritual || undefined;
+  }
+
+  async createRitual(ritual: InsertRitual): Promise<Ritual> {
+    const [created] = await db.insert(rituals).values(ritual).returning();
+    return created;
+  }
+
+  async updateRitual(ritualId: string, userId: string, data: Partial<Ritual>): Promise<Ritual | undefined> {
+    const [updated] = await db.update(rituals)
+      .set(data)
+      .where(and(eq(rituals.id, ritualId), eq(rituals.userId, userId)))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteRitual(ritualId: string, userId: string): Promise<void> {
+    await db.delete(rituals)
+      .where(and(eq(rituals.id, ritualId), eq(rituals.userId, userId)));
+  }
+
+  async completeRitual(ritualId: string, userId: string, notes?: string): Promise<Ritual | undefined> {
+    const [updated] = await db.update(rituals)
+      .set({
+        completedAt: new Date(),
+        notes: notes || null
+      })
+      .where(and(eq(rituals.id, ritualId), eq(rituals.userId, userId)))
+      .returning();
+    return updated || undefined;
   }
 }
 

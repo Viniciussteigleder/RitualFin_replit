@@ -1,10 +1,10 @@
 import { useLocation, Link } from "wouter";
 import { cn } from "@/lib/utils";
-import { 
-  LayoutDashboard, 
-  Upload, 
-  CheckCircle2, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Upload,
+  CheckCircle2,
+  Settings,
   LogOut,
   Menu,
   X,
@@ -15,7 +15,8 @@ import {
   TrendingUp,
   Calendar,
   Target,
-  Brain
+  Brain,
+  Wallet
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -37,15 +38,21 @@ const NAV_ITEMS = [
     href: "/calendar",
     description: "Eventos e compromissos"
   },
-  { 
-    label: "Metas", 
-    icon: Target, 
+  {
+    label: "Metas",
+    icon: Target,
     href: "/goals",
     description: "Planejamento financeiro"
   },
-  { 
-    label: "Rituais", 
-    icon: Sparkles, 
+  {
+    label: "Orçamentos",
+    icon: Wallet,
+    href: "/budgets",
+    description: "Limites por categoria"
+  },
+  {
+    label: "Rituais",
+    icon: Sparkles,
     href: "/rituals",
     description: "Revisão semanal e mensal"
   },

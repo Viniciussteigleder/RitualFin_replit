@@ -31,11 +31,13 @@ import {
 } from "lucide-react";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useMonth } from "@/lib/month-context";
 import { Link } from "wouter";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { ritualsApi } from "@/lib/api";
+import { queryClient } from "@/lib/queryClient";
 
 const CATEGORY_ICONS: Record<string, any> = {
   "Moradia": Home,
@@ -65,6 +67,16 @@ interface CategorySummary {
   status: "within" | "exceeded" | "warning";
 }
 
+// Helper to get ISO week number
+function getISOWeek(date: Date): string {
+  const year = date.getFullYear();
+  const jan4 = new Date(year, 0, 4);
+  const diff = date.getTime() - jan4.getTime();
+  const oneWeek = 1000 * 60 * 60 * 24 * 7;
+  const weekNum = Math.ceil((diff / oneWeek + jan4.getDay() / 7));
+  return `${year}-W${String(weekNum).padStart(2, "0")}`;
+}
+
 export default function RitualsPage() {
   const { month, formatMonth } = useMonth();
   const { toast } = useToast();
@@ -74,6 +86,10 @@ export default function RitualsPage() {
   const [filter, setFilter] = useState("all");
   const [weeklyNotes, setWeeklyNotes] = useState("");
   const [weeklyGoals, setWeeklyGoals] = useState<string[]>([]);
+
+  const today = new Date();
+  const currentWeek = getISOWeek(today);
+  const currentPeriod = ritualType === "weekly" ? currentWeek : month;
 
   const { data: dashboard } = useQuery({
     queryKey: ["dashboard", month],
@@ -91,6 +107,52 @@ export default function RitualsPage() {
       if (!res.ok) return null;
       return res.json();
     }
+  });
+
+  // Fetch existing rituals for current period
+  const { data: ritualsData } = useQuery({
+    queryKey: ["rituals", ritualType, currentPeriod],
+    queryFn: () => ritualsApi.list(ritualType, currentPeriod),
+  });
+
+  const currentRitual = ritualsData?.rituals?.[0];
+  const isCompleted = currentRitual?.completedAt !== null;
+
+  // Create or update ritual
+  const startRitual = useMutation({
+    mutationFn: async () => {
+      if (currentRitual) {
+        return currentRitual;
+      }
+      return ritualsApi.create({
+        type: ritualType,
+        period: currentPeriod,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rituals", ritualType, currentPeriod] });
+      toast({
+        title: ritualType === "weekly" ? "Revisão Semanal iniciada" : "Revisão Mensal iniciada",
+      });
+    },
+  });
+
+  // Complete ritual with notes
+  const completeRitual = useMutation({
+    mutationFn: async (notes: string) => {
+      if (!currentRitual?.id) {
+        throw new Error("No ritual to complete");
+      }
+      return ritualsApi.complete(currentRitual.id, notes);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rituals", ritualType, currentPeriod] });
+      toast({
+        title: "Ritual concluído!",
+        description: "Suas reflexões foram salvas.",
+      });
+      setWeeklyNotes("");
+    },
   });
 
   function getPreviousMonth(m: string) {
@@ -136,11 +198,19 @@ export default function RitualsPage() {
   const startWeeklyRitual = () => {
     setRitualType("weekly");
     setCurrentStep(1);
+    startRitual.mutate();
   };
 
   const startMonthlyRitual = () => {
     setRitualType("monthly");
     setCurrentStep(1);
+    startRitual.mutate();
+  };
+
+  const saveWeeklyNotes = () => {
+    if (weeklyNotes.trim()) {
+      completeRitual.mutate(weeklyNotes);
+    }
   };
 
   const nextStep = () => {
@@ -162,7 +232,6 @@ export default function RitualsPage() {
     { id: "investments", label: "Investimentos" }
   ];
 
-  const today = new Date();
   const weekStart = startOfWeek(today, { locale: ptBR });
   const weekEnd = endOfWeek(today, { locale: ptBR });
 
@@ -189,24 +258,44 @@ export default function RitualsPage() {
           </TabsList>
 
           <TabsContent value="weekly" className="mt-6 space-y-6">
-            <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200/50">
+            <Card className={cn(
+              "bg-gradient-to-r border-blue-200/50",
+              isCompleted ? "from-green-50 to-emerald-50" : "from-blue-50 to-indigo-50"
+            )}>
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-                      <CalendarDays className="h-6 w-6 text-blue-600" />
+                    <div className={cn(
+                      "w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0",
+                      isCompleted ? "bg-green-100" : "bg-blue-100"
+                    )}>
+                      {isCompleted ? (
+                        <CheckCircle2 className="h-6 w-6 text-green-600" />
+                      ) : (
+                        <CalendarDays className="h-6 w-6 text-blue-600" />
+                      )}
                     </div>
                     <div>
-                      <h3 className="font-bold text-lg text-blue-900">Revisão Semanal</h3>
-                      <p className="text-blue-700/80 text-sm mt-0.5">
+                      <h3 className={cn(
+                        "font-bold text-lg",
+                        isCompleted ? "text-green-900" : "text-blue-900"
+                      )}>
+                        {isCompleted ? "Revisão Semanal Concluída" : "Revisão Semanal"}
+                      </h3>
+                      <p className={cn(
+                        "text-sm mt-0.5",
+                        isCompleted ? "text-green-700/80" : "text-blue-700/80"
+                      )}>
                         Semana de {format(weekStart, "dd", { locale: ptBR })} a {format(weekEnd, "dd 'de' MMMM", { locale: ptBR })}
                       </p>
                     </div>
                   </div>
-                  <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2" onClick={startWeeklyRitual}>
-                    <Sparkles className="h-4 w-4" />
-                    Iniciar Revisão
-                  </Button>
+                  {!isCompleted && (
+                    <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2" onClick={startWeeklyRitual}>
+                      <Sparkles className="h-4 w-4" />
+                      Iniciar Revisão
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -260,29 +349,30 @@ export default function RitualsPage() {
                   <label className="text-sm font-medium text-muted-foreground mb-2 block">
                     O que funcionou bem esta semana?
                   </label>
-                  <textarea 
+                  <textarea
                     className="w-full p-3 border rounded-lg resize-none focus:ring-2 focus:ring-primary focus:border-primary"
                     rows={3}
                     placeholder="Ex: Consegui evitar compras por impulso..."
-                    value={weeklyNotes}
+                    value={isCompleted && currentRitual?.notes ? currentRitual.notes : weeklyNotes}
                     onChange={(e) => setWeeklyNotes(e.target.value)}
+                    disabled={isCompleted}
                   />
+                  {isCompleted && currentRitual?.notes && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Concluído em {format(new Date(currentRitual.completedAt!), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
+                    </p>
+                  )}
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                    Objetivo para próxima semana
-                  </label>
-                  <div className="flex gap-2">
-                    <input 
-                      type="text"
-                      className="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                      placeholder="Ex: Limitar delivery a 2x por semana"
-                    />
-                    <Button className="bg-primary hover:bg-primary/90">
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+                {!isCompleted && (
+                  <Button
+                    className="bg-primary hover:bg-primary/90 w-full gap-2"
+                    onClick={saveWeeklyNotes}
+                    disabled={!weeklyNotes.trim() || completeRitual.isPending}
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    {completeRitual.isPending ? "Salvando..." : "Concluir Revisão"}
+                  </Button>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
