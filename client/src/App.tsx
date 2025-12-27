@@ -9,6 +9,7 @@ import DashboardPage from "@/pages/dashboard";
 import UploadsPage from "@/pages/uploads";
 import ConfirmPage from "@/pages/confirm";
 import RulesPage from "@/pages/rules";
+import SettingsPage from "@/pages/settings";
 
 function Router() {
   return (
@@ -19,6 +20,7 @@ function Router() {
       <Route path="/uploads" component={UploadsPage} />
       <Route path="/confirm" component={ConfirmPage} />
       <Route path="/rules" component={RulesPage} />
+      <Route path="/settings" component={SettingsPage} />
       <Route component={NotFound} />
     </Switch>
   );

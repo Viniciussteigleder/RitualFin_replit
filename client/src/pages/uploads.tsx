@@ -1,7 +1,7 @@
 import AppLayout from "@/components/layout/app-layout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { UploadCloud, FileSpreadsheet, CheckCircle2, XCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { UploadCloud, FileSpreadsheet, CheckCircle2, XCircle, AlertCircle, Loader2, MoreVertical, Trash2, Filter, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -33,20 +33,20 @@ export default function UploadsPage() {
       
       if (result.rowsImported > 0) {
         toast({
-          title: "Importação concluída",
-          description: `${result.rowsImported} transações importadas${result.duplicates > 0 ? `, ${result.duplicates} duplicatas ignoradas` : ""}`
+          title: "Importacao concluida",
+          description: `${result.rowsImported} transacoes importadas${result.duplicates > 0 ? `, ${result.duplicates} duplicatas ignoradas` : ""}`
         });
       } else if (result.duplicates > 0) {
         toast({
-          title: "Arquivo já importado",
-          description: `Todas as ${result.duplicates} transações já existem no sistema`,
+          title: "Arquivo ja importado",
+          description: `Todas as ${result.duplicates} transacoes ja existem no sistema`,
           variant: "destructive"
         });
       }
     },
     onError: (error: any) => {
       toast({
-        title: "Erro na importação",
+        title: "Erro na importacao",
         description: error.message || "Falha ao processar o arquivo",
         variant: "destructive"
       });
@@ -56,7 +56,7 @@ export default function UploadsPage() {
   const handleFileSelect = (file: File) => {
     if (!file.name.endsWith(".csv")) {
       toast({
-        title: "Formato inválido",
+        title: "Formato invalido",
         description: "Por favor, selecione um arquivo CSV",
         variant: "destructive"
       });
@@ -72,35 +72,30 @@ export default function UploadsPage() {
     if (file) handleFileSelect(file);
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-
   return (
     <AppLayout>
-      <div className="flex flex-col gap-8">
+      <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Uploads</h1>
-          <p className="text-muted-foreground mt-1">Importe arquivos do Miles & More para atualizar seu ledger.</p>
+          <div className="text-sm text-muted-foreground mb-2">
+            Inicio &gt; Uploads &gt; <span className="text-foreground">Miles & More</span>
+          </div>
+          <h1 className="text-2xl font-bold">Upload de CSV | Miles & More</h1>
+          <p className="text-muted-foreground mt-1">
+            Gerencie seus extratos e importe novas transacoes para o sistema de orcamento mensal.
+          </p>
         </div>
 
-        {/* Upload Area */}
         <Card 
           className={cn(
-            "border-dashed border-2 bg-muted/5 shadow-none transition-colors cursor-pointer",
-            isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/20 hover:bg-muted/10"
+            "border-2 border-dashed bg-white shadow-sm transition-colors cursor-pointer",
+            isDragging ? "border-primary bg-primary/5" : "border-gray-200 hover:border-primary/50"
           )}
           onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
+          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+          onDragLeave={() => setIsDragging(false)}
           onClick={() => fileInputRef.current?.click()}
         >
-          <CardContent className="flex flex-col items-center justify-center py-12 text-center space-y-4">
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <input
               ref={fileInputRef}
               type="file"
@@ -116,102 +111,122 @@ export default function UploadsPage() {
             
             {uploadMutation.isPending ? (
               <>
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <div className="space-y-1">
-                  <h3 className="font-semibold text-lg">Processando...</h3>
-                  <p className="text-sm text-muted-foreground">Validando e importando transações</p>
-                </div>
+                <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+                <h3 className="font-semibold text-lg">Processando...</h3>
+                <p className="text-sm text-muted-foreground">Validando e importando transacoes</p>
               </>
             ) : (
               <>
-                <div className="p-4 bg-background rounded-full shadow-sm">
-                  <UploadCloud className="h-8 w-8 text-primary/80" />
+                <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                  <UploadCloud className="h-7 w-7 text-primary" />
                 </div>
-                <div className="space-y-1">
-                  <h3 className="font-semibold text-lg">Arraste seu CSV aqui</h3>
-                  <p className="text-sm text-muted-foreground">ou clique para selecionar o arquivo</p>
-                </div>
-                <Button className="mt-4" data-testid="btn-select-file">Selecionar Arquivo</Button>
-                <p className="text-xs text-muted-foreground/60 max-w-xs pt-4">
-                  Aceita apenas CSV exportado do Miles & More. O sistema detecta duplicatas automaticamente.
+                <h3 className="font-semibold text-lg mb-1">Arraste seu arquivo CSV aqui</h3>
+                <p className="text-sm text-muted-foreground mb-4">Ou clique para selecionar do seu computador.</p>
+                <Button className="bg-primary hover:bg-primary/90" data-testid="btn-select-file">
+                  Selecionar Arquivo
+                </Button>
+                <p className="text-xs text-muted-foreground mt-4">
+                  Suporta apenas arquivos CSV do Miles & More. Limite de 10MB.
                 </p>
               </>
             )}
           </CardContent>
         </Card>
 
-        {/* History */}
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold">Histórico de Importação</h2>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-lg font-semibold">Historico de Importacoes</h2>
+            </div>
+            <Button variant="ghost" size="sm" className="text-muted-foreground gap-2">
+              <Filter className="h-4 w-4" />
+              Filtrar
+            </Button>
+          </div>
           
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : uploads.length === 0 ? (
-            <div className="text-center py-12 bg-muted/5 rounded-lg border border-dashed">
-              <FileSpreadsheet className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-              <p className="text-muted-foreground">Nenhum arquivo importado ainda</p>
-            </div>
+            <Card className="bg-white border-0 shadow-sm">
+              <CardContent className="text-center py-12">
+                <FileSpreadsheet className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+                <p className="text-muted-foreground">Nenhum arquivo importado ainda</p>
+              </CardContent>
+            </Card>
           ) : (
-            <div className="rounded-lg border bg-card">
+            <Card className="bg-white border-0 shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-muted/50 text-muted-foreground font-medium">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/30 text-muted-foreground">
                     <tr>
-                      <th className="px-4 py-3">Status</th>
-                      <th className="px-4 py-3">Arquivo</th>
-                      <th className="px-4 py-3">Mês</th>
-                      <th className="px-4 py-3 text-right">Linhas</th>
-                      <th className="px-4 py-3 text-right">Data</th>
+                      <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">Status</th>
+                      <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">Arquivo</th>
+                      <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">Data do Upload</th>
+                      <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">Mes Ref.</th>
+                      <th className="px-5 py-3 text-right font-medium text-xs uppercase tracking-wide">Linhas</th>
+                      <th className="px-5 py-3 text-right font-medium text-xs uppercase tracking-wide">Acoes</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/50">
                     {uploads.map((upload: any) => (
-                      <tr key={upload.id} className="group hover:bg-muted/30" data-testid={`row-upload-${upload.id}`}>
-                        <td className="px-4 py-4 align-top">
+                      <tr key={upload.id} className="hover:bg-muted/20" data-testid={`row-upload-${upload.id}`}>
+                        <td className="px-5 py-4">
                           <div className="flex items-center gap-2">
-                            {upload.status === 'ready' && <CheckCircle2 className="h-4 w-4 text-emerald-600" />}
-                            {upload.status === 'error' && <XCircle className="h-4 w-4 text-rose-600" />}
-                            {upload.status === 'duplicate' && <AlertCircle className="h-4 w-4 text-amber-600" />}
-                            {upload.status === 'processing' && <div className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />}
-                            
-                            <span className={cn(
-                              "text-xs font-medium capitalize",
-                              upload.status === 'ready' && "text-emerald-700",
-                              upload.status === 'error' && "text-rose-700",
-                              upload.status === 'duplicate' && "text-amber-700"
-                            )}>
-                              {upload.status === 'ready' ? 'Sucesso' : 
-                               upload.status === 'duplicate' ? 'Duplicado' :
-                               upload.status === 'error' ? 'Falha' : upload.status}
-                            </span>
+                            {upload.status === 'ready' && (
+                              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-primary">
+                                <span className="w-2 h-2 rounded-full bg-primary" />
+                                Pronto
+                              </span>
+                            )}
+                            {upload.status === 'processing' && (
+                              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-amber-600">
+                                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                                Processando
+                              </span>
+                            )}
+                            {upload.status === 'error' && (
+                              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-rose-600">
+                                <span className="w-2 h-2 rounded-full bg-rose-500" />
+                                Erro
+                              </span>
+                            )}
+                            {upload.status === 'duplicate' && (
+                              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-amber-600">
+                                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                                Duplicado
+                              </span>
+                            )}
                           </div>
-                          {upload.errorMessage && (
-                            <p className="text-xs text-rose-600 mt-1 pl-6">{upload.errorMessage}</p>
-                          )}
                         </td>
-                        <td className="px-4 py-4 font-medium">
+                        <td className="px-5 py-4">
                           <div className="flex items-center gap-2">
                             <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
-                            {upload.filename}
+                            <span className="font-medium">{upload.filename}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-4 text-muted-foreground font-mono text-xs">
-                          {upload.monthAffected || "—"}
+                        <td className="px-5 py-4 text-muted-foreground">
+                          {format(new Date(upload.createdAt), "dd MMM yyyy, HH:mm")}
                         </td>
-                        <td className="px-4 py-4 text-right text-muted-foreground tabular-nums">
-                          {upload.rowsImported} / {upload.rowsTotal}
+                        <td className="px-5 py-4 text-muted-foreground">
+                          {upload.monthAffected || "-"}
                         </td>
-                        <td className="px-4 py-4 text-right text-muted-foreground text-xs">
-                          {format(new Date(upload.createdAt), "dd/MM/yyyy HH:mm")}
+                        <td className="px-5 py-4 text-right font-medium">
+                          {upload.rowsImported}
+                        </td>
+                        <td className="px-5 py-4 text-right">
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            </div>
+            </Card>
           )}
         </div>
       </div>
