@@ -17,8 +17,8 @@ import {
 import { format } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { dashboardApi, transactionsApi } from "@/lib/api";
-import { useState } from "react";
 import { Link } from "wouter";
+import { useMonth } from "@/lib/month-context";
 
 const CATEGORY_ICONS: Record<string, any> = {
   "Moradia": Home,
@@ -28,17 +28,8 @@ const CATEGORY_ICONS: Record<string, any> = {
   "Lazer": TrendingUp,
 };
 
-const CATEGORY_COLORS: Record<string, string> = {
-  "Moradia": "bg-primary",
-  "Mercado": "bg-primary/80",
-  "Transporte": "bg-primary/60",
-  "Alimentacao": "bg-primary/80",
-  "Lazer": "bg-primary/40",
-  "Outros": "bg-gray-300",
-};
-
 export default function DashboardPage() {
-  const [month] = useState(() => new Date().toISOString().slice(0, 7));
+  const { month } = useMonth();
 
   const { data: dashboard, isLoading: dashboardLoading } = useQuery({
     queryKey: ["dashboard", month],
