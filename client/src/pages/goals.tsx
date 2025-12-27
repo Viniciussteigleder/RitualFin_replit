@@ -20,7 +20,13 @@ import {
   ChevronRight,
   Target,
   AlertTriangle,
-  CheckCircle2
+  CheckCircle2,
+  Package,
+  Film,
+  CreditCard,
+  Plane,
+  Music,
+  Dumbbell
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMonth } from "@/lib/month-context";
@@ -32,7 +38,12 @@ const CATEGORY_ICONS: Record<string, any> = {
   "Mercado": ShoppingCart,
   "Transporte": Car,
   "Saúde": Heart,
-  "Lazer": Coffee,
+  "Lazer": Film,
+  "Compras Online": Package,
+  "Viagem": Plane,
+  "Streaming": Music,
+  "Academia": Dumbbell,
+  "Outros": CreditCard
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -42,6 +53,9 @@ const CATEGORY_COLORS: Record<string, string> = {
   "Lazer": "#a855f7",
   "Saúde": "#ef4444",
   "Compras Online": "#ec4899",
+  "Viagem": "#06b6d4",
+  "Streaming": "#f43f5e",
+  "Academia": "#10b981",
   "Receitas": "#10b981",
   "Outros": "#6b7280"
 };
@@ -118,7 +132,7 @@ export default function GoalsPage() {
         newBudgets[cat.category] = cat.amount.toFixed(2);
       });
       setCategoryBudgets(newBudgets);
-      toast({ title: "Metas copiadas do mes anterior" });
+      toast({ title: "Metas copiadas do mês anterior" });
     }
   };
 
@@ -130,7 +144,7 @@ export default function GoalsPage() {
         newBudgets[cat.category] = suggested.toFixed(2);
       });
       setCategoryBudgets(newBudgets);
-      toast({ title: "Sugestoes aplicadas (5% de reducao)" });
+      toast({ title: "Sugestões aplicadas (5% de redução)" });
     }
   };
 
@@ -165,9 +179,9 @@ export default function GoalsPage() {
                   <Sparkles className="h-6 w-6" />
                 </div>
                 <div className="max-w-2xl">
-                  <h3 className="font-bold text-lg text-foreground">Sugestao Inteligente da IA</h3>
+                  <h3 className="font-bold text-lg text-foreground">Sugestão Inteligente da IA</h3>
                   <p className="text-muted-foreground text-sm mt-1">
-                    Analisamos o historico dos ultimos 3 meses. Notamos um aumento de <strong className="text-primary">15%</strong> em 'Alimentacao', 
+                    Analisamos o histórico dos últimos 3 meses. Notamos um aumento de <strong className="text-primary">15%</strong> em 'Alimentação', 
                     mas uma economia em 'Lazer'. Sugerimos reequilibrar as metas para evitar estouros.
                   </p>
                 </div>
@@ -176,7 +190,7 @@ export default function GoalsPage() {
                 className="bg-slate-900 hover:bg-slate-800 text-white gap-2"
                 onClick={applySuggestions}
               >
-                Aplicar Sugestoes
+                Aplicar Sugestões
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -210,7 +224,9 @@ export default function GoalsPage() {
                 </span>
                 <span className="text-muted-foreground text-sm mb-1">/ {percentageOfIncome}% da receita</span>
               </div>
-              <Progress value={percentageOfIncome} className="h-1 mt-3" />
+              <div className="h-2 bg-muted rounded-full overflow-hidden mt-3">
+                <div className="h-full bg-primary rounded-full" style={{ width: `${percentageOfIncome}%` }} />
+              </div>
             </CardContent>
           </Card>
 
@@ -234,7 +250,7 @@ export default function GoalsPage() {
           <h2 className="text-xl font-bold text-foreground px-1">Detalhamento por Categoria</h2>
           
           {categoryData.map(cat => {
-            const Icon = CATEGORY_ICONS[cat.category] || ShoppingCart;
+            const Icon = CATEGORY_ICONS[cat.category] || CreditCard;
             const color = CATEGORY_COLORS[cat.category] || "#6b7280";
             const percentageUsed = cat.targetAmount > 0 ? Math.round((cat.currentSpent / cat.targetAmount) * 100) : 0;
             const isOverBudget = cat.currentSpent > cat.targetAmount && cat.targetAmount > 0;
@@ -246,26 +262,26 @@ export default function GoalsPage() {
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
                     <div className="col-span-1 md:col-span-4 flex items-center gap-4">
                       <div 
-                        className="w-12 h-12 rounded-full flex items-center justify-center"
-                        style={{ backgroundColor: `${color}20` }}
+                        className="w-12 h-12 rounded-xl flex items-center justify-center"
+                        style={{ backgroundColor: `${color}15` }}
                       >
                         <Icon className="h-5 w-5" style={{ color }} />
                       </div>
                       <div>
                         <p className="font-bold text-lg text-foreground">{cat.category}</p>
                         <p className="text-xs text-muted-foreground">
-                          {cat.category === "Moradia" && "Aluguel, Condominio, Energia"}
-                          {cat.category === "Mercado" && "Compras do mes, Feira"}
-                          {cat.category === "Transporte" && "Combustivel, Estacionamento"}
+                          {cat.category === "Moradia" && "Aluguel, Condomínio, Energia"}
+                          {cat.category === "Mercado" && "Compras do mês, Feira"}
+                          {cat.category === "Transporte" && "Combustível, Estacionamento"}
                           {cat.category === "Lazer" && "Streaming, Cinema, Passeios"}
-                          {cat.category === "Saúde" && "Farmacia, Consultas"}
+                          {cat.category === "Saúde" && "Farmácia, Consultas"}
                         </p>
                       </div>
                     </div>
                     
                     <div className="col-span-1 md:col-span-4 flex flex-col border-l-0 md:border-l border-border pl-0 md:pl-6">
                       <div className="flex justify-between items-center mb-1">
-                        <span className="text-xs text-muted-foreground">Gasto Mes Anterior</span>
+                        <span className="text-xs text-muted-foreground">Gasto Mês Anterior</span>
                         <span className={cn(
                           "text-sm font-semibold",
                           isAboveAverage ? "text-rose-600" : "text-foreground"
@@ -275,7 +291,7 @@ export default function GoalsPage() {
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-xs text-muted-foreground">Media 3 Meses</span>
+                        <span className="text-xs text-muted-foreground">Média 3 Meses</span>
                         <span className="text-sm font-semibold text-foreground">
                           {cat.averageSpent.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
                         </span>
@@ -315,10 +331,15 @@ export default function GoalsPage() {
                           {cat.currentSpent.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })} de {cat.targetAmount.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
                         </span>
                       </div>
-                      <Progress 
-                        value={Math.min(percentageUsed, 100)} 
-                        className={cn("h-2", isOverBudget && "[&>div]:bg-rose-500")}
-                      />
+                      <div className="h-3 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className={cn(
+                            "h-full rounded-full transition-all",
+                            isOverBudget ? "bg-rose-500" : "bg-primary"
+                          )}
+                          style={{ width: `${Math.min(percentageUsed, 100)}%` }}
+                        />
+                      </div>
                     </div>
                   )}
                 </CardContent>

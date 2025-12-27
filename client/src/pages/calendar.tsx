@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { 
   Plus, 
@@ -17,12 +18,30 @@ import {
   Coffee, 
   Repeat, 
   ChevronRight,
+  ChevronLeft,
   CreditCard,
   Clock,
   TrendingUp,
-  AlertCircle
+  AlertCircle,
+  Plane,
+  Shirt,
+  Smartphone,
+  Utensils,
+  Zap,
+  Wifi,
+  GraduationCap,
+  Gift,
+  Banknote,
+  Package,
+  Film,
+  Music,
+  Dumbbell,
+  PiggyBank,
+  Grid,
+  List,
+  CalendarDays
 } from "lucide-react";
-import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isSameDay } from "date-fns";
+import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isSameDay, startOfWeek, endOfWeek, addWeeks, subWeeks } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
@@ -35,7 +54,13 @@ const CATEGORY_ICONS: Record<string, any> = {
   "Mercado": ShoppingCart,
   "Transporte": Car,
   "Saúde": Heart,
-  "Lazer": Coffee,
+  "Lazer": Film,
+  "Compras Online": Package,
+  "Viagem": Plane,
+  "Alimentação": Utensils,
+  "Streaming": Music,
+  "Academia": Dumbbell,
+  "Outros": CreditCard
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -44,12 +69,16 @@ const CATEGORY_COLORS: Record<string, string> = {
   "Transporte": "#3b82f6",
   "Lazer": "#a855f7",
   "Saúde": "#ef4444",
+  "Compras Online": "#ec4899",
+  "Viagem": "#06b6d4",
+  "Alimentação": "#84cc16",
+  "Streaming": "#f43f5e",
   "Receitas": "#10b981",
   "Outros": "#6b7280"
 };
 
 const RECURRENCE_LABELS: Record<string, string> = {
-  "none": "Unico",
+  "none": "Único",
   "weekly": "Semanal",
   "biweekly": "Quinzenal",
   "monthly": "Mensal",
@@ -74,6 +103,9 @@ export default function CalendarPage() {
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [viewMode, setViewMode] = useState<"month" | "week" | "day">("month");
+  const [currentWeekStart, setCurrentWeekStart] = useState(() => startOfWeek(new Date(), { locale: ptBR }));
+  const [selectedDay, setSelectedDay] = useState<Date>(new Date());
   const [newEvent, setNewEvent] = useState({
     name: "",
     amount: "",
@@ -86,6 +118,15 @@ export default function CalendarPage() {
     queryKey: ["calendar-events"],
     queryFn: async () => {
       const res = await fetch("/api/calendar-events");
+      if (!res.ok) return [];
+      return res.json();
+    }
+  });
+
+  const { data: transactions = [] } = useQuery({
+    queryKey: ["transactions", month],
+    queryFn: async () => {
+      const res = await fetch(`/api/transactions?month=${month}`);
       if (!res.ok) return [];
       return res.json();
     }
@@ -115,6 +156,11 @@ export default function CalendarPage() {
   const monthEnd = endOfMonth(currentDate);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
+  const weekDays = eachDayOfInterval({
+    start: currentWeekStart,
+    end: endOfWeek(currentWeekStart, { locale: ptBR })
+  });
+
   const upcomingEvents = events.filter(e => {
     const dueDate = new Date(e.nextDueDate);
     return isSameMonth(dueDate, currentDate) && e.isActive;
@@ -135,100 +181,139 @@ export default function CalendarPage() {
   };
 
   const getEventsForDay = (day: Date) => {
-    return events.filter(e => isSameDay(new Date(e.nextDueDate), day));
+    return events.filter(e => {
+      const eventDate = new Date(e.nextDueDate);
+      if (isSameDay(eventDate, day)) return true;
+      if (e.recurrence === "weekly") {
+        return eventDate.getDay() === day.getDay() && eventDate <= day;
+      }
+      if (e.recurrence === "monthly") {
+        return eventDate.getDate() === day.getDate() && eventDate <= day;
+      }
+      return false;
+    });
   };
+
+  const getTransactionsForDay = (day: Date) => {
+    return transactions.filter((t: any) => isSameDay(new Date(t.paymentDate), day));
+  };
+
+  const prevWeek = () => setCurrentWeekStart(subWeeks(currentWeekStart, 1));
+  const nextWeek = () => setCurrentWeekStart(addWeeks(currentWeekStart, 1));
+  const prevDay = () => setSelectedDay(addDays(selectedDay, -1));
+  const nextDay = () => setSelectedDay(addDays(selectedDay, 1));
 
   return (
     <AppLayout>
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Calendario Financeiro</h1>
+            <h1 className="text-2xl font-bold text-foreground">Calendário Financeiro</h1>
             <p className="text-muted-foreground">
               Gerencie seus compromissos de {formatMonth(month)}
             </p>
           </div>
           
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90 gap-2" data-testid="button-add-event">
-                <Plus className="h-4 w-4" />
-                Novo Evento
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Criar Evento Recorrente</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div>
-                  <Label htmlFor="name">Nome do Evento</Label>
-                  <Input 
-                    id="name" 
-                    placeholder="Ex: Aluguel, Netflix..." 
-                    value={newEvent.name}
-                    onChange={(e) => setNewEvent(prev => ({ ...prev, name: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="amount">Valor (EUR)</Label>
-                  <Input 
-                    id="amount" 
-                    placeholder="0,00" 
-                    value={newEvent.amount}
-                    onChange={(e) => setNewEvent(prev => ({ ...prev, amount: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label>Categoria</Label>
-                  <Select value={newEvent.category1} onValueChange={(v) => setNewEvent(prev => ({ ...prev, category1: v }))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Moradia">Moradia</SelectItem>
-                      <SelectItem value="Mercado">Mercado</SelectItem>
-                      <SelectItem value="Transporte">Transporte</SelectItem>
-                      <SelectItem value="Lazer">Lazer</SelectItem>
-                      <SelectItem value="Saúde">Saude</SelectItem>
-                      <SelectItem value="Outros">Outros</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Recorrencia</Label>
-                  <Select value={newEvent.recurrence} onValueChange={(v) => setNewEvent(prev => ({ ...prev, recurrence: v }))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Unico</SelectItem>
-                      <SelectItem value="weekly">Semanal</SelectItem>
-                      <SelectItem value="biweekly">Quinzenal</SelectItem>
-                      <SelectItem value="monthly">Mensal</SelectItem>
-                      <SelectItem value="yearly">Anual</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="payment">Metodo de Pagamento (opcional)</Label>
-                  <Input 
-                    id="payment" 
-                    placeholder="Ex: Cartao XP" 
-                    value={newEvent.paymentMethod}
-                    onChange={(e) => setNewEvent(prev => ({ ...prev, paymentMethod: e.target.value }))}
-                  />
-                </div>
-                <Button 
-                  className="w-full bg-primary hover:bg-primary/90" 
-                  onClick={handleCreateEvent}
-                  disabled={createEvent.isPending}
-                >
-                  {createEvent.isPending ? "Criando..." : "Criar Evento"}
+          <div className="flex items-center gap-3">
+            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)}>
+              <TabsList className="bg-muted/50">
+                <TabsTrigger value="month" className="gap-1.5">
+                  <Grid className="h-4 w-4" />
+                  Mês
+                </TabsTrigger>
+                <TabsTrigger value="week" className="gap-1.5">
+                  <CalendarDays className="h-4 w-4" />
+                  Semana
+                </TabsTrigger>
+                <TabsTrigger value="day" className="gap-1.5">
+                  <List className="h-4 w-4" />
+                  Dia
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-primary hover:bg-primary/90 gap-2" data-testid="button-add-event">
+                  <Plus className="h-4 w-4" />
+                  Novo Evento
                 </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Criar Evento Recorrente</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div>
+                    <Label htmlFor="name">Nome do Evento</Label>
+                    <Input 
+                      id="name" 
+                      placeholder="Ex: Aluguel, Netflix..." 
+                      value={newEvent.name}
+                      onChange={(e) => setNewEvent(prev => ({ ...prev, name: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="amount">Valor (EUR)</Label>
+                    <Input 
+                      id="amount" 
+                      placeholder="0,00" 
+                      value={newEvent.amount}
+                      onChange={(e) => setNewEvent(prev => ({ ...prev, amount: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label>Categoria</Label>
+                    <Select value={newEvent.category1} onValueChange={(v) => setNewEvent(prev => ({ ...prev, category1: v }))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Moradia">Moradia</SelectItem>
+                        <SelectItem value="Mercado">Mercado</SelectItem>
+                        <SelectItem value="Transporte">Transporte</SelectItem>
+                        <SelectItem value="Lazer">Lazer</SelectItem>
+                        <SelectItem value="Saúde">Saúde</SelectItem>
+                        <SelectItem value="Streaming">Streaming</SelectItem>
+                        <SelectItem value="Outros">Outros</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Recorrência</Label>
+                    <Select value={newEvent.recurrence} onValueChange={(v) => setNewEvent(prev => ({ ...prev, recurrence: v }))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Único</SelectItem>
+                        <SelectItem value="weekly">Semanal</SelectItem>
+                        <SelectItem value="biweekly">Quinzenal</SelectItem>
+                        <SelectItem value="monthly">Mensal</SelectItem>
+                        <SelectItem value="yearly">Anual</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="payment">Método de Pagamento (opcional)</Label>
+                    <Input 
+                      id="payment" 
+                      placeholder="Ex: Cartão XP" 
+                      value={newEvent.paymentMethod}
+                      onChange={(e) => setNewEvent(prev => ({ ...prev, paymentMethod: e.target.value }))}
+                    />
+                  </div>
+                  <Button 
+                    className="w-full bg-primary hover:bg-primary/90" 
+                    onClick={handleCreateEvent}
+                    disabled={createEvent.isPending}
+                  >
+                    {createEvent.isPending ? "Criando..." : "Criar Evento"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -236,7 +321,7 @@ export default function CalendarPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1">Compromissos do Mes</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1">Compromissos do Mês</p>
                   <p className="text-2xl font-bold text-foreground">{upcomingEvents.length}</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
@@ -266,7 +351,7 @@ export default function CalendarPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1">Proximos 7 Dias</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1">Próximos 7 Dias</p>
                   <p className="text-2xl font-bold text-foreground">
                     {upcomingEvents.filter(e => new Date(e.nextDueDate) <= addDays(new Date(), 7)).length}
                   </p>
@@ -284,59 +369,216 @@ export default function CalendarPage() {
             <CardHeader>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <CalendarIcon className="h-5 w-5 text-primary" />
-                {formatMonth(month)}
+                {viewMode === "month" && formatMonth(month)}
+                {viewMode === "week" && `Semana de ${format(currentWeekStart, "dd MMM", { locale: ptBR })}`}
+                {viewMode === "day" && format(selectedDay, "EEEE, dd 'de' MMMM", { locale: ptBR })}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-7 gap-1 mb-2">
-                {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"].map(day => (
-                  <div key={day} className="text-center text-xs font-medium text-muted-foreground py-2">
-                    {day}
-                  </div>
-                ))}
-              </div>
-              <div className="grid grid-cols-7 gap-1">
-                {Array.from({ length: monthStart.getDay() }).map((_, i) => (
-                  <div key={`empty-${i}`} className="h-20" />
-                ))}
-                {daysInMonth.map(day => {
-                  const dayEvents = getEventsForDay(day);
-                  const hasEvents = dayEvents.length > 0;
-                  return (
-                    <div 
-                      key={day.toISOString()} 
-                      className={cn(
-                        "h-20 p-1.5 rounded-lg border transition-colors cursor-pointer",
-                        isToday(day) ? "bg-primary/10 border-primary/30" : "border-transparent hover:bg-muted/50",
-                        hasEvents && "bg-muted/30"
-                      )}
-                      onClick={() => setSelectedDate(day)}
-                    >
-                      <div className={cn(
-                        "text-sm font-medium mb-1",
-                        isToday(day) ? "text-primary" : "text-foreground"
-                      )}>
-                        {format(day, "d")}
+              {viewMode === "month" && (
+                <>
+                  <div className="grid grid-cols-7 gap-1 mb-2">
+                    {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map(day => (
+                      <div key={day} className="text-center text-xs font-medium text-muted-foreground py-2">
+                        {day}
                       </div>
-                      {dayEvents.slice(0, 2).map(event => {
-                        const color = CATEGORY_COLORS[event.category1] || "#6b7280";
-                        return (
-                          <div 
-                            key={event.id}
-                            className="text-[10px] truncate rounded px-1 py-0.5 mb-0.5"
-                            style={{ backgroundColor: `${color}20`, color }}
-                          >
-                            {event.name}
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-7 gap-1">
+                    {Array.from({ length: monthStart.getDay() }).map((_, i) => (
+                      <div key={`empty-${i}`} className="h-20" />
+                    ))}
+                    {daysInMonth.map(day => {
+                      const dayEvents = getEventsForDay(day);
+                      const dayTx = getTransactionsForDay(day);
+                      const hasEvents = dayEvents.length > 0;
+                      const hasTx = dayTx.length > 0;
+                      const txTotal = dayTx.reduce((sum: number, t: any) => sum + Math.abs(t.amount), 0);
+                      
+                      return (
+                        <div 
+                          key={day.toISOString()} 
+                          className={cn(
+                            "h-20 p-1.5 rounded-lg border transition-colors cursor-pointer",
+                            isToday(day) ? "bg-primary/10 border-primary/30" : "border-transparent hover:bg-muted/50",
+                            (hasEvents || hasTx) && "bg-muted/30"
+                          )}
+                          onClick={() => {
+                            setSelectedDate(day);
+                            setSelectedDay(day);
+                          }}
+                        >
+                          <div className={cn(
+                            "text-sm font-medium mb-1",
+                            isToday(day) ? "text-primary" : "text-foreground"
+                          )}>
+                            {format(day, "d")}
                           </div>
-                        );
-                      })}
-                      {dayEvents.length > 2 && (
-                        <div className="text-[10px] text-muted-foreground">+{dayEvents.length - 2}</div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                          {dayEvents.slice(0, 2).map(event => {
+                            const color = CATEGORY_COLORS[event.category1] || "#6b7280";
+                            return (
+                              <div 
+                                key={event.id}
+                                className="text-[10px] truncate rounded px-1 py-0.5 mb-0.5"
+                                style={{ backgroundColor: `${color}20`, color }}
+                              >
+                                {event.name}
+                              </div>
+                            );
+                          })}
+                          {hasTx && dayEvents.length < 2 && (
+                            <div className="text-[10px] text-muted-foreground">
+                              € {txTotal.toFixed(0)} gasto
+                            </div>
+                          )}
+                          {dayEvents.length > 2 && (
+                            <div className="text-[10px] text-muted-foreground">+{dayEvents.length - 2}</div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {viewMode === "week" && (
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <Button variant="outline" size="sm" onClick={prevWeek}>
+                      <ChevronLeft className="h-4 w-4 mr-1" />
+                      Anterior
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={nextWeek}>
+                      Próxima
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-7 gap-2">
+                    {weekDays.map(day => {
+                      const dayEvents = getEventsForDay(day);
+                      const dayTx = getTransactionsForDay(day);
+                      const txTotal = dayTx.reduce((sum: number, t: any) => sum + Math.abs(t.amount), 0);
+                      
+                      return (
+                        <div 
+                          key={day.toISOString()}
+                          className={cn(
+                            "p-3 rounded-xl border transition-colors cursor-pointer min-h-[120px]",
+                            isToday(day) ? "bg-primary/10 border-primary/30" : "border-border hover:bg-muted/50"
+                          )}
+                          onClick={() => setSelectedDay(day)}
+                        >
+                          <div className="text-center mb-2">
+                            <div className="text-xs text-muted-foreground">{format(day, "EEE", { locale: ptBR })}</div>
+                            <div className={cn(
+                              "text-lg font-bold",
+                              isToday(day) ? "text-primary" : "text-foreground"
+                            )}>{format(day, "d")}</div>
+                          </div>
+                          <div className="space-y-1">
+                            {dayEvents.slice(0, 3).map(event => {
+                              const color = CATEGORY_COLORS[event.category1] || "#6b7280";
+                              return (
+                                <div 
+                                  key={event.id}
+                                  className="text-[10px] truncate rounded px-1.5 py-1"
+                                  style={{ backgroundColor: `${color}15`, color }}
+                                >
+                                  {event.name}
+                                </div>
+                              );
+                            })}
+                            {txTotal > 0 && (
+                              <div className="text-[10px] text-center text-muted-foreground pt-1">
+                                € {txTotal.toFixed(0)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {viewMode === "day" && (
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <Button variant="outline" size="sm" onClick={prevDay}>
+                      <ChevronLeft className="h-4 w-4 mr-1" />
+                      Anterior
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={nextDay}>
+                      Próximo
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </div>
+                  <div className="space-y-3">
+                    {getEventsForDay(selectedDay).length === 0 && getTransactionsForDay(selectedDay).length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <CalendarIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p>Nenhum evento ou transação neste dia</p>
+                      </div>
+                    ) : (
+                      <>
+                        {getEventsForDay(selectedDay).map(event => {
+                          const Icon = CATEGORY_ICONS[event.category1] || CreditCard;
+                          const color = CATEGORY_COLORS[event.category1] || "#6b7280";
+                          return (
+                            <div key={event.id} className="flex items-center gap-4 p-4 rounded-xl bg-muted/30">
+                              <div 
+                                className="w-12 h-12 rounded-xl flex items-center justify-center"
+                                style={{ backgroundColor: `${color}15` }}
+                              >
+                                <Icon className="h-6 w-6" style={{ color }} />
+                              </div>
+                              <div className="flex-1">
+                                <p className="font-semibold">{event.name}</p>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <span>{event.category1}</span>
+                                  {event.recurrence !== "none" && (
+                                    <Badge variant="secondary" className="text-[10px]">
+                                      <Repeat className="h-2.5 w-2.5 mr-1" />
+                                      {RECURRENCE_LABELS[event.recurrence]}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                              <span className="font-bold text-lg">
+                                {event.amount.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                              </span>
+                            </div>
+                          );
+                        })}
+                        {getTransactionsForDay(selectedDay).map((tx: any) => {
+                          const Icon = CATEGORY_ICONS[tx.category1] || CreditCard;
+                          const color = CATEGORY_COLORS[tx.category1] || "#6b7280";
+                          return (
+                            <div key={tx.id} className="flex items-center gap-4 p-4 rounded-xl bg-muted/20 border border-border/50">
+                              <div 
+                                className="w-12 h-12 rounded-xl flex items-center justify-center"
+                                style={{ backgroundColor: `${color}15` }}
+                              >
+                                <Icon className="h-6 w-6" style={{ color }} />
+                              </div>
+                              <div className="flex-1">
+                                <p className="font-semibold">{tx.descRaw?.split(" -- ")[0] || tx.descRaw}</p>
+                                <span className="text-sm text-muted-foreground">{tx.category1 || "Não categorizado"}</span>
+                              </div>
+                              <span className={cn(
+                                "font-bold text-lg",
+                                tx.amount > 0 ? "text-primary" : "text-foreground"
+                              )}>
+                                {tx.amount > 0 ? "+" : ""}{tx.amount.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -344,7 +586,7 @@ export default function CalendarPage() {
             <CardHeader>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <AlertCircle className="h-5 w-5 text-amber-500" />
-                Proximos Vencimentos
+                Próximos Vencimentos
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
@@ -356,7 +598,7 @@ export default function CalendarPage() {
                   </div>
                 ) : (
                   upcomingEvents.slice(0, 8).map(event => {
-                    const Icon = CATEGORY_ICONS[event.category1] || ShoppingCart;
+                    const Icon = CATEGORY_ICONS[event.category1] || CreditCard;
                     const color = CATEGORY_COLORS[event.category1] || "#6b7280";
                     const dueDate = new Date(event.nextDueDate);
                     const daysUntil = Math.ceil((dueDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
@@ -394,7 +636,7 @@ export default function CalendarPage() {
                                 "text-[10px]",
                                 daysUntil <= 3 ? "border-rose-300 text-rose-600" : "border-amber-300 text-amber-600"
                               )}>
-                                {daysUntil === 0 ? "Hoje" : daysUntil === 1 ? "Amanha" : `${daysUntil} dias`}
+                                {daysUntil === 0 ? "Hoje" : daysUntil === 1 ? "Amanhã" : `${daysUntil} dias`}
                               </Badge>
                             )}
                           </div>
