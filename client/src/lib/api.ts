@@ -83,6 +83,10 @@ export const rulesApi = {
     fetchApi<{ success: boolean; appliedCount: number }>(`/rules/${id}/apply`, {
       method: "POST",
     }),
+  seed: () =>
+    fetchApi<{ success: boolean; count: number }>("/rules/seed", {
+      method: "POST",
+    }),
 };
 
 // Dashboard

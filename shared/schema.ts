@@ -34,7 +34,7 @@ export const uploads = pgTable("uploads", {
   status: uploadStatusEnum("status").notNull().default("processing"),
   rowsTotal: integer("rows_total").notNull().default(0),
   rowsImported: integer("rows_imported").notNull().default(0),
-  monthAffected: text("month_affected"), // YYYY-MM
+  monthAffected: text("month_affected"),
   errorMessage: text("error_message"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -47,7 +47,32 @@ export const insertUploadSchema = createInsertSchema(uploads).omit({ id: true, c
 export type InsertUpload = z.infer<typeof insertUploadSchema>;
 export type Upload = typeof uploads.$inferSelect;
 
-// Transactions table (ledger canônico)
+// Rules table (keyword mapping with AI-powered categorization)
+// Declared before transactions so transactionsRelations can reference it
+export const rules = pgTable("rules", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  name: text("name").notNull(),
+  keywords: text("keywords").notNull(),
+  type: transactionTypeEnum("type").notNull(),
+  fixVar: fixVarEnum("fix_var").notNull(),
+  category1: category1Enum("category_1").notNull(),
+  category2: text("category_2"),
+  priority: integer("priority").notNull().default(500),
+  strict: boolean("strict").notNull().default(false),
+  isSystem: boolean("is_system").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const rulesRelations = relations(rules, ({ one }) => ({
+  user: one(users, { fields: [rules.userId], references: [users.id] }),
+}));
+
+export const insertRuleSchema = createInsertSchema(rules).omit({ id: true, createdAt: true });
+export type InsertRule = z.infer<typeof insertRuleSchema>;
+export type Rule = typeof rules.$inferSelect;
+
+// Transactions table (ledger canonico)
 export const transactions = pgTable("transactions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
@@ -61,7 +86,7 @@ export const transactions = pgTable("transactions", {
   foreignAmount: real("foreign_amount"),
   foreignCurrency: text("foreign_currency"),
   exchangeRate: real("exchange_rate"),
-  key: text("key").notNull().unique(), // Key_MM for dedupe
+  key: text("key").notNull().unique(),
   type: transactionTypeEnum("type"),
   fixVar: fixVarEnum("fix_var"),
   category1: category1Enum("category_1"),
@@ -84,32 +109,11 @@ export const insertTransactionSchema = createInsertSchema(transactions).omit({ i
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 export type Transaction = typeof transactions.$inferSelect;
 
-// Rules table (keyword mapping)
-export const rules = pgTable("rules", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id),
-  name: text("name").notNull(),
-  keywords: text("keywords").notNull(), // semicolon-separated
-  type: transactionTypeEnum("type").notNull(),
-  fixVar: fixVarEnum("fix_var").notNull(),
-  category1: category1Enum("category_1").notNull(),
-  category2: text("category_2"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const rulesRelations = relations(rules, ({ one }) => ({
-  user: one(users, { fields: [rules.userId], references: [users.id] }),
-}));
-
-export const insertRuleSchema = createInsertSchema(rules).omit({ id: true, createdAt: true });
-export type InsertRule = z.infer<typeof insertRuleSchema>;
-export type Rule = typeof rules.$inferSelect;
-
 // Budgets table
 export const budgets = pgTable("budgets", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
-  month: text("month").notNull(), // YYYY-MM
+  month: text("month").notNull(),
   category1: category1Enum("category_1").notNull(),
   amount: real("amount").notNull(),
 });

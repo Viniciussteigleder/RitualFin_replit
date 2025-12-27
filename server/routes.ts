@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { insertRuleSchema } from "@shared/schema";
 import { z } from "zod";
 import { parseCSV, type ParsedTransaction } from "./csv-parser";
-import { categorizeTransaction, suggestKeyword } from "./rules-engine";
+import { categorizeTransaction, suggestKeyword, AI_SEED_RULES } from "./rules-engine";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -283,6 +283,29 @@ export async function registerRoutes(
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Seed AI-powered rules
+  app.post("/api/rules/seed", async (_req: Request, res: Response) => {
+    try {
+      let user = await storage.getUserByUsername("demo");
+      if (!user) {
+        user = await storage.createUser({ username: "demo", password: "demo" });
+      }
+      
+      let count = 0;
+      for (const seedRule of AI_SEED_RULES) {
+        await storage.createRule({
+          ...seedRule,
+          userId: null
+        });
+        count++;
+      }
+      
+      res.json({ success: true, count });
+    } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
   });
