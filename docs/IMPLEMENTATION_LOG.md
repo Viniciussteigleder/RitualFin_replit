@@ -590,6 +590,60 @@ interface LogEntry {
 
 ---
 
+## Phase D (Partial) Implementation (2025-12-27)
+
+**Status**: ✅ Completed (Account Source Display)
+
+### Changes Made
+
+**File**: `client/src/pages/confirm.tsx`
+
+Added dedicated "Conta" (Account) column to transaction confirmation table.
+
+**Before**:
+- Account source shown as small subtitle under description
+- Not immediately visible
+- Easy to miss
+
+**After**:
+- Dedicated "Conta" column between "Data" and "Descricao"
+- Account source displayed as badge (outlined, small text)
+- Clearly visible for each transaction
+- Examples visible: "Miles & More Gold Credit Card", "Amex - Vinicius (1009)", "Amex - E (2015)"
+
+### UI Changes
+
+**Table Header**:
+```tsx
+<th>Data</th>
+<th>Conta</th>        // ← NEW COLUMN
+<th>Descricao</th>
+<th>Valor</th>
+...
+```
+
+**Table Body**:
+```tsx
+<td>
+  <Badge variant="outline" className="text-xs font-normal whitespace-nowrap">
+    {t.accountSource}
+  </Badge>
+</td>
+```
+
+### Benefits
+
+✅ **Visibility**: Account source immediately visible
+✅ **Multi-card Support**: Users can now see which card each transaction came from
+✅ **Filtering Ready**: Column can be extended with filters later
+✅ **Verification**: Easy to verify Amex fix is working (see different account values)
+
+**Lines Changed**: ~10 lines (confirm.tsx)
+
+**Note**: Other Phase D items (upload history format display, account filtering) remain optional/future enhancements.
+
+---
+
 ---
 
 ## Goals & Category Goals API (2025-12-27)
