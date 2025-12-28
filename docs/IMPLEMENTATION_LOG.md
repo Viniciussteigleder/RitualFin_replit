@@ -347,11 +347,13 @@ Examples:
 
 ---
 
-### Phase C: Add Sparkasse Support (Priority 3 - Deferred)
+### Phase C: Add Sparkasse Support (Priority 3 - Ready)
 
 **Goal**: Support Sparkasse CSV uploads using same pattern
 
-**Prerequisite**: Obtain Sparkasse CSV sample
+**Status**: CSV sample available
+
+**CSV Sample**: `attached_assets/20250929-22518260-umsatz_1766876653600.CSV`
 
 **Files to Modify**:
 - `server/csv-parser.ts` (add parseSparkasse function)
