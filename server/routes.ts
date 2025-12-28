@@ -259,6 +259,30 @@ export async function registerRoutes(
           rowsTotal: parseResult.rowsTotal,
           rowsImported: 0
         });
+
+        // Save parse errors to database
+        for (const errorStr of parseResult.errors) {
+          const match = errorStr.match(/^Linha (\d+): (.+)$/);
+          if (match) {
+            const rowNumber = parseInt(match[1], 10);
+            const errorMessage = match[2];
+            await storage.createUploadError({
+              uploadId: upload.id,
+              rowNumber,
+              errorMessage,
+              rawData: null
+            });
+          } else {
+            // General error without row number
+            await storage.createUploadError({
+              uploadId: upload.id,
+              rowNumber: 0,
+              errorMessage: errorStr,
+              rawData: null
+            });
+          }
+        }
+
         return res.status(400).json({
           success: false,
           uploadId: upload.id,
@@ -398,6 +422,23 @@ export async function registerRoutes(
         }
       }
 
+      // Save parse errors to database (row-level errors from CSV parsing)
+      if (parseResult.errors.length > 0) {
+        for (const errorStr of parseResult.errors) {
+          const match = errorStr.match(/^Linha (\d+): (.+)$/);
+          if (match) {
+            const rowNumber = parseInt(match[1], 10);
+            const errorMessage = match[2];
+            await storage.createUploadError({
+              uploadId: upload.id,
+              rowNumber,
+              errorMessage,
+              rawData: null
+            });
+          }
+        }
+      }
+
       // Update upload status
       const finalStatus = duplicateCount === parseResult.transactions.length ? "duplicate" : "ready";
       await storage.updateUpload(upload.id, {
@@ -439,6 +480,32 @@ export async function registerRoutes(
         stack: error.stack?.split('\n')[0]
       });
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get errors for a specific upload
+  app.get("/api/uploads/:id/errors", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      // Verify upload exists and belongs to user
+      const upload = await storage.getUpload(req.params.id);
+      if (!upload || upload.userId !== user.id) {
+        return res.status(404).json({ error: "Upload not found" });
+      }
+
+      const errors = await storage.getUploadErrors(req.params.id);
+      res.json({
+        uploadId: req.params.id,
+        errors,
+        count: errors.length
+      });
+    } catch (error: any) {
+      console.error("Error fetching upload errors:", error);
+      res.status(500).json({ error: "Failed to retrieve errors" });
     }
   });
 

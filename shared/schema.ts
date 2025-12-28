@@ -89,6 +89,24 @@ export const insertUploadSchema = createInsertSchema(uploads).omit({ id: true, c
 export type InsertUpload = z.infer<typeof insertUploadSchema>;
 export type Upload = typeof uploads.$inferSelect;
 
+// Upload Errors table (row-level parsing errors)
+export const uploadErrors = pgTable("upload_errors", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  uploadId: varchar("upload_id").notNull().references(() => uploads.id, { onDelete: "cascade" }),
+  rowNumber: integer("row_number").notNull(),
+  errorMessage: text("error_message").notNull(),
+  rawData: text("raw_data"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const uploadErrorsRelations = relations(uploadErrors, ({ one }) => ({
+  upload: one(uploads, { fields: [uploadErrors.uploadId], references: [uploads.id] }),
+}));
+
+export const insertUploadErrorSchema = createInsertSchema(uploadErrors).omit({ id: true, createdAt: true });
+export type InsertUploadError = z.infer<typeof insertUploadErrorSchema>;
+export type UploadError = typeof uploadErrors.$inferSelect;
+
 // Rules table (keyword mapping with AI-powered categorization)
 // Declared before transactions so transactionsRelations can reference it
 export const rules = pgTable("rules", {

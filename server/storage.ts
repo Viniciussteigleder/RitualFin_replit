@@ -1,8 +1,9 @@
 import {
-  users, accounts, uploads, transactions, rules, budgets, calendarEvents, eventOccurrences, goals, categoryGoals, rituals, settings,
+  users, accounts, uploads, uploadErrors, transactions, rules, budgets, calendarEvents, eventOccurrences, goals, categoryGoals, rituals, settings,
   type User, type InsertUser,
   type Account, type InsertAccount,
   type Upload, type InsertUpload,
+  type UploadError, type InsertUploadError,
   type Transaction, type InsertTransaction,
   type Rule, type InsertRule,
   type Budget, type InsertBudget,
@@ -40,7 +41,11 @@ export interface IStorage {
   getUpload(id: string): Promise<Upload | undefined>;
   createUpload(upload: InsertUpload): Promise<Upload>;
   updateUpload(id: string, data: Partial<Upload>): Promise<Upload | undefined>;
-  
+
+  // Upload Errors
+  createUploadError(error: InsertUploadError): Promise<UploadError>;
+  getUploadErrors(uploadId: string): Promise<UploadError[]>;
+
   // Transactions
   getTransactions(userId: string, month?: string): Promise<Transaction[]>;
   getTransactionsByNeedsReview(userId: string): Promise<Transaction[]>;
@@ -254,6 +259,18 @@ export class DatabaseStorage implements IStorage {
   async updateUpload(id: string, data: Partial<Upload>): Promise<Upload | undefined> {
     const [updated] = await db.update(uploads).set(data).where(eq(uploads.id, id)).returning();
     return updated || undefined;
+  }
+
+  // Upload Errors
+  async createUploadError(error: InsertUploadError): Promise<UploadError> {
+    const [created] = await db.insert(uploadErrors).values(error).returning();
+    return created;
+  }
+
+  async getUploadErrors(uploadId: string): Promise<UploadError[]> {
+    return db.select().from(uploadErrors)
+      .where(eq(uploadErrors.uploadId, uploadId))
+      .orderBy(uploadErrors.rowNumber);
   }
 
   // Transactions

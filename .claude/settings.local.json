@@ -28,7 +28,13 @@
       "Bash(node /tmp/test_csv_split.js:*)",
       "Bash(tsx:*)",
       "Bash(git remote add:*)",
-      "Bash(npm run db:push:*)"
+      "Bash(npm run db:push:*)",
+      "Bash(node /tmp/test_csv_uploads.js:*)",
+      "Bash(node:*)",
+      "Bash(head:*)",
+      "Bash(git restore:*)",
+      "Bash(timeout 10 npm run dev:*)",
+      "Bash(__NEW_LINE__ curl -s -X POST http://localhost:5000/api/uploads/process )"
     ]
   }
 }
