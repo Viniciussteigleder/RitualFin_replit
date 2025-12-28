@@ -699,11 +699,11 @@ const descRaw = `${verwendungszweck.slice(0, 100)} -- ${beguenstigter.slice(0, 5
 - ✅ Logging shows correct format detection
 - ✅ Transactions available in confirmation queue
 
-**Known Limitation**:
-- Full production CSV (506 lines) triggers "request entity too large" error
-- This is a general body size limit issue, not specific to Sparkasse
-- Workaround: Users can split large CSV files or increase body size limit
-- Test with 10-line file proves parser works correctly
+**Full File Testing** (Updated 2025-12-28):
+- ✅ Full production CSV (506 lines, ~130KB) uploaded successfully
+- ✅ All 505 transactions parsed correctly (404 new + 101 duplicates from previous tests)
+- ✅ Processing time: ~2.2 seconds
+- ✅ Body size limit increased from 100KB (default) to 10MB in server/index.ts
 
 ### Error Message Update
 
@@ -737,9 +737,103 @@ Updated unknown format error message to include Sparkasse:
 
 ### Next Steps
 
-- [ ] Consider implementing request body size increase for large CSV uploads
+- [x] ~~Consider implementing request body size increase for large CSV uploads~~ ✅ **Completed** (2025-12-28)
+  - Increased express.json() limit from 100KB to 10MB
+  - Full 506-line Sparkasse CSV (130KB) now uploads successfully
+  - File: `server/index.ts:16-17,24`
 - [ ] Validate with more Sparkasse CSV samples (if available)
 - [ ] Add Sparkasse-specific rules/keywords if transaction patterns emerge
+
+---
+
+## Body Size Limit Fix (2025-12-28)
+
+**Status**: ✅ Completed
+
+**Problem**: User reported Sparkasse CSV upload failure. Root cause: Express.js default body size limit (100KB) was too small for production Sparkasse CSV exports.
+
+**Symptom**: Upload returned error message `"request entity too large"` when attempting to upload full 506-line Sparkasse CSV (~130KB).
+
+### Investigation
+
+**Initial Diagnosis**:
+- Small test files (10, 20, 50, 100 lines) all uploaded successfully
+- Parser logic confirmed working correctly
+- Format detection working as expected
+- Full 506-line file failed with body size error
+
+**File Size Analysis**:
+```
+10 lines:   ~2.4 KB   ✅ Success
+20 lines:   ~5.1 KB   ✅ Success
+50 lines:   ~12.8 KB  ✅ Success
+100 lines:  ~25.6 KB  ✅ Success
+506 lines:  ~130 KB   ❌ Failed (exceeded 100KB default limit)
+```
+
+### Fix Implemented
+
+**File**: `server/index.ts`
+
+**Changes**:
+```typescript
+// Before (default 100KB limit):
+app.use(express.json({
+  verify: (req, _res, buf) => { req.rawBody = buf; }
+}));
+app.use(express.urlencoded({ extended: false }));
+
+// After (10MB limit):
+app.use(express.json({
+  limit: "10mb", // Increased limit for large CSV uploads
+  verify: (req, _res, buf) => { req.rawBody = buf; }
+}));
+app.use(express.urlencoded({ extended: false, limit: "10mb" }));
+```
+
+**Rationale**:
+- 10MB limit supports CSV files with ~39,000 lines (based on 130KB for 506 lines)
+- Extremely unlikely a user would export more than that in a single CSV
+- Limit still reasonable enough to prevent abuse/DoS
+- Both `express.json()` and `express.urlencoded()` updated for consistency
+
+### Testing Results
+
+**Full Production File Test**:
+```json
+{
+  "success": true,
+  "uploadId": "13c01032-4fc8-4d5b-8da3-9b77bb7f39f0",
+  "rowsTotal": 505,
+  "rowsImported": 404,
+  "duplicates": 101,
+  "monthAffected": "2025-09"
+}
+```
+
+**Log Output**:
+```json
+{"level":"INFO","action":"upload_start","metadata":{"filename":"sparkasse_full.csv","contentLength":130178}}
+{"level":"INFO","action":"csv_format_detected","metadata":{"format":"sparkasse","totalLines":506}}
+{"level":"INFO","action":"csv_parse_complete","metadata":{"format":"sparkasse","success":true,"rowsTotal":505,"rowsImported":505,"errorsCount":0}}
+{"level":"INFO","action":"upload_complete","metadata":{"status":"ready","rowsTotal":505,"rowsImported":404,"duplicates":101,"durationMs":2179}}
+```
+
+**Verification**:
+- ✅ Full 506-line CSV (130KB) uploaded successfully
+- ✅ All 505 transactions parsed without errors
+- ✅ Format detected correctly as "sparkasse"
+- ✅ Processing completed in 2.2 seconds
+- ✅ No performance degradation observed
+
+**Lines Changed**: 2 lines (server/index.ts:17, 24)
+
+### Impact
+
+✅ **User Experience**: Large CSV uploads now work seamlessly
+✅ **No Breaking Changes**: Existing functionality unaffected
+✅ **Future-Proof**: Supports growth in transaction volume per export
+✅ **Security**: 10MB limit still protects against abuse
 
 ---
 
