@@ -33,6 +33,7 @@ export interface IStorage {
   createAccount(account: InsertAccount): Promise<Account>;
   updateAccount(id: string, userId: string, data: Partial<Account>): Promise<Account | undefined>;
   archiveAccount(id: string, userId: string): Promise<void>;
+  getAccountBalance(userId: string, accountId: string, options?: { startDate?: Date; endDate?: Date }): Promise<{ balance: number; currency: string; transactionCount: number }>;
 
   // Uploads
   getUploads(userId: string): Promise<Upload[]>;
@@ -195,6 +196,42 @@ export class DatabaseStorage implements IStorage {
     await db.update(accounts)
       .set({ isActive: false })
       .where(and(eq(accounts.id, id), eq(accounts.userId, userId)));
+  }
+
+  async getAccountBalance(
+    userId: string,
+    accountId: string,
+    options?: { startDate?: Date; endDate?: Date }
+  ): Promise<{ balance: number; currency: string; transactionCount: number }> {
+    // Build base query conditions
+    const conditions = [
+      eq(transactions.userId, userId),
+      eq(transactions.accountId, accountId),
+      eq(transactions.excludeFromBudget, false)
+    ];
+
+    // Add date filters if provided
+    if (options?.startDate) {
+      conditions.push(gte(transactions.paymentDate, options.startDate));
+    }
+    if (options?.endDate) {
+      conditions.push(lt(transactions.paymentDate, options.endDate));
+    }
+
+    const result = await db
+      .select({
+        balance: sql<number>`COALESCE(SUM(${transactions.amount}), 0)`,
+        transactionCount: sql<number>`COUNT(*)::int`,
+        currency: sql<string>`COALESCE(MAX(${transactions.currency}), 'EUR')`
+      })
+      .from(transactions)
+      .where(and(...conditions));
+
+    return {
+      balance: result[0]?.balance ?? 0,
+      currency: result[0]?.currency ?? "EUR",
+      transactionCount: result[0]?.transactionCount ?? 0
+    };
   }
 
   // Uploads

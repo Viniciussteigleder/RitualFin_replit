@@ -167,6 +167,36 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/accounts/:id/balance", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      // Verify account exists and belongs to user
+      const account = await storage.getAccount(req.params.id);
+      if (!account || account.userId !== user.id) {
+        return res.status(404).json({ error: "Account not found" });
+      }
+
+      // Parse optional date filters
+      const options: { startDate?: Date; endDate?: Date } = {};
+      if (req.query.startDate) {
+        options.startDate = new Date(req.query.startDate as string);
+      }
+      if (req.query.endDate) {
+        options.endDate = new Date(req.query.endDate as string);
+      }
+
+      const balance = await storage.getAccountBalance(user.id, req.params.id, options);
+      res.json(balance);
+    } catch (error: any) {
+      console.error("Error fetching account balance:", error);
+      res.status(500).json({ error: "Failed to calculate balance" });
+    }
+  });
+
   // ===== UPLOADS =====
   app.get("/api/uploads", async (_req: Request, res: Response) => {
     try {
