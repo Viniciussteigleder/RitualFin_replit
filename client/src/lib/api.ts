@@ -28,6 +28,26 @@ export const authApi = {
   getMe: () => fetchApi<{ id: string; username: string }>("/auth/me"),
 };
 
+// Accounts
+export const accountsApi = {
+  list: () => fetchApi<any[]>("/accounts"),
+  get: (id: string) => fetchApi<any>(`/accounts/${id}`),
+  create: (data: any) =>
+    fetchApi<any>("/accounts", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  update: (id: string, data: any) =>
+    fetchApi<any>(`/accounts/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    fetchApi<void>(`/accounts/${id}`, {
+      method: "DELETE",
+    }),
+};
+
 // Uploads
 export const uploadsApi = {
   list: () => fetchApi<any[]>("/uploads"),

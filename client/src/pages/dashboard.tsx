@@ -42,10 +42,12 @@ import {
 import { format, subMonths, startOfMonth, endOfMonth, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
-import { dashboardApi, transactionsApi } from "@/lib/api";
+import { dashboardApi, transactionsApi, accountsApi } from "@/lib/api";
 import { Link } from "wouter";
 import { useMonth } from "@/lib/month-context";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState } from "react";
 
 const CATEGORY_ICONS: Record<string, any> = {
   "Moradia": Home,
@@ -97,6 +99,12 @@ interface Insight {
 
 export default function DashboardPage() {
   const { month, formatMonth } = useMonth();
+  const [accountFilter, setAccountFilter] = useState<string>("all");
+
+  const { data: accounts = [] } = useQuery({
+    queryKey: ["accounts"],
+    queryFn: accountsApi.list,
+  });
 
   const { data: dashboard, isLoading: dashboardLoading } = useQuery({
     queryKey: ["dashboard", month],
@@ -134,7 +142,13 @@ export default function DashboardPage() {
   });
 
   const pendingCount = confirmQueue.length;
-  const recentTransactions = transactions.slice(0, 5);
+
+  // Filter transactions by account
+  const filteredTransactions = accountFilter === "all"
+    ? transactions
+    : transactions.filter((t: any) => t.accountId === accountFilter);
+
+  const recentTransactions = filteredTransactions.slice(0, 5);
 
   const estimatedIncome = 8500;
   const spent = dashboard?.totalSpent || 0;
@@ -232,6 +246,21 @@ export default function DashboardPage() {
             <p className="text-muted-foreground">
               Uma visão clara do seu orçamento. Sempre atualizada.
             </p>
+          </div>
+          <div className="w-full md:w-64">
+            <Select value={accountFilter} onValueChange={setAccountFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Todas as contas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as contas</SelectItem>
+                {accounts.filter((a: any) => a.isActive).map((account: any) => (
+                  <SelectItem key={account.id} value={account.id}>
+                    {account.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 

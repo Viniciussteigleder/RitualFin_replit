@@ -7,10 +7,11 @@ import { format } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { transactionsApi } from "@/lib/api";
-import { useState } from "react";
+import { transactionsApi, accountsApi } from "@/lib/api";
+import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { AccountBadge } from "@/components/account-badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -44,6 +45,18 @@ export default function ConfirmPage() {
     queryKey: ["confirm-queue"],
     queryFn: transactionsApi.confirmQueue,
   });
+
+  const { data: accounts = [] } = useQuery({
+    queryKey: ["accounts"],
+    queryFn: accountsApi.list,
+  });
+
+  const accountsById = useMemo(() => {
+    return accounts.reduce((map: any, account: any) => {
+      map[account.id] = account;
+      return map;
+    }, {});
+  }, [accounts]);
 
   const confirmMutation = useMutation({
     mutationFn: ({ ids, data, createRule, keyword }: { 
@@ -304,9 +317,7 @@ export default function ConfirmPage() {
                           {format(new Date(t.paymentDate), "dd/MM/yy")}
                         </td>
                         <td className="px-5 py-4">
-                          <Badge variant="outline" className="text-xs font-normal whitespace-nowrap">
-                            {t.accountSource}
-                          </Badge>
+                          <AccountBadge account={accountsById[t.accountId]} size="sm" />
                         </td>
                         <td className="px-5 py-4">
                           <p className="font-medium truncate max-w-[250px]">{t.descRaw?.split(" -- ")[0]}</p>

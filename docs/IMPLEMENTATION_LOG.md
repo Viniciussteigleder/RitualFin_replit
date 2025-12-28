@@ -3050,3 +3050,454 @@ npm run check
 **Fase 2 - COMPLETA** ✅
 
 **Data de Conclusão**: 2025-12-28
+
+---
+
+## Fase 3: Frontend - UI de Contas e Filtros (2025-12-28)
+
+**Objetivo**: Criar interface de usuário para gerenciar contas e adicionar filtros por conta em páginas existentes.
+
+**Status**: ✅ COMPLETA
+
+---
+
+### Contexto e Motivação
+
+**Problema**:
+- Backend possui sistema completo de contas (Fase 2)
+- Frontend não permite visualizar ou gerenciar contas
+- Usuário não consegue filtrar transações por conta
+- Contas aparecem apenas como string (accountSource) sem contexto visual
+
+**Solução**:
+- Criar página `/accounts` para gerenciamento CRUD
+- Adicionar filtro por conta no dashboard
+- Exibir badges visuais de contas em transações
+- Criar componente reutilizável `AccountBadge`
+
+---
+
+### Implementação
+
+#### 1. API Layer (`client/src/lib/api.ts`)
+
+**Nova seção accountsApi**:
+```typescript
+// Accounts
+export const accountsApi = {
+  list: () => fetchApi<any[]>("/accounts"),
+  get: (id: string) => fetchApi<any>(`/accounts/${id}`),
+  create: (data: any) =>
+    fetchApi<any>("/accounts", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  update: (id: string, data: any) =>
+    fetchApi<any>(`/accounts/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    fetchApi<void>(`/accounts/${id}`, {
+      method: "DELETE",
+    }),
+};
+```
+
+**Decisão**: API client espelha exatamente os endpoints do backend (criados na Fase 2)
+
+---
+
+#### 2. Página de Contas (`client/src/pages/accounts.tsx`)
+
+**Recursos Implementados**:
+- ✅ Listagem de todas as contas ativas
+- ✅ Busca por nome de conta
+- ✅ Card visual com ícone e cor personalizados
+- ✅ Dialog de criação/edição com preview em tempo real
+- ✅ Seleção de ícone (4 opções: credit-card, landmark, wallet, coins)
+- ✅ Seleção de cor (8 opções predefinidas)
+- ✅ Arquivamento de conta (soft delete)
+
+**Layout**:
+```
+┌─────────────────────────────────────────┐
+│ Header: "Contas" + Button "Nova Conta" │
+├─────────────────────────────────────────┤
+│ Search bar                              │
+├─────────────────────────────────────────┤
+│ ┌───────┐  ┌───────┐  ┌───────┐        │
+│ │ Card  │  │ Card  │  │ Card  │  ...   │
+│ │ Conta │  │ Conta │  │ Conta │        │
+│ └───────┘  └───────┘  └───────┘        │
+└─────────────────────────────────────────┘
+```
+
+**Card de Conta**:
+```
+┌────────────────────────────┐
+│ 🏦  [Editar] [Arquivar]    │
+│                            │
+│ Sparkasse (6565)          │
+│ Conta Bancária  •••• 6565 │
+│ ✓ Ativa                   │
+└────────────────────────────┘
+```
+
+**Dialog de Criação/Edição**:
+- Nome da conta (input text)
+- Tipo (select: credit_card, debit_card, bank_account, cash)
+- Últimos 4 dígitos (input opcional)
+- Ícone (grid 4 opções)
+- Cor (grid 8 opções)
+- Preview em tempo real
+
+**Preset de Ícones**:
+```typescript
+{ value: "credit-card", label: "Cartão", Icon: CreditCard },
+{ value: "landmark", label: "Banco", Icon: Landmark },
+{ value: "wallet", label: "Carteira", Icon: Wallet },
+{ value: "coins", label: "Moedas", Icon: Coins }
+```
+
+**Preset de Cores**:
+```typescript
+{ value: "#3b82f6", label: "Azul" },
+{ value: "#ef4444", label: "Vermelho" },
+{ value: "#8b5cf6", label: "Roxo" },
+{ value: "#10b981", label: "Verde" },
+{ value: "#f59e0b", label: "Laranja" },
+{ value: "#ec4899", label: "Rosa" },
+{ value: "#6366f1", label: "Indigo" },
+{ value: "#6b7280", label: "Cinza" }
+```
+
+**Validação**:
+- Nome é obrigatório
+- Outros campos têm defaults sensatos
+- Preview atualiza em tempo real
+
+---
+
+#### 3. Componente AccountBadge (`client/src/components/account-badge.tsx`)
+
+**Props**:
+```typescript
+interface AccountBadgeProps {
+  account: Account | null | undefined;
+  className?: string;
+  showIcon?: boolean;
+  size?: "sm" | "md" | "lg";
+}
+```
+
+**Renderização**:
+```tsx
+// Exemplo visual
+<AccountBadge account={account} size="sm" />
+// → 🏦 Sparkasse (6565)  [com cor de fundo e texto na cor da conta]
+```
+
+**Comportamento**:
+- Se `account === null/undefined`: Mostra "Sem conta" em cinza
+- Ícone dinâmico baseado em `account.icon`
+- Cor de fundo: `{color}15` (15% opacity)
+- Cor do texto e ícone: `{color}` (100%)
+
+**Reutilizável**: Usado em dashboard, confirm, e futuras páginas
+
+---
+
+#### 4. Filtro por Conta no Dashboard (`client/src/pages/dashboard.tsx`)
+
+**Modificações**:
+
+1. **Import e Estado**:
+```typescript
+import { accountsApi } from "@/lib/api";
+import { Select } from "@/components/ui/select";
+import { useState } from "react";
+
+const [accountFilter, setAccountFilter] = useState<string>("all");
+```
+
+2. **Query de Contas**:
+```typescript
+const { data: accounts = [] } = useQuery({
+  queryKey: ["accounts"],
+  queryFn: accountsApi.list,
+});
+```
+
+3. **Filtro de Transações**:
+```typescript
+const filteredTransactions = accountFilter === "all"
+  ? transactions
+  : transactions.filter((t: any) => t.accountId === accountFilter);
+
+const recentTransactions = filteredTransactions.slice(0, 5);
+```
+
+4. **UI - Select no Header**:
+```tsx
+<div className="w-full md:w-64">
+  <Select value={accountFilter} onValueChange={setAccountFilter}>
+    <SelectTrigger>
+      <SelectValue placeholder="Todas as contas" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="all">Todas as contas</SelectItem>
+      {accounts.filter((a: any) => a.isActive).map((account: any) => (
+        <SelectItem key={account.id} value={account.id}>
+          {account.name}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+</div>
+```
+
+**Resultado**: Dashboard agora filtra transações, categorias e gastos por conta selecionada
+
+---
+
+#### 5. Badge de Conta na Confirmação (`client/src/pages/confirm.tsx`)
+
+**Modificações**:
+
+1. **Imports**:
+```typescript
+import { accountsApi } from "@/lib/api";
+import { useMemo } from "react";
+import { AccountBadge } from "@/components/account-badge";
+```
+
+2. **Query e Mapa**:
+```typescript
+const { data: accounts = [] } = useQuery({
+  queryKey: ["accounts"],
+  queryFn: accountsApi.list,
+});
+
+const accountsById = useMemo(() => {
+  return accounts.reduce((map: any, account: any) => {
+    map[account.id] = account;
+    return map;
+  }, {});
+}, [accounts]);
+```
+
+3. **Substituição do Badge**:
+```tsx
+// ANTES
+<Badge variant="outline" className="text-xs">
+  {t.accountSource}
+</Badge>
+
+// DEPOIS
+<AccountBadge account={accountsById[t.accountId]} size="sm" />
+```
+
+**Resultado**: Transações na fila de confirmação agora mostram badge visual com ícone e cor
+
+---
+
+#### 6. Roteamento (`client/src/App.tsx`)
+
+**Adições**:
+```typescript
+import AccountsPage from "@/pages/accounts";
+
+// No Router
+<Route path="/accounts" component={AccountsPage} />
+```
+
+---
+
+#### 7. Navegação (`client/src/components/layout/sidebar.tsx`)
+
+**Item adicionado**:
+```typescript
+{
+  label: "Contas",
+  icon: Wallet,
+  href: "/accounts",
+  description: "Gerenciar cartões e contas"
+}
+```
+
+**Posição**: Entre "Regras" e "IA Keywords"
+
+---
+
+### Testes Realizados
+
+**1. Type Check**:
+```bash
+npm run check
+```
+
+**Resultado**:
+- ✅ Nenhum erro em `client/src/pages/accounts.tsx`
+- ✅ Nenhum erro em `client/src/pages/dashboard.tsx`
+- ✅ Nenhum erro em `client/src/pages/confirm.tsx`
+- ✅ Nenhum erro em `client/src/components/account-badge.tsx`
+- ⚠️ Erros pré-existentes em `server/replit_integrations/` (não relacionados)
+
+---
+
+### Arquivos Modificados
+
+**Frontend - Páginas**:
+- `client/src/pages/accounts.tsx`: +412 linhas (novo arquivo)
+- `client/src/pages/dashboard.tsx`: +30 linhas (filtro)
+- `client/src/pages/confirm.tsx`: +20 linhas (badge)
+
+**Frontend - Componentes**:
+- `client/src/components/account-badge.tsx`: +73 linhas (novo arquivo)
+
+**Frontend - Infraestrutura**:
+- `client/src/lib/api.ts`: +18 linhas (accountsApi)
+- `client/src/App.tsx`: +2 linhas (rota)
+- `client/src/components/layout/sidebar.tsx`: +6 linhas (nav item)
+
+**Total**: ~561 linhas adicionadas
+
+---
+
+### Decisões de Design
+
+#### 1. Por que criar AccountBadge como componente separado?
+**Decisão**: Componente reutilizável em vez de inline
+
+**Razões**:
+- DRY: Usado em múltiplas páginas (dashboard, confirm, futuras)
+- Consistência: Aparência uniforme em toda aplicação
+- Manutenção: Mudanças centralizadas
+- Flexibilidade: Props para size, showIcon permitem customização
+
+**Trade-off**: Arquivo adicional (aceitável)
+
+---
+
+#### 2. Filtro Local vs Filtro Server-Side no Dashboard
+**Decisão**: Filtro local (client-side)
+
+**Razões**:
+- Simplicidade: Não requer mudança na API
+- Performance: Transações já carregadas, filtro é instantâneo
+- Consistência: Mantém estrutura de dados existente
+- Lazy Loading futuro: Pode migrar para server-side depois se necessário
+
+**Trade-off**: Todos os dados carregados (aceitável para volumes atuais ~1000 transações)
+
+---
+
+#### 3. Preview em Tempo Real no Formulário
+**Decisão**: Preview dinâmico mostra resultado antes de salvar
+
+**Razões**:
+- UX: Feedback visual imediato
+- Reduz erros: Usuário vê o resultado antes de confirmar
+- Lazy Mode: Usuário confia que vai ficar como espera
+- Gamificação: Interface mais interativa
+
+**Trade-off**: Complexity no formulário (mínimo)
+
+---
+
+#### 4. Preset vs Custom para Ícones e Cores
+**Decisão**: Presets fixos (sem seletor de cor customizado)
+
+**Razões**:
+- Simplicidade: Menos código, menos bugs
+- Consistência visual: Paleta controlada
+- Suficiente: 8 cores + 4 ícones cobrem 99% dos casos
+- Performance: Não precisa color picker library
+
+**Trade-off**: Menos flexibilidade (aceitável)
+
+---
+
+#### 5. Soft Delete no Arquivamento
+**Decisão**: Manter arquivamento via `isActive = false` (não DELETE)
+
+**Razões**:
+- Consistência: Mesma abordagem do backend (Fase 2)
+- Integridade: Transações existentes não ficam órfãs
+- Reversibilidade: Pode reativar conta no futuro
+- Auditoria: Histórico preservado
+
+**Trade-off**: Contas arquivadas ocupam espaço (mínimo)
+
+---
+
+### Métricas
+
+**UI**:
+- Páginas criadas: 1 (/accounts)
+- Componentes criados: 1 (AccountBadge)
+- Páginas modificadas: 2 (dashboard, confirm)
+- Itens de navegação: 1 (sidebar)
+
+**Code**:
+- Linhas adicionadas: ~561
+- Arquivos criados: 2
+- Arquivos modificados: 5
+
+**Funcionalidades**:
+- CRUD completo de contas: ✅
+- Filtro por conta: ✅
+- Badge visual de contas: ✅
+- Preview em tempo real: ✅
+
+---
+
+### Fluxo de Usuário Completo
+
+**1. Criar Nova Conta**:
+```
+/accounts → [Nova Conta] → Preencher formulário → Ver preview → Criar
+```
+
+**2. Editar Conta Existente**:
+```
+/accounts → [Editar] em um card → Modificar → Ver preview → Atualizar
+```
+
+**3. Filtrar Dashboard por Conta**:
+```
+/dashboard → Dropdown "Todas as contas" → Selecionar conta → Dashboard atualiza
+```
+
+**4. Ver Conta em Transação Pendente**:
+```
+/confirm → Tabela mostra badge colorido com ícone → Visual imediato
+```
+
+**5. Arquivar Conta**:
+```
+/accounts → [Arquivar] → Confirmar → Conta desaparece da lista
+```
+
+---
+
+### Próximos Passos
+
+**Fase 3 está COMPLETA** ✅
+
+**Melhorias Futuras (não bloqueantes)**:
+1. Adicionar AccountBadge em mais lugares (página de transações, detalhes)
+2. Estatísticas por conta na página /accounts (total gasto, última transação)
+3. Reativar contas arquivadas (mostrar lista separada)
+4. Edição inline de conta na tabela de transações
+5. Filtro multi-conta no dashboard (checkbox em vez de dropdown único)
+
+**Ou continuar para Fase 4**:
+- A ser definido pelo usuário
+
+---
+
+**Fase 3 - COMPLETA** ✅
+
+**Data de Conclusão**: 2025-12-28

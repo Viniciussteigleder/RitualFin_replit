@@ -69,15 +69,21 @@ const NAV_ITEMS = [
     showBadge: true,
     description: "Transações pendentes"
   },
-  { 
-    label: "Regras", 
-    icon: BookOpen, 
+  {
+    label: "Regras",
+    icon: BookOpen,
     href: "/rules",
     description: "Categorização automática"
   },
-  { 
-    label: "IA Keywords", 
-    icon: Brain, 
+  {
+    label: "Contas",
+    icon: Wallet,
+    href: "/accounts",
+    description: "Gerenciar cartões e contas"
+  },
+  {
+    label: "IA Keywords",
+    icon: Brain,
     href: "/ai-keywords",
     description: "Análise inteligente em lote"
   },
