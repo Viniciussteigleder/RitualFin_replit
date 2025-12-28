@@ -482,6 +482,114 @@ const accountSource = `Amex - ${capitalizedFirstName} (${accountLast4})`;
 
 ---
 
+## Phase B Implementation (2025-12-27)
+
+**Status**: ✅ Completed
+
+### Changes Made
+
+**Files Created**:
+- `server/logger.ts` - Lightweight structured JSON logging utility
+
+**Files Modified**:
+- `server/csv-parser.ts` - Added logging for format detection and parse results
+- `server/routes.ts` - Added logging for upload lifecycle
+
+### Logging Utility Design
+
+**File**: `server/logger.ts`
+
+Simple console-based structured logger:
+```typescript
+interface LogEntry {
+  timestamp: string;      // ISO 8601
+  level: "INFO" | "WARN" | "ERROR";
+  action: string;         // Event identifier
+  metadata?: object;      // Context data
+  error?: string;         // Error message (if applicable)
+}
+```
+
+**Output Format**: Single-line JSON for easy parsing
+```json
+{"timestamp":"2025-12-27T10:00:00.000Z","level":"INFO","action":"upload_start","metadata":{"userId":"user-123","filename":"test.csv"}}
+```
+
+### Log Events Implemented
+
+**CSV Parser** (`csv-parser.ts`):
+1. `csv_parse_empty` (WARN) - Empty CSV file
+2. `csv_format_detected` (INFO) - Format identified (amex/miles_and_more/unknown)
+3. `csv_format_unknown` (WARN) - Unrecognized format
+4. `csv_parse_complete` (INFO) - Parse summary with account sources
+5. `csv_parse_errors` (WARN) - Parse errors with sample messages
+
+**Upload Endpoint** (`routes.ts`):
+1. `upload_start` (INFO) - Request entry
+2. `upload_missing_content` (WARN) - No CSV content provided
+3. `upload_parse_failed` (ERROR) - Parse failed with errors
+4. `upload_transaction_failed` (WARN) - Individual transaction storage failed
+5. `upload_complete` (INFO) - Success summary with duration
+6. `upload_server_error` (ERROR) - Unexpected server error
+
+### Metadata Logged
+
+**What IS logged**:
+- User ID (UUID)
+- Upload ID (UUID)
+- Filename
+- Format detected (amex/miles_and_more)
+- Row counts (total, imported, duplicates)
+- Account source values (unique list)
+- Month affected
+- Duration (milliseconds)
+- Error counts and sample errors
+
+**What is NOT logged** (privacy):
+- Raw CSV content
+- Transaction descriptions
+- Transaction amounts
+- Personal financial data
+
+### Example Log Output
+
+**Successful Upload**:
+```json
+{"timestamp":"2025-12-27T23:00:00.000Z","level":"INFO","action":"upload_start","metadata":{"userId":"abc-123","filename":"test.csv","contentLength":1524}}
+{"timestamp":"2025-12-27T23:00:00.050Z","level":"INFO","action":"csv_format_detected","metadata":{"format":"amex","totalLines":10}}
+{"timestamp":"2025-12-27T23:00:00.100Z","level":"INFO","action":"csv_parse_complete","metadata":{"format":"amex","success":true,"rowsTotal":10,"rowsImported":10,"errorsCount":0,"accountSources":["Amex - Vinicius (1009)","Amex - E (2015)"],"monthAffected":"2025-12"}}
+{"timestamp":"2025-12-27T23:00:00.250Z","level":"INFO","action":"upload_complete","metadata":{"userId":"abc-123","uploadId":"def-456","filename":"test.csv","format":"amex","status":"ready","rowsTotal":10,"rowsImported":10,"duplicates":0,"storageErrorsCount":0,"monthAffected":"2025-12","durationMs":250}}
+```
+
+**Failed Upload**:
+```json
+{"timestamp":"2025-12-27T23:00:00.000Z","level":"INFO","action":"upload_start","metadata":{"userId":"abc-123","filename":"bad.csv","contentLength":50}}
+{"timestamp":"2025-12-27T23:00:00.020Z","level":"WARN","action":"csv_format_unknown","metadata":{"totalLines":5}}
+{"timestamp":"2025-12-27T23:00:00.025Z","level":"ERROR","action":"upload_parse_failed","metadata":{"userId":"abc-123","uploadId":"ghi-789","filename":"bad.csv","format":"unknown","errorsCount":1,"errors":["Formato de CSV nao reconhecido"]}}
+```
+
+### Benefits
+
+✅ **Debuggability**: Clear audit trail of all upload attempts
+✅ **Observability**: Can track success rates, performance, error patterns
+✅ **Troubleshooting**: Identify which step failed (detection, parsing, storage)
+✅ **Account Attribution**: Logs unique accountSource values for verification
+✅ **Performance Monitoring**: Duration tracking for optimization
+
+### Implementation Notes
+
+- No external dependencies (pure console.log)
+- Easy to upgrade to Winston/Pino later
+- Logs are structured for log aggregation tools (Datadog, CloudWatch)
+- Privacy-safe (no PII or financial data)
+
+**Lines Changed**: ~100 lines total
+- `server/logger.ts`: 40 lines (new file)
+- `server/csv-parser.ts`: ~30 lines
+- `server/routes.ts`: ~30 lines
+
+---
+
 ---
 
 ## Goals & Category Goals API (2025-12-27)

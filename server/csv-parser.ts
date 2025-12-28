@@ -1,5 +1,7 @@
 // Multi-format CSV Parser (Miles & More + Amex)
 
+import { logger } from "./logger";
+
 export interface MilesAndMoreRow {
   authorisedOn: string;
   processedOn: string;
@@ -520,8 +522,9 @@ function parseAmex(lines: string[]): ParseResult {
 export function parseCSV(csvContent: string): ParseResult {
   const allLines = csvContent.split(/\r?\n/);
   const lines = allLines.filter(line => line.trim() !== "");
-  
+
   if (lines.length === 0) {
+    logger.warn("csv_parse_empty", { rowsTotal: 0 });
     return {
       success: false,
       transactions: [],
@@ -532,15 +535,23 @@ export function parseCSV(csvContent: string): ParseResult {
       format: "unknown"
     };
   }
-  
+
   const { format } = detectCsvFormat(lines);
-  
+
+  logger.info("csv_format_detected", {
+    format,
+    totalLines: lines.length
+  });
+
+  let result: ParseResult;
+
   if (format === "amex") {
-    return parseAmex(lines);
+    result = parseAmex(lines);
   } else if (format === "miles_and_more") {
-    return parseMilesAndMore(lines);
+    result = parseMilesAndMore(lines);
   } else {
-    return {
+    logger.warn("csv_format_unknown", { totalLines: lines.length });
+    result = {
       success: false,
       transactions: [],
       errors: [
@@ -554,4 +565,27 @@ export function parseCSV(csvContent: string): ParseResult {
       format: "unknown"
     };
   }
+
+  // Log parse result summary
+  const accountSources = [...new Set(result.transactions.map(t => t.accountSource))];
+
+  logger.info("csv_parse_complete", {
+    format: result.format,
+    success: result.success,
+    rowsTotal: result.rowsTotal,
+    rowsImported: result.rowsImported,
+    errorsCount: result.errors.length,
+    accountSources,
+    monthAffected: result.monthAffected
+  });
+
+  if (result.errors.length > 0) {
+    logger.warn("csv_parse_errors", {
+      format: result.format,
+      errorsCount: result.errors.length,
+      sampleErrors: result.errors.slice(0, 3)
+    });
+  }
+
+  return result;
 }
