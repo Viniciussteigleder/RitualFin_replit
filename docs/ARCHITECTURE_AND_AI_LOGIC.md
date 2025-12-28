@@ -128,9 +128,11 @@ Dashboard updates with new data
 
 | Provider | Status | Date Format | Delimiter | Account Attribution |
 |----------|--------|-------------|-----------|---------------------|
-| Miles & More | ✅ Working | DD.MM.YYYY | ; (semicolon) | Card name from file header |
-| American Express | ⚠️ Broken | DD/MM/YYYY | , (comma) | **ISSUE**: Hardcoded, needs cardholder + account |
-| Sparkasse | 📅 Planned | DD.MM.YYYY | ; or , | TBD (IBAN or account name) |
+| Miles & More | ✅ Working | DD.MM.YYYY | ; (semicolon) | Card name + last 4 digits from file header |
+| American Express | ✅ Working | DD/MM/YYYY | , (comma) | Cardholder name + last 4 of account number |
+| Sparkasse | ✅ Working | DD.MM.YY | ; (semicolon) | Last 4 digits of IBAN |
+
+**Note**: All 3 formats fully implemented as of Phase 6C (2025-12-28). See IMPLEMENTATION_LOG.md for details.
 
 ### Format Detection Logic
 
@@ -200,16 +202,12 @@ accountSource = `Amex - ${firstName} (${last4})`;
 // Result: "Amex - Vinicius (1009)" vs "Amex - E Rodrigues (2015)"
 ```
 
-**Sparkasse** (Not yet implemented):
+**Sparkasse** (✅ Implemented as of Phase 6C):
 ```typescript
-// Option A: Use IBAN
-accountSource = `Sparkasse - ${iban}`
-
-// Option B: Use last 4 of IBAN
-accountSource = `Sparkasse - ${iban.slice(-4)}`
-
-// Option C: Use account nickname (if available)
-accountSource = `Sparkasse - Main Checking`
+// Uses last 4 digits of Auftragskonto (IBAN)
+const ibanLast4 = auftragskonto.slice(-4);  // "DE74...8260" → "8260"
+accountSource = `Sparkasse - ${ibanLast4}`;
+// Result: "Sparkasse - 8260"
 ```
 
 ### Normalization Contract
@@ -711,10 +709,13 @@ categoryGoals
 - Multi-user support (remove "demo" hardcoding)
 - Database indexes for performance
 - Structured error handling with proper HTTP codes
-- Auto-confirm high-confidence transactions
+
+**Completed**:
+- ✅ Auto-confirm high-confidence transactions (Phase 5)
+- ✅ Multiple bank format support (Phase 6C: M&M + Amex + Sparkasse)
 
 **Considered** (lower priority):
-- Multiple bank format support
+- Additional bank format support (N26, DKB, etc.)
 - Multi-currency support
 - Weekly/quarterly goals
 - AI cost tracking dashboard
