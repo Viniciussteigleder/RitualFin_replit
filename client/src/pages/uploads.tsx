@@ -13,6 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { Link } from "wouter";
 import { BankBadge } from "@/components/bank-badge";
 import { detectBankProvider } from "@/lib/bank-logos";
+import { UploadHistorySkeleton } from "@/components/skeletons/upload-history-skeleton";
 
 export default function UploadsPage() {
   const queryClient = useQueryClient();
@@ -237,11 +238,9 @@ export default function UploadsPage() {
               <h2 className="text-lg font-semibold">Historico de Importacoes</h2>
             </div>
           </div>
-          
+
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
+            <UploadHistorySkeleton count={4} />
           ) : uploads.length === 0 ? (
             <Card className="bg-white border-0 shadow-sm">
               <CardContent className="text-center py-16">

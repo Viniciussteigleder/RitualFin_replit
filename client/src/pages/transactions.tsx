@@ -19,6 +19,7 @@ import { useMonth } from "@/lib/month-context";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TransactionDetailModal } from "@/components/transaction-detail-modal";
 import { getMerchantIcon } from "@/lib/merchant-icons";
+import { TransactionListSkeleton } from "@/components/skeletons/transaction-list-skeleton";
 
 const CATEGORY_COLORS: Record<string, string> = {
   "Mercado": "#22c55e",
@@ -326,9 +327,7 @@ export default function TransactionsPage() {
 
         {/* Transactions Table */}
         {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
+          <TransactionListSkeleton rows={8} />
         ) : filteredTransactions.length === 0 ? (
           <Card>
             <CardContent className="pt-6 text-center py-12">

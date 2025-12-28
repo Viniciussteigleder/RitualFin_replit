@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { CardGridSkeleton } from "@/components/skeletons/card-grid-skeleton";
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   credit_card: "Cartão de Crédito",
@@ -189,9 +190,7 @@ export default function AccountsPage() {
 
         {/* Accounts List */}
         {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
+          <CardGridSkeleton count={6} />
         ) : filtered.length === 0 ? (
           <Card>
             <CardContent className="pt-6 text-center py-12">

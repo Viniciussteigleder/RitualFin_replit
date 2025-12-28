@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { OnboardingModal } from "@/components/onboarding-modal";
 import { 
   Wallet,
   TrendingUp,
@@ -238,8 +239,10 @@ export default function DashboardPage() {
   }
 
   return (
-    <AppLayout>
-      <div className="space-y-6">
+    <>
+      <OnboardingModal />
+      <AppLayout>
+        <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground">Seu Mês em Foco</h1>
@@ -577,5 +580,6 @@ export default function DashboardPage() {
         )}
       </div>
     </AppLayout>
+    </>
   );
 }
