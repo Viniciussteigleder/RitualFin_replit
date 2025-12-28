@@ -13,7 +13,12 @@
       "Bash(lsof:*)",
       "Bash(xargs kill -9)",
       "Bash(fuser:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(cat:*)",
+      "Bash(node -e:*)",
+      "Bash(node /tmp/test_sparkasse_upload.js:*)",
+      "Bash(kill:*)",
+      "Bash(node /tmp/test_sparkasse_full.js:*)"
     ]
   }
 }

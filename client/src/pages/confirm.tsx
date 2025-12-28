@@ -268,6 +268,7 @@ export default function ConfirmPage() {
                       />
                     </th>
                     <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">Data</th>
+                    <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">Conta</th>
                     <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">Descricao</th>
                     <th className="px-5 py-3 text-right font-medium text-xs uppercase tracking-wide">Valor</th>
                     <th className="px-5 py-3 text-center font-medium text-xs uppercase tracking-wide">Confianca</th>
@@ -303,10 +304,12 @@ export default function ConfirmPage() {
                           {format(new Date(t.paymentDate), "dd/MM/yy")}
                         </td>
                         <td className="px-5 py-4">
-                          <div>
-                            <p className="font-medium truncate max-w-[250px]">{t.descRaw?.split(" -- ")[0]}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">{t.accountSource}</p>
-                          </div>
+                          <Badge variant="outline" className="text-xs font-normal whitespace-nowrap">
+                            {t.accountSource}
+                          </Badge>
+                        </td>
+                        <td className="px-5 py-4">
+                          <p className="font-medium truncate max-w-[250px]">{t.descRaw?.split(" -- ")[0]}</p>
                         </td>
                         <td className="px-5 py-4 text-right font-semibold whitespace-nowrap">
                           <span className={t.amount > 0 ? "text-emerald-600" : ""}>

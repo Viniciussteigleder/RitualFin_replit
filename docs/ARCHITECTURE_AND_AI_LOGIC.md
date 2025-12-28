@@ -95,6 +95,288 @@ Response: {uploadId, rowsImported, rowsTotal, status}
 
 ---
 
+## CSV Upload & Normalization Architecture (15 minutes)
+
+### High-Level Structure
+
+**Purpose**: Transform bank/card provider CSV exports into standardized transaction records
+
+**Flow**:
+```
+User uploads CSV
+    ↓
+Frontend (uploads.tsx) → POST /api/uploads/process
+    ↓
+csv-parser.ts → Format detection (M&M | Amex | Sparkasse | unknown)
+    ↓
+Provider-specific parser (parseMilesAndMore | parseAmex | parseSparkasse)
+    ↓
+Normalized ParsedTransaction[] objects
+    ↓
+rules-engine.ts → Keyword matching + confidence scoring
+    ↓
+AI suggestion (optional, user-triggered)
+    ↓
+User confirmation (confirm.tsx)
+    ↓
+storage.ts → Database INSERT
+    ↓
+Dashboard updates with new data
+```
+
+### Provider Support Matrix
+
+| Provider | Status | Date Format | Delimiter | Account Attribution |
+|----------|--------|-------------|-----------|---------------------|
+| Miles & More | ✅ Working | DD.MM.YYYY | ; (semicolon) | Card name from file header |
+| American Express | ⚠️ Broken | DD/MM/YYYY | , (comma) | **ISSUE**: Hardcoded, needs cardholder + account |
+| Sparkasse | 📅 Planned | DD.MM.YYYY | ; or , | TBD (IBAN or account name) |
+
+### Format Detection Logic
+
+**File**: `server/csv-parser.ts`, function `detectCsvFormat()`
+
+**Strategy**: Scan first 5 lines for characteristic headers
+
+```typescript
+// Amex detection
+if (headers.includes("Datum") &&
+    headers.includes("Beschreibung") &&
+    headers.includes("Karteninhaber")) {
+  return "amex";
+}
+
+// M&M detection
+if (headers.includes("Authorised on")) {
+  return "miles_and_more";
+}
+
+// Fallback
+return "unknown";
+```
+
+**Why this works**:
+- Headers are provider-specific
+- Early detection prevents full file parsing
+- No file naming conventions needed
+- Works with any filename
+
+### Account/Card Attribution Strategy
+
+**Critical Field**: `accountSource` (string)
+
+**Purpose**:
+1. Distinguish transactions from multiple cards/accounts
+2. Enable per-card budget tracking
+3. Identify source for reconciliation
+4. Filter views by account
+
+**Current Implementation**:
+
+**Miles & More**:
+```typescript
+// Extract from line 1 of CSV
+accountSource = "Miles & More Gold Credit Card;5310XXXXXXXX7340"
+// Splits on semicolon, takes first part
+accountSource = "Miles & More Gold Credit Card"
+```
+✅ Works correctly - each M&M card has unique CSV with card name in header
+
+**American Express** (BROKEN):
+```typescript
+accountSource = "American Express"  // ❌ Hardcoded
+```
+⚠️ **ISSUE**: Cannot distinguish between:
+- Multiple cardholders (Vinicius vs E Rodrigues)
+- Multiple account numbers (-11009 vs -12015)
+- All Amex transactions lumped together
+
+**Fix Required**:
+```typescript
+// Extract from row data
+const firstName = row.karteninhaber.split(" ")[0];
+const last4 = row.konto.slice(-4);
+accountSource = `Amex - ${firstName} (${last4})`;
+// Result: "Amex - Vinicius (1009)" vs "Amex - E Rodrigues (2015)"
+```
+
+**Sparkasse** (Not yet implemented):
+```typescript
+// Option A: Use IBAN
+accountSource = `Sparkasse - ${iban}`
+
+// Option B: Use last 4 of IBAN
+accountSource = `Sparkasse - ${iban.slice(-4)}`
+
+// Option C: Use account nickname (if available)
+accountSource = `Sparkasse - Main Checking`
+```
+
+### Normalization Contract
+
+**Interface**: `ParsedTransaction` (defined in `server/csv-parser.ts:32-43`)
+
+```typescript
+interface ParsedTransaction {
+  paymentDate: Date;         // Always normalized to Date object
+  descRaw: string;           // Original + provider metadata for display
+  descNorm: string;          // Lowercase, no accents, for keyword matching
+  amount: number;            // Negative = expense, positive = income
+  currency: string;          // EUR, USD, etc.
+  foreignAmount?: number;    // If paid in foreign currency
+  foreignCurrency?: string;
+  exchangeRate?: number;
+  key: string;               // Deduplication: descNorm + amount + date
+  accountSource: string;     // 🔑 CRITICAL: Must uniquely identify source
+}
+```
+
+**Invariants**:
+1. `paymentDate` is always a valid Date object (invalid dates are rejected)
+2. `descNorm` is always lowercase, no diacritics, trimmed
+3. `amount` sign convention: negative for expenses (consistent across all providers)
+4. `key` format ensures same transaction from same CSV won't import twice
+5. `accountSource` must uniquely identify physical card/account
+
+**Provider-Specific Transformations**:
+
+**Miles & More**:
+- Date: `parseDateMM("23.11.2025")` → Date object
+- Amount: `parseAmountGerman("-253,09")` → -253.09
+- DescRaw: `"AMAZON -- e-commerce -- Authorised -- M&M"`
+- Foreign currency: Extracted from dedicated columns
+
+**American Express**:
+- Date: `parseDateAmex("20/12/2025")` → Date object
+- Amount: `parseAmountGerman("94,23")` → **-94.23** (flips sign! Amex uses positive for expenses)
+- DescRaw: `"LIDL 4691 OLCHING -- Amex [VINICIUS STEIGLEDER] @ OLCHING, GERMANY"`
+- Foreign currency: Parsed from "Weitere Details" field if present
+
+### Where AI is Used vs NOT Used
+
+**AI is NEVER used for**:
+- CSV parsing (deterministic, rule-based)
+- Format detection (header pattern matching)
+- Account attribution (data extraction)
+- Amount normalization (math)
+- Date parsing (format rules)
+- Duplicate detection (key comparison)
+
+**AI is ONLY used for**:
+- Keyword suggestions for uncategorized transactions (user-triggered)
+- Batch analysis of similar transactions (user-triggered)
+- Helping users create better categorization rules
+
+**Why**:
+- CSV parsing must be 100% reliable (no probabilistic failures)
+- Users need predictable, repeatable imports
+- AI costs money (user provides OpenAI key)
+- AI is slow (network request)
+- AI can fail (quota, network, parsing errors)
+
+**AI Integration Point**: After upload completes, if transactions have `needsReview: true`, user can click "Analyze with AI" on confirm page. AI never runs automatically.
+
+### Rules-Based Logic and AI Interaction
+
+**Timeline**:
+```
+1. Upload CSV
+   ↓
+2. Parse to ParsedTransaction[]
+   ↓
+3. For each transaction:
+   - Match against user's rules (keywords)
+   - Calculate confidence (0-100)
+   - If confidence >= 80% → auto-categorize
+   - If confidence < 80% → needsReview = true
+   ↓
+4. Store in database
+   ↓
+5. User sees "X transactions need review"
+   ↓
+6. [OPTIONAL] User clicks "Analyze with AI"
+   ↓
+7. AI suggests keywords for each uncategorized transaction
+   ↓
+8. User confirms categories → updates database
+   ↓
+9. [OPTIONAL] User creates rule from keyword → future auto-categorization
+```
+
+**Rules engine is PRIMARY**:
+- Runs on every transaction upload
+- No cost, instant
+- Deterministic, predictable
+- User-controllable (edit rules anytime)
+
+**AI is SECONDARY**:
+- Runs only when user requests
+- Costs money (OpenAI API)
+- Probabilistic, may suggest wrong keywords
+- Requires user confirmation before applying
+
+### Design Principles (Lazy Mode)
+
+**Core Philosophy**: Minimize manual work through learning
+
+**How it applies to CSV upload**:
+1. **First upload**: Most transactions need review (no rules yet)
+2. **User confirms**: Creates rules as they categorize
+3. **Second upload**: 80% auto-categorize (rules learned merchant names)
+4. **Third upload**: 95% auto-categorize (comprehensive rule coverage)
+
+**Key Mechanisms**:
+- Keyword-based rules (simple, fast, reliable)
+- Priority system (handle conflicting rules)
+- Strict flag (bypass review for high-confidence rules)
+- Bulk operations (confirm 10 similar transactions at once)
+- Optional AI assist for edge cases
+
+**What Lazy Mode is NOT**:
+- Not automatic AI categorization (too expensive, too error-prone)
+- Not pre-built categories (everyone's spending is different)
+- Not "set and forget" (requires initial training period)
+
+### Current Limitations
+
+**Multi-account support**:
+- ⚠️ Amex account attribution broken (see above)
+- Cannot currently filter dashboard by account
+- No account-specific budgets
+
+**Error handling**:
+- Generic error messages (no row-level failure details)
+- Invalid date/amount → transaction silently skipped
+- No validation warnings before import
+
+**Performance**:
+- N+1 query pattern (duplicate check per transaction)
+- No bulk insert optimization
+- Large CSVs (>1000 rows) may be slow
+
+**Format flexibility**:
+- Only supports exact column names (no fuzzy matching)
+- Cannot handle CSV variations within same provider
+- No support for custom column mapping
+
+### Trade-offs Accepted
+
+**Simplicity over flexibility**:
+- Three providers only (not a generic CSV importer)
+- Fixed column names (easier to maintain)
+- No user configuration of CSV format
+
+**Determinism over intelligence**:
+- Rules engine over AI (predictable, free, fast)
+- Manual review over auto-categorization (prevents costly mistakes)
+
+**Debuggability over abstraction**:
+- Provider-specific parsers (not a unified parser with config)
+- Easier to debug format-specific issues
+- Each parser is self-contained
+
+---
+
 ## Data Flow: CSV Import to Categorization (5 minutes)
 
 ### Step 1: CSV Parsing

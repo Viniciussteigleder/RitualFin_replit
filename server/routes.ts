@@ -6,6 +6,7 @@ import { z } from "zod";
 import { parseCSV, type ParsedTransaction } from "./csv-parser";
 import { categorizeTransaction, suggestKeyword, AI_SEED_RULES } from "./rules-engine";
 import OpenAI from "openai";
+import { logger } from "./logger";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -58,15 +59,23 @@ export async function registerRoutes(
 
   // Process CSV upload
   app.post("/api/uploads/process", async (req: Request, res: Response) => {
+    const startTime = Date.now();
     try {
       let user = await storage.getUserByUsername("demo");
       if (!user) {
         user = await storage.createUser({ username: "demo", password: "demo" });
       }
-      
+
       const { filename, csvContent } = req.body;
-      
+
+      logger.info("upload_start", {
+        userId: user.id,
+        filename: filename || "upload.csv",
+        contentLength: csvContent?.length || 0
+      });
+
       if (!csvContent) {
+        logger.warn("upload_missing_content", { userId: user.id, filename });
         return res.status(400).json({ error: "CSV content is required" });
       }
 
@@ -83,6 +92,15 @@ export async function registerRoutes(
       const parseResult = parseCSV(csvContent);
       
       if (!parseResult.success) {
+        logger.error("upload_parse_failed", {
+          userId: user.id,
+          uploadId: upload.id,
+          filename,
+          format: parseResult.format,
+          errorsCount: parseResult.errors.length,
+          errors: parseResult.errors
+        });
+
         await storage.updateUpload(upload.id, {
           status: "error",
           errorMessage: parseResult.errors.join("; "),
@@ -135,7 +153,14 @@ export async function registerRoutes(
           });
           importedCount++;
         } catch (err: any) {
-          errors.push(`Failed to import: ${parsed.descRaw.slice(0, 50)}`);
+          const errorMsg = `Failed to import: ${parsed.descRaw.slice(0, 50)}`;
+          errors.push(errorMsg);
+          logger.warn("upload_transaction_failed", {
+            userId: user.id,
+            uploadId: upload.id,
+            accountSource: parsed.accountSource,
+            error: err.message
+          });
         }
       }
 
@@ -149,6 +174,22 @@ export async function registerRoutes(
         errorMessage: errors.length > 0 ? errors.join("; ") : undefined
       });
 
+      const duration = Date.now() - startTime;
+
+      logger.info("upload_complete", {
+        userId: user.id,
+        uploadId: upload.id,
+        filename,
+        format: parseResult.format,
+        status: finalStatus,
+        rowsTotal: parseResult.rowsTotal,
+        rowsImported: importedCount,
+        duplicates: duplicateCount,
+        storageErrorsCount: errors.length,
+        monthAffected: parseResult.monthAffected,
+        durationMs: duration
+      });
+
       res.json({
         success: true,
         uploadId: upload.id,
@@ -159,6 +200,10 @@ export async function registerRoutes(
         errors: errors.length > 0 ? errors : undefined
       });
     } catch (error: any) {
+      logger.error("upload_server_error", {
+        error: error.message,
+        stack: error.stack?.split('\n')[0]
+      });
       res.status(500).json({ error: error.message });
     }
   });

@@ -2,7 +2,99 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+You are working on this repository as a senior engineer.
+This operating manual applies to all tasks. Optimize for clarity, control, and minimal token usage. Avoid overengineering.
+
+────────────────────────────────────────
+## MODEL USAGE (COST-AWARE)
+────────────────────────────────────────
+
+- Default model: **Sonnet**
+- Use **Opus** only for:
+  - architecture
+  - complex cross-cutting decisions
+  - detailed multi-phase planning
+- Never switch models silently.
+- If a task seems complex:
+  - briefly say why
+  - ask permission before switching to Opus
+- Switch back to Sonnet after Opus tasks.
+
+────────────────────────────────────────
+## DOCUMENTATION (LIGHTWEIGHT BUT MANDATORY)
+────────────────────────────────────────
+
+Before writing or modifying code:
+
+1) Ensure these files exist (create if missing, update if present):
+   - `docs/IMPLEMENTATION_LOG.md`
+   - `docs/ARCHITECTURE_AND_AI_LOGIC.md`
+
+2) `IMPLEMENTATION_LOG.md` is a **concise running log**.
+   Only log non-trivial steps:
+   - what / why
+   - files involved
+   - key API examples or outputs
+   - notes useful for debugging
+
+   Maintain a short section:
+   ### Decision Log
+   - decision made
+   - option A vs option B (1–2 lines each)
+   - why A was chosen
+   - when to revisit
+
+3) `ARCHITECTURE_AND_AI_LOGIC.md` explains:
+   - overall structure (client / server / shared)
+   - main data flows
+   - where AI is used vs not used
+   - key assumptions and limitations
+
+Keep both files **short, factual, and skimmable**.
+
+────────────────────────────────────────
+## FILES & DATA HANDLING
+────────────────────────────────────────
+
+- Assume referenced files exist if paths are given:
+  - CSVs → `attached_assets/`
+  - images → `design_assets/`
+- For CSV analysis:
+  - read **only first 20 rows**
+  - expand only if needed
+- Do not paste large raw file contents.
+
+Images are **context only**:
+- no redesign
+- keep UI consistent
+- app name is **RitualFin**
+
+────────────────────────────────────────
+## EXECUTION RULES
+────────────────────────────────────────
+
+- Do not change code unless explicitly asked.
+- Before changing code:
+  - list files to change
+  - explain why (briefly)
+  - wait for confirmation
+- Prefer small, reversible steps.
+
+────────────────────────────────────────
+## RESPONSE STYLE
+────────────────────────────────────────
+
+- Be concise and practical.
+- Avoid unnecessary explanations.
+- No speculation without stating assumptions.
+- End with:
+  - current findings
+  - next recommended step
+  - whether approval is needed.
+
+────────────────────────────────────────
+## PROJECT OVERVIEW
+────────────────────────────────────────
 
 RitualFin is a personal finance management application built for Portuguese (Brazil) users with EUR currency. The app follows a "Lazy Mode" philosophy - automating as much categorization and processing as possible to minimize manual work.
 
