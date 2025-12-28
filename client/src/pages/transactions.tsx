@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Download, Loader2, Edit2, Filter, X, Calendar, TrendingUp, TrendingDown, ArrowUpDown } from "lucide-react";
+import { Search, Download, Loader2, Edit2, Filter, X, Calendar, TrendingUp, TrendingDown, ArrowUpDown, Eye } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { transactionsApi, accountsApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +17,8 @@ import { ptBR } from "date-fns/locale";
 import { AccountBadge } from "@/components/account-badge";
 import { useMonth } from "@/lib/month-context";
 import { Checkbox } from "@/components/ui/checkbox";
+import { TransactionDetailModal } from "@/components/transaction-detail-modal";
+import { getMerchantIcon } from "@/lib/merchant-icons";
 
 const CATEGORY_COLORS: Record<string, string> = {
   "Mercado": "#22c55e",
@@ -51,6 +53,7 @@ export default function TransactionsPage() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<any>(null);
+  const [viewingTransaction, setViewingTransaction] = useState<any>(null);
   const [formData, setFormData] = useState<TransactionForm | null>(null);
 
   const { data: transactions = [], isLoading } = useQuery({
@@ -353,10 +356,12 @@ export default function TransactionsPage() {
                   <tbody className="divide-y divide-border/50">
                     {filteredTransactions.map((t: any) => {
                       const categoryColor = CATEGORY_COLORS[t.category1] || "#6b7280";
+                      const merchantInfo = getMerchantIcon(t.descRaw);
                       return (
                         <tr
                           key={t.id}
-                          className="hover:bg-muted/20 transition-colors"
+                          className="hover:bg-muted/20 transition-colors cursor-pointer"
+                          onClick={() => setViewingTransaction(t)}
                         >
                           <td className="px-5 py-4 text-muted-foreground whitespace-nowrap">
                             {format(new Date(t.paymentDate), "dd/MM/yy")}
@@ -365,12 +370,24 @@ export default function TransactionsPage() {
                             <AccountBadge account={accountsById[t.accountId]} size="sm" />
                           </td>
                           <td className="px-5 py-4 max-w-[300px]">
-                            <p className="font-medium truncate">{t.descRaw?.split(" -- ")[0]}</p>
-                            {(t.category2 || t.category3) && (
-                              <p className="text-xs text-muted-foreground truncate">
-                                {[t.category2, t.category3].filter(Boolean).join(" → ")}
-                              </p>
-                            )}
+                            <div className="flex items-center gap-2">
+                              {merchantInfo && (
+                                <div
+                                  className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                                  style={{ backgroundColor: `${merchantInfo.color}15` }}
+                                >
+                                  <merchantInfo.icon className="w-4 h-4" style={{ color: merchantInfo.color }} />
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium truncate">{t.descRaw?.split(" -- ")[0]}</p>
+                                {(t.category2 || t.category3) && (
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    {[t.category2, t.category3].filter(Boolean).join(" → ")}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
                           </td>
                           <td className="px-5 py-4 text-right font-semibold whitespace-nowrap">
                             <span className={t.amount > 0 ? "text-emerald-600" : ""}>
@@ -406,13 +423,30 @@ export default function TransactionsPage() {
                             </div>
                           </td>
                           <td className="px-5 py-4 text-center">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => openEditDialog(t)}
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
+                            <div className="flex items-center justify-center gap-1">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setViewingTransaction(t);
+                                }}
+                                title="Ver detalhes"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openEditDialog(t);
+                                }}
+                                title="Editar"
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -423,6 +457,15 @@ export default function TransactionsPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Transaction Detail Modal */}
+        <TransactionDetailModal
+          transaction={viewingTransaction}
+          account={viewingTransaction ? accountsById[viewingTransaction.accountId] : undefined}
+          isOpen={!!viewingTransaction}
+          onClose={() => setViewingTransaction(null)}
+          onEdit={openEditDialog}
+        />
 
         {/* Edit Dialog */}
         <Dialog open={!!editingTransaction} onOpenChange={closeDialog}>

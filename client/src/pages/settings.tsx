@@ -303,45 +303,50 @@ export default function SettingsPage() {
                     Fontes de Dados
                   </CardTitle>
                   <CardDescription>
-                    Conecte suas contas bancarias e cartoes.
+                    Conecte suas contas bancarias e cartoes via importacao CSV.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
+                  <div className="flex items-center justify-between p-4 bg-primary/5 rounded-xl border border-primary/20">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
                         <CreditCard className="h-5 w-5 text-blue-600" />
                       </div>
                       <div>
                         <p className="font-medium">Miles & More</p>
-                        <p className="text-sm text-muted-foreground">Importacao via CSV</p>
+                        <p className="text-sm text-muted-foreground">Importacao CSV ativa</p>
                       </div>
                     </div>
                     <Badge className="bg-primary/10 text-primary border-0">Ativo</Badge>
                   </div>
-                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl opacity-60">
+                  <div className="flex items-center justify-between p-4 bg-primary/5 rounded-xl border border-primary/20">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                        <CreditCard className="h-5 w-5 text-gray-400" />
+                      <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                        <CreditCard className="h-5 w-5 text-blue-600" />
                       </div>
                       <div>
                         <p className="font-medium">American Express</p>
-                        <p className="text-sm text-muted-foreground">Em breve</p>
+                        <p className="text-sm text-muted-foreground">Multi-cartoes suportado</p>
                       </div>
                     </div>
-                    <Badge variant="outline">v2</Badge>
+                    <Badge className="bg-primary/10 text-primary border-0">Ativo</Badge>
                   </div>
-                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl opacity-60">
+                  <div className="flex items-center justify-between p-4 bg-primary/5 rounded-xl border border-primary/20">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                        <CreditCard className="h-5 w-5 text-gray-400" />
+                      <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                        <CreditCard className="h-5 w-5 text-red-600" />
                       </div>
                       <div>
                         <p className="font-medium">Sparkasse</p>
-                        <p className="text-sm text-muted-foreground">Em breve</p>
+                        <p className="text-sm text-muted-foreground">Conta bancaria IBAN</p>
                       </div>
                     </div>
-                    <Badge variant="outline">v2</Badge>
+                    <Badge className="bg-primary/10 text-primary border-0">Ativo</Badge>
+                  </div>
+                  <div className="p-4 bg-muted/20 rounded-xl border-2 border-dashed">
+                    <p className="text-sm text-muted-foreground">
+                      <strong>Proximas integracoes:</strong> Nubank, Revolut, N26, Wise
+                    </p>
                   </div>
                 </CardContent>
               </Card>

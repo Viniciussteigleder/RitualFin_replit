@@ -2,6 +2,123 @@
 
 ---
 
+## UX Overhaul — Phase A: E2E Review & Execution Plan (2025-12-28)
+
+**Role**: Senior UX Engineer + Product Designer
+**Status**: Planning Complete, Awaiting Approval
+**Document**: `docs/UX_UPGRADE_PHASE_A_PLAN.md`
+
+### Executive Summary
+
+Conducted comprehensive E2E UX review of RitualFin to assess gaps between current state and production-ready design.
+
+**KEY FINDING**: Application is **85% polished** with modern UI already in place. Missing pieces are tactical enhancements rather than fundamental redesign.
+
+### Work Completed
+
+1. ✅ **Full UI Audit** — Read all 15 pages (login, dashboard, uploads, transactions, confirm, accounts, goals, settings, calendar, budgets, rituals, ai-keywords)
+2. ✅ **Design Asset Review** — Analyzed mockups in `design_assets/` (login, accounts, upload, transaction-detail)
+3. ✅ **Journey Mapping** — Documented 11 user flows from onboarding to daily usage
+4. ✅ **Friction Point Analysis** — Identified 13 UX gaps (5 high-priority, 5 medium, 3 low)
+5. ✅ **Prioritization Framework** — P0 (critical) → P1 (polish) → P2 (delegated to Codex)
+
+### Key Findings
+
+**Already Excellent**:
+- Modern teal/green color scheme
+- shadcn/ui component library
+- Card-based layouts throughout
+- Sophisticated dashboard with insights
+- Drag-and-drop CSV upload
+- Confidence-based confirmation flow
+
+**Missing (UI-Only Fixes)**:
+- Bank logo integration & detection feedback
+- Transaction detail modal (rich view)
+- Merchant icon library (Netflix, Amazon, Uber)
+- Onboarding welcome wizard
+- Skeleton loading states
+- Enhanced empty states
+- AI assistant chat UI (shell)
+- Keyboard shortcuts
+
+**Missing (Requires Backend - Codex)**:
+- Account balance calculation
+- Row-level CSV error reporting
+- AI assistant streaming backend
+- Merchant icon database
+- AI usage tracking
+- Notification system backend
+
+### What I Will Implement (Phase B)
+
+**Session 1** (2-3 hrs): Critical Fixes
+- Bank logo library + detection feedback
+- Update settings integrations tab (misleading "coming soon")
+- Merchant icon mapping
+- Transaction detail modal
+
+**Session 2** (2-3 hrs): UX Polish
+- Onboarding welcome modal
+- Skeleton loading states
+- Improved empty states
+- Keyboard shortcuts
+- Mobile refinements
+
+**Session 3** (1-2 hrs): Nice-to-Have
+- Account balance placeholder
+- AI assistant UI shell
+- Notifications page shell
+- Rituals page investigation
+
+### What Codex Will Implement (Phase C)
+
+Created 6 delegation packages with full specs:
+1. Account balance calculation API
+2. AI assistant streaming backend
+3. CSV row-level error reporting
+4. Merchant icon API
+5. AI usage tracking
+6. Notification system
+
+Each package includes:
+- Task description
+- UX intent
+- Screens involved
+- Interaction rules
+- Required data structure
+- Acceptance criteria
+- Dependencies
+
+### Decision Log
+
+**Decision**: Focus on tactical UX improvements rather than full redesign
+- **Why**: Current UI is already modern and well-structured
+- **Alternative**: Complete redesign from scratch
+- **Rejected Because**: Would waste existing high-quality work
+- **Revisit When**: User feedback suggests major UX overhaul needed
+
+**Decision**: Separate UI work (Claude) from backend work (Codex)
+- **Why**: Enables parallel development, clear ownership
+- **Alternative**: Implement everything end-to-end
+- **Rejected Because**: Backend changes require schema/API modifications (out of UX scope)
+- **Revisit When**: N/A - this is the defined working model
+
+**Decision**: Prioritize P0 items over nice-to-have features
+- **Why**: Fix user blockers and misleading UI first
+- **Alternative**: Implement all features at once
+- **Rejected Because**: Resource constraints, incremental delivery is safer
+- **Revisit When**: P0 complete and stable
+
+### Next Steps
+
+1. **Await user approval** of Phase A plan
+2. **Phase B Implementation** (Sessions 1-3, ~6-8 hours total)
+3. **Phase C Delegation Packages** (Codex handoff docs)
+4. **Final QA** + Screenshots + Documentation update
+
+---
+
 ## CSV Upload Pipeline Standardization (2025-12-27)
 
 **Project**: Multi-Provider CSV Upload (M&M, Amex, Sparkasse)
