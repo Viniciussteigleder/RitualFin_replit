@@ -95,7 +95,7 @@ export const transactions = pgTable("transactions", {
   internalTransfer: boolean("internal_transfer").notNull().default(false),
   excludeFromBudget: boolean("exclude_from_budget").notNull().default(false),
   needsReview: boolean("needs_review").notNull().default(true),
-  ruleIdApplied: varchar("rule_id_applied"),
+  ruleIdApplied: varchar("rule_id_applied").references(() => rules.id),
   uploadId: varchar("upload_id").references(() => uploads.id),
   confidence: integer("confidence"),
   suggestedKeyword: text("suggested_keyword"),
