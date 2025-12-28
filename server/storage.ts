@@ -1,9 +1,10 @@
 import {
-  users, accounts, uploads, uploadErrors, transactions, rules, budgets, calendarEvents, eventOccurrences, goals, categoryGoals, rituals, settings,
+  users, accounts, uploads, uploadErrors, merchantMetadata, transactions, rules, budgets, calendarEvents, eventOccurrences, goals, categoryGoals, rituals, settings,
   type User, type InsertUser,
   type Account, type InsertAccount,
   type Upload, type InsertUpload,
   type UploadError, type InsertUploadError,
+  type MerchantMetadata, type InsertMerchantMetadata,
   type Transaction, type InsertTransaction,
   type Rule, type InsertRule,
   type Budget, type InsertBudget,
@@ -45,6 +46,14 @@ export interface IStorage {
   // Upload Errors
   createUploadError(error: InsertUploadError): Promise<UploadError>;
   getUploadErrors(uploadId: string): Promise<UploadError[]>;
+
+  // Merchant Metadata
+  getMerchantMetadata(userId: string): Promise<MerchantMetadata[]>;
+  getMerchantMetadataById(id: string, userId: string): Promise<MerchantMetadata | undefined>;
+  createMerchantMetadata(metadata: InsertMerchantMetadata): Promise<MerchantMetadata>;
+  updateMerchantMetadata(id: string, userId: string, data: Partial<MerchantMetadata>): Promise<MerchantMetadata | undefined>;
+  deleteMerchantMetadata(id: string, userId: string): Promise<void>;
+  findMerchantMatch(userId: string, description: string): Promise<MerchantMetadata | undefined>;
 
   // Transactions
   getTransactions(userId: string, month?: string): Promise<Transaction[]>;
@@ -271,6 +280,50 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(uploadErrors)
       .where(eq(uploadErrors.uploadId, uploadId))
       .orderBy(uploadErrors.rowNumber);
+  }
+
+  // Merchant Metadata
+  async getMerchantMetadata(userId: string): Promise<MerchantMetadata[]> {
+    return db.select().from(merchantMetadata)
+      .where(eq(merchantMetadata.userId, userId))
+      .orderBy(desc(merchantMetadata.updatedAt));
+  }
+
+  async getMerchantMetadataById(id: string, userId: string): Promise<MerchantMetadata | undefined> {
+    const [metadata] = await db.select().from(merchantMetadata)
+      .where(and(eq(merchantMetadata.id, id), eq(merchantMetadata.userId, userId)));
+    return metadata || undefined;
+  }
+
+  async createMerchantMetadata(metadata: InsertMerchantMetadata): Promise<MerchantMetadata> {
+    const [created] = await db.insert(merchantMetadata).values(metadata).returning();
+    return created;
+  }
+
+  async updateMerchantMetadata(id: string, userId: string, data: Partial<MerchantMetadata>): Promise<MerchantMetadata | undefined> {
+    const [updated] = await db.update(merchantMetadata)
+      .set(data)
+      .where(and(eq(merchantMetadata.id, id), eq(merchantMetadata.userId, userId)))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteMerchantMetadata(id: string, userId: string): Promise<void> {
+    await db.delete(merchantMetadata)
+      .where(and(eq(merchantMetadata.id, id), eq(merchantMetadata.userId, userId)));
+  }
+
+  async findMerchantMatch(userId: string, description: string): Promise<MerchantMetadata | undefined> {
+    const allMetadata = await this.getMerchantMetadata(userId);
+    const descUpper = description.toUpperCase();
+
+    for (const meta of allMetadata) {
+      if (descUpper.includes(meta.pattern.toUpperCase())) {
+        return meta;
+      }
+    }
+
+    return undefined;
   }
 
   // Transactions

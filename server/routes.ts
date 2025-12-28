@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertRuleSchema, insertGoalSchema, insertCategoryGoalSchema, insertRitualSchema } from "@shared/schema";
+import { insertRuleSchema, insertGoalSchema, insertCategoryGoalSchema, insertRitualSchema, type MerchantMetadata } from "@shared/schema";
 import { z } from "zod";
 import { parseCSV, type ParsedTransaction } from "./csv-parser";
 import { categorizeTransaction, suggestKeyword, AI_SEED_RULES } from "./rules-engine";
@@ -506,6 +506,111 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("Error fetching upload errors:", error);
       res.status(500).json({ error: "Failed to retrieve errors" });
+    }
+  });
+
+  // ===== MERCHANT METADATA =====
+  app.get("/api/merchant-metadata", async (_req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      const metadata = await storage.getMerchantMetadata(user.id);
+      res.json(metadata);
+    } catch (error: any) {
+      console.error("Error fetching merchant metadata:", error);
+      res.status(500).json({ error: "Failed to retrieve metadata" });
+    }
+  });
+
+  app.post("/api/merchant-metadata", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      const { pattern, friendlyName, icon, color } = req.body;
+
+      if (!pattern || !friendlyName || !icon) {
+        return res.status(400).json({ error: "pattern, friendlyName, and icon are required" });
+      }
+
+      const metadata = await storage.createMerchantMetadata({
+        userId: user.id,
+        pattern: pattern.toUpperCase(),
+        friendlyName,
+        icon,
+        color: color || "#6366f1"
+      });
+
+      res.status(201).json(metadata);
+    } catch (error: any) {
+      console.error("Error creating merchant metadata:", error);
+      res.status(500).json({ error: "Failed to create metadata" });
+    }
+  });
+
+  app.put("/api/merchant-metadata/:id", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      const updateData: Partial<MerchantMetadata> = { updatedAt: new Date() };
+      if (req.body.pattern !== undefined) updateData.pattern = req.body.pattern.toUpperCase();
+      if (req.body.friendlyName !== undefined) updateData.friendlyName = req.body.friendlyName;
+      if (req.body.icon !== undefined) updateData.icon = req.body.icon;
+      if (req.body.color !== undefined) updateData.color = req.body.color;
+
+      const updated = await storage.updateMerchantMetadata(req.params.id, user.id, updateData);
+
+      if (!updated) {
+        return res.status(404).json({ error: "Metadata not found" });
+      }
+
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Error updating merchant metadata:", error);
+      res.status(500).json({ error: "Failed to update metadata" });
+    }
+  });
+
+  app.delete("/api/merchant-metadata/:id", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      await storage.deleteMerchantMetadata(req.params.id, user.id);
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error deleting merchant metadata:", error);
+      res.status(500).json({ error: "Failed to delete metadata" });
+    }
+  });
+
+  app.get("/api/merchant-metadata/match", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      const { description } = req.query;
+      if (!description) {
+        return res.status(400).json({ error: "description query parameter is required" });
+      }
+
+      const match = await storage.findMerchantMatch(user.id, description as string);
+      res.json(match || null);
+    } catch (error: any) {
+      console.error("Error finding merchant match:", error);
+      res.status(500).json({ error: "Failed to find match" });
     }
   });
 

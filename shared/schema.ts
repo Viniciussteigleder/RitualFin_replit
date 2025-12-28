@@ -107,6 +107,26 @@ export const insertUploadErrorSchema = createInsertSchema(uploadErrors).omit({ i
 export type InsertUploadError = z.infer<typeof insertUploadErrorSchema>;
 export type UploadError = typeof uploadErrors.$inferSelect;
 
+// Merchant Metadata table (icon/color/name for merchants)
+export const merchantMetadata = pgTable("merchant_metadata", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  pattern: text("pattern").notNull(),
+  friendlyName: text("friendly_name").notNull(),
+  icon: text("icon").notNull(),
+  color: text("color").default("#6366f1"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const merchantMetadataRelations = relations(merchantMetadata, ({ one }) => ({
+  user: one(users, { fields: [merchantMetadata.userId], references: [users.id] }),
+}));
+
+export const insertMerchantMetadataSchema = createInsertSchema(merchantMetadata).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertMerchantMetadata = z.infer<typeof insertMerchantMetadataSchema>;
+export type MerchantMetadata = typeof merchantMetadata.$inferSelect;
+
 // Rules table (keyword mapping with AI-powered categorization)
 // Declared before transactions so transactionsRelations can reference it
 export const rules = pgTable("rules", {
