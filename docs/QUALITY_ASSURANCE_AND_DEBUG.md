@@ -562,3 +562,266 @@ GROUP BY category1;
 ---
 
 **END OF QA GUIDE**
+
+---
+
+## DEPLOYMENT QA CHECKLIST
+
+**Last Updated**: 2025-12-28
+**Applies To**: Supabase + Vercel deployment
+
+### Pre-Deployment Checks
+
+**Before deploying to staging/production**, verify:
+
+- [ ] `npm run check` passes (no TypeScript errors)
+- [ ] All tests pass (if any exist)
+- [ ] `.env.example` updated with new required variables
+- [ ] No secrets committed to git (`git log -p | grep -E "sk-|eyJhbG"`)
+- [ ] Database schema tested on fresh Supabase instance
+- [ ] Backup of production database created (if data exists)
+
+---
+
+### Post-Deployment Health Checks
+
+**Immediately after deployment**, test:
+
+#### 1. Infrastructure Health
+```bash
+# Frontend (Vercel)
+curl -I https://ritualfin.vercel.app
+# Expected: HTTP 200
+
+# Backend (Render/Fly/Railway)
+curl https://api.ritualfin.com/api/health
+# Expected: {"status":"ok","timestamp":"..."}
+
+# Database (Supabase)
+# Check Supabase Dashboard → Database → Health
+# Expected: All metrics green
+```
+
+#### 2. API Connectivity
+```bash
+# Test database connection via API
+curl https://api.ritualfin.com/api/accounts
+# Expected: [] (empty array, not error)
+
+# Test auth endpoint
+curl https://api.ritualfin.com/api/auth/me
+# Expected: 401 Unauthorized (expected for anonymous)
+```
+
+#### 3. CORS (if split backend)
+```javascript
+// In browser console on https://ritualfin.vercel.app
+fetch('https://api.ritualfin.com/api/health')
+  .then(r => r.json())
+  .then(console.log)
+// Expected: {"status":"ok",...}
+// Not Expected: CORS error
+```
+
+---
+
+### Smoke Tests (End-to-End)
+
+**Run these tests manually** after deployment:
+
+#### Test 1: Upload Small CSV
+1. Navigate to `/uploads` page
+2. Upload test CSV with 5-10 rows (use `attached_assets/test_*.csv`)
+3. Wait for upload to complete (~2-5s)
+4. Verify:
+   - [ ] No timeout errors
+   - [ ] Upload status shows "ready" or "duplicate"
+   - [ ] Transactions appear in `/transactions` page
+
+**If Fails**:
+- Check backend logs for errors
+- Verify `DATABASE_URL` is correct
+- Check network tab for 500/504 errors
+
+---
+
+#### Test 2: Transaction Confirmation
+1. Navigate to `/confirm` page
+2. Verify:
+   - [ ] Pending transactions load
+   - [ ] Can select transactions
+   - [ ] "Confirm" button works
+   - [ ] Transactions move to main ledger
+
+**If Fails**:
+- Check database for transactions with `needsReview = true`
+- Verify rules engine is running
+- Check for JS errors in console
+
+---
+
+#### Test 3: Dashboard Rendering
+1. Navigate to `/dashboard` page
+2. Verify:
+   - [ ] Charts render (not loading forever)
+   - [ ] Spending totals calculated
+   - [ ] No "NaN" or "undefined" values
+
+**If Fails**:
+- Check if transactions exist in DB
+- Verify TanStack Query is fetching data
+- Check network tab for API errors
+
+---
+
+#### Test 4: AI Features (if OpenAI key configured)
+1. Go to transaction in confirm queue
+2. Click "Suggest Keyword" button
+3. Verify:
+   - [ ] Loading indicator shows
+   - [ ] Keyword suggestion appears (~1-3s)
+   - [ ] No timeout errors
+
+**If Fails**:
+- Verify `OPENAI_API_KEY` is set correctly
+- Check OpenAI API quota/billing
+- Check backend logs for API errors
+
+---
+
+### Performance Checks
+
+**After deployment**, monitor:
+
+#### Response Times
+```bash
+# Measure API response time
+time curl -s https://api.ritualfin.com/api/transactions > /dev/null
+# Expected: <1s for empty response, <3s for 100+ transactions
+
+# Measure frontend load time
+# Use browser DevTools → Network tab
+# Expected: <3s for first load, <1s for cached loads
+```
+
+#### Database Query Performance
+1. Go to Supabase Dashboard → Database → Query Performance
+2. Check for slow queries (>1s)
+3. Add indexes if needed:
+   ```sql
+   CREATE INDEX idx_transactions_user_date ON transactions(user_id, payment_date DESC);
+   CREATE INDEX idx_transactions_needs_review ON transactions(user_id, needs_review) WHERE needs_review = true;
+   ```
+
+#### Frontend Bundle Size
+1. Check Vercel Dashboard → Analytics → Performance
+2. Verify bundle size <500KB (gzipped)
+3. If >500KB, investigate large dependencies
+
+---
+
+### Security Checks
+
+**Critical**: Verify no secrets leaked
+
+#### 1. Check Client-Side Bundle
+```bash
+# Download production bundle
+curl https://ritualfin.vercel.app/_next/static/chunks/*.js > bundle.js
+
+# Search for secrets
+grep -E "sk-|postgres://|supabase\.co.*service_role" bundle.js
+# Expected: NO MATCHES
+
+# Search for API keys
+grep -E "OPENAI_API_KEY|DATABASE_URL|SERVICE_ROLE" bundle.js
+# Expected: NO MATCHES
+```
+
+#### 2. Check Server Logs
+```bash
+# Check Render logs
+# Verify no lines like:
+# "DATABASE_URL=postgresql://..."
+# "OPENAI_API_KEY=sk-..."
+
+# Expected: Masked values or no logging
+```
+
+#### 3. Test Environment Variable Scoping
+```javascript
+// In browser console on frontend
+console.log(import.meta.env)
+// Expected: Only VITE_* vars visible
+// NOT Expected: DATABASE_URL, OPENAI_API_KEY, SUPABASE_SERVICE_ROLE_KEY
+```
+
+---
+
+### Rollback Criteria
+
+**Immediately rollback if**:
+
+- [ ] 5xx errors on >10% of requests (check Vercel/Render logs)
+- [ ] Database connection failures
+- [ ] Secrets exposed in client-side code
+- [ ] Critical feature broken (uploads, transactions, dashboard)
+- [ ] Data loss or corruption detected
+
+**Rollback Procedure**:
+1. Vercel: Dashboard → Deployments → Click "..." on previous deploy → Rollback
+2. Render: Dashboard → Manual Deploy → Select previous commit
+3. Investigate issue in dev/staging
+4. Fix and redeploy
+
+---
+
+### Monitoring Setup
+
+**Recommended Tools**:
+
+#### 1. Uptime Monitoring
+- **Service**: UptimeRobot (free tier: 50 monitors, 5min interval)
+- **Monitor**: `https://ritualfin.vercel.app` (ping)
+- **Monitor**: `https://api.ritualfin.com/api/health` (HTTP 200)
+- **Alerts**: Email/Slack on downtime
+
+#### 2. Error Tracking
+- **Option A**: Sentry (free: 5k events/month)
+  - Install: `npm install @sentry/react`
+  - Config: Add DSN to `VITE_SENTRY_DSN`
+- **Option B**: Vercel Error Tracking (Pro plan only)
+
+#### 3. Performance Monitoring
+- **Vercel Analytics**: Enable in dashboard (free on Hobby)
+- **Supabase Metrics**: Check daily in dashboard
+- **Render Metrics**: Built-in (response time, memory usage)
+
+---
+
+### Post-Deployment Checklist Summary
+
+**Within 1 hour of deployment**:
+- [ ] All health checks pass
+- [ ] Smoke tests complete (4/4)
+- [ ] No 5xx errors in logs
+- [ ] No secrets leaked
+- [ ] Performance acceptable (<3s page loads)
+- [ ] Monitoring setup (uptime, errors)
+
+**Within 24 hours**:
+- [ ] Review error logs (any unexpected errors)
+- [ ] Check database performance (slow queries)
+- [ ] Monitor resource usage (memory, CPU)
+- [ ] Test on mobile device
+- [ ] User feedback collected (if any users)
+
+**Within 7 days**:
+- [ ] Confirm database backups running
+- [ ] Review costs (Supabase, Vercel, Render)
+- [ ] Plan for any issues discovered
+- [ ] Document lessons learned
+
+---
+
+**End of Deployment QA Checklist**

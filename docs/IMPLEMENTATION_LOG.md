@@ -6441,3 +6441,301 @@ GET /api/merchant-metadata
 **Status**: ✅ **COMPLETE** - All acceptance criteria met
 
 ---
+
+---
+
+## Phase C Backend Services — STATUS SUMMARY
+
+**Implementation Period**: 2025-12-28  
+**Commits**: `238c91d`, `7e60e39`, `73d0f3d`  
+**Status**: **PARTIALLY COMPLETE** (3 of 6 tasks done)
+
+### ✅ COMPLETED TASKS
+
+#### C.1: Account Balance Service
+**Objective**: Calculate and expose account balances via API.
+
+**What Was Implemented**:
+- New endpoint: `GET /api/accounts/:id/balance`
+- Returns `{ balance, currency, transactionCount }`
+- Supports optional date filtering via `?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD`
+- Excludes transactions with `excludeFromBudget = true`
+
+**Key Decisions**:
+- **Exclude internal transfers** (A vs B): Chose to exclude `excludeFromBudget=true` to avoid double-counting transfers
+- **Single currency per account** (A vs B): Assume one currency per account (simplifies MVP, revisit if multi-currency needed)
+- **Date range filtering** (A vs B): Added optional filters for future features like "balance on date X"
+
+**Files Touched**:
+- `server/storage.ts`: +42 lines (`getAccountBalance` method)
+- `server/routes.ts`: +28 lines (balance endpoint)
+
+**Endpoints Added**:
+- `GET /api/accounts/:id/balance`
+- `GET /api/accounts/:id/balance?startDate=2025-12-01`
+
+**Quick Test Steps**:
+```bash
+# 1. Get balance for Sparkasse account
+curl http://localhost:5000/api/accounts/88995340-9fac-4ce8-b534-846aea939c69/balance
+# ✓ Returns: {"balance":21539.361,"currency":"EUR","transactionCount":491}
+
+# 2. Filter by date
+curl "http://localhost:5000/api/accounts/88995340-9fac-4ce8-b534-846aea939c69/balance?startDate=2025-12-01"
+# ✓ Returns filtered balance
+
+# 3. Non-existent account (404)
+curl http://localhost:5000/api/accounts/non-existent-id/balance
+# ✓ Returns: {"error":"Account not found"} (HTTP 404)
+```
+
+---
+
+#### C.2: CSV Row-Level Errors
+**Objective**: Track and expose individual CSV parsing errors.
+
+**What Was Implemented**:
+- New table: `upload_errors` with cascade delete
+- New endpoints: `GET /api/uploads/:id/errors`
+- Automatic error saving during CSV upload process
+- Regex parsing of error strings like "Linha 42: Data invalida"
+
+**Key Decisions**:
+- **Store rawData field** (A vs B): Added nullable `rawData` for debugging, keeps overhead low
+- **Parse existing error strings** (A vs B): Parse "Linha X" format instead of refactoring CSV parser (MVP approach)
+- **Cascade delete** (A vs B): Delete errors when upload is deleted (keeps DB clean)
+- **Structured API response** (A vs B): Return `{ uploadId, errors: [...], count: N }` for clarity
+
+**Files Touched**:
+- `shared/schema.ts`: +20 lines (`upload_errors` table)
+- `server/storage.ts`: +14 lines (CRUD methods)
+- `server/routes.ts`: +78 lines (errors endpoint + saving logic)
+- Database: `npm run db:push` (added `upload_errors` table)
+
+**Endpoints Added**:
+- `GET /api/uploads/:id/errors`
+
+**Quick Test Steps**:
+```bash
+# 1. Upload invalid CSV
+curl -X POST http://localhost:5000/api/uploads/process \
+  -H "Content-Type: application/json" \
+  -d '{"filename": "test.csv", "csvContent": "Invalid,Headers\ndata,here"}'
+# ✓ Returns: {"success":false,"uploadId":"...","errors":[...]}
+
+# 2. Get errors for that upload
+curl http://localhost:5000/api/uploads/<uploadId>/errors
+# ✓ Returns: {"uploadId":"...","errors":[{rowNumber:0,errorMessage:"..."}],"count":3}
+
+# 3. Non-existent upload (404)
+curl http://localhost:5000/api/uploads/non-existent-id/errors
+# ✓ Returns: {"error":"Upload not found"} (HTTP 404)
+```
+
+---
+
+#### C.3: Merchant Icon Metadata
+**Objective**: Store and retrieve merchant icon/color metadata with pattern matching.
+
+**What Was Implemented**:
+- New table: `merchant_metadata` (pattern, friendlyName, icon, color)
+- Full CRUD endpoints
+- Pattern matching with case-insensitive substring search
+- Auto-normalization of patterns to uppercase
+
+**Key Decisions**:
+- **Substring matching** (A vs B): Simple `includes()` instead of regex (faster, sufficient for most cases)
+- **Lucide icons only** (A vs B): Store icon names instead of URLs (consistent with app, low bundle size)
+- **No unique constraint** (A vs B): Allow duplicate patterns if needed, first-match logic in app
+- **No default seeds** (A vs B): Users create their own merchants (keep DB clean)
+
+**Files Touched**:
+- `shared/schema.ts`: +21 lines (`merchant_metadata` table)
+- `server/storage.ts`: +55 lines (CRUD + `findMerchantMatch`)
+- `server/routes.ts`: +69 lines (5 endpoints)
+- Database: `npm run db:push` (added `merchant_metadata` table)
+
+**Endpoints Added**:
+- `GET /api/merchant-metadata`
+- `POST /api/merchant-metadata`
+- `PUT /api/merchant-metadata/:id`
+- `DELETE /api/merchant-metadata/:id`
+- `GET /api/merchant-metadata/match?description=X`
+
+**Quick Test Steps**:
+```bash
+# 1. Create merchant metadata
+curl -X POST http://localhost:5000/api/merchant-metadata \
+  -H "Content-Type: application/json" \
+  -d '{"pattern":"amazon","friendlyName":"Amazon","icon":"shopping-cart","color":"#FF9900"}'
+# ✓ Returns: {"pattern":"AMAZON",...} (auto-uppercased)
+
+# 2. Find match
+curl "http://localhost:5000/api/merchant-metadata/match?description=AMAZON.DE%20PAYMENTS"
+# ✓ Returns: {"pattern":"AMAZON","friendlyName":"Amazon",...}
+
+# 3. No match
+curl "http://localhost:5000/api/merchant-metadata/match?description=UNKNOWN"
+# ✓ Returns: null
+```
+
+---
+
+### ⏸️ OPEN TASKS (NOT IMPLEMENTED)
+
+#### C.4: AI Usage Tracking
+**Objective**: Track OpenAI API usage for cost monitoring.
+
+**Scope IN**:
+- Table: `ai_usage_logs` (userId, operation, tokensUsed, cost, timestamp)
+- Logging wrapper for OpenAI API calls
+- Endpoint: `GET /api/ai/usage?startDate=X&endDate=Y`
+
+**Scope OUT**:
+- Real-time usage alerts
+- Per-user billing/quotas
+- Third-party analytics integration
+
+**Dependencies**: None
+
+**Acceptance Criteria**:
+- ✅ Logs created for each AI call
+- ✅ Endpoint returns usage summary
+- ✅ Date filtering works
+- ✅ Cost calculated correctly (tokens × price)
+
+**QA Checklist**:
+- [ ] Call AI categorization endpoint
+- [ ] Verify log created in `ai_usage_logs`
+- [ ] GET /api/ai/usage returns correct count
+- [ ] Filter by date returns subset
+
+**Decision Log**:
+- **Store tokens vs cost** (A vs B): Store both for transparency and future price changes
+- **Aggregate endpoint** (A vs B): Return raw logs with totals, let frontend aggregate
+
+---
+
+#### C.5: Notification Backend
+**Objective**: Backend support for notification system (UI exists but not functional).
+
+**Scope IN**:
+- Table: `notifications` (userId, type, message, isRead, createdAt)
+- CRUD endpoints for notifications
+- Mark as read/unread
+- Optional: trigger notifications on events (e.g., upload complete)
+
+**Scope OUT**:
+- Email/SMS notifications
+- Push notifications
+- Real-time websocket updates
+
+**Dependencies**: None
+
+**Acceptance Criteria**:
+- ✅ Create notification via POST
+- ✅ GET /api/notifications returns user's notifications
+- ✅ PATCH /api/notifications/:id/read marks as read
+- ✅ DELETE removes notification
+
+**QA Checklist**:
+- [ ] Create test notification
+- [ ] Verify it appears in GET list
+- [ ] Mark as read, verify `isRead = true`
+- [ ] Delete, verify 404 on subsequent GET
+
+**Decision Log**:
+- **Auto-trigger vs manual** (A vs B): Start with manual creation, add auto-triggers later
+- **Real-time updates** (A vs B): Polling for MVP, websockets in future if needed
+
+---
+
+#### C.6: AI Assistant Backend
+**Objective**: Streaming AI assistant backend for chat interface (frontend exists).
+
+**Scope IN**:
+- SSE endpoint: `POST /api/ai/chat` (streaming response)
+- Integration with OpenAI GPT-4
+- Context: user's transactions, budgets, goals
+- Stream responses token-by-token
+- Save conversation history (optional)
+
+**Scope OUT**:
+- Complex multi-turn memory management
+- RAG/vector search over transactions
+- Voice input/output
+
+**Dependencies**:
+- OpenAI API key
+- C.4 (AI usage tracking) for logging
+
+**Acceptance Criteria**:
+- ✅ POST /api/ai/chat streams responses
+- ✅ Frontend receives SSE events
+- ✅ Responses include transaction context
+- ✅ Usage logged via C.4
+
+**QA Checklist**:
+- [ ] Send chat message: "Analise meus gastos este mês"
+- [ ] Verify SSE stream received in frontend
+- [ ] Check AI response includes transaction data
+- [ ] Verify usage logged in ai_usage_logs
+
+**Decision Log**:
+- **Streaming vs batch** (A vs B): SSE streaming for better UX (Sonnet model required)
+- **Context strategy** (A vs B): Query recent transactions on each request (simple, stateless)
+- **Conversation history** (A vs B): Store in DB for future sessions (add later)
+
+**Model Required**: **Sonnet** (complex SSE streaming + OpenAI integration)
+
+---
+
+### FILES MODIFIED SUMMARY (C.1-C.3)
+
+**Schema Changes** (`shared/schema.ts`):
+- Added `upload_errors` table (20 lines)
+- Added `merchant_metadata` table (21 lines)
+
+**Storage Layer** (`server/storage.ts`):
+- Added `getAccountBalance` (35 lines)
+- Added `createUploadError`, `getUploadErrors` (14 lines)
+- Added merchant metadata CRUD (55 lines)
+
+**API Routes** (`server/routes.ts`):
+- Added `GET /api/accounts/:id/balance` (28 lines)
+- Added `GET /api/uploads/:id/errors` (30 lines + integration)
+- Added 5 merchant metadata endpoints (69 lines)
+
+**Database Migrations**:
+- `npm run db:push` (ran 2 times for upload_errors, merchant_metadata)
+
+**Total Lines Added**: ~319 lines (schema + storage + routes)
+
+---
+
+### NEXT STEPS
+
+**Immediate**:
+1. User testing of C.1-C.3 features
+2. Decide: Continue with C.4-C.6 OR switch to deployment track
+
+**If Continuing Phase C**:
+1. Plan C.4 (AI Usage Tracking) - Haiku model
+2. Implement C.4 - Haiku model
+3. Plan C.5 (Notification Backend) - Haiku model
+4. Implement C.5 - Haiku model
+5. Plan C.6 (AI Assistant Backend) - **Sonnet model**
+6. Implement C.6 - **Sonnet model**
+7. Integration testing of all Phase C features
+
+**If Switching to Deployment**:
+1. Assess current architecture for Supabase + Vercel compatibility
+2. Plan Supabase setup (DB + Auth + RLS)
+3. Plan Vercel deployment (serverless vs edge)
+4. Document migration strategy
+5. Implement deployment configuration
+6. Deploy to staging
+7. QA and smoke tests
+8. Production cutover
+
+---
