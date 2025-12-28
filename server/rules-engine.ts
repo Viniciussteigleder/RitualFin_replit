@@ -8,6 +8,7 @@ export interface RuleMatch {
   fixVar: "Fixo" | "Variável";
   category1: string;
   category2?: string;
+  category3?: string;
   priority: number;
   strict: boolean;
   isSystem: boolean;
@@ -52,6 +53,7 @@ export function matchRules(descNorm: string, rules: Rule[]): CategorizationResul
         fixVar: rule.fixVar,
         category1: rule.category1,
         category2: rule.category2 || undefined,
+        category3: rule.category3 || undefined,
         priority: rule.priority || 500,
         strict: rule.strict || false,
         isSystem: rule.isSystem || false,
@@ -152,6 +154,7 @@ export function categorizeTransaction(
       fixVar: rule.fixVar,
       category1: rule.category1 as any,
       category2: rule.category2,
+      category3: rule.category3,
       needsReview: false,
       ruleIdApplied: rule.ruleId,
       internalTransfer: isInterno,
@@ -163,12 +166,13 @@ export function categorizeTransaction(
   if (result.appliedRule && result.needsReview) {
     const rule = result.appliedRule;
     const isInterno = rule.category1 === "Interno";
-    
+
     return {
       type: rule.type,
       fixVar: rule.fixVar,
       category1: rule.category1 as any,
       category2: rule.category2,
+      category3: rule.category3,
       needsReview: true,
       ruleIdApplied: rule.ruleId,
       internalTransfer: isInterno,

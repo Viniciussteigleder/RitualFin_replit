@@ -258,17 +258,22 @@ export async function registerRoutes(
   // Bulk confirm with optional rule creation
   app.post("/api/transactions/confirm", async (req: Request, res: Response) => {
     try {
-      const { ids, createRule, keyword, type, fixVar, category1, category2, excludeFromBudget } = req.body;
-      
+      const { ids, createRule, keyword, type, fixVar, category1, category2, category3, excludeFromBudget } = req.body;
+
       if (!ids || ids.length === 0) {
         return res.status(400).json({ error: "No transaction IDs provided" });
       }
 
-      const updateData: any = { needsReview: false };
+      // CRITICAL: Manual confirmation sets manualOverride = true (immutable)
+      const updateData: any = {
+        needsReview: false,
+        manualOverride: true  // Prevent future auto-recategorization
+      };
       if (type) updateData.type = type;
       if (fixVar) updateData.fixVar = fixVar;
       if (category1) updateData.category1 = category1;
       if (category2 !== undefined) updateData.category2 = category2;
+      if (category3 !== undefined) updateData.category3 = category3;
       if (excludeFromBudget !== undefined) updateData.excludeFromBudget = excludeFromBudget;
       if (category1 === "Interno") {
         updateData.internalTransfer = true;
@@ -289,7 +294,8 @@ export async function registerRoutes(
             type,
             fixVar,
             category1,
-            category2
+            category2,
+            category3
           });
 
           // Update transactions with the new rule ID
@@ -375,8 +381,13 @@ export async function registerRoutes(
       let stillPendingCount = 0;
 
       for (const tx of transactions) {
+        // CRITICAL: Never recategorize transactions with manual override
+        if (tx.manualOverride) {
+          continue;
+        }
+
         const result = categorizeTransaction(tx.descNorm, rules);
-        
+
         if (result.confidence && result.confidence > 0) {
           await storage.updateTransaction(tx.id, {
             ...result,
@@ -422,15 +433,21 @@ export async function registerRoutes(
       let appliedCount = 0;
 
       for (const tx of transactions) {
+        // CRITICAL: Never recategorize transactions with manual override
+        if (tx.manualOverride) {
+          continue;
+        }
+
         const descNorm = tx.descNorm.toLowerCase();
         const matches = keywords.some(k => descNorm.includes(k));
-        
+
         if (matches) {
           await storage.updateTransaction(tx.id, {
             type: rule.type,
             fixVar: rule.fixVar,
             category1: rule.category1,
             category2: rule.category2,
+            category3: rule.category3,
             needsReview: false,
             ruleIdApplied: rule.id,
             internalTransfer: rule.category1 === "Interno",

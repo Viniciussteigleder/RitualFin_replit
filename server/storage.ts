@@ -67,6 +67,7 @@ export interface IStorage {
   // Event Occurrences
   getEventOccurrences(eventId: string): Promise<EventOccurrence[]>;
   createEventOccurrence(occurrence: InsertEventOccurrence): Promise<EventOccurrence>;
+  updateEventOccurrence(id: string, data: Partial<EventOccurrence>): Promise<EventOccurrence | undefined>;
 
   // Goals
   getGoals(userId: string, month?: string): Promise<Goal[]>;
@@ -249,6 +250,10 @@ export class DatabaseStorage implements IStorage {
     return updated || undefined;
   }
 
+  async deleteBudget(id: string, userId: string): Promise<void> {
+    await db.delete(budgets).where(and(eq(budgets.id, id), eq(budgets.userId, userId)));
+  }
+
   // Dashboard aggregations
   async getDashboardData(userId: string, month: string): Promise<{
     spentByCategory: { category: string; amount: number }[];
@@ -343,6 +348,11 @@ export class DatabaseStorage implements IStorage {
   async createEventOccurrence(occurrence: InsertEventOccurrence): Promise<EventOccurrence> {
     const [created] = await db.insert(eventOccurrences).values(occurrence).returning();
     return created;
+  }
+
+  async updateEventOccurrence(id: string, data: Partial<EventOccurrence>): Promise<EventOccurrence | undefined> {
+    const [updated] = await db.update(eventOccurrences).set(data).where(eq(eventOccurrences.id, id)).returning();
+    return updated || undefined;
   }
 
   // Get all uncategorized transactions (needsReview = true and no category)
