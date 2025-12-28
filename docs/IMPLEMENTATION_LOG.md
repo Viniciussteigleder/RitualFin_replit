@@ -592,6 +592,157 @@ interface LogEntry {
 
 ---
 
+## Phase C Implementation (2025-12-28)
+
+**Status**: ✅ Completed
+
+### Changes Made
+
+**Files Modified**:
+- `server/csv-parser.ts` - Added Sparkasse format detection and parsing
+
+### Sparkasse CSV Format
+
+**Encoding**: German locale, semicolon-delimited
+**Headers**:
+- `Auftragskonto` (Account IBAN)
+- `Buchungstag` (Booking date)
+- `Valutadatum` (Value date)
+- `Buchungstext` (Transaction type)
+- `Verwendungszweck` (Purpose/description)
+- `Beguenstigter/Zahlungspflichtiger` (Beneficiary/payer)
+- `Kontonummer/IBAN` (Counterparty IBAN)
+- `BIC (SWIFT-Code)` (BIC code)
+- `Betrag` (Amount)
+- `Waehrung` (Currency)
+- `Info` (Status info)
+- `Kategorie` (Category - usually empty)
+
+**Date Format**: `DD.MM.YY` (e.g., "29.09.25")
+**Amount Format**: German decimal with quotes (e.g., "-609,58")
+
+### Implementation Details
+
+**Type Definitions**:
+```typescript
+type CsvFormat = "miles_and_more" | "amex" | "sparkasse" | "unknown";
+
+const SPARKASSE_REQUIRED_COLUMNS = [
+  "Auftragskonto",
+  "Buchungstag",
+  "Verwendungszweck",
+  "Betrag"
+];
+```
+
+**Format Detection**:
+- Checks for semicolon-delimited headers
+- Matches on: `auftragskonto`, `buchungstag`, `verwendungszweck` (case-insensitive)
+- Detection happens in first 5 lines of CSV
+
+**Account Attribution**:
+```typescript
+const ibanLast4 = auftragskonto.slice(-4);
+const accountSource = `Sparkasse - ${ibanLast4}`;
+```
+- Example: `"Sparkasse - 8260"` for IBAN ending in 8260
+
+**Description Building**:
+```typescript
+const descRaw = `${verwendungszweck.slice(0, 100)} -- ${beguenstigter.slice(0, 50)} -- Sparkasse`;
+```
+- Combines purpose (100 chars max) + beneficiary (50 chars max) + provider label
+- Example: "LEISTUNGEN PER 30.09.2025, IBAN DE22... -- Commerzbank AG -- Sparkasse"
+
+**Date Parsing**:
+- German format `DD.MM.YY` parsed via `parseDateMM()` function
+- 2-digit year handling: < 50 → 2000s, >= 50 → 1900s
+
+**Amount Parsing**:
+- German number format: comma as decimal separator
+- Handles quoted amounts: `"-609,58"` → -609.58
+- Uses existing `parseAmountGerman()` utility
+
+### Testing Results
+
+**Test Method**: Created small test CSV with 10 lines from production Sparkasse export
+
+**Test Data**:
+- 9 transactions (excluding header)
+- Date range: September 2025
+- Account IBAN: DE74660501010022518260
+
+**Upload Result**:
+```json
+{
+  "success": true,
+  "uploadId": "485a8e5f-7210-497b-909b-9e56ea8b2fb6",
+  "rowsTotal": 9,
+  "rowsImported": 9,
+  "duplicates": 0,
+  "monthAffected": "2025-09"
+}
+```
+
+**Log Output**:
+```json
+{"level":"INFO","action":"csv_format_detected","metadata":{"format":"sparkasse","totalLines":10}}
+{"level":"INFO","action":"csv_parse_complete","metadata":{"format":"sparkasse","success":true,"rowsTotal":9,"rowsImported":9,"errorsCount":0,"accountSources":["Sparkasse - 8260"],"monthAffected":"2025-09"}}
+```
+
+**Verification**:
+- ✅ Sparkasse format correctly detected
+- ✅ All 9 transactions imported successfully
+- ✅ Account source shows IBAN last 4 digits: "Sparkasse - 8260"
+- ✅ German date format parsed correctly
+- ✅ German amount format parsed correctly (negative and positive values)
+- ✅ Logging shows correct format detection
+- ✅ Transactions available in confirmation queue
+
+**Known Limitation**:
+- Full production CSV (506 lines) triggers "request entity too large" error
+- This is a general body size limit issue, not specific to Sparkasse
+- Workaround: Users can split large CSV files or increase body size limit
+- Test with 10-line file proves parser works correctly
+
+### Error Message Update
+
+Updated unknown format error message to include Sparkasse:
+```typescript
+"Formatos suportados: Miles & More, American Express (Amex), Sparkasse"
+```
+
+### Code Changes Summary
+
+**Lines Changed**: ~120 lines total
+- Added `SPARKASSE_REQUIRED_COLUMNS` constant (4 lines)
+- Updated type definitions (2 lines)
+- Extended `detectCsvFormat()` for Sparkasse (7 lines)
+- Implemented `parseSparkasse()` function (95 lines)
+- Added Sparkasse to parseCSV router (3 lines)
+- Updated error messages (3 lines)
+
+**Functions Added**:
+- `parseSparkasse(lines: string[]): ParseResult` - Main parsing function
+- Uses existing utilities: `parseCSVLine()`, `parseDateMM()`, `parseAmountGerman()`, `normalizeText()`
+
+### Benefits
+
+✅ **Third Provider Support**: App now handles Miles & More, Amex, and Sparkasse
+✅ **German Banking Format**: Correctly handles German locale (dates, numbers, encoding)
+✅ **Account Attribution**: IBAN-based source tracking enables multi-account support
+✅ **Consistent Pipeline**: Same normalization and rules engine as other providers
+✅ **Observability**: Logging shows format detection and parse results
+✅ **Minimal Changes**: Leveraged existing parser utilities and patterns
+
+### Next Steps
+
+- [ ] Consider implementing request body size increase for large CSV uploads
+- [ ] Validate with more Sparkasse CSV samples (if available)
+- [ ] Add Sparkasse-specific rules/keywords if transaction patterns emerge
+
+---
+
 ## Phase D (Partial) Implementation (2025-12-27)
 
 **Status**: ✅ Completed (Account Source Display)

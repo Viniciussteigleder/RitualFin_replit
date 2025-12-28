@@ -51,10 +51,10 @@ export interface ParseResult {
   rowsTotal: number;
   rowsImported: number;
   monthAffected: string;
-  format?: "miles_and_more" | "amex" | "unknown";
+  format?: "miles_and_more" | "amex" | "sparkasse" | "unknown";
 }
 
-type CsvFormat = "miles_and_more" | "amex" | "unknown";
+type CsvFormat = "miles_and_more" | "amex" | "sparkasse" | "unknown";
 
 const MM_REQUIRED_COLUMNS = [
   "Authorised on",
@@ -69,6 +69,13 @@ const AMEX_REQUIRED_COLUMNS = [
   "Datum",
   "Beschreibung",
   "Karteninhaber",
+  "Betrag"
+];
+
+const SPARKASSE_REQUIRED_COLUMNS = [
+  "Auftragskonto",
+  "Buchungstag",
+  "Verwendungszweck",
   "Betrag"
 ];
 
@@ -143,20 +150,27 @@ function parseAmountStandard(amountStr: string): number {
 function detectCsvFormat(lines: string[]): { format: CsvFormat; separator: string } {
   for (let i = 0; i < Math.min(5, lines.length); i++) {
     const line = lines[i];
-    
+
     const commaCols = line.split(",").map(c => c.trim().replace(/^"|"$/g, ""));
-    if (commaCols.some(c => c.toLowerCase() === "datum") && 
+    if (commaCols.some(c => c.toLowerCase() === "datum") &&
         commaCols.some(c => c.toLowerCase() === "beschreibung") &&
         commaCols.some(c => c.toLowerCase() === "karteninhaber")) {
       return { format: "amex", separator: "," };
     }
-    
-    const semiCols = line.split(";").map(c => c.trim());
+
+    const semiCols = line.split(";").map(c => c.trim().replace(/^"|"$/g, ""));
+
     if (semiCols.some(c => c.toLowerCase() === "authorised on")) {
       return { format: "miles_and_more", separator: ";" };
     }
+
+    if (semiCols.some(c => c.toLowerCase() === "auftragskonto") &&
+        semiCols.some(c => c.toLowerCase() === "buchungstag") &&
+        semiCols.some(c => c.toLowerCase() === "verwendungszweck")) {
+      return { format: "sparkasse", separator: ";" };
+    }
   }
-  
+
   return { format: "unknown", separator: ";" };
 }
 
@@ -519,6 +533,105 @@ function parseAmex(lines: string[]): ParseResult {
   };
 }
 
+function parseSparkasse(lines: string[]): ParseResult {
+  const transactions: ParsedTransaction[] = [];
+  const errors: string[] = [];
+  const months = new Set<string>();
+
+  // Header is on line 1
+  const headerIndex = 0;
+  const headers = parseCSVLine(lines[headerIndex], ";");
+
+  // Build column index
+  const colIndex: Record<string, number> = {};
+  headers.forEach((h, i) => {
+    colIndex[h.toLowerCase()] = i;
+  });
+
+  // Check required columns
+  const missingColumns = SPARKASSE_REQUIRED_COLUMNS.filter(col =>
+    !headers.some(h => h.toLowerCase() === col.toLowerCase())
+  );
+
+  if (missingColumns.length > 0) {
+    return {
+      success: false,
+      transactions: [],
+      errors: [`Sparkasse CSV invalido: faltam colunas obrigatorias: ${missingColumns.join(", ")}`],
+      rowsTotal: lines.length - 1,
+      rowsImported: 0,
+      monthAffected: "",
+      format: "sparkasse"
+    };
+  }
+
+  // Parse transactions (skip header)
+  for (let i = headerIndex + 1; i < lines.length; i++) {
+    try {
+      const cols = parseCSVLine(lines[i], ";");
+
+      const auftragskonto = cols[colIndex["auftragskonto"]] || "";
+      const buchungstag = cols[colIndex["buchungstag"]] || "";
+      const verwendungszweck = cols[colIndex["verwendungszweck"]] || "";
+      const beguenstigter = cols[colIndex["beguenstigter/zahlungspflichtiger"]] || "";
+      const betragStr = cols[colIndex["betrag"]] || "";
+
+      // Parse date (DD.MM.YY format)
+      const paymentDate = parseDateMM(buchungstag);
+      if (!paymentDate) {
+        errors.push(`Linha ${i + 1}: Data invalida`);
+        continue;
+      }
+
+      // Track month
+      const monthKey = `${paymentDate.getFullYear()}-${String(paymentDate.getMonth() + 1).padStart(2, "0")}`;
+      months.add(monthKey);
+
+      // Parse amount (German format with quotes: "-609,58")
+      const amount = parseAmountGerman(betragStr);
+
+      // Build description
+      const descRaw = `${verwendungszweck.slice(0, 100)} -- ${beguenstigter.slice(0, 50)} -- Sparkasse`;
+      const descNorm = normalizeText(descRaw);
+
+      // Build unique key for deduplication
+      const key = `${descNorm} -- ${amount} -- ${paymentDate.toISOString().split("T")[0]}`;
+
+      // Extract account source (last 4 digits of IBAN)
+      const ibanLast4 = auftragskonto.slice(-4);
+      const accountSource = `Sparkasse - ${ibanLast4}`;
+
+      transactions.push({
+        paymentDate,
+        descRaw,
+        descNorm,
+        amount,
+        currency: "EUR",
+        foreignAmount: undefined,
+        foreignCurrency: undefined,
+        exchangeRate: undefined,
+        key,
+        accountSource
+      });
+    } catch (err) {
+      errors.push(`Linha ${i + 1}: Erro ao processar`);
+    }
+  }
+
+  const monthsArray = Array.from(months).sort();
+  const monthAffected = monthsArray.length > 0 ? monthsArray[monthsArray.length - 1] : "";
+
+  return {
+    success: transactions.length > 0,
+    transactions,
+    errors,
+    rowsTotal: lines.length - headerIndex - 1,
+    rowsImported: transactions.length,
+    monthAffected,
+    format: "sparkasse"
+  };
+}
+
 export function parseCSV(csvContent: string): ParseResult {
   const allLines = csvContent.split(/\r?\n/);
   const lines = allLines.filter(line => line.trim() !== "");
@@ -549,6 +662,8 @@ export function parseCSV(csvContent: string): ParseResult {
     result = parseAmex(lines);
   } else if (format === "miles_and_more") {
     result = parseMilesAndMore(lines);
+  } else if (format === "sparkasse") {
+    result = parseSparkasse(lines);
   } else {
     logger.warn("csv_format_unknown", { totalLines: lines.length });
     result = {
@@ -556,7 +671,7 @@ export function parseCSV(csvContent: string): ParseResult {
       transactions: [],
       errors: [
         "Formato de CSV nao reconhecido",
-        "Formatos suportados: Miles & More, American Express (Amex)",
+        "Formatos suportados: Miles & More, American Express (Amex), Sparkasse",
         "Verifique se o arquivo contem os cabecalhos corretos"
       ],
       rowsTotal: lines.length,
@@ -567,7 +682,7 @@ export function parseCSV(csvContent: string): ParseResult {
   }
 
   // Log parse result summary
-  const accountSources = [...new Set(result.transactions.map(t => t.accountSource))];
+  const accountSources = Array.from(new Set(result.transactions.map(t => t.accountSource)));
 
   logger.info("csv_parse_complete", {
     format: result.format,
