@@ -16,7 +16,8 @@ import {
   Calendar,
   Target,
   Brain,
-  Wallet
+  Wallet,
+  Receipt
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -62,12 +63,18 @@ const NAV_ITEMS = [
     href: "/uploads",
     description: "Importar CSV"
   },
-  { 
-    label: "Confirmar", 
-    icon: CheckCircle2, 
-    href: "/confirm", 
+  {
+    label: "Confirmar",
+    icon: CheckCircle2,
+    href: "/confirm",
     showBadge: true,
     description: "Transações pendentes"
+  },
+  {
+    label: "Transações",
+    icon: Receipt,
+    href: "/transactions",
+    description: "Histórico completo"
   },
   {
     label: "Regras",

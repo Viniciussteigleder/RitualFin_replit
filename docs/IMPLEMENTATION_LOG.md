@@ -3501,3 +3501,380 @@ npm run check
 **Fase 3 - COMPLETA** ✅
 
 **Data de Conclusão**: 2025-12-28
+
+---
+
+## Fase 4: Transações - Página Completa e Edição (2025-12-28)
+
+**Objetivo**: Criar página dedicada para visualização e edição de todas as transações com filtros avançados e export.
+
+**Status**: ✅ COMPLETA
+
+---
+
+### Contexto e Motivação
+
+**Problema**:
+- Dashboard mostra apenas 5 transações recentes
+- Confirm page mostra apenas transações pendentes
+- Não existe local para visualizar histórico completo
+- Edição de transações confirmadas é impossível
+- Impossível exportar dados para análise externa
+
+**Solução**:
+- Criar página `/transactions` dedicada
+- Listagem completa de todas as transações do mês
+- Filtros múltiplos (conta, categoria, tipo, busca)
+- Dialog de edição completo
+- Export para CSV
+- Estatísticas rápidas no topo
+
+---
+
+### Implementação
+
+#### 1. Página de Transações (`client/src/pages/transactions.tsx`)
+
+**Recursos Implementados**:
+- ✅ Listagem completa de transações do mês (via useMonth context)
+- ✅ 4 cards de estatísticas (total, receitas, despesas, saldo)
+- ✅ Busca por descrição (text input)
+- ✅ 3 filtros dropdown (conta, categoria, tipo)
+- ✅ Botão "Limpar filtros"
+- ✅ Tabela responsiva com 7 colunas
+- ✅ Dialog de edição completo
+- ✅ Export para CSV
+- ✅ AccountBadge visual
+- ✅ Badges de status (Manual, Excluído, Interno)
+
+**Layout da Página**:
+```
+┌────────────────────────────────────────────────────┐
+│ Transações                    [Exportar CSV]      │
+├────────────────────────────────────────────────────┤
+│ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐             │
+│ │ 1,333│ │€8,500│ │€6,200│ │€2,300│             │
+│ │Total │ │Receita│ │Despesa│ │Saldo│             │
+│ └──────┘ └──────┘ └──────┘ └──────┘             │
+├────────────────────────────────────────────────────┤
+│ [🔍 Buscar...]  [Filtros ▾] [Limpar]             │
+│                                                    │
+│ [Conta ▾]  [Categoria ▾]  [Tipo ▾]               │
+├────────────────────────────────────────────────────┤
+│ Data│Conta│Descrição│Valor│Categoria│Status│Ação │
+│ ────┼─────┼─────────┼─────┼─────────┼──────┼─── │
+│ ... │ ... │   ...   │ ... │   ...   │ ...  │[✏] │
+└────────────────────────────────────────────────────┘
+```
+
+**Tabela de Transações** (7 colunas):
+1. **Data**: dd/MM/yy format
+2. **Conta**: AccountBadge visual
+3. **Descrição**: Primeira linha (descRaw), segunda linha (category2 → category3)
+4. **Valor**: Formatado EUR, verde se positivo
+5. **Categoria**: Dot colorido + nome
+6. **Status**: Badges (Manual, Excluído, Interno)
+7. **Ações**: Botão Editar
+
+**Cards de Estatísticas**:
+```typescript
+- Total: Número de transações filtradas
+- Receitas: Sum(amount) where type = "Receita"
+- Despesas: Sum(abs(amount)) where type = "Despesa"
+- Saldo: Receitas - Despesas (cor verde/vermelho)
+```
+
+---
+
+#### 2. Dialog de Edição
+
+**Campos Editáveis**:
+- Tipo (Despesa/Receita)
+- Fixo/Variável
+- Categoria Principal (categoria1)
+- Subcategoria (categoria2)
+- Detalhamento (categoria3)
+- Checkbox: Excluir do orçamento
+- Checkbox: Transferência interna
+
+**Comportamento**:
+- Ao salvar, define `manualOverride = true` automaticamente
+- Invalida queries: transactions, dashboard
+- Mostra toast de sucesso
+
+**Validação**:
+- Campos obrigatórios: tipo, fixVar, category1
+- Campos opcionais: category2, category3, checkboxes
+
+---
+
+#### 3. Sistema de Filtros
+
+**Filtros Disponíveis**:
+
+**1. Busca Textual**:
+```typescript
+.filter((t) => t.descRaw?.toLowerCase().includes(search.toLowerCase()))
+```
+
+**2. Filtro por Conta**:
+```typescript
+.filter((t) => accountFilter === "all" || t.accountId === accountFilter)
+```
+
+**3. Filtro por Categoria**:
+```typescript
+.filter((t) => categoryFilter === "all" || t.category1 === categoryFilter)
+```
+
+**4. Filtro por Tipo**:
+```typescript
+.filter((t) => typeFilter === "all" || t.type === typeFilter)
+```
+
+**Combinação**:
+- Filtros são aplicados em cadeia (AND logic)
+- Botão "Limpar" reseta todos os filtros
+- Indicador visual quando filtros ativos
+- Show/hide do painel de filtros avançados
+
+---
+
+#### 4. Export para CSV
+
+**Formato**:
+```csv
+Data,Conta,Descrição,Valor,Categoria,Tipo,Fix/Var
+01/12/2024,Sparkasse (6565),"Compra Mercado","-45.50",Mercado,Despesa,Variável
+...
+```
+
+**Funcionalidades**:
+- Exporta apenas transações filtradas
+- Escapa aspas duplas na descrição (RFC 4180)
+- Nome do arquivo: `transacoes_{mes}.csv`
+- Download automático via blob URL
+- Toast de confirmação
+
+**Implementação**:
+```typescript
+const csv = [
+  ["Data", "Conta", "Descrição", "Valor", "Categoria", "Tipo", "Fix/Var"].join(","),
+  ...filteredTransactions.map((t) => [
+    format(new Date(t.paymentDate), "dd/MM/yyyy"),
+    accountsById[t.accountId]?.name || t.accountSource || "",
+    `"${t.descRaw?.replace(/"/g, '""')}"`,
+    t.amount,
+    t.category1 || "",
+    t.type || "",
+    t.fixVar || ""
+  ].join(","))
+].join("\n");
+```
+
+---
+
+#### 5. Integração com AccountBadge
+
+**Uso**:
+```tsx
+<AccountBadge account={accountsById[t.accountId]} size="sm" />
+```
+
+**Benefícios**:
+- Consistência visual com confirm page
+- Ícone + cor identificam conta rapidamente
+- Componente reutilizável
+
+---
+
+#### 6. Navegação
+
+**Sidebar**:
+- Item "Transações" adicionado
+- Ícone: Receipt
+- Posição: Entre "Confirmar" e "Regras"
+- Descrição: "Histórico completo"
+
+**Rota**:
+```typescript
+<Route path="/transactions" component={TransactionsPage} />
+```
+
+---
+
+### Testes Realizados
+
+**1. Type Check**:
+```bash
+npm run check
+```
+
+**Resultado**:
+- ✅ Nenhum erro em `client/src/pages/transactions.tsx`
+- ✅ Nenhum erro em `client/src/App.tsx`
+- ✅ Nenhum erro em `client/src/components/layout/sidebar.tsx`
+- ⚠️ Erros pré-existentes em `server/replit_integrations/` (não relacionados)
+
+---
+
+### Arquivos Modificados
+
+**Frontend - Páginas**:
+- `client/src/pages/transactions.tsx`: +654 linhas (novo arquivo)
+
+**Frontend - Infraestrutura**:
+- `client/src/App.tsx`: +2 linhas (import + rota)
+- `client/src/components/layout/sidebar.tsx`: +7 linhas (nav item + ícone)
+
+**Total**: ~663 linhas adicionadas
+
+---
+
+### Decisões de Design
+
+#### 1. Por que usar mês do contexto em vez de range de datas?
+**Decisão**: Usar `useMonth` context existente
+
+**Razões**:
+- Consistência: Dashboard e outras páginas usam mesmo contexto
+- UX: Navegação mensal já familiar ao usuário
+- Performance: Menos dados carregados por vez
+- Simplicidade: Não precisa implementar date picker
+
+**Trade-off**: Para ver transações de múltiplos meses, usuário precisa trocar mês (aceitável)
+
+---
+
+#### 2. Filtros Client-Side vs Server-Side
+**Decisão**: Filtros client-side (useMemo)
+
+**Razões**:
+- Performance: Transações já carregadas (~1000 por mês)
+- Simplicidade: Não precisa modificar API
+- UX: Filtros instantâneos (sem loading)
+- Menos requests: 1 query inicial, filtros locais
+
+**Trade-off**: Todos os dados carregados (OK para volumes atuais)
+
+---
+
+#### 3. Paginação vs Scroll Infinito vs Todas
+**Decisão**: Mostrar todas as transações sem paginação
+
+**Razões**:
+- Volume baixo: ~1000 transações/mês é gerenciável
+- Busca: Usuário pode buscar instantaneamente
+- Export: Facilita exportar tudo de uma vez
+- Simplicidade: Menos código, menos bugs
+
+**Trade-off**: Performance pode degradar com 10k+ transações (pode adicionar lazy loading depois)
+
+---
+
+#### 4. Dialog vs Inline Edit
+**Decisão**: Dialog modal para edição
+
+**Razões**:
+- Foco: Usuário se concentra na edição
+- Espaço: Mais campos disponíveis sem poluir tabela
+- Validação: Mais fácil mostrar erros
+- Consistência: Mesm
+
+o padrão usado em outras páginas
+
+**Trade-off**: Mais cliques (aceitável)
+
+---
+
+#### 5. Export somente CSV vs múltiplos formatos
+**Decisão**: Apenas CSV
+
+**Razões**:
+- Universal: CSV abre em Excel, Google Sheets, etc.
+- Simplicidade: Não precisa libs externas (XLSX, PDF)
+- Leve: Arquivo pequeno, download rápido
+- Suficiente: Usuário pode converter depois se precisar
+
+**Trade-off**: Sem formatação visual (aceitável)
+
+---
+
+### Métricas
+
+**UI**:
+- Páginas criadas: 1 (/transactions)
+- Tabela com: 7 colunas, filtros dinâmicos
+- Cards de estatísticas: 4
+- Filtros: 4 (busca + 3 dropdowns)
+
+**Code**:
+- Linhas adicionadas: ~663
+- Arquivos criados: 1
+- Arquivos modificados: 2
+
+**Funcionalidades**:
+- Listagem completa: ✅
+- Filtros avançados: ✅
+- Busca textual: ✅
+- Edição de transação: ✅
+- Export CSV: ✅
+- Estatísticas: ✅
+
+---
+
+### Fluxo de Usuário Completo
+
+**1. Visualizar Transações**:
+```
+/transactions → Ver lista completa do mês → Trocar mês na sidebar se necessário
+```
+
+**2. Buscar Transação**:
+```
+/transactions → Digitar na busca → Tabela filtra instantaneamente
+```
+
+**3. Filtrar por Conta**:
+```
+/transactions → [Filtros] → Selecionar conta → Tabela atualiza
+```
+
+**4. Editar Transação**:
+```
+/transactions → [✏ Editar] → Modificar campos → [Salvar] → Toast confirmação
+```
+
+**5. Exportar para Excel**:
+```
+/transactions → Aplicar filtros desejados → [Exportar CSV] → Download automático
+```
+
+**6. Limpar Filtros**:
+```
+/transactions → Filtros ativos → [Limpar] → Volta ao estado inicial
+```
+
+---
+
+### Próximos Passos
+
+**Fase 4 está COMPLETA** ✅
+
+**Melhorias Futuras (não bloqueantes)**:
+1. Lazy loading/virtual scroll para 10k+ transações
+2. Filtro por range de datas customizado
+3. Filtro por valor (mínimo/máximo)
+4. Ordenação por coluna (clicar no header)
+5. Seleção múltipla para edição em lote
+6. Export em outros formatos (XLSX, PDF)
+7. Gráficos inline (sparklines)
+
+**Ou continuar para Fase 5**:
+- A ser definido pelo usuário
+
+---
+
+**Fase 4 - COMPLETA** ✅
+
+**Data de Conclusão**: 2025-12-28

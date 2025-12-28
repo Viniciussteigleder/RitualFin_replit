@@ -18,6 +18,7 @@ import RitualsPage from "@/pages/rituals";
 import BudgetsPage from "@/pages/budgets";
 import AIKeywordsPage from "@/pages/ai-keywords";
 import AccountsPage from "@/pages/accounts";
+import TransactionsPage from "@/pages/transactions";
 
 function Router() {
   return (
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/rituals" component={RitualsPage} />
       <Route path="/uploads" component={UploadsPage} />
       <Route path="/confirm" component={ConfirmPage} />
+      <Route path="/transactions" component={TransactionsPage} />
       <Route path="/rules" component={RulesPage} />
       <Route path="/accounts" component={AccountsPage} />
       <Route path="/ai-keywords" component={AIKeywordsPage} />
