@@ -11,6 +11,7 @@ export const category1Enum = pgEnum("category_1", [
   "Transporte", "Saúde", "Lazer", "Outros", "Interno"
 ]);
 export const uploadStatusEnum = pgEnum("upload_status", ["processing", "ready", "duplicate", "error"]);
+export const accountTypeEnum = pgEnum("account_type", ["credit_card", "debit_card", "bank_account", "cash"]);
 
 // Users table
 export const users = pgTable("users", {
@@ -25,6 +26,27 @@ export const insertUserSchema = createInsertSchema(users).pick({
 });
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+// Accounts table (credit cards, bank accounts, etc.)
+export const accounts = pgTable("accounts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(),
+  type: accountTypeEnum("type").notNull(),
+  accountNumber: text("account_number"), // Last 4 digits or identifier
+  icon: text("icon").default("credit-card"),
+  color: text("color").default("#6366f1"), // Indigo-500
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const accountsRelations = relations(accounts, ({ one }) => ({
+  user: one(users, { fields: [accounts.userId], references: [users.id] }),
+}));
+
+export const insertAccountSchema = createInsertSchema(accounts).omit({ id: true, createdAt: true });
+export type InsertAccount = z.infer<typeof insertAccountSchema>;
+export type Account = typeof accounts.$inferSelect;
 
 // Uploads table
 export const uploads = pgTable("uploads", {
@@ -79,7 +101,8 @@ export const transactions = pgTable("transactions", {
   userId: varchar("user_id").notNull().references(() => users.id),
   paymentDate: timestamp("payment_date").notNull(),
   importedAt: timestamp("imported_at").notNull().defaultNow(),
-  accountSource: text("account_source").notNull().default("M&M"),
+  accountSource: text("account_source").notNull().default("M&M"), // Legacy field, kept for compatibility
+  accountId: varchar("account_id").references(() => accounts.id), // New structured account reference
   descRaw: text("desc_raw").notNull(),
   descNorm: text("desc_norm").notNull(),
   amount: real("amount").notNull(),
@@ -107,6 +130,7 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
   user: one(users, { fields: [transactions.userId], references: [users.id] }),
   upload: one(uploads, { fields: [transactions.uploadId], references: [uploads.id] }),
   rule: one(rules, { fields: [transactions.ruleIdApplied], references: [rules.id] }),
+  account: one(accounts, { fields: [transactions.accountId], references: [accounts.id] }),
 }));
 
 export const insertTransactionSchema = createInsertSchema(transactions).omit({ id: true, importedAt: true });
@@ -144,12 +168,14 @@ export const calendarEvents = pgTable("calendar_events", {
   recurrence: recurrenceEnum("recurrence").notNull().default("none"),
   nextDueDate: timestamp("next_due_date").notNull(),
   paymentMethod: text("payment_method"),
+  accountId: varchar("account_id").references(() => accounts.id), // Which account this recurring payment is from
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const calendarEventsRelations = relations(calendarEvents, ({ one }) => ({
   user: one(users, { fields: [calendarEvents.userId], references: [users.id] }),
+  account: one(accounts, { fields: [calendarEvents.accountId], references: [accounts.id] }),
 }));
 
 export const insertCalendarEventSchema = createInsertSchema(calendarEvents).omit({ id: true, createdAt: true });

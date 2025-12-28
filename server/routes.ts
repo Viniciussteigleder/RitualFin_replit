@@ -45,6 +45,93 @@ export async function registerRoutes(
     }
   });
 
+  // ===== ACCOUNTS =====
+  app.get("/api/accounts", async (_req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.json([]);
+      const accounts = await storage.getAccounts(user.id);
+      res.json(accounts);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/accounts/:id", async (req: Request, res: Response) => {
+    try {
+      const account = await storage.getAccount(req.params.id);
+      if (!account) {
+        return res.status(404).json({ error: "Account not found" });
+      }
+      res.json(account);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/accounts", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      const accountData = {
+        userId: user.id,
+        name: req.body.name,
+        type: req.body.type,
+        accountNumber: req.body.accountNumber || null,
+        icon: req.body.icon || "credit-card",
+        color: req.body.color || "#6366f1",
+        isActive: req.body.isActive !== undefined ? req.body.isActive : true,
+      };
+
+      const account = await storage.createAccount(accountData);
+      res.status(201).json(account);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.put("/api/accounts/:id", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      const updateData: any = {};
+      if (req.body.name !== undefined) updateData.name = req.body.name;
+      if (req.body.type !== undefined) updateData.type = req.body.type;
+      if (req.body.accountNumber !== undefined) updateData.accountNumber = req.body.accountNumber;
+      if (req.body.icon !== undefined) updateData.icon = req.body.icon;
+      if (req.body.color !== undefined) updateData.color = req.body.color;
+      if (req.body.isActive !== undefined) updateData.isActive = req.body.isActive;
+
+      const updated = await storage.updateAccount(req.params.id, user.id, updateData);
+      if (!updated) {
+        return res.status(404).json({ error: "Account not found" });
+      }
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/accounts/:id", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      await storage.archiveAccount(req.params.id, user.id);
+      res.status(204).send();
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // ===== UPLOADS =====
   app.get("/api/uploads", async (_req: Request, res: Response) => {
     try {
@@ -116,7 +203,79 @@ export async function registerRoutes(
 
       // Get rules for categorization
       const rules = await storage.getRules(user.id);
-      
+
+      // Build accountSource -> accountId mapping
+      const accountMap = new Map<string, string>();
+      const uniqueAccountSources = Array.from(new Set(parseResult.transactions.map(t => t.accountSource)));
+
+      for (const accountSource of uniqueAccountSources) {
+        // Parse accountSource to determine account metadata
+        let accountName: string;
+        let accountType: "credit_card" | "debit_card" | "bank_account" | "cash";
+        let accountNumber: string | null = null;
+        let icon: string;
+        let color: string;
+
+        // Pattern 1: "Amex - Name (1234)"
+        const amexMatch = accountSource.match(/Amex - (.+?) \((\d+)\)/i);
+        if (amexMatch) {
+          const [, name, lastDigits] = amexMatch;
+          accountName = `Amex - ${name}`;
+          accountType = "credit_card";
+          accountNumber = lastDigits;
+          icon = "credit-card";
+          color = "#3b82f6"; // Blue
+        }
+        // Pattern 2: "Sparkasse - 1234"
+        else if (accountSource.match(/Sparkasse - (\d+)/i)) {
+          const sparkasseMatch = accountSource.match(/Sparkasse - (\d+)/i);
+          const lastDigits = sparkasseMatch![1];
+          accountName = `Sparkasse (${lastDigits})`;
+          accountType = "bank_account";
+          accountNumber = lastDigits;
+          icon = "landmark";
+          color = "#ef4444"; // Red
+        }
+        // Pattern 3: "M&M" or "Miles & More..."
+        else if (accountSource.toLowerCase().includes("miles") || accountSource.toLowerCase().includes("m&m")) {
+          const cardMatch = accountSource.match(/(\d{4}X*\d{4})/);
+          const lastDigits = cardMatch ? cardMatch[1].replace(/X/g, "").slice(-4) : null;
+          accountName = lastDigits ? `Miles & More (${lastDigits})` : "Miles & More";
+          accountType = "credit_card";
+          accountNumber = lastDigits;
+          icon = "plane";
+          color = "#8b5cf6"; // Purple
+        }
+        // Default: Unknown account
+        else {
+          accountName = accountSource.length > 30 ? accountSource.substring(0, 30) + "..." : accountSource;
+          accountType = "credit_card";
+          accountNumber = null;
+          icon = "credit-card";
+          color = "#6b7280"; // Gray
+        }
+
+        // Check if account already exists by name
+        const existingAccounts = await storage.getAccounts(user.id);
+        const existingAccount = existingAccounts.find(a => a.name === accountName);
+
+        if (existingAccount) {
+          accountMap.set(accountSource, existingAccount.id);
+        } else {
+          // Create new account
+          const newAccount = await storage.createAccount({
+            userId: user.id,
+            name: accountName,
+            type: accountType,
+            accountNumber,
+            icon,
+            color,
+            isActive: true
+          });
+          accountMap.set(accountSource, newAccount.id);
+        }
+      }
+
       // Process each transaction
       let importedCount = 0;
       let duplicateCount = 0;
@@ -139,6 +298,7 @@ export async function registerRoutes(
             userId: user.id,
             paymentDate: parsed.paymentDate,
             accountSource: parsed.accountSource,
+            accountId: accountMap.get(parsed.accountSource),
             descRaw: parsed.descRaw,
             descNorm: parsed.descNorm,
             amount: parsed.amount,
@@ -547,7 +707,7 @@ export async function registerRoutes(
       if (!user) return res.status(401).json({ error: "Unauthorized" });
 
       const { id } = req.params;
-      const updated = await storage.updateBudget(id, user.id, req.body);
+      const updated = await storage.updateBudget(id, req.body);
       if (!updated) {
         return res.status(404).json({ error: "Budget not found" });
       }

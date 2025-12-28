@@ -1,6 +1,7 @@
-import { 
-  users, uploads, transactions, rules, budgets, calendarEvents, eventOccurrences, goals, categoryGoals, rituals,
+import {
+  users, accounts, uploads, transactions, rules, budgets, calendarEvents, eventOccurrences, goals, categoryGoals, rituals,
   type User, type InsertUser,
+  type Account, type InsertAccount,
   type Upload, type InsertUpload,
   type Transaction, type InsertTransaction,
   type Rule, type InsertRule,
@@ -19,7 +20,14 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
+
+  // Accounts
+  getAccounts(userId: string): Promise<Account[]>;
+  getAccount(id: string): Promise<Account | undefined>;
+  createAccount(account: InsertAccount): Promise<Account>;
+  updateAccount(id: string, userId: string, data: Partial<Account>): Promise<Account | undefined>;
+  archiveAccount(id: string, userId: string): Promise<void>;
+
   // Uploads
   getUploads(userId: string): Promise<Upload[]>;
   getUpload(id: string): Promise<Upload | undefined>;
@@ -129,6 +137,38 @@ export class DatabaseStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
+  }
+
+  // Accounts
+  async getAccounts(userId: string): Promise<Account[]> {
+    return db.select().from(accounts)
+      .where(eq(accounts.userId, userId))
+      .orderBy(desc(accounts.createdAt));
+  }
+
+  async getAccount(id: string): Promise<Account | undefined> {
+    return db.query.accounts.findFirst({
+      where: eq(accounts.id, id)
+    });
+  }
+
+  async createAccount(account: InsertAccount): Promise<Account> {
+    const [created] = await db.insert(accounts).values(account).returning();
+    return created;
+  }
+
+  async updateAccount(id: string, userId: string, data: Partial<Account>): Promise<Account | undefined> {
+    const [updated] = await db.update(accounts)
+      .set(data)
+      .where(and(eq(accounts.id, id), eq(accounts.userId, userId)))
+      .returning();
+    return updated || undefined;
+  }
+
+  async archiveAccount(id: string, userId: string): Promise<void> {
+    await db.update(accounts)
+      .set({ isActive: false })
+      .where(and(eq(accounts.id, id), eq(accounts.userId, userId)));
   }
 
   // Uploads

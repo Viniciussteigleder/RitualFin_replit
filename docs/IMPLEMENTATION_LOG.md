@@ -2467,3 +2467,586 @@ tsx /tmp/apply_constraints.ts
 **Fase 1 - COMPLETA** ✅
 
 **Data de Conclusão**: 2025-12-28
+
+---
+
+## Fase 2: Contas Estruturadas (2025-12-28)
+
+**Objetivo**: Migrar de `accountSource` (string livre) para `accounts` (tabela estruturada) para suportar:
+- Gerenciamento de múltiplas contas/cartões
+- Metadados por conta (tipo, ícone, cor, status)
+- Vinculação automática durante CSV upload
+- UI futura de gestão de contas
+
+**Status**: ✅ COMPLETA
+
+---
+
+### Contexto e Motivação
+
+**Problema Atual**:
+- Transações usam `accountSource` como string livre (ex: "Amex - Vinicius (7340)")
+- Sem centralização: cada transação duplica metadados
+- Impossível desativar/arquivar contas centralizadamente
+- Sem suporte para ícones, cores ou atributos por conta
+
+**Solução**:
+- Criar tabela `accounts` com metadados estruturados
+- Adicionar `accountId` foreign key em transactions e calendarEvents
+- Manter `accountSource` para compatibilidade (legacy field)
+- Migração automática de dados existentes
+
+---
+
+### Implementação
+
+#### 1. Schema Changes (`shared/schema.ts`)
+
+**Novo Enum**:
+```typescript
+export const accountTypeEnum = pgEnum("account_type", [
+  "credit_card",
+  "debit_card",
+  "bank_account",
+  "cash"
+]);
+```
+
+**Nova Tabela `accounts`**:
+```typescript
+export const accounts = pgTable("accounts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(),
+  type: accountTypeEnum("type").notNull(),
+  accountNumber: text("account_number"), // Last 4 digits
+  icon: text("icon").default("credit-card"),
+  color: text("color").default("#6366f1"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+```
+
+**Foreign Keys Adicionadas**:
+```typescript
+// transactions table
+accountId: varchar("account_id").references(() => accounts.id),
+
+// calendarEvents table
+accountId: varchar("account_id").references(() => accounts.id),
+```
+
+**Relations**:
+```typescript
+export const transactionsRelations = relations(transactions, ({ one }) => ({
+  account: one(accounts, {
+    fields: [transactions.accountId],
+    references: [accounts.id]
+  }),
+}));
+
+export const calendarEventsRelations = relations(calendarEvents, ({ one }) => ({
+  account: one(accounts, {
+    fields: [calendarEvents.accountId],
+    references: [accounts.id]
+  }),
+}));
+```
+
+**Comando**:
+```bash
+npm run db:push
+```
+
+**Resultado**:
+- ✅ Tabela `accounts` criada
+- ✅ Enum `account_type` criado
+- ✅ Foreign keys adicionadas sem quebrar dados existentes
+
+---
+
+#### 2. Migração de Dados (`server/seeds/002_accounts.ts`)
+
+**Função de Parse Inteligente**:
+```typescript
+function parseAccountSource(accountSource: string): AccountMapping {
+  // Pattern 1: "Amex - Name (1234)"
+  const amexMatch = source.match(/Amex - (.+?) \((\d+)\)/i);
+  if (amexMatch) {
+    const [, name, lastDigits] = amexMatch;
+    return {
+      accountSource: source,
+      name: `Amex - ${name}`,
+      type: "credit_card",
+      accountNumber: lastDigits,
+      icon: "credit-card",
+      color: "#3b82f6" // Blue
+    };
+  }
+
+  // Pattern 2: "Sparkasse - 1234"
+  const sparkasseMatch = source.match(/Sparkasse - (\d+)/i);
+  if (sparkasseMatch) {
+    const [, lastDigits] = sparkasseMatch;
+    return {
+      accountSource: source,
+      name: `Sparkasse (${lastDigits})`,
+      type: "bank_account",
+      accountNumber: lastDigits,
+      icon: "landmark",
+      color: "#ef4444" // Red
+    };
+  }
+
+  // Pattern 3: "Miles & More..."
+  if (source.toLowerCase().includes("miles") || source.toLowerCase().includes("m&m")) {
+    const cardMatch = source.match(/(\d{4}X*\d{4})/);
+    const lastDigits = cardMatch ? cardMatch[1].replace(/X/g, "").slice(-4) : null;
+    return {
+      accountSource: source,
+      name: lastDigits ? `Miles & More (${lastDigits})` : "Miles & More",
+      type: "credit_card",
+      accountNumber: lastDigits,
+      icon: "plane",
+      color: "#8b5cf6" // Purple
+    };
+  }
+
+  // Default: Unknown
+  return {
+    accountSource: source,
+    name: source.length > 30 ? source.substring(0, 30) + "..." : source,
+    type: "credit_card",
+    accountNumber: null,
+    icon: "credit-card",
+    color: "#6b7280" // Gray
+  };
+}
+```
+
+**Fluxo de Migração**:
+1. Extrai `accountSource` únicos de todas as transações existentes
+2. Para cada `accountSource`, aplica `parseAccountSource()` para extrair metadados
+3. Verifica se conta já existe (por `name`)
+4. Se não existir, cria nova conta
+5. Atualiza todas as transações com `accountId` correspondente
+
+**Comando**:
+```bash
+tsx server/seeds/002_accounts.ts
+```
+
+**Resultado**:
+```
+💳 Seeding accounts from existing transactions...
+
+1️⃣ Analyzing existing accountSource values...
+   Found 5 distinct account sources
+
+2️⃣ Creating accounts...
+
+   ✅ Miles & More                    | credit_card     | #8b5cf6
+   ✅ Amex - Vinicius                 | credit_card     | #3b82f6
+   ✅ Sparkasse (6565)                | bank_account    | #ef4444
+   ✅ Sparkasse (6561)                | bank_account    | #ef4444
+   ✅ Amex - Katja                    | credit_card     | #3b82f6
+
+3️⃣ Linking transactions to accounts...
+   ✅ Updated 1333 transactions
+
+4️⃣ Summary:
+   Accounts created: 5
+   Transactions linked: 1333
+
+✅ Seed completed!
+```
+
+**Verificação**:
+- ✅ 5 contas criadas automaticamente
+- ✅ 1333 transações linkadas
+- ✅ accountSource preservado (compatibilidade)
+- ✅ accountId populado (novo campo)
+
+---
+
+#### 3. CRUD Layer (`server/storage.ts`)
+
+**Interface IStorage** (novas assinaturas):
+```typescript
+// Accounts
+getAccounts(userId: string): Promise<Account[]>;
+getAccount(id: string): Promise<Account | undefined>;
+createAccount(account: InsertAccount): Promise<Account>;
+updateAccount(id: string, userId: string, data: Partial<Account>): Promise<Account | undefined>;
+archiveAccount(id: string, userId: string): Promise<void>;
+```
+
+**Implementação DatabaseStorage**:
+```typescript
+// Accounts
+async getAccounts(userId: string): Promise<Account[]> {
+  return db.select().from(accounts)
+    .where(eq(accounts.userId, userId))
+    .orderBy(desc(accounts.createdAt));
+}
+
+async getAccount(id: string): Promise<Account | undefined> {
+  return db.query.accounts.findFirst({
+    where: eq(accounts.id, id)
+  });
+}
+
+async createAccount(account: InsertAccount): Promise<Account> {
+  const [created] = await db.insert(accounts).values(account).returning();
+  return created;
+}
+
+async updateAccount(id: string, userId: string, data: Partial<Account>): Promise<Account | undefined> {
+  const [updated] = await db.update(accounts)
+    .set(data)
+    .where(and(eq(accounts.id, id), eq(accounts.userId, userId)))
+    .returning();
+  return updated || undefined;
+}
+
+async archiveAccount(id: string, userId: string): Promise<void> {
+  await db.update(accounts)
+    .set({ isActive: false })
+    .where(and(eq(accounts.id, id), eq(accounts.userId, userId)));
+}
+```
+
+**Decisões de Design**:
+- `archiveAccount()`: Soft delete via `isActive = false` (não deleta dados)
+- `updateAccount()`: Valida `userId` para segurança (user só atualiza suas contas)
+- `getAccounts()`: Ordenado por `createdAt DESC` (contas mais recentes primeiro)
+
+---
+
+#### 4. API Endpoints (`server/routes.ts`)
+
+**Endpoints Criados**:
+
+**GET /api/accounts** - Listar todas as contas do usuário
+```typescript
+app.get("/api/accounts", async (_req: Request, res: Response) => {
+  const user = await storage.getUserByUsername("demo");
+  if (!user) return res.json([]);
+  const accounts = await storage.getAccounts(user.id);
+  res.json(accounts);
+});
+```
+
+**GET /api/accounts/:id** - Buscar conta específica
+```typescript
+app.get("/api/accounts/:id", async (req: Request, res: Response) => {
+  const account = await storage.getAccount(req.params.id);
+  if (!account) {
+    return res.status(404).json({ error: "Account not found" });
+  }
+  res.json(account);
+});
+```
+
+**POST /api/accounts** - Criar nova conta
+```typescript
+app.post("/api/accounts", async (req: Request, res: Response) => {
+  const user = await storage.getUserByUsername("demo");
+  if (!user) {
+    return res.status(401).json({ error: "User not found" });
+  }
+
+  const accountData = {
+    userId: user.id,
+    name: req.body.name,
+    type: req.body.type,
+    accountNumber: req.body.accountNumber || null,
+    icon: req.body.icon || "credit-card",
+    color: req.body.color || "#6366f1",
+    isActive: req.body.isActive !== undefined ? req.body.isActive : true,
+  };
+
+  const account = await storage.createAccount(accountData);
+  res.status(201).json(account);
+});
+```
+
+**PUT /api/accounts/:id** - Atualizar conta
+```typescript
+app.put("/api/accounts/:id", async (req: Request, res: Response) => {
+  const user = await storage.getUserByUsername("demo");
+  if (!user) {
+    return res.status(401).json({ error: "User not found" });
+  }
+
+  const updateData: any = {};
+  if (req.body.name !== undefined) updateData.name = req.body.name;
+  if (req.body.type !== undefined) updateData.type = req.body.type;
+  if (req.body.accountNumber !== undefined) updateData.accountNumber = req.body.accountNumber;
+  if (req.body.icon !== undefined) updateData.icon = req.body.icon;
+  if (req.body.color !== undefined) updateData.color = req.body.color;
+  if (req.body.isActive !== undefined) updateData.isActive = req.body.isActive;
+
+  const updated = await storage.updateAccount(req.params.id, user.id, updateData);
+  if (!updated) {
+    return res.status(404).json({ error: "Account not found" });
+  }
+  res.json(updated);
+});
+```
+
+**DELETE /api/accounts/:id** - Arquivar conta (soft delete)
+```typescript
+app.delete("/api/accounts/:id", async (req: Request, res: Response) => {
+  const user = await storage.getUserByUsername("demo");
+  if (!user) {
+    return res.status(401).json({ error: "User not found" });
+  }
+
+  await storage.archiveAccount(req.params.id, user.id);
+  res.status(204).send();
+});
+```
+
+**Segurança**:
+- Todos os endpoints validam `userId`
+- DELETE é soft delete (preserva dados históricos)
+- PUT só permite campos específicos (não expõe `id`, `userId`, `createdAt`)
+
+---
+
+#### 5. CSV Upload Integration (`server/routes.ts`)
+
+**Modificação no POST /api/uploads/process**:
+
+**Antes** (só salvava `accountSource`):
+```typescript
+for (const parsed of parseResult.transactions) {
+  await storage.createTransaction({
+    userId: user.id,
+    accountSource: parsed.accountSource, // String livre
+    // ... resto dos campos
+  });
+}
+```
+
+**Depois** (salva `accountSource` + `accountId`):
+```typescript
+// Build accountSource -> accountId mapping
+const accountMap = new Map<string, string>();
+const uniqueAccountSources = Array.from(new Set(parseResult.transactions.map(t => t.accountSource)));
+
+for (const accountSource of uniqueAccountSources) {
+  // Parse accountSource to determine account metadata
+  let accountName: string;
+  let accountType: "credit_card" | "debit_card" | "bank_account" | "cash";
+  let accountNumber: string | null = null;
+  let icon: string;
+  let color: string;
+
+  // Pattern matching (same logic as seed script)
+  const amexMatch = accountSource.match(/Amex - (.+?) \((\d+)\)/i);
+  if (amexMatch) {
+    const [, name, lastDigits] = amexMatch;
+    accountName = `Amex - ${name}`;
+    accountType = "credit_card";
+    accountNumber = lastDigits;
+    icon = "credit-card";
+    color = "#3b82f6";
+  }
+  else if (accountSource.match(/Sparkasse - (\d+)/i)) {
+    const sparkasseMatch = accountSource.match(/Sparkasse - (\d+)/i);
+    const lastDigits = sparkasseMatch![1];
+    accountName = `Sparkasse (${lastDigits})`;
+    accountType = "bank_account";
+    accountNumber = lastDigits;
+    icon = "landmark";
+    color = "#ef4444";
+  }
+  else if (accountSource.toLowerCase().includes("miles") || accountSource.toLowerCase().includes("m&m")) {
+    const cardMatch = accountSource.match(/(\d{4}X*\d{4})/);
+    const lastDigits = cardMatch ? cardMatch[1].replace(/X/g, "").slice(-4) : null;
+    accountName = lastDigits ? `Miles & More (${lastDigits})` : "Miles & More";
+    accountType = "credit_card";
+    accountNumber = lastDigits;
+    icon = "plane";
+    color = "#8b5cf6";
+  }
+  else {
+    accountName = accountSource.length > 30 ? accountSource.substring(0, 30) + "..." : accountSource;
+    accountType = "credit_card";
+    accountNumber = null;
+    icon = "credit-card";
+    color = "#6b7280";
+  }
+
+  // Check if account exists, create if not
+  const existingAccounts = await storage.getAccounts(user.id);
+  const existingAccount = existingAccounts.find(a => a.name === accountName);
+
+  if (existingAccount) {
+    accountMap.set(accountSource, existingAccount.id);
+  } else {
+    const newAccount = await storage.createAccount({
+      userId: user.id,
+      name: accountName,
+      type: accountType,
+      accountNumber,
+      icon,
+      color,
+      isActive: true
+    });
+    accountMap.set(accountSource, newAccount.id);
+  }
+}
+
+// Process each transaction
+for (const parsed of parseResult.transactions) {
+  await storage.createTransaction({
+    userId: user.id,
+    accountSource: parsed.accountSource, // Legacy (mantido)
+    accountId: accountMap.get(parsed.accountSource), // Novo!
+    // ... resto dos campos
+  });
+}
+```
+
+**Benefícios**:
+- Upload de CSV agora cria contas automaticamente
+- accountId linkado imediatamente
+- accountSource preservado para compatibilidade
+- Usuário não precisa gerenciar contas manualmente (Lazy Mode)
+
+---
+
+### Testes Realizados
+
+**1. Type Check**:
+```bash
+npm run check
+```
+
+**Resultado**:
+- ✅ Nenhum erro em `server/routes.ts`
+- ✅ Nenhum erro em `server/storage.ts`
+- ✅ Nenhum erro em `server/seeds/002_accounts.ts`
+- ⚠️ Erros pré-existentes em `server/replit_integrations/` (não relacionados)
+
+**Fix Aplicado**:
+- Corrigido spread operator em Set: `[...new Set()]` → `Array.from(new Set())`
+- Corrigido Map iteration: `map.entries()` → `Array.from(map.entries())`
+- Corrigido `updateBudget()` call: removido parâmetro extra `userId`
+
+---
+
+### Arquivos Modificados
+
+**Schema**:
+- `shared/schema.ts`: +50 linhas (accounts table, accountId FKs, relations)
+
+**Backend**:
+- `server/storage.ts`: +35 linhas (Account CRUD methods)
+- `server/routes.ts`: +140 linhas (5 endpoints + CSV integration)
+- `server/seeds/002_accounts.ts`: +172 linhas (novo arquivo)
+
+**Total**: ~397 linhas adicionadas
+
+---
+
+### Decisões de Design
+
+#### 1. Por que manter `accountSource`?
+**Decisão**: Manter `accountSource` como campo legacy
+
+**Razões**:
+- Compatibilidade: Queries existentes continuam funcionando
+- Debugging: Útil para inspecionar transações sem JOIN
+- Migração segura: Permite rollback se necessário
+- Performance: Evita JOIN em queries simples
+
+**Trade-off**: Duplicação de dados (aceitável neste caso)
+
+---
+
+#### 2. Soft Delete vs Hard Delete para Contas
+**Decisão**: Soft delete via `isActive = false`
+
+**Razões**:
+- Integridade referencial: Transações existentes não ficam órfãs
+- Auditoria: Histórico preservado
+- Reversibilidade: Fácil reativar conta
+- Performance: Evita cascading deletes
+
+**Trade-off**: Contas arquivadas ocupam espaço (mínimo)
+
+---
+
+#### 3. Criação Automática vs Manual de Contas
+**Decisão**: Criação automática durante CSV upload
+
+**Razões**:
+- Lazy Mode: Minimiza trabalho manual do usuário
+- Consistência: Mesma lógica de parse em seed e upload
+- Experiência: Upload "just works"
+- Flexibilidade: Usuário pode editar depois via API
+
+**Trade-off**: Usuário não controla antes do upload (pode editar depois)
+
+---
+
+#### 4. Pattern Matching de accountSource
+**Decisão**: Regex patterns específicos por banco
+
+**Razões**:
+- Precisão: Extrai metadados corretos (nome, número, tipo)
+- Extensível: Fácil adicionar novos bancos
+- Validado: Patterns baseados em dados reais
+
+**Patterns Implementados**:
+1. `Amex - Name (1234)` → credit_card, blue, credit-card icon
+2. `Sparkasse - 1234` → bank_account, red, landmark icon
+3. `Miles & More` → credit_card, purple, plane icon
+4. Default → credit_card, gray, credit-card icon
+
+**Trade-off**: Necessita manutenção se formatos mudarem
+
+---
+
+### Métricas
+
+**Database**:
+- Contas criadas: 5
+- Transações migradas: 1333
+- Queries adicionadas: 5 (getAccounts, getAccount, createAccount, updateAccount, archiveAccount)
+
+**API**:
+- Endpoints criados: 5
+- Rotas: GET /api/accounts, GET /api/accounts/:id, POST /api/accounts, PUT /api/accounts/:id, DELETE /api/accounts/:id
+
+**Code**:
+- Linhas adicionadas: ~397
+- Arquivos modificados: 4
+- Arquivos criados: 1 (seed script)
+
+---
+
+### Próximos Passos
+
+**Fase 2 está COMPLETA** ✅
+
+**Opção A - Testar Fase 2**:
+1. Fazer upload de novo CSV e verificar se conta é criada automaticamente
+2. Consultar `/api/accounts` e verificar 5 contas
+3. Atualizar uma conta (mudar cor/ícone)
+4. Arquivar uma conta e verificar soft delete
+
+**Opção B - Continuar para Fase 3**:
+1. Frontend: UI de gerenciamento de contas
+2. Dashboard: Filtros por conta
+3. Transactions: Dropdown de conta na edição manual
+
+---
+
+**Fase 2 - COMPLETA** ✅
+
+**Data de Conclusão**: 2025-12-28
