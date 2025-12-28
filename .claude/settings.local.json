@@ -18,7 +18,9 @@
       "Bash(node -e:*)",
       "Bash(node /tmp/test_sparkasse_upload.js:*)",
       "Bash(kill:*)",
-      "Bash(node /tmp/test_sparkasse_full.js:*)"
+      "Bash(node /tmp/test_sparkasse_full.js:*)",
+      "Bash(node /tmp/test_sparkasse_20.js:*)",
+      "Bash(timeout 5 npm run dev:*)"
     ]
   }
 }
