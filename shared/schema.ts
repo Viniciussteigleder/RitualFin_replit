@@ -27,6 +27,26 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
+// Settings table (user preferences)
+export const settings = pgTable("settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique().references(() => users.id),
+  autoConfirmHighConfidence: boolean("auto_confirm_high_confidence").notNull().default(false),
+  confidenceThreshold: integer("confidence_threshold").notNull().default(80),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const settingsRelations = relations(settings, ({ one }) => ({
+  user: one(users, { fields: [settings.userId], references: [users.id] }),
+}));
+
+export const insertSettingsSchema = createInsertSchema(settings).omit({ id: true, createdAt: true, updatedAt: true });
+export const updateSettingsSchema = insertSettingsSchema.partial();
+export type InsertSettings = z.infer<typeof insertSettingsSchema>;
+export type UpdateSettings = z.infer<typeof updateSettingsSchema>;
+export type Settings = typeof settings.$inferSelect;
+
 // Accounts table (credit cards, bank accounts, etc.)
 export const accounts = pgTable("accounts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

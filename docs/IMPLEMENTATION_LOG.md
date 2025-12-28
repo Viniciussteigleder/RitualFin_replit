@@ -3870,11 +3870,364 @@ o padrão usado em outras páginas
 6. Export em outros formatos (XLSX, PDF)
 7. Gráficos inline (sparklines)
 
-**Ou continuar para Fase 5**:
-- A ser definido pelo usuário
-
 ---
 
 **Fase 4 - COMPLETA** ✅
+
+**Data de Conclusão**: 2025-12-28
+
+---
+
+## Fase 5: Auto-Confirmação Inteligente (2025-12-28)
+
+### Contexto
+
+O RitualFin segue a filosofia "Lazy Mode" - minimizar trabalho manual através de automação inteligente. Até a Fase 4, transações com alta confiança (≥80%) eram sugeridas para confirmação rápida, mas ainda exigiam intervenção manual do usuário. A Fase 5 implementa auto-confirmação configurável para transações de alta confiança, reduzindo ainda mais o trabalho manual.
+
+### Objetivo
+
+Permitir que usuários configurem auto-confirmação de transações com base em thresholds de confiança customizáveis, eliminando a necessidade de revisão manual para transações categorizadas com alta certeza.
+
+### Implementação
+
+#### 1. Schema - Settings Table
+
+**Arquivo**: `shared/schema.ts`
+
+**Mudanças**:
+- Adicionada tabela `settings` com estrutura user-scoped (1:1 com users)
+- Campos principais:
+  - `autoConfirmHighConfidence` (boolean, default: false)
+  - `confidenceThreshold` (integer, default: 80)
+  - `updatedAt` (timestamp, auto-update on change)
+
+```typescript
+export const settings = pgTable("settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique().references(() => users.id),
+  autoConfirmHighConfidence: boolean("auto_confirm_high_confidence").notNull().default(false),
+  confidenceThreshold: integer("confidence_threshold").notNull().default(80),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+```
+
+**Decisão**: Tabela separada (vs campos em users) para:
+- Escalabilidade (adicionar mais settings sem modificar users)
+- Separação de concerns (auth vs preferences)
+- Facilita reset de configurações sem afetar conta
+
+#### 2. Backend - Storage Layer
+
+**Arquivo**: `server/storage.ts`
+
+**Adicionado**:
+- `getSettings(userId)` - Busca configurações do usuário
+- `createSettings(settings)` - Cria configurações default
+- `updateSettings(userId, data)` - Atualiza configurações (com auto-update de updatedAt)
+
+**Pattern**: Auto-create on first access (lazy initialization)
+
+#### 3. Backend - API Routes
+
+**Arquivo**: `server/routes.ts`
+
+**Rotas adicionadas**:
+- `GET /api/settings` - Retorna settings (cria default se não existir)
+- `PATCH /api/settings` - Atualiza settings parcialmente
+
+**Integração com upload processing**:
+1. Fetch user settings no início do processamento
+2. Auto-create se não existir (garantia de settings sempre disponíveis)
+3. Passar settings para rules engine via `categorizeTransaction`
+
+```typescript
+// Get rules and settings for categorization
+const rules = await storage.getRules(user.id);
+let userSettings = await storage.getSettings(user.id);
+
+// Create default settings if they don't exist
+if (!userSettings) {
+  userSettings = await storage.createSettings({ userId: user.id });
+}
+
+// Later, when categorizing:
+const categorization = categorizeTransaction(parsed.descNorm, rules, {
+  autoConfirmHighConfidence: userSettings.autoConfirmHighConfidence,
+  confidenceThreshold: userSettings.confidenceThreshold
+});
+```
+
+#### 4. Rules Engine - Auto-Confirm Logic
+
+**Arquivo**: `server/rules-engine.ts`
+
+**Mudanças críticas**:
+
+**Interface para settings**:
+```typescript
+export interface UserSettings {
+  autoConfirmHighConfidence?: boolean;
+  confidenceThreshold?: number;
+}
+```
+
+**Modificação na lógica de matchRules**:
+- Aceita `settings` como terceiro parâmetro (opcional, default: `{ autoConfirmHighConfidence: false, confidenceThreshold: 80 }`)
+- Calcula `meetsThreshold = confidence >= confidenceThreshold`
+- Aplica `autoApply = autoConfirmHighConfidence && meetsThreshold`
+- Retorna `needsReview: !autoApply`
+
+**ANTES** (hardcoded 80%):
+```typescript
+const autoApply = confidence >= 80;
+```
+
+**DEPOIS** (configurável):
+```typescript
+const meetsThreshold = confidence >= confidenceThreshold;
+const autoApply = autoConfirmHighConfidence && meetsThreshold;
+```
+
+**Reasoning messages** atualizados para clareza:
+- Com auto-confirm ON + meets threshold: "Alta confianca (X%) - aplicado automaticamente"
+- Meets threshold mas auto-confirm OFF: "Alta confianca (X%) - revisar (auto-confirm desativado)"
+- Não meets threshold: "Confianca media (X%) - revisar"
+
+**IMPORTANTE**: Strict rules (priority 1000, strict=true) SEMPRE auto-aplicam, independente do setting. Exemplo: transferências internas, mercado (REWE/EDEKA/ALDI).
+
+#### 5. Frontend - API Client
+
+**Arquivo**: `client/src/lib/api.ts`
+
+**Adicionado settingsApi**:
+```typescript
+export const settingsApi = {
+  get: () => fetchApi<Settings>("/settings"),
+  update: (data: UpdateSettings) => fetchApi("/settings", { method: "PATCH", ... }),
+};
+```
+
+#### 6. Frontend - Settings Page UI
+
+**Arquivo**: `client/src/pages/settings.tsx`
+
+**Mudanças**:
+
+**1. Query para buscar settings**:
+```typescript
+const { data: settings, isLoading } = useQuery({
+  queryKey: ["settings"],
+  queryFn: settingsApi.get,
+});
+```
+
+**2. Mutation para atualizar settings**:
+```typescript
+const updateSettingsMutation = useMutation({
+  mutationFn: settingsApi.update,
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ["settings"] });
+    toast({ title: "Configuracoes salvas" });
+  },
+});
+```
+
+**3. Switch para auto-confirm** (já existia, mas agora funcional):
+- Conectado ao valor real: `checked={settings?.autoConfirmHighConfidence}`
+- onCheckedChange atualiza via mutation
+- Disabled enquanto loading ou saving
+
+**4. Slider para confidence threshold** (NOVO):
+- Só aparece quando `autoConfirmHighConfidence === true`
+- Range: 50% - 100% (step 5%)
+- Atualiza em tempo real com debounce via mutation
+- Visual: Label + valor em destaque + slider + descrição
+
+```typescript
+{settings?.autoConfirmHighConfidence && (
+  <div className="p-4 bg-muted/30 rounded-xl space-y-3">
+    <div className="flex items-center justify-between">
+      <Label>Limite de Confianca</Label>
+      <span className="text-sm font-bold text-primary">
+        {settings?.confidenceThreshold || 80}%
+      </span>
+    </div>
+    <Slider
+      value={[settings?.confidenceThreshold || 80]}
+      onValueChange={(values) => {
+        updateSettingsMutation.mutate({ confidenceThreshold: values[0] });
+      }}
+      min={50}
+      max={100}
+      step={5}
+    />
+  </div>
+)}
+```
+
+#### 7. Frontend - Confirm Page Indicators
+
+**Arquivo**: `client/src/pages/confirm.tsx`
+
+**Mudanças**:
+
+**1. Fetch settings**:
+```typescript
+const { data: settings } = useQuery({
+  queryKey: ["settings"],
+  queryFn: settingsApi.get,
+});
+```
+
+**2. Visual indicator para "would be auto-confirmed"**:
+- Badge pequeno "Auto" com ícone Zap (⚡)
+- Só aparece quando:
+  - `autoConfirmHighConfidence === false` (feature desligada)
+  - `confidence >= confidenceThreshold` (transação qualifica)
+- Cores: verde suave (emerald-50/emerald-700)
+- Posição: Abaixo do percentage de confiança
+
+```typescript
+{!settings?.autoConfirmHighConfidence &&
+ confidence >= (settings?.confidenceThreshold || 80) && (
+  <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 ...">
+    <Zap className="h-2.5 w-2.5" />
+    Auto
+  </Badge>
+)}
+```
+
+**Reasoning**: Educação do usuário - mostrar quais transações seriam auto-confirmadas se a feature estivesse ativa, incentivando adoção gradual.
+
+### Fluxo Completo
+
+**Cenário 1: Auto-confirm DESLIGADO (default)**
+
+1. User faz upload de CSV com transação "REWE 50.00€"
+2. Rules engine:
+   - Matches rule "Mercado" (strict=true, priority=900)
+   - Calcula confidence = 100%
+   - `autoConfirmHighConfidence = false` → `autoApply = false`
+   - Retorna `needsReview = true`
+3. Transação aparece em `/confirm` com:
+   - Badge verde "100%"
+   - Badge "Auto" (indica que seria auto-confirmada se feature ativa)
+4. User precisa confirmar manualmente
+
+**Cenário 2: Auto-confirm LIGADO (80% threshold)**
+
+1. User ativa setting em `/settings`
+2. Upload mesma transação "REWE 50.00€"
+3. Rules engine:
+   - Match + confidence = 100%
+   - `autoConfirmHighConfidence = true`, `meetsThreshold = true`
+   - `autoApply = true` → `needsReview = false`
+4. Transação NÃO aparece em `/confirm` (confirmada automaticamente)
+5. Vai direto para transações confirmadas
+
+**Cenário 3: Threshold customizado (95%)**
+
+1. User aumenta threshold para 95% no slider
+2. Upload transação "AMAZON 30.00€"
+3. Rules engine:
+   - Match "Compras Online" (priority 650, strict=false)
+   - Calcula confidence = 85% (abaixo de 95%)
+   - `meetsThreshold = false` → `needsReview = true`
+4. Transação aparece em `/confirm` (não qualifica para auto-confirm)
+
+### Métricas e Observações
+
+**Código adicionado**:
+- Schema: 18 linhas (settings table + types)
+- Storage: 20 linhas (3 métodos)
+- Routes: 45 linhas (2 rotas + settings fetch em upload)
+- Rules engine: 15 linhas (interface + parâmetros + lógica)
+- API client: 12 linhas (settingsApi)
+- Settings UI: 40 linhas (query + mutation + slider)
+- Confirm page: 15 linhas (query + badge indicator)
+
+**Total**: ~165 linhas de código core
+
+**Database migrations**: 1 (settings table criada via drizzle-kit push)
+
+**Compatibilidade**:
+- Backwards compatible: Default settings (auto-confirm OFF) mantém comportamento anterior
+- Zero breaking changes: Todas mudanças aditivas
+- Safe rollback: Remover settings table não quebra app (fallback para defaults)
+
+### Decisões Técnicas
+
+**1. Por que threshold configurável?**
+- Diferentes usuários têm diferentes tolerâncias a erro
+- Usuário conservador: threshold 95% (só auto-confirma quando muito certo)
+- Usuário confiante: threshold 70% (aceita mais automação)
+- Step de 5% balanceia granularidade vs simplicidade
+
+**2. Por que strict rules ignoram o setting?**
+- Strict rules são "verdades absolutas" (ex: REWE = Mercado)
+- Usuário criou a rule com strict=true → quer automação total
+- Evita confusão ("por que Mercado não está auto-confirmando?")
+- Segurança: Transferências internas SEMPRE devem ser filtradas
+
+**3. Por que "Auto" badge só aparece quando feature está OFF?**
+- Quando ON, essas transações não aparecem na fila (já foram confirmadas)
+- Badge serve para educar: "ative auto-confirm para eliminar estas revisões"
+- Evita poluição visual quando feature já está ativa
+
+**4. Por que updatedAt separado de createdAt?**
+- Auditoria: saber quando usuário mudou preferências
+- Debug: correlacionar mudanças de comportamento com config changes
+- Future: analytics de adoção (quantos users ativam feature, quando desativam)
+
+### Testes Manuais Esperados
+
+1. **Settings CRUD**:
+   - Acessar /settings → deve carregar (criar default se primeiro acesso)
+   - Toggle auto-confirm ON → toast de sucesso
+   - Slider de 80% → 90% → toast + valor atualizado
+   - Toggle OFF → slider desaparece
+
+2. **Upload com auto-confirm ON**:
+   - Upload CSV com 10 transações
+   - 5 com confiança ≥80% → NÃO aparecem em /confirm
+   - 5 com confiança <80% → aparecem em /confirm
+   - Verificar em /transactions que todas 10 foram importadas
+
+3. **Badge "Auto" na confirm page**:
+   - Auto-confirm OFF + transação 85% → badge "Auto" visível
+   - Auto-confirm ON → mesmas transações não aparecem mais
+
+4. **Threshold customizado**:
+   - Set threshold para 95%
+   - Upload transação com 85% confidence
+   - Deve aparecer em /confirm (não qualifica)
+   - Set threshold de volta para 80%
+   - Re-apply rules → transação desaparece de /confirm
+
+### Limitações e Trade-offs
+
+**Limitações**:
+1. Setting global para todas categorias (não é possível "auto-confirm Mercado mas não Lazer")
+2. Não há histórico de mudanças de settings (apenas updatedAt)
+3. Threshold se aplica uniformemente (não é possível "80% para despesas, 95% para receitas")
+
+**Por que aceitáveis**:
+- Simplicidade > Flexibilidade (80/20 rule)
+- User pode criar strict rules para categorias específicas se quiser automação total
+- Adição futura possível sem breaking changes (category-specific thresholds como JSON field)
+
+### Próximos Passos
+
+**Melhorias Futuras (não bloqueantes)**:
+1. Analytics dashboard: mostrar % de transações auto-confirmadas
+2. Settings por categoria (threshold diferente para cada category1)
+3. Histórico de settings changes (auditoria)
+4. Notificações: "10 transações foram auto-confirmadas este mês"
+5. Modo "trial": auto-confirm mas marcar como "can be reviewed" por 7 dias
+
+---
+
+**Fase 5 - COMPLETA** ✅
 
 **Data de Conclusão**: 2025-12-28

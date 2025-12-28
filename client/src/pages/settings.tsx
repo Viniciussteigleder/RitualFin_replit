@@ -6,11 +6,16 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Slider } from "@/components/ui/slider";
 import { User, Shield, Settings, Bell, Eye, Check, Globe, Palette, Database, Trash2, Download, Key, CreditCard, Mail, Moon, Sun, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { settingsApi } from "@/lib/api";
+import { queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 const TABS = [
   { id: "conta", label: "Conta", icon: User, description: "Perfil e informacoes pessoais" },
@@ -25,7 +30,32 @@ export default function SettingsPage() {
   const [darkMode, setDarkMode] = useState(false);
   const [monthlyReports, setMonthlyReports] = useState(true);
   const [lazyMode, setLazyMode] = useState(true);
-  const [autoConfirmHighConfidence, setAutoConfirmHighConfidence] = useState(false);
+  const { toast } = useToast();
+
+  // Fetch settings from API
+  const { data: settings, isLoading } = useQuery({
+    queryKey: ["settings"],
+    queryFn: settingsApi.get,
+  });
+
+  // Mutation for updating settings
+  const updateSettingsMutation = useMutation({
+    mutationFn: settingsApi.update,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["settings"] });
+      toast({
+        title: "Configuracoes salvas",
+        description: "Suas preferencias foram atualizadas com sucesso.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro ao salvar",
+        description: "Nao foi possivel salvar as configuracoes.",
+        variant: "destructive",
+      });
+    },
+  });
 
   return (
     <AppLayout>
@@ -226,10 +256,40 @@ export default function SettingsPage() {
                     <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
                       <div>
                         <p className="font-medium">Auto-confirmar Alta Confianca</p>
-                        <p className="text-sm text-muted-foreground">Aceitar automaticamente sugestoes com 80%+ de confianca</p>
+                        <p className="text-sm text-muted-foreground">
+                          Aceitar automaticamente sugestoes com {settings?.confidenceThreshold || 80}%+ de confianca
+                        </p>
                       </div>
-                      <Switch checked={autoConfirmHighConfidence} onCheckedChange={setAutoConfirmHighConfidence} />
+                      <Switch
+                        checked={settings?.autoConfirmHighConfidence || false}
+                        onCheckedChange={(checked) => {
+                          updateSettingsMutation.mutate({ autoConfirmHighConfidence: checked });
+                        }}
+                        disabled={isLoading || updateSettingsMutation.isPending}
+                      />
                     </div>
+                    {settings?.autoConfirmHighConfidence && (
+                      <div className="p-4 bg-muted/30 rounded-xl space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-medium">Limite de Confianca</Label>
+                          <span className="text-sm font-bold text-primary">{settings?.confidenceThreshold || 80}%</span>
+                        </div>
+                        <Slider
+                          value={[settings?.confidenceThreshold || 80]}
+                          onValueChange={(values) => {
+                            updateSettingsMutation.mutate({ confidenceThreshold: values[0] });
+                          }}
+                          min={50}
+                          max={100}
+                          step={5}
+                          disabled={isLoading || updateSettingsMutation.isPending}
+                          className="w-full"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Transacoes com confianca acima deste limite serao confirmadas automaticamente
+                        </p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </>

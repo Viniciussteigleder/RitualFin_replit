@@ -7,7 +7,7 @@ import { format } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { transactionsApi, accountsApi } from "@/lib/api";
+import { transactionsApi, accountsApi, settingsApi } from "@/lib/api";
 import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +49,11 @@ export default function ConfirmPage() {
   const { data: accounts = [] } = useQuery({
     queryKey: ["accounts"],
     queryFn: accountsApi.list,
+  });
+
+  const { data: settings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: settingsApi.get,
   });
 
   const accountsById = useMemo(() => {
@@ -329,21 +334,27 @@ export default function ConfirmPage() {
                         </td>
                         <td className="px-5 py-4">
                           <div className="flex flex-col items-center gap-1.5">
-                            <Progress 
-                              value={confidence} 
+                            <Progress
+                              value={confidence}
                               className={cn(
                                 "h-1.5 w-14",
-                                confidence >= 80 ? "[&>div]:bg-emerald-500" : 
+                                confidence >= 80 ? "[&>div]:bg-emerald-500" :
                                 confidence >= 50 ? "[&>div]:bg-amber-500" : "[&>div]:bg-rose-500"
                               )}
                             />
                             <span className={cn(
                               "text-xs font-semibold",
-                              confidence >= 80 ? "text-emerald-600" : 
+                              confidence >= 80 ? "text-emerald-600" :
                               confidence >= 50 ? "text-amber-600" : "text-rose-600"
                             )}>
                               {confidence}%
                             </span>
+                            {!settings?.autoConfirmHighConfidence && confidence >= (settings?.confidenceThreshold || 80) && (
+                              <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-emerald-500/30 text-emerald-700 bg-emerald-50/50">
+                                <Zap className="h-2.5 w-2.5 mr-0.5" />
+                                Auto
+                              </Badge>
+                            )}
                           </div>
                         </td>
                         <td className="px-5 py-4">

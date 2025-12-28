@@ -1,5 +1,5 @@
 import {
-  users, accounts, uploads, transactions, rules, budgets, calendarEvents, eventOccurrences, goals, categoryGoals, rituals,
+  users, accounts, uploads, transactions, rules, budgets, calendarEvents, eventOccurrences, goals, categoryGoals, rituals, settings,
   type User, type InsertUser,
   type Account, type InsertAccount,
   type Upload, type InsertUpload,
@@ -10,7 +10,8 @@ import {
   type EventOccurrence, type InsertEventOccurrence,
   type Goal, type InsertGoal,
   type CategoryGoal, type InsertCategoryGoal,
-  type Ritual, type InsertRitual
+  type Ritual, type InsertRitual,
+  type Settings, type InsertSettings, type UpdateSettings
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql, like, gte, lt, or, isNull } from "drizzle-orm";
@@ -20,6 +21,11 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+
+  // Settings
+  getSettings(userId: string): Promise<Settings | undefined>;
+  createSettings(settings: InsertSettings): Promise<Settings>;
+  updateSettings(userId: string, data: UpdateSettings): Promise<Settings | undefined>;
 
   // Accounts
   getAccounts(userId: string): Promise<Account[]>;
@@ -137,6 +143,26 @@ export class DatabaseStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
+  }
+
+  // Settings
+  async getSettings(userId: string): Promise<Settings | undefined> {
+    const [userSettings] = await db.select().from(settings).where(eq(settings.userId, userId));
+    return userSettings || undefined;
+  }
+
+  async createSettings(insertSettings: InsertSettings): Promise<Settings> {
+    const [userSettings] = await db.insert(settings).values(insertSettings).returning();
+    return userSettings;
+  }
+
+  async updateSettings(userId: string, data: UpdateSettings): Promise<Settings | undefined> {
+    const [userSettings] = await db
+      .update(settings)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(settings.userId, userId))
+      .returning();
+    return userSettings || undefined;
   }
 
   // Accounts

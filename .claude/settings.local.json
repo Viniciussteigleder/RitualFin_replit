@@ -20,7 +20,15 @@
       "Bash(kill:*)",
       "Bash(node /tmp/test_sparkasse_full.js:*)",
       "Bash(node /tmp/test_sparkasse_20.js:*)",
-      "Bash(timeout 5 npm run dev:*)"
+      "Bash(timeout 5 npm run dev:*)",
+      "Bash(tree:*)",
+      "Bash(node /tmp/test_amex_upload.js:*)",
+      "Bash(node /tmp/test_amex_simple.js:*)",
+      "Bash(node /tmp/test_format_detection.js:*)",
+      "Bash(node /tmp/test_csv_split.js:*)",
+      "Bash(tsx:*)",
+      "Bash(git remote add:*)",
+      "Bash(npm run db:push:*)"
     ]
   }
 }

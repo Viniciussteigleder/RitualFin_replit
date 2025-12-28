@@ -45,6 +45,41 @@ export async function registerRoutes(
     }
   });
 
+  // ===== SETTINGS =====
+  app.get("/api/settings", async (_req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      let userSettings = await storage.getSettings(user.id);
+
+      // Create default settings if they don't exist
+      if (!userSettings) {
+        userSettings = await storage.createSettings({ userId: user.id });
+      }
+
+      res.json(userSettings);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/settings", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      const updated = await storage.updateSettings(user.id, req.body);
+      if (!updated) {
+        return res.status(404).json({ error: "Settings not found" });
+      }
+
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // ===== ACCOUNTS =====
   app.get("/api/accounts", async (_req: Request, res: Response) => {
     try {
@@ -201,8 +236,14 @@ export async function registerRoutes(
         });
       }
 
-      // Get rules for categorization
+      // Get rules and settings for categorization
       const rules = await storage.getRules(user.id);
+      let userSettings = await storage.getSettings(user.id);
+
+      // Create default settings if they don't exist
+      if (!userSettings) {
+        userSettings = await storage.createSettings({ userId: user.id });
+      }
 
       // Build accountSource -> accountId mapping
       const accountMap = new Map<string, string>();
@@ -290,7 +331,10 @@ export async function registerRoutes(
         }
 
         // Categorize using rules with confidence level
-        const categorization = categorizeTransaction(parsed.descNorm, rules);
+        const categorization = categorizeTransaction(parsed.descNorm, rules, {
+          autoConfirmHighConfidence: userSettings.autoConfirmHighConfidence,
+          confidenceThreshold: userSettings.confidenceThreshold
+        });
         const keyword = suggestKeyword(parsed.descNorm);
 
         try {
@@ -535,8 +579,15 @@ export async function registerRoutes(
       if (!user) return res.status(404).json({ error: "User not found" });
 
       const rules = await storage.getRules(user.id);
+      let userSettings = await storage.getSettings(user.id);
+
+      // Create default settings if they don't exist
+      if (!userSettings) {
+        userSettings = await storage.createSettings({ userId: user.id });
+      }
+
       const transactions = await storage.getTransactionsByNeedsReview(user.id);
-      
+
       let categorizedCount = 0;
       let stillPendingCount = 0;
 
@@ -546,14 +597,14 @@ export async function registerRoutes(
           continue;
         }
 
-        const result = categorizeTransaction(tx.descNorm, rules);
+        const result = categorizeTransaction(tx.descNorm, rules, {
+          autoConfirmHighConfidence: userSettings.autoConfirmHighConfidence,
+          confidenceThreshold: userSettings.confidenceThreshold
+        });
 
         if (result.confidence && result.confidence > 0) {
-          await storage.updateTransaction(tx.id, {
-            ...result,
-            needsReview: result.confidence < 80
-          });
-          if (result.confidence >= 80) {
+          await storage.updateTransaction(tx.id, result);
+          if (!result.needsReview) {
             categorizedCount++;
           } else {
             stillPendingCount++;

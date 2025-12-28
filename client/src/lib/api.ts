@@ -28,6 +28,23 @@ export const authApi = {
   getMe: () => fetchApi<{ id: string; username: string }>("/auth/me"),
 };
 
+// Settings
+export const settingsApi = {
+  get: () => fetchApi<{
+    id: string;
+    userId: string;
+    autoConfirmHighConfidence: boolean;
+    confidenceThreshold: number;
+    createdAt: string;
+    updatedAt: string;
+  }>("/settings"),
+  update: (data: { autoConfirmHighConfidence?: boolean; confidenceThreshold?: number }) =>
+    fetchApi<any>("/settings", {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+};
+
 // Accounts
 export const accountsApi = {
   list: () => fetchApi<any[]>("/accounts"),
