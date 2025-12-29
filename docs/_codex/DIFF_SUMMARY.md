@@ -193,3 +193,8 @@
 - Modified: server/db.ts
   - Change: Replace thrown error with explicit console error and exit when DATABASE_URL missing.
   - Reason: Provide clear, non-noisy startup failure for DB-free QA.
+
+## 2025-12-29T16:59:24Z (UTC)
+- New: docs/_codex/PHASES_1_TO_4_QA_COMPLETE_SUMMARY.md
+  - Change: Added QA completion summary for phases 1–4.
+  - Reason: Required final QA deliverable.

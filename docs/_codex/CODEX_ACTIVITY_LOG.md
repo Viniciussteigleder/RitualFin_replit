@@ -419,3 +419,13 @@
 - QA results:
   - `npm run check` passed.
   - `npm run build` passed with chunk-size warnings.
+
+## 2025-12-29T16:59:24Z (UTC)
+- Session goal: Produce QA completion summary.
+- Commands executed (READ-ONLY):
+  - date -u +%Y-%m-%dT%H:%M:%SZ
+- Commands executed (MUTATING):
+  - create docs/_codex/PHASES_1_TO_4_QA_COMPLETE_SUMMARY.md
+  - update docs/_codex/DIFF_SUMMARY.md
+- Summary of changes:
+  - Added QA completion summary with blocked items and verdict.
