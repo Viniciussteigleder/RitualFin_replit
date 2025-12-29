@@ -1,5 +1,6 @@
 import {
   users, accounts, uploads, uploadErrors, merchantMetadata, transactions, rules, budgets, calendarEvents, eventOccurrences, goals, categoryGoals, rituals, settings,
+  conversations, messages,
   aiUsageLogs, notifications,
   type User, type InsertUser,
   type Account, type InsertAccount,
@@ -16,7 +17,8 @@ import {
   type Ritual, type InsertRitual,
   type Settings, type InsertSettings, type UpdateSettings,
   type AIUsageLog, type InsertAIUsageLog,
-  type Notification, type InsertNotification
+  type Notification, type InsertNotification,
+  type Conversation, type Message
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql, like, gte, lt, or, isNull } from "drizzle-orm";
@@ -41,6 +43,12 @@ export interface IStorage {
   createNotification(notification: InsertNotification): Promise<Notification>;
   markNotificationRead(id: string, userId: string): Promise<Notification | undefined>;
   deleteNotification(id: string, userId: string): Promise<void>;
+
+  // Conversations
+  createConversation(data: { userId: string; title: string }): Promise<Conversation>;
+  getConversations(userId: string): Promise<Conversation[]>;
+  createMessage(data: { conversationId: string; role: "user" | "assistant"; content: string }): Promise<Message>;
+  getMessages(conversationId: string): Promise<Message[]>;
 
   // Accounts
   getAccounts(userId: string): Promise<Account[]>;
@@ -71,6 +79,7 @@ export interface IStorage {
 
   // Transactions
   getTransactions(userId: string, month?: string): Promise<Transaction[]>;
+  getTransactions(options: { userId: string; startDate?: string; endDate?: string; limit?: number }): Promise<Transaction[]>;
   getTransactionsByNeedsReview(userId: string): Promise<Transaction[]>;
   getTransaction(id: string): Promise<Transaction | undefined>;
   getTransactionByKey(key: string): Promise<Transaction | undefined>;
@@ -237,6 +246,39 @@ export class DatabaseStorage implements IStorage {
     await db.delete(notifications).where(and(eq(notifications.id, id), eq(notifications.userId, userId)));
   }
 
+  // Conversations
+  async createConversation(data: { userId: string; title: string }): Promise<Conversation> {
+    const [conversation] = await db
+      .insert(conversations)
+      .values(data)
+      .returning();
+    return conversation;
+  }
+
+  async getConversations(userId: string): Promise<Conversation[]> {
+    return db
+      .select()
+      .from(conversations)
+      .where(eq(conversations.userId, userId))
+      .orderBy(desc(conversations.createdAt));
+  }
+
+  async createMessage(data: { conversationId: string; role: "user" | "assistant"; content: string }): Promise<Message> {
+    const [message] = await db
+      .insert(messages)
+      .values(data)
+      .returning();
+    return message;
+  }
+
+  async getMessages(conversationId: string): Promise<Message[]> {
+    return db
+      .select()
+      .from(messages)
+      .where(eq(messages.conversationId, conversationId))
+      .orderBy(messages.createdAt);
+  }
+
   // Accounts
   async getAccounts(userId: string): Promise<Account[]> {
     return db.select().from(accounts)
@@ -394,23 +436,40 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Transactions
-  async getTransactions(userId: string, month?: string): Promise<Transaction[]> {
+  async getTransactions(
+    userIdOrOptions: string | { userId: string; startDate?: string; endDate?: string; limit?: number },
+    month?: string
+  ): Promise<Transaction[]> {
+    const userId = typeof userIdOrOptions === "string" ? userIdOrOptions : userIdOrOptions.userId;
+    const startDateValue = typeof userIdOrOptions === "string" ? undefined : userIdOrOptions.startDate;
+    const endDateValue = typeof userIdOrOptions === "string" ? undefined : userIdOrOptions.endDate;
+    const limitValue = typeof userIdOrOptions === "string" ? undefined : userIdOrOptions.limit;
+
+    const conditions = [eq(transactions.userId, userId)];
+
     if (month) {
       const startDate = new Date(`${month}-01`);
       const endDate = new Date(startDate);
       endDate.setMonth(endDate.getMonth() + 1);
-      
-      return db.select().from(transactions)
-        .where(and(
-          eq(transactions.userId, userId),
-          gte(transactions.paymentDate, startDate),
-          lt(transactions.paymentDate, endDate)
-        ))
-        .orderBy(desc(transactions.paymentDate));
+      conditions.push(gte(transactions.paymentDate, startDate));
+      conditions.push(lt(transactions.paymentDate, endDate));
+    } else {
+      if (startDateValue) {
+        conditions.push(gte(transactions.paymentDate, new Date(startDateValue)));
+      }
+      if (endDateValue) {
+        conditions.push(lt(transactions.paymentDate, new Date(endDateValue)));
+      }
     }
-    return db.select().from(transactions)
-      .where(eq(transactions.userId, userId))
-      .orderBy(desc(transactions.paymentDate));
+
+    const baseQuery = db.select().from(transactions).where(and(...conditions));
+    const orderedQuery = baseQuery.orderBy(desc(transactions.paymentDate));
+
+    if (limitValue) {
+      return orderedQuery.limit(limitValue);
+    }
+
+    return orderedQuery;
   }
 
   async getTransactionsByNeedsReview(userId: string): Promise<Transaction[]> {

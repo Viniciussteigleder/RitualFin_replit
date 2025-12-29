@@ -9,6 +9,7 @@ import OpenAI from "openai";
 import { logger } from "./logger";
 import { withOpenAIUsage } from "./ai-usage";
 import { logAIUsage } from "./ai-logger";
+import { assembleChatContext } from "./ai-context";
 import { sql, eq, gte, lte, desc, and } from "drizzle-orm";
 import { db } from "./db";
 
@@ -2079,6 +2080,103 @@ export async function registerRoutes(
         action: "database_error",
         error: error.message
       }));
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===== AI CHAT =====
+  app.post("/api/ai/chat", async (req: Request, res: Response) => {
+    try {
+      const { message, conversationId } = req.body;
+      const user = await storage.getUserByUsername("demo");
+
+      if (!user) {
+        return res.status(401).json({ error: "Usuário não encontrado" });
+      }
+
+      if (!message) {
+        return res.status(400).json({ error: "Message is required" });
+      }
+
+      if (!openai) {
+        return res.status(503).json({ error: "OpenAI não configurado" });
+      }
+
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+      res.flushHeaders();
+
+      const sendEvent = (event: any) => {
+        res.write(`data: ${JSON.stringify(event)}\n\n`);
+      };
+
+      try {
+        const { systemPrompt, tokensEstimate } = await assembleChatContext(user.id);
+
+        let convId = conversationId;
+        if (!convId) {
+          const title = message.slice(0, 50);
+          const conversation = await storage.createConversation({ userId: user.id, title });
+          convId = conversation.id;
+        }
+
+        await storage.createMessage({
+          conversationId: convId,
+          role: "user",
+          content: message,
+        });
+
+        const stream = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: message },
+          ],
+          temperature: 0.7,
+          stream: true,
+        });
+
+        let fullResponse = "";
+        let totalTokens = 0;
+
+        for await (const chunk of stream) {
+          const content = chunk.choices[0]?.delta?.content || "";
+          if (content) {
+            fullResponse += content;
+            sendEvent({ type: "data", content });
+          }
+
+          if (chunk.usage) {
+            totalTokens = chunk.usage.total_tokens || totalTokens;
+          }
+        }
+
+        if (totalTokens === 0) {
+          totalTokens = tokensEstimate + Math.ceil((message.length + fullResponse.length) / 4);
+        }
+
+        await storage.createMessage({
+          conversationId: convId,
+          role: "assistant",
+          content: fullResponse,
+        });
+
+        await logAIUsage(user.id, "chat", totalTokens, "gpt-4o-mini");
+
+        sendEvent({ type: "done", conversationId: convId });
+        res.end();
+      } catch (error: any) {
+        logger.error("ai_chat_error", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+        sendEvent({ type: "error", error: error.message });
+        res.end();
+      }
+    } catch (error: any) {
+      logger.error("ai_chat_setup_failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       res.status(500).json({ error: error.message });
     }
   });

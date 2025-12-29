@@ -163,3 +163,20 @@
 - Modified: package.json, package-lock.json
   - Change: Added `csv-parse` dependency.
   - Reason: Streaming CSV parsing requirement.
+
+## 2025-12-29T16:27:20Z (UTC)
+- New: server/ai-context.ts
+  - Change: Added chat context assembly using recent transactions and goals.
+  - Reason: Provide AI assistant context for SSE chat.
+- Modified: shared/schema.ts
+  - Change: Updated conversations/messages tables to match C.6 schema (UUID text ids, role enum, cascade delete).
+  - Reason: Enable AI chat persistence with user scoping.
+- Modified: server/storage.ts
+  - Change: Added conversation/message storage helpers and extended `getTransactions` for date range queries.
+  - Reason: Support AI chat context and persistence.
+- Modified: server/routes.ts
+  - Change: Added `/api/ai/chat` SSE endpoint with context assembly and usage logging.
+  - Reason: Implement Batch 3 C.6 AI assistant streaming backend.
+- Modified: server/replit_integrations/chat/storage.ts, server/replit_integrations/chat/routes.ts
+  - Change: Added demo user scoping for conversations and role typing.
+  - Reason: Align integrations with new conversations schema.

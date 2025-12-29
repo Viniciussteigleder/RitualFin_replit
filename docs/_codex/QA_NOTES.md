@@ -115,3 +115,20 @@
   - Endpoint smoke tests (including `/api/health` and uploads progress endpoints) skipped due to dev server failure.
 - Failures: Missing `DATABASE_URL` blocked db:push and local dev server.
 - Repro steps: Set `DATABASE_URL`, rerun `npm run db:push` and `npm run dev`, then hit `/api/health` and uploads endpoints.
+
+## 2025-12-29T16:27:20Z (UTC)
+- Environment: local
+- Commands executed (READ-ONLY): none.
+- Commands executed (MUTATING):
+  - `npm run check`
+  - `npm run db:push`
+  - `npm run dev` (via background run)
+  - `curl http://localhost:5000/api/health`
+  - `tail -n 60 /tmp/ritualfin-dev.log`
+- Test results:
+  - `npm run check` passed.
+  - `npm run db:push` failed: `DATABASE_URL` not set.
+  - `npm run dev` failed: `DATABASE_URL` not set; server did not start.
+  - Endpoint smoke tests (including `/api/health` and `/api/ai/chat`) skipped due to dev server failure.
+- Failures: Missing `DATABASE_URL` blocked db:push and local dev server.
+- Repro steps: Set `DATABASE_URL`, rerun `npm run db:push` and `npm run dev`, then hit `/api/health` and AI chat endpoints.

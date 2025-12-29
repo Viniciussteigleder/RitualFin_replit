@@ -111,3 +111,11 @@
 - Rationale: Avoid breaking existing client usage while aligning with spec request body.
 - Risks: None (explicit fallback).
 - Follow-ups: Standardize on `content` in a future cleanup.
+
+## 2025-12-29T16:27:20Z (UTC)
+- Decision: Scope replit integration chat conversations to the demo user ID.
+- Alternatives considered: Allow null userId in conversations, or disable replit chat routes.
+- Tradeoffs: Maintains schema constraints vs. tying integrations to demo user.
+- Rationale: Conversations now require userId; demo user is the existing single-user fallback.
+- Risks: Replit integration chat data is not separated from demo user data.
+- Follow-ups: Revisit once real auth is implemented.

@@ -354,3 +354,29 @@
   - `npm run check` passed.
   - `npm run db:push` failed: missing `DATABASE_URL`.
   - `npm run dev` failed: missing `DATABASE_URL`; endpoint smoke tests skipped.
+
+## 2025-12-29T16:27:20Z (UTC)
+- Session goal: Phase 4 (C.6) AI assistant streaming backend and QA.
+- Commands executed (READ-ONLY):
+  - rg -n "conversations|messages" shared/schema.ts
+  - sed -n '350,430p' shared/schema.ts
+  - sed -n '1,120p' server/replit_integrations/chat/storage.ts
+  - sed -n '1,160p' server/replit_integrations/chat/routes.ts
+  - rg -n "getTransactions\(" -n server/storage.ts
+  - sed -n '380,440p' server/storage.ts
+- Commands executed (MUTATING):
+  - apply_patch (shared/schema.ts, server/storage.ts, server/routes.ts, server/replit_integrations/chat/storage.ts, server/replit_integrations/chat/routes.ts)
+  - create server/ai-context.ts
+  - npm run check
+  - npm run db:push
+  - npm run dev (background)
+  - curl -s http://localhost:5000/api/health
+  - tail -n 60 /tmp/ritualfin-dev.log
+- Summary of changes:
+  - Added SSE AI chat endpoint with conversation persistence and context assembly.
+  - Updated conversations/messages schema and storage helpers.
+  - Scoped replit chat integrations to demo user.
+- QA results:
+  - `npm run check` passed.
+  - `npm run db:push` failed: missing `DATABASE_URL`.
+  - `npm run dev` failed: missing `DATABASE_URL`; endpoint smoke tests skipped.
