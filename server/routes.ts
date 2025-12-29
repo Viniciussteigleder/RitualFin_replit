@@ -1,14 +1,15 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertRuleSchema, insertGoalSchema, insertCategoryGoalSchema, insertRitualSchema, type MerchantMetadata, type UpdateNotification } from "@shared/schema";
+import { aiUsageLogs, insertRuleSchema, insertGoalSchema, insertCategoryGoalSchema, insertRitualSchema, type MerchantMetadata, type UpdateNotification } from "@shared/schema";
 import { z } from "zod";
 import { parseCSV, type ParsedTransaction } from "./csv-parser";
 import { categorizeTransaction, suggestKeyword, AI_SEED_RULES } from "./rules-engine";
 import OpenAI from "openai";
 import { logger } from "./logger";
 import { withOpenAIUsage } from "./ai-usage";
-import { sql } from "drizzle-orm";
+import { logAIUsage } from "./ai-logger";
+import { sql, eq, gte, lte, desc, and } from "drizzle-orm";
 import { db } from "./db";
 
 const openai = process.env.OPENAI_API_KEY
@@ -2005,16 +2006,160 @@ export async function registerRoutes(
   });
 
   // ===== AI KEYWORD ANALYSIS =====
-  app.get("/api/ai/usage", async (req: Request, res: Response) => {
+  app.post("/api/ai/suggest-keyword", async (req: Request, res: Response) => {
     try {
       const user = await storage.getUserByUsername("demo");
-      if (!user) return res.json([]);
+      if (!user) {
+        return res.status(401).json({ error: "Usuário não encontrado" });
+      }
 
-      const limitParam = req.query.limit ? Number(req.query.limit) : undefined;
-      const limit = Number.isFinite(limitParam) && limitParam ? Math.min(Math.max(limitParam, 1), 200) : 100;
-      const logs = await storage.getAiUsageLogs(user.id, limit);
-      res.json(logs);
+      if (!openai) {
+        return res.status(503).json({ error: "OpenAI não configurado" });
+      }
+
+      const { description, amount } = req.body;
+      if (!description || typeof amount !== "number") {
+        return res.status(400).json({ error: "Missing required fields: description, amount" });
+      }
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: "Você sugere palavras-chave curtas para categorizar transações financeiras. Responda apenas com a palavra-chave."
+          },
+          {
+            role: "user",
+            content: `Descrição: ${description}\nValor: ${amount}`
+          }
+        ],
+        temperature: 0.3,
+      });
+
+      // Log AI usage
+      await logAIUsage(
+        user.id,
+        "categorize",
+        response.usage?.total_tokens || 0,
+        "gpt-4o-mini"
+      );
+
+      const keyword = response.choices[0]?.message?.content?.trim() || "";
+      res.json({ keyword });
     } catch (error: any) {
+      logger.error("ai_suggest_keyword_failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/ai/bulk-categorize", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        return res.status(401).json({ error: "Usuário não encontrado" });
+      }
+
+      if (!openai) {
+        return res.status(503).json({ error: "OpenAI não configurado" });
+      }
+
+      const { transactions } = req.body;
+      if (!Array.isArray(transactions) || transactions.length === 0) {
+        return res.status(400).json({ error: "transactions must be a non-empty array" });
+      }
+
+      const payload = transactions.map((tx, index) => ({
+        id: tx.id ?? String(index),
+        description: tx.description,
+        amount: tx.amount
+      }));
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: "Você sugere palavras-chave curtas para categorizar transações financeiras. Retorne um array JSON com {id, keyword}."
+          },
+          {
+            role: "user",
+            content: JSON.stringify(payload)
+          }
+        ],
+        temperature: 0.3,
+      });
+
+      // Log AI usage
+      await logAIUsage(
+        user.id,
+        "bulk",
+        response.usage?.total_tokens || 0,
+        "gpt-4o-mini"
+      );
+
+      const content = response.choices[0]?.message?.content || "[]";
+      let suggestions = [];
+      try {
+        suggestions = JSON.parse(content.replace(/```json\n?|\n?```/g, ""));
+      } catch (parseError) {
+        logger.error("ai_bulk_categorize_parse_failed", {
+          error: parseError instanceof Error ? parseError.message : String(parseError),
+        });
+      }
+
+      res.json({ suggestions });
+    } catch (error: any) {
+      logger.error("ai_bulk_categorize_failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // GET /api/ai/usage - Retrieve AI usage logs with filtering
+  app.get("/api/ai/usage", async (req: Request, res: Response) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        return res.status(401).json({ error: "Usuário não encontrado" });
+      }
+
+      const conditions = [eq(aiUsageLogs.userId, user.id)];
+
+      if (startDate) {
+        const start = new Date(startDate as string);
+        conditions.push(gte(aiUsageLogs.createdAt, start));
+      }
+      if (endDate) {
+        const end = new Date(endDate as string);
+        end.setHours(23, 59, 59, 999);
+        conditions.push(lte(aiUsageLogs.createdAt, end));
+      }
+
+      const whereClause = conditions.length === 1 ? conditions[0] : and(...conditions);
+
+      const logs = await db
+        .select()
+        .from(aiUsageLogs)
+        .where(whereClause)
+        .orderBy(desc(aiUsageLogs.createdAt));
+
+      const totalTokens = logs.reduce((sum, log) => sum + log.tokensUsed, 0);
+      const totalCost = logs.reduce((sum, log) => sum + parseFloat(String(log.cost)), 0);
+
+      res.json({
+        logs,
+        totalTokens,
+        totalCost: totalCost.toFixed(6),
+      });
+    } catch (error: any) {
+      logger.error("ai_usage_fetch_failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       res.status(500).json({ error: error.message });
     }
   });

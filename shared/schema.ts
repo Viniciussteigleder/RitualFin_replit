@@ -1,5 +1,5 @@
 import { sql, relations } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, real, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, real, timestamp, pgEnum, serial, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -47,20 +47,15 @@ export type InsertSettings = z.infer<typeof insertSettingsSchema>;
 export type UpdateSettings = z.infer<typeof updateSettingsSchema>;
 export type Settings = typeof settings.$inferSelect;
 
-// AI Usage Logs (safe metadata only)
+// AI Usage Logs (token usage + cost)
 export const aiUsageLogs = pgTable("ai_usage_logs", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => users.id),
-  sessionId: text("session_id"),
-  featureTag: text("feature_tag").notNull(),
-  model: text("model").notNull(),
-  promptTokens: integer("prompt_tokens"),
-  completionTokens: integer("completion_tokens"),
-  totalTokens: integer("total_tokens"),
-  costEstimateUsd: real("cost_estimate_usd"),
-  status: text("status").notNull().default("success"),
-  errorMessage: text("error_message"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id),
+  operation: text("operation", { enum: ["categorize", "chat", "bulk"] }).notNull(),
+  tokensUsed: integer("tokens_used").notNull(),
+  cost: numeric("cost", { precision: 10, scale: 6 }).notNull(),
+  modelUsed: text("model_used").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const aiUsageLogsRelations = relations(aiUsageLogs, ({ one }) => ({
@@ -68,8 +63,8 @@ export const aiUsageLogsRelations = relations(aiUsageLogs, ({ one }) => ({
 }));
 
 export const insertAiUsageLogSchema = createInsertSchema(aiUsageLogs).omit({ id: true, createdAt: true });
-export type InsertAiUsageLog = z.infer<typeof insertAiUsageLogSchema>;
-export type AiUsageLog = typeof aiUsageLogs.$inferSelect;
+export type InsertAIUsageLog = z.infer<typeof insertAiUsageLogSchema>;
+export type AIUsageLog = typeof aiUsageLogs.$inferSelect;
 
 // Notifications (in-app only)
 export const notifications = pgTable("notifications", {

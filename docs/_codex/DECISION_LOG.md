@@ -71,3 +71,27 @@
 - Rationale: Avoid misleading cost data for models without confirmed pricing.
 - Risks: Some usage rows will have null cost estimates until pricing is added.
 - Follow-ups: Add pricing entries when model rates are confirmed.
+
+## 2025-12-29T16:03:03Z (UTC)
+- Decision: Interpret “phases 1–4” in BATCH_EXECUTION_INSTRUCTIONS as packages C.4, C.5, C.7, and C.6.
+- Alternatives considered: Treat pre-flight + Batches 1–3 as phases; stop for clarification.
+- Tradeoffs: Removes ambiguity and allows execution vs. potential mismatch with author intent.
+- Rationale: Document contains only those four execution packages across Batches 1–3.
+- Risks: If “phases” meant a different grouping, scope may diverge.
+- Follow-ups: None unless user clarifies.
+
+## 2025-12-29T16:03:03Z (UTC)
+- Decision: Log AI usage against `user.id` (UUID) instead of literal "demo" to satisfy foreign key constraints.
+- Alternatives considered: Insert "demo" literal and relax FK, or skip logging when userId absent.
+- Tradeoffs: Strict FK integrity vs. slight divergence from spec placeholder.
+- Rationale: `ai_usage_logs.user_id` references `users.id`; using the UUID prevents insert failures.
+- Risks: If downstream expects "demo" literal, reporting may differ.
+- Follow-ups: Replace with real auth userId when auth is implemented.
+
+## 2025-12-29T16:03:03Z (UTC)
+- Decision: Map existing OpenAI feature tags to `operation` values (categorize/chat/bulk) when logging usage.
+- Alternatives considered: Drop logging from legacy wrappers or add a new enum value.
+- Tradeoffs: Simpler schema alignment vs. less granular operation labels.
+- Rationale: Preserve existing logging call sites while matching the spec enum.
+- Risks: Some operations may be bucketed as `categorize` even if not a perfect match.
+- Follow-ups: Refine mapping once feature taxonomy is finalized.

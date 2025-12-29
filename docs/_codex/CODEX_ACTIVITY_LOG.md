@@ -242,3 +242,68 @@
   - Fixed TypeScript AbortError typing in batch utils.
 - Observations & risks:
   - Dev server cannot start without DATABASE_URL; endpoint smoke test skipped.
+
+## 2025-12-29T15:50:34Z (UTC)
+- Session goal: Execute phases 1-4 from BATCH_EXECUTION_INSTRUCTIONS (C.4, C.5, C.7, C.6) on branch codex/impl-phases-1-4.
+- Approval gate status: User instructed autonomous execution without confirmation.
+- Commands executed (READ-ONLY):
+  - ls
+  - cat CLAUDE.md
+  - cat docs/_codex/codex_instructions.md
+  - cat docs/_codex/BATCH_EXECUTION_INSTRUCTIONS.md
+  - cat docs/_codex/FEATURE_IMPLEMENTATION_PLAN.md
+  - cat docs/_codex/RESOLVED_DECISIONS.md
+  - cat docs/ARCHITECTURE_AND_AI_LOGIC.md
+  - cat docs/IMPLEMENTATION_LOG.md
+  - rg -n "SECURITY_AUDIT" docs
+  - cat docs/SECURITY_AUDIT_2025-12-29.md
+  - rg -n "Phase|PHASE" docs/_codex/BATCH_EXECUTION_INSTRUCTIONS.md
+  - sed -n '1,220p' docs/_codex/BATCH_EXECUTION_INSTRUCTIONS.md
+  - ls docs/_codex
+  - tail -n 80 docs/_codex/CODEX_ACTIVITY_LOG.md
+  - rg -n "ai_usage_logs|aiUsageLogs" shared/schema.ts server
+  - rg -n "logAIUsage|ai-logger" server
+  - sed -n '1,140p' shared/schema.ts
+  - sed -n '1,260p' server/storage.ts
+  - rg -n "ai usage|aiUsage|aiUsageLogs|usage" server/routes.ts
+  - sed -n '1980,2105p' server/routes.ts
+  - rg -n "notifications" server/routes.ts
+  - sed -n '70,190p' server/routes.ts
+  - rg -n "parseCSVStreaming|csv-parse|papaparse|progress" server/csv-parser.ts server/routes.ts
+  - rg -n "ai/chat|SSE|event-stream|stream" server/routes.ts
+  - rg -n "notifications|ai/usage|ai usage" client/src
+  - sed -n '1,220p' docs/_codex/BATCH_EXECUTION_INSTRUCTIONS.md
+  - tail -n 120 docs/_codex/PLAN_LOG.md
+  - date -u +%Y-%m-%dT%H:%M:%SZ
+- Commands executed (MUTATING):
+  - git checkout main
+  - git pull
+  - git checkout -b codex/impl-phases-1-4
+  - git branch --show-current
+  - git status -sb
+  - update docs/_codex/PLAN_LOG.md
+  - update docs/_codex/CODEX_ACTIVITY_LOG.md
+- Notes:
+  - BATCH_EXECUTION_INSTRUCTIONS does not enumerate "phases" explicitly; interpreting phases 1-4 as C.4, C.5, C.7, C.6 per spec.
+
+## 2025-12-29T16:03:03Z (UTC)
+- Session goal: Phase 1 (C.4) AI usage tracking implementation and QA.
+- Commands executed (READ-ONLY):
+  - cat server/logger.ts
+  - rg -n "logger.error" server/routes.ts
+- Commands executed (MUTATING):
+  - apply_patch (shared/schema.ts, server/storage.ts, server/ai-usage.ts, server/routes.ts)
+  - create server/ai-logger.ts
+  - npm run check
+  - npm run dev (background)
+  - curl -s http://localhost:5000/api/health
+  - tail -n 60 /tmp/ritualfin-dev.log
+  - npm run db:push
+- Summary of changes:
+  - Aligned `ai_usage_logs` schema to C.4 spec and added logAIUsage wrapper.
+  - Added AI suggest-keyword/bulk-categorize endpoints and updated AI usage retrieval.
+  - Updated OpenAI usage logging to map to new operation enum.
+- QA results:
+  - `npm run check` passed.
+  - `npm run db:push` failed: missing `DATABASE_URL`.
+  - `npm run dev` failed: missing `DATABASE_URL`; endpoint smoke tests skipped.

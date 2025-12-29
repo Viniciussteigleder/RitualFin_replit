@@ -78,3 +78,10 @@
   - Status: Open
   - Owner: Claude
   - Mitigation: Restore or confirm canonical locations for missing docs.
+
+## 2025-12-29T16:03:03Z (UTC)
+- Issue: `DATABASE_URL` missing blocks `npm run db:push` and local dev server (`npm run dev`), preventing endpoint smoke tests.
+  - Severity: Medium
+  - Status: Open
+  - Owner: Codex
+  - Mitigation: Provide a valid `DATABASE_URL` for local QA; rerun db:push and smoke tests.

@@ -115,3 +115,20 @@
 - Modified: docs/_codex/CODEX_ACTIVITY_LOG.md, docs/_codex/DECISION_LOG.md, docs/_codex/ISSUES_REGISTER.md
   - Change: Logged session constraints, decisions, and missing docs.
   - Reason: Codex governance.
+
+## 2025-12-29T16:03:03Z (UTC)
+- Modified: shared/schema.ts
+  - Change: Reworked `ai_usage_logs` schema to match C.4 spec (operation/tokens/cost/modelUsed).
+  - Reason: Align AI usage tracking schema with Batch 1 C.4.
+- New: server/ai-logger.ts
+  - Change: Added logAIUsage wrapper with pricing-based cost calculation.
+  - Reason: Centralize AI usage logging per spec.
+- Modified: server/ai-usage.ts
+  - Change: Adapted OpenAI usage helper to call logAIUsage with operation mapping.
+  - Reason: Preserve existing OpenAI instrumentation while using new schema.
+- Modified: server/routes.ts
+  - Change: Added `/api/ai/suggest-keyword`, `/api/ai/bulk-categorize`, and upgraded `/api/ai/usage` with date filtering and totals.
+  - Reason: Implement Batch 1 C.4 endpoints and logging integration.
+- Modified: server/storage.ts
+  - Change: Updated AI usage log types to new schema names.
+  - Reason: Align storage types with schema changes.

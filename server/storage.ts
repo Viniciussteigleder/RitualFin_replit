@@ -15,7 +15,7 @@ import {
   type CategoryGoal, type InsertCategoryGoal,
   type Ritual, type InsertRitual,
   type Settings, type InsertSettings, type UpdateSettings,
-  type AiUsageLog, type InsertAiUsageLog,
+  type AIUsageLog, type InsertAIUsageLog,
   type Notification, type InsertNotification, type UpdateNotification
 } from "@shared/schema";
 import { db } from "./db";
@@ -33,8 +33,8 @@ export interface IStorage {
   updateSettings(userId: string, data: UpdateSettings): Promise<Settings | undefined>;
 
   // AI Usage Logs
-  createAiUsageLog(log: InsertAiUsageLog): Promise<AiUsageLog>;
-  getAiUsageLogs(userId: string, limit?: number): Promise<AiUsageLog[]>;
+  createAiUsageLog(log: InsertAIUsageLog): Promise<AIUsageLog>;
+  getAiUsageLogs(userId: string, limit?: number): Promise<AIUsageLog[]>;
 
   // Notifications
   getNotifications(userId: string, limit?: number): Promise<Notification[]>;
@@ -194,12 +194,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   // AI Usage Logs
-  async createAiUsageLog(log: InsertAiUsageLog): Promise<AiUsageLog> {
+  async createAiUsageLog(log: InsertAIUsageLog): Promise<AIUsageLog> {
     const [created] = await db.insert(aiUsageLogs).values(log).returning();
     return created;
   }
 
-  async getAiUsageLogs(userId: string, limit = 100): Promise<AiUsageLog[]> {
+  async getAiUsageLogs(userId: string, limit = 100): Promise<AIUsageLog[]> {
     return db
       .select()
       .from(aiUsageLogs)
