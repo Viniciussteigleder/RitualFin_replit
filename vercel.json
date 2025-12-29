@@ -4,8 +4,6 @@
   "outputDirectory": "dist/public",
   "framework": null,
   "installCommand": "npm install",
-  "devCommand": null,
-  "cleanUrls": true,
   "rewrites": [
     {
       "source": "/(.*)",

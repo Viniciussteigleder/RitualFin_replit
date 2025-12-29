@@ -9,7 +9,7 @@ import OpenAI from "openai";
 import { logger } from "./logger";
 import { withOpenAIUsage } from "./ai-usage";
 import { sql } from "drizzle-orm";
-import { db } from "./db";
+import { db, isDatabaseConfigured } from "./db";
 
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({
@@ -23,6 +23,18 @@ export async function registerRoutes(
 ): Promise<Server> {
   // Health check endpoint (required for deployment monitoring)
   app.get("/api/health", async (_req: Request, res: Response) => {
+    // If database is not configured, return degraded status
+    if (!isDatabaseConfigured) {
+      return res.status(200).json({
+        status: "degraded",
+        timestamp: new Date().toISOString(),
+        database: "not_configured",
+        version: "1.0.0",
+        warning: "DATABASE_URL not set - smoke test mode",
+      });
+    }
+
+    // Normal health check with database ping
     try {
       await db.execute(sql`SELECT 1`);
       res.json({

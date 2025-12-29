@@ -163,7 +163,7 @@ async function seedAccounts() {
     console.error("❌ Seed failed:", error.message);
     throw error;
   } finally {
-    await pool.end();
+    if (pool) await pool.end();
   }
 }
 
