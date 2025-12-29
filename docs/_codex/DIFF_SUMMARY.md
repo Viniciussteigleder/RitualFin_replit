@@ -180,3 +180,11 @@
 - Modified: server/replit_integrations/chat/storage.ts, server/replit_integrations/chat/routes.ts
   - Change: Added demo user scoping for conversations and role typing.
   - Reason: Align integrations with new conversations schema.
+
+## 2025-12-29T16:28:46Z (UTC)
+- New: docs/_codex/PHASES_1_TO_4_COMPLETE_SUMMARY.md
+  - Change: Added consolidated completion summary for phases 1–4.
+  - Reason: Required final deliverable.
+- Modified: docs/_codex/DEPLOYMENT_NOTES.md
+  - Change: Documented deployment-relevant schema changes, endpoints, and dependency additions.
+  - Reason: Deployment-impact documentation requirement.

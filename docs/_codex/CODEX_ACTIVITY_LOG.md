@@ -380,3 +380,14 @@
   - `npm run check` passed.
   - `npm run db:push` failed: missing `DATABASE_URL`.
   - `npm run dev` failed: missing `DATABASE_URL`; endpoint smoke tests skipped.
+
+## 2025-12-29T16:28:46Z (UTC)
+- Session goal: Create phase completion summary and update deployment notes.
+- Commands executed (READ-ONLY):
+  - git log --oneline -4
+- Commands executed (MUTATING):
+  - update docs/_codex/DEPLOYMENT_NOTES.md
+  - create docs/_codex/PHASES_1_TO_4_COMPLETE_SUMMARY.md
+  - update docs/_codex/DIFF_SUMMARY.md
+- Summary of changes:
+  - Added final phases 1–4 completion summary and deployment notes for schema/API changes.
