@@ -1,5 +1,6 @@
 import {
   users, accounts, uploads, uploadErrors, merchantMetadata, transactions, rules, budgets, calendarEvents, eventOccurrences, goals, categoryGoals, rituals, settings,
+  aiUsageLogs, notifications,
   type User, type InsertUser,
   type Account, type InsertAccount,
   type Upload, type InsertUpload,
@@ -13,7 +14,9 @@ import {
   type Goal, type InsertGoal,
   type CategoryGoal, type InsertCategoryGoal,
   type Ritual, type InsertRitual,
-  type Settings, type InsertSettings, type UpdateSettings
+  type Settings, type InsertSettings, type UpdateSettings,
+  type AiUsageLog, type InsertAiUsageLog,
+  type Notification, type InsertNotification, type UpdateNotification
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql, like, gte, lt, or, isNull } from "drizzle-orm";
@@ -28,6 +31,16 @@ export interface IStorage {
   getSettings(userId: string): Promise<Settings | undefined>;
   createSettings(settings: InsertSettings): Promise<Settings>;
   updateSettings(userId: string, data: UpdateSettings): Promise<Settings | undefined>;
+
+  // AI Usage Logs
+  createAiUsageLog(log: InsertAiUsageLog): Promise<AiUsageLog>;
+  getAiUsageLogs(userId: string, limit?: number): Promise<AiUsageLog[]>;
+
+  // Notifications
+  getNotifications(userId: string, limit?: number): Promise<Notification[]>;
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  updateNotification(id: string, userId: string, data: UpdateNotification): Promise<Notification | undefined>;
+  deleteNotification(id: string, userId: string): Promise<void>;
 
   // Accounts
   getAccounts(userId: string): Promise<Account[]>;
@@ -178,6 +191,49 @@ export class DatabaseStorage implements IStorage {
       .where(eq(settings.userId, userId))
       .returning();
     return userSettings || undefined;
+  }
+
+  // AI Usage Logs
+  async createAiUsageLog(log: InsertAiUsageLog): Promise<AiUsageLog> {
+    const [created] = await db.insert(aiUsageLogs).values(log).returning();
+    return created;
+  }
+
+  async getAiUsageLogs(userId: string, limit = 100): Promise<AiUsageLog[]> {
+    return db
+      .select()
+      .from(aiUsageLogs)
+      .where(eq(aiUsageLogs.userId, userId))
+      .orderBy(desc(aiUsageLogs.createdAt))
+      .limit(limit);
+  }
+
+  // Notifications
+  async getNotifications(userId: string, limit = 200): Promise<Notification[]> {
+    return db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt))
+      .limit(limit);
+  }
+
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    const [created] = await db.insert(notifications).values(notification).returning();
+    return created;
+  }
+
+  async updateNotification(id: string, userId: string, data: UpdateNotification): Promise<Notification | undefined> {
+    const [updated] = await db
+      .update(notifications)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(notifications.id, id), eq(notifications.userId, userId)))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteNotification(id: string, userId: string): Promise<void> {
+    await db.delete(notifications).where(and(eq(notifications.id, id), eq(notifications.userId, userId)));
   }
 
   // Accounts

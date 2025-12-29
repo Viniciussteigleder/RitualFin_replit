@@ -47,6 +47,52 @@ export type InsertSettings = z.infer<typeof insertSettingsSchema>;
 export type UpdateSettings = z.infer<typeof updateSettingsSchema>;
 export type Settings = typeof settings.$inferSelect;
 
+// AI Usage Logs (safe metadata only)
+export const aiUsageLogs = pgTable("ai_usage_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  sessionId: text("session_id"),
+  featureTag: text("feature_tag").notNull(),
+  model: text("model").notNull(),
+  promptTokens: integer("prompt_tokens"),
+  completionTokens: integer("completion_tokens"),
+  totalTokens: integer("total_tokens"),
+  costEstimateUsd: real("cost_estimate_usd"),
+  status: text("status").notNull().default("success"),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const aiUsageLogsRelations = relations(aiUsageLogs, ({ one }) => ({
+  user: one(users, { fields: [aiUsageLogs.userId], references: [users.id] }),
+}));
+
+export const insertAiUsageLogSchema = createInsertSchema(aiUsageLogs).omit({ id: true, createdAt: true });
+export type InsertAiUsageLog = z.infer<typeof insertAiUsageLogSchema>;
+export type AiUsageLog = typeof aiUsageLogs.$inferSelect;
+
+// Notifications (in-app only)
+export const notifications = pgTable("notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  type: text("type").default("info"),
+  isRead: boolean("is_read").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, { fields: [notifications.userId], references: [users.id] }),
+}));
+
+export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true, updatedAt: true });
+export const updateNotificationSchema = insertNotificationSchema.partial();
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type UpdateNotification = z.infer<typeof updateNotificationSchema>;
+export type Notification = typeof notifications.$inferSelect;
+
 // Accounts table (credit cards, bank accounts, etc.)
 export const accounts = pgTable("accounts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

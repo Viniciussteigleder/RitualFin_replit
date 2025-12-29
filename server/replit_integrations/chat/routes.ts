@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import OpenAI from "openai";
 import { chatStorage } from "./storage";
+import { logOpenAIUsage } from "../../ai-usage";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -61,8 +62,8 @@ export function registerChatRoutes(app: Express): void {
 
   // Send message and get AI response (streaming)
   app.post("/api/conversations/:id/messages", async (req: Request, res: Response) => {
+    const conversationId = req.params.id;
     try {
-      const conversationId = req.params.id;
       const { content } = req.body;
 
       // Save user message
@@ -101,9 +102,23 @@ export function registerChatRoutes(app: Express): void {
       // Save assistant message
       await chatStorage.createMessage(conversationId, "assistant", fullResponse);
 
+      await logOpenAIUsage({
+        featureTag: "replit_chat_stream",
+        model: "gpt-5.1",
+        sessionId: conversationId,
+        status: "success"
+      });
+
       res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
       res.end();
     } catch (error) {
+      await logOpenAIUsage({
+        featureTag: "replit_chat_stream",
+        model: "gpt-5.1",
+        sessionId: conversationId,
+        status: "error",
+        error
+      });
       console.error("Error sending message:", error);
       // Check if headers already sent (SSE streaming started)
       if (res.headersSent) {
@@ -115,4 +130,3 @@ export function registerChatRoutes(app: Express): void {
     }
   });
 }
-
