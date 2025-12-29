@@ -2,6 +2,25 @@
 
 ---
 
+## Batch 1 — Observability + Notifications (2025-12-29)
+
+**Status**: In progress
+
+### Summary
+- Added AI usage logging table and helper to log safe metadata for OpenAI calls.
+- Added notification CRUD backend for polling-based in-app alerts.
+
+### Files Touched
+- `shared/schema.ts` (ai_usage_logs, notifications tables)
+- `server/ai-usage.ts` (logging wrapper)
+- `server/storage.ts` (new storage methods)
+- `server/routes.ts` (AI usage endpoint + notifications CRUD + OpenAI wrapper)
+- `server/replit_integrations/*` (log usage for chat/image integrations)
+
+### Notes
+- Logging stores only model, token counts, cost estimate (when available), feature tag, and user/session ids.
+- No secrets are persisted in AI usage logs.
+
 ## UX Overhaul — Phase A: E2E Review & Execution Plan (2025-12-28)
 
 **Role**: Senior UX Engineer + Product Designer

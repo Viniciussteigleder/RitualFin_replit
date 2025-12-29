@@ -54,3 +54,27 @@
   - Status: Open
   - Owner: Claude
   - Mitigation: Claude to confirm final package set and sequencing in the plan.
+
+## 2025-12-29T13:50:17Z (UTC)
+- Issue: `npm run check` fails due to TypeScript errors in `server/replit_integrations/*`.
+  - Severity: Medium
+  - Status: Open
+  - Owner: Claude
+  - Mitigation: Fix or exclude the replit integrations from typecheck if unused in production.
+- Issue: Local dev server cannot bind to `0.0.0.0:5000` in this environment (ENOTSUP), blocking `/api/health` verification.
+  - Severity: Low
+  - Status: Open
+  - Owner: Codex
+  - Mitigation: Verify `/api/health` in a supported environment (Render) or adjust local runtime constraints.
+- Issue: Optional OpenAI key caused server startup failure.
+  - Severity: High
+  - Status: Resolved
+  - Owner: Codex
+  - Mitigation: Guard OpenAI client initialization and AI endpoint when `OPENAI_API_KEY` is unset.
+
+## 2025-12-29T13:49:17Z (UTC)
+- Issue: Mandatory handoff/decision files missing from repo (`CODEX_HANDOFF_INSTRUCTION.md`, `docs/_codex/RESOLVED_DECISIONS.md`).
+  - Severity: Low
+  - Status: Open
+  - Owner: Claude
+  - Mitigation: Restore or confirm canonical locations for missing docs.
