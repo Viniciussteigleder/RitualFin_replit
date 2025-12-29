@@ -1,0 +1,50 @@
+# Codex Activity Log
+
+## 2025-12-29T11:40:14Z (UTC)
+- Session goal: Establish Codex-only documentation system; capture analysis-only actions and repository sync state.
+- Context links: CLAUDE.md, docs/ARCHITECTURE_AND_AI_LOGIC.md (headings scan), docs/IMPLEMENTATION_LOG.md (headings scan), docs/DEPLOYMENT_SUPABASE_VERCEL.md, docs/DEPLOYMENT_GUIDE.md, docs/IMPLEMENTATION_LOG.md, .env.local, .gitignore.
+- Commands executed (READ-ONLY):
+  - git rev-parse --is-inside-work-tree
+  - git remote -v
+  - git branch --show-current
+  - git status -sb
+  - git log --oneline -n 15
+  - git fetch --all --prune
+  - git rev-parse HEAD
+  - git ls-remote --heads origin
+  - git rev-list --left-right --count origin/main...HEAD
+  - find . -maxdepth 2 -type f -name "package.json" -o -name "pnpm-lock.yaml" -o -name "package-lock.json" -o -name "yarn.lock"
+  - cat package.json
+  - find . -maxdepth 3 -type f -name "*.md" -o -name "*.env*" -o -name "supabase*" -o -name "docker-compose.yml" -o -name "next.config.*" -o -name "vite.config.*" -o -name "tsconfig.json"
+  - rg -n "supabase|createClient|auth|RLS|csv|upload|rules|pipeline|OpenAI|LLM|prompt|AI" .
+  - rg -n "localhost:|127.0.0.1|PORT=|callback|redirect" .
+  - node -v; npm -v; pnpm -v; python -V; git --version
+  - ls -d node_modules
+  - find . -maxdepth 3 -type f -name ".env*" -o -name "*.example" -o -name "*.sample"
+  - cat .env.example
+  - rg -n "SUPABASE_URL|SUPABASE_ANON_KEY|SERVICE_ROLE|DATABASE_URL" .
+  - ls -la supabase; find supabase -maxdepth 4 -type f
+  - cat replit.md; cat server/index.ts
+  - cat .env.local (redacted in logs)
+  - cat docs/DEPLOYMENT_SUPABASE_VERCEL.md
+  - cat docs/IMPLEMENTATION_LOG.md
+  - sed -n '1,160p' CLAUDE.md
+  - rg -n "^#|^##" docs/ARCHITECTURE_AND_AI_LOGIC.md
+  - rg -n "^##" docs/IMPLEMENTATION_LOG.md
+- Commands executed (MUTATING):
+  - git reset --hard origin/main
+  - mkdir -p docs/_codex
+  - add .vercel/ to .gitignore
+  - create docs/_codex/* files
+- Files touched:
+  - Modified: .gitignore (added .vercel/ ignore entry)
+  - New: docs/_codex/README.md, CODEX_ACTIVITY_LOG.md, PLAN_LOG.md, DECISION_LOG.md, DIFF_SUMMARY.md, QA_NOTES.md, ISSUES_REGISTER.md, DEPLOYMENT_NOTES.md, DATA_PIPELINE_NOTES.md, AI_FEATURES_NOTES.md, ENVIRONMENT_DRIFT_NOTES.md, codex_instructions.md
+- Summary of changes:
+  - Initialized Codex documentation system under docs/_codex/.
+  - Added .vercel/ to .gitignore to avoid untracked deployment artifacts.
+- Observations & risks:
+  - Local .env.local contains sensitive Vercel token; redacted and not recorded.
+  - Documentation includes sensitive database connection strings; requires rotation and redaction in future work.
+- Next steps / open questions:
+  - Await Claude approval to redact secrets in docs and execute any non-doc changes.
+- Approval gate status: Needs Claude approval for any application changes; documentation-only work complete.
