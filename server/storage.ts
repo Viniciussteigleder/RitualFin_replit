@@ -16,7 +16,7 @@ import {
   type Ritual, type InsertRitual,
   type Settings, type InsertSettings, type UpdateSettings,
   type AIUsageLog, type InsertAIUsageLog,
-  type Notification, type InsertNotification, type UpdateNotification
+  type Notification, type InsertNotification
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql, like, gte, lt, or, isNull } from "drizzle-orm";
@@ -39,7 +39,7 @@ export interface IStorage {
   // Notifications
   getNotifications(userId: string, limit?: number): Promise<Notification[]>;
   createNotification(notification: InsertNotification): Promise<Notification>;
-  updateNotification(id: string, userId: string, data: UpdateNotification): Promise<Notification | undefined>;
+  markNotificationRead(id: string, userId: string): Promise<Notification | undefined>;
   deleteNotification(id: string, userId: string): Promise<void>;
 
   // Accounts
@@ -223,10 +223,10 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  async updateNotification(id: string, userId: string, data: UpdateNotification): Promise<Notification | undefined> {
+  async markNotificationRead(id: string, userId: string): Promise<Notification | undefined> {
     const [updated] = await db
       .update(notifications)
-      .set({ ...data, updatedAt: new Date() })
+      .set({ isRead: true })
       .where(and(eq(notifications.id, id), eq(notifications.userId, userId)))
       .returning();
     return updated || undefined;

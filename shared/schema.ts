@@ -12,6 +12,12 @@ export const category1Enum = pgEnum("category_1", [
 ]);
 export const uploadStatusEnum = pgEnum("upload_status", ["processing", "ready", "duplicate", "error"]);
 export const accountTypeEnum = pgEnum("account_type", ["credit_card", "debit_card", "bank_account", "cash"]);
+export const notificationTypeEnum = pgEnum("notification_type", [
+  "info",
+  "warning",
+  "error",
+  "success"
+]);
 
 // Users table
 export const users = pgTable("users", {
@@ -68,24 +74,21 @@ export type AIUsageLog = typeof aiUsageLogs.$inferSelect;
 
 // Notifications (in-app only)
 export const notifications = pgTable("notifications", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id),
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").notNull().references(() => users.id),
+  type: notificationTypeEnum("type").notNull(),
   title: text("title").notNull(),
   message: text("message").notNull(),
-  type: text("type").default("info"),
-  isRead: boolean("is_read").notNull().default(false),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  isRead: boolean("is_read").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const notificationsRelations = relations(notifications, ({ one }) => ({
   user: one(users, { fields: [notifications.userId], references: [users.id] }),
 }));
 
-export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true, updatedAt: true });
-export const updateNotificationSchema = insertNotificationSchema.partial();
+export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
-export type UpdateNotification = z.infer<typeof updateNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
 
 // Accounts table (credit cards, bank accounts, etc.)

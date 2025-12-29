@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { aiUsageLogs, insertRuleSchema, insertGoalSchema, insertCategoryGoalSchema, insertRitualSchema, type MerchantMetadata, type UpdateNotification } from "@shared/schema";
+import { aiUsageLogs, insertRuleSchema, insertGoalSchema, insertCategoryGoalSchema, insertRitualSchema, type MerchantMetadata } from "@shared/schema";
 import { z } from "zod";
 import { parseCSV, type ParsedTransaction } from "./csv-parser";
 import { categorizeTransaction, suggestKeyword, AI_SEED_RULES } from "./rules-engine";
@@ -107,61 +107,75 @@ export async function registerRoutes(
   });
 
   // ===== NOTIFICATIONS =====
-  app.get("/api/notifications", async (req: Request, res: Response) => {
+  app.get("/api/notifications", async (_req: Request, res: Response) => {
     try {
       const user = await storage.getUserByUsername("demo");
       if (!user) return res.json([]);
 
-      const limitParam = req.query.limit ? Number(req.query.limit) : undefined;
-      const limit = Number.isFinite(limitParam) && limitParam ? Math.min(Math.max(limitParam, 1), 200) : 200;
-      const notifications = await storage.getNotifications(user.id, limit);
+      const notifications = await storage.getNotifications(user.id);
       res.json(notifications);
     } catch (error: any) {
+      logger.error("notifications_fetch_failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       res.status(500).json({ error: error.message });
     }
   });
 
   app.post("/api/notifications", async (req: Request, res: Response) => {
     try {
-      let user = await storage.getUserByUsername("demo");
+      const user = await storage.getUserByUsername("demo");
       if (!user) {
-        user = await storage.createUser({ username: "demo", password: "demo" });
+        return res.status(401).json({ error: "User not found" });
       }
 
-      if (!req.body.title || !req.body.message) {
-        return res.status(400).json({ error: "Title and message are required" });
+      const { type, title, message } = req.body;
+
+      if (!type || !title || !message) {
+        return res.status(400).json({
+          error: "Missing required fields: type, title, message"
+        });
+      }
+
+      if (!["info", "warning", "error", "success"].includes(type)) {
+        return res.status(400).json({
+          error: "Invalid type. Must be: info, warning, error, or success"
+        });
       }
 
       const notification = await storage.createNotification({
         userId: user.id,
-        title: req.body.title,
-        message: req.body.message,
-        type: req.body.type || "info",
-        isRead: Boolean(req.body.isRead),
+        type,
+        title,
+        message,
       });
+
       res.status(201).json(notification);
     } catch (error: any) {
+      logger.error("notifications_create_failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       res.status(500).json({ error: error.message });
     }
   });
 
-  app.patch("/api/notifications/:id", async (req: Request, res: Response) => {
+  app.patch("/api/notifications/:id/read", async (req: Request, res: Response) => {
     try {
       const user = await storage.getUserByUsername("demo");
       if (!user) return res.status(401).json({ error: "User not found" });
 
-      const updateData: UpdateNotification = {};
-      if (req.body.title !== undefined) updateData.title = req.body.title;
-      if (req.body.message !== undefined) updateData.message = req.body.message;
-      if (req.body.type !== undefined) updateData.type = req.body.type;
-      if (req.body.isRead !== undefined) updateData.isRead = req.body.isRead;
+      const { id } = req.params;
+      const notification = await storage.markNotificationRead(id, user.id);
 
-      const updated = await storage.updateNotification(req.params.id, user.id, updateData);
-      if (!updated) {
+      if (!notification) {
         return res.status(404).json({ error: "Notification not found" });
       }
-      res.json(updated);
+
+      res.json(notification);
     } catch (error: any) {
+      logger.error("notifications_mark_read_failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       res.status(500).json({ error: error.message });
     }
   });
@@ -174,6 +188,9 @@ export async function registerRoutes(
       await storage.deleteNotification(req.params.id, user.id);
       res.status(204).send();
     } catch (error: any) {
+      logger.error("notifications_delete_failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       res.status(500).json({ error: error.message });
     }
   });

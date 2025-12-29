@@ -132,3 +132,14 @@
 - Modified: server/storage.ts
   - Change: Updated AI usage log types to new schema names.
   - Reason: Align storage types with schema changes.
+
+## 2025-12-29T16:07:04Z (UTC)
+- Modified: shared/schema.ts
+  - Change: Added `notification_type` enum and aligned `notifications` table with C.5 schema.
+  - Reason: Implement Batch 1 C.5 notification backend spec.
+- Modified: server/storage.ts
+  - Change: Replaced notification update method with mark-as-read helper.
+  - Reason: Match notification API contract.
+- Modified: server/routes.ts
+  - Change: Updated notification endpoints to GET/POST/PATCH :id/read/DELETE with validation.
+  - Reason: Match C.5 CRUD behavior and validation requirements.

@@ -307,3 +307,22 @@
   - `npm run check` passed.
   - `npm run db:push` failed: missing `DATABASE_URL`.
   - `npm run dev` failed: missing `DATABASE_URL`; endpoint smoke tests skipped.
+
+## 2025-12-29T16:07:04Z (UTC)
+- Session goal: Phase 2 (C.5) notification system implementation and QA.
+- Commands executed (READ-ONLY):
+  - rg -n "UpdateNotification" -g"*.ts"
+- Commands executed (MUTATING):
+  - apply_patch (shared/schema.ts, server/storage.ts, server/routes.ts)
+  - npm run check
+  - npm run db:push
+  - npm run dev (background)
+  - curl -s http://localhost:5000/api/health
+  - tail -n 60 /tmp/ritualfin-dev.log
+- Summary of changes:
+  - Added notification type enum and aligned notifications schema.
+  - Switched notifications API to CRUD with /:id/read and type validation.
+- QA results:
+  - `npm run check` passed.
+  - `npm run db:push` failed: missing `DATABASE_URL`.
+  - `npm run dev` failed: missing `DATABASE_URL`; endpoint smoke tests skipped.
