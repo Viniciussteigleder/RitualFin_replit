@@ -188,3 +188,8 @@
 - Modified: docs/_codex/DEPLOYMENT_NOTES.md
   - Change: Documented deployment-relevant schema changes, endpoints, and dependency additions.
   - Reason: Deployment-impact documentation requirement.
+
+## 2025-12-29T16:58:22Z (UTC)
+- Modified: server/db.ts
+  - Change: Replace thrown error with explicit console error and exit when DATABASE_URL missing.
+  - Reason: Provide clear, non-noisy startup failure for DB-free QA.

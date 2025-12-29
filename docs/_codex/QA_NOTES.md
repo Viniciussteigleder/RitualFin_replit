@@ -132,3 +132,25 @@
   - Endpoint smoke tests (including `/api/health` and `/api/ai/chat`) skipped due to dev server failure.
 - Failures: Missing `DATABASE_URL` blocked db:push and local dev server.
 - Repro steps: Set `DATABASE_URL`, rerun `npm run db:push` and `npm run dev`, then hit `/api/health` and AI chat endpoints.
+
+## 2025-12-29T16:57:01Z (UTC)
+- Environment: local
+- Step 1 (env triage):
+  - Required env vars detected: DATABASE_URL, CORS_ORIGIN, OPENAI_API_KEY, NODE_ENV, PORT, VITE_API_URL, AI_INTEGRATIONS_OPENAI_API_KEY, AI_INTEGRATIONS_OPENAI_BASE_URL.
+  - DB available: no (DATABASE_URL not set).
+  - Blocked QA items: db:push, npm run dev, all DB-backed endpoint smoke tests, AI usage logging persistence, SSE chat persistence.
+- Commands executed (READ-ONLY):
+  - `cat .env.example`
+  - `rg -n "process.env" server client shared`
+  - `if [ -n "$DATABASE_URL" ]; then echo ...`
+- Commands executed (MUTATING): none.
+
+## 2025-12-29T16:58:22Z (UTC)
+- Environment: local
+- Commands executed (MUTATING):
+  - `npm run check`
+  - `npm run build`
+- Test results:
+  - `npm run check` passed.
+  - `npm run build` passed with existing chunk size warnings.
+- Notes: Startup error message for missing DATABASE_URL was hardened to avoid stack spam.

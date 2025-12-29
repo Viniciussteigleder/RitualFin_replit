@@ -60,3 +60,16 @@
   - Run npm run check + dev smoke + endpoint smoke tests after each phase.
   - Record results in docs/_codex/QA_NOTES.md.
 - Approval source: User instruction to execute phases 1-4 without confirmation (2025-12-29).
+
+## 2025-12-29T16:57:01Z (UTC)
+- Plan: Execute QA + debug + stabilization for phases 1–4 per user QA plan.
+- Status: Approved (user instruction for autonomous QA).
+- Goal: Validate build, identify DB-dependent blockers, run endpoint smoke tests if DB available, and harden if needed.
+- In Scope: Static checks (tsc/build), DB availability check, startup diagnostics, endpoint smoke tests when possible, fixes for non-env issues, documentation updates.
+- Out of Scope: New features, redesigns, auth/RLS changes, deployment changes.
+- Dependencies: DATABASE_URL for db:push and dev server; OpenAI key for AI endpoint tests.
+- Data implications: None unless DB available for migrations.
+- Risks: QA blocked by missing DB; limited verification without OpenAI key.
+- Acceptance criteria: npm run check/build clean; DB-dependent tests documented if blocked; QA summary produced.
+- QA approach: Follow user-defined QA steps 1–6 and record outcomes.
+- Approval source: User instruction (QA + stabilization mode).

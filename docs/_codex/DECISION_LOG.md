@@ -119,3 +119,11 @@
 - Rationale: Conversations now require userId; demo user is the existing single-user fallback.
 - Risks: Replit integration chat data is not separated from demo user data.
 - Follow-ups: Revisit once real auth is implemented.
+
+## 2025-12-29T16:58:22Z (UTC)
+- Decision: Exit early with a clear console error when DATABASE_URL is missing instead of throwing.
+- Alternatives considered: Keep the thrown error with stack trace.
+- Tradeoffs: Cleaner logs vs. loss of stack trace (not actionable here).
+- Rationale: QA mode requires clear, non-noisy diagnostics when DB is unavailable.
+- Risks: None; startup remains blocked without DB.
+- Follow-ups: None.

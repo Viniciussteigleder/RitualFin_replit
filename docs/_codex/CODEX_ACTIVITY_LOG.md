@@ -391,3 +391,31 @@
   - update docs/_codex/DIFF_SUMMARY.md
 - Summary of changes:
   - Added final phases 1–4 completion summary and deployment notes for schema/API changes.
+
+## 2025-12-29T16:57:01Z (UTC)
+- Session goal: QA + debug + stabilization (env triage, static checks, conditional DB tests).
+- Commands executed (READ-ONLY):
+  - cat .env.example
+  - rg -n "process.env" server client shared
+  - if [ -n "$DATABASE_URL" ]; then echo ...
+  - date -u +%Y-%m-%dT%H:%M:%SZ
+- Commands executed (MUTATING):
+  - update docs/_codex/PLAN_LOG.md
+  - update docs/_codex/QA_NOTES.md
+- Notes:
+  - DATABASE_URL not set; DB-backed QA steps currently blocked.
+
+## 2025-12-29T16:58:22Z (UTC)
+- Session goal: Run static checks and harden DB-missing startup messaging.
+- Commands executed (READ-ONLY):
+  - date -u +%Y-%m-%dT%H:%M:%SZ
+- Commands executed (MUTATING):
+  - apply_patch (server/db.ts)
+  - npm run check
+  - npm run build
+  - update docs/_codex/QA_NOTES.md
+  - update docs/_codex/DIFF_SUMMARY.md
+  - update docs/_codex/DECISION_LOG.md
+- QA results:
+  - `npm run check` passed.
+  - `npm run build` passed with chunk-size warnings.
