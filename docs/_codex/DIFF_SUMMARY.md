@@ -66,3 +66,52 @@
 - Modified: docs/_codex/CODEX_ACTIVITY_LOG.md, docs/_codex/DECISION_LOG.md, docs/_codex/ISSUES_REGISTER.md, docs/_codex/QA_NOTES.md
   - Change: Logged session activity, decisions, issues, and QA notes.
   - Reason: Documentation discipline requirements.
+
+## 2025-12-29T13:50:17Z (UTC)
+- Modified: client/src/lib/queryClient.ts
+  - Change: Align API URL building with `/api` prefix behavior for production and dev.
+  - Reason: Prevent 404s from missing `/api` on TanStack Query calls.
+- Modified: server/db.ts
+  - Change: Add conditional SSL for Supabase pooler connections.
+  - Reason: Render-to-Supabase connectivity requires SSL on managed pooler.
+- Modified: server/routes.ts
+  - Change: Add `/api/health` endpoint with DB ping; make OpenAI client optional and guard AI endpoint.
+  - Reason: Health checks and optional AI features should not crash the server.
+- Modified: .env.example
+  - Change: Clarify VITE_API_URL should not include `/api`; remove unused SESSION_SECRET section.
+  - Reason: Reduce configuration drift and confusion.
+- Modified: docs/DEPLOYMENT_GUIDE.md, docs/DEPLOYMENT_INSTRUCTIONS.md
+  - Change: Clarify VITE_API_URL usage and remove SESSION_SECRET references.
+  - Reason: Align docs with current code and deployment wiring.
+- Modified: docs/_codex/PLAN_LOG.md, docs/_codex/CODEX_ACTIVITY_LOG.md, docs/_codex/QA_NOTES.md
+  - Change: Logged plan amendment, activity, and QA outcomes.
+  - Reason: Governance and traceability.
+
+## 2025-12-29T13:49:17Z (UTC)
+- Modified: shared/schema.ts
+  - Change: Added `ai_usage_logs` and `notifications` tables and schemas.
+  - Reason: Batch 1 C.4/C.5 requirements.
+- New: server/ai-usage.ts
+  - Change: Added OpenAI usage logging helper with safe metadata storage.
+  - Reason: Centralize usage logging for all OpenAI calls.
+- Modified: server/storage.ts
+  - Change: Added storage methods for AI usage logs and notifications.
+  - Reason: Support new tables and API endpoints.
+- Modified: server/routes.ts
+  - Change: Added notifications CRUD, AI usage GET, and OpenAI logging wrapper.
+  - Reason: Batch 1 API requirements.
+- Modified: server/replit_integrations/chat/routes.ts
+  - Change: Log OpenAI usage for chat streaming calls.
+  - Reason: Ensure all OpenAI calls are tracked.
+- Modified: server/replit_integrations/image/routes.ts, server/replit_integrations/image/client.ts
+  - Change: Log OpenAI usage for image generation/editing calls.
+  - Reason: Ensure all OpenAI calls are tracked.
+- Modified: server/replit_integrations/batch/utils.ts
+  - Change: Fix AbortError typing for p-retry usage.
+  - Reason: QA typecheck failure surfaced during Batch 1.
+- Modified: docs/IMPLEMENTATION_LOG.md, docs/ARCHITECTURE_AND_AI_LOGIC.md
+  - Change: Documented Batch 1 observability and notifications additions.
+  - Reason: Keep architecture and implementation logs current.
+- Modified: docs/_codex/CODEX_ACTIVITY_LOG.md, docs/_codex/DECISION_LOG.md, docs/_codex/ISSUES_REGISTER.md
+  - Change: Logged session constraints, decisions, and missing docs.
+  - Reason: Codex governance.

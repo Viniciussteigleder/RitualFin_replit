@@ -55,3 +55,19 @@
 - Rationale: Claude needs a stable, copyable summary and review steps.
 - Risks: None (documentation-only).
 - Follow-ups: Keep handoff updated if plan structure changes.
+
+## 2025-12-29T13:50:17Z (UTC)
+- Decision: Treat OpenAI as optional at runtime by guarding client initialization and AI endpoint execution.
+- Alternatives considered: Require `OPENAI_API_KEY` for all environments.
+- Tradeoffs: AI endpoint unavailable without a key vs. server startup stability for non-AI usage.
+- Rationale: Deployment docs mark OpenAI as optional; backend should not crash without it.
+- Risks: AI feature returns 503 when unconfigured; ensure UX handles this gracefully.
+- Follow-ups: Consider surfacing AI disabled status in frontend settings.
+
+## 2025-12-29T13:49:17Z (UTC)
+- Decision: Estimate OpenAI costs only for known models and store null for unknown pricing.
+- Alternatives considered: Hardcode estimates for all models or force a default rate.
+- Tradeoffs: Safer, explicit gaps vs. less complete cost coverage.
+- Rationale: Avoid misleading cost data for models without confirmed pricing.
+- Risks: Some usage rows will have null cost estimates until pricing is added.
+- Follow-ups: Add pricing entries when model rates are confirmed.

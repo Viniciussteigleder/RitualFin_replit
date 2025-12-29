@@ -1,21 +1,46 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertRuleSchema, insertGoalSchema, insertCategoryGoalSchema, insertRitualSchema, type MerchantMetadata } from "@shared/schema";
+import { insertRuleSchema, insertGoalSchema, insertCategoryGoalSchema, insertRitualSchema, type MerchantMetadata, type UpdateNotification } from "@shared/schema";
 import { z } from "zod";
 import { parseCSV, type ParsedTransaction } from "./csv-parser";
 import { categorizeTransaction, suggestKeyword, AI_SEED_RULES } from "./rules-engine";
 import OpenAI from "openai";
 import { logger } from "./logger";
+import { withOpenAIUsage } from "./ai-usage";
+import { sql } from "drizzle-orm";
+import { db } from "./db";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  : null;
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  // Health check endpoint (required for deployment monitoring)
+  app.get("/api/health", async (_req: Request, res: Response) => {
+    try {
+      await db.execute(sql`SELECT 1`);
+      res.json({
+        status: "ok",
+        timestamp: new Date().toISOString(),
+        database: "connected",
+        version: "1.0.0",
+      });
+    } catch (_error: any) {
+      logger.error("health_check_failed", { database: "disconnected" });
+      res.status(503).json({
+        status: "error",
+        timestamp: new Date().toISOString(),
+        database: "disconnected",
+        error: "Database connection failed",
+      });
+    }
+  });
 
   // ===== AUTH / USER =====
   app.post("/api/auth/login", async (req: Request, res: Response) => {
@@ -75,6 +100,78 @@ export async function registerRoutes(
       }
 
       res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===== NOTIFICATIONS =====
+  app.get("/api/notifications", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.json([]);
+
+      const limitParam = req.query.limit ? Number(req.query.limit) : undefined;
+      const limit = Number.isFinite(limitParam) && limitParam ? Math.min(Math.max(limitParam, 1), 200) : 200;
+      const notifications = await storage.getNotifications(user.id, limit);
+      res.json(notifications);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/notifications", async (req: Request, res: Response) => {
+    try {
+      let user = await storage.getUserByUsername("demo");
+      if (!user) {
+        user = await storage.createUser({ username: "demo", password: "demo" });
+      }
+
+      if (!req.body.title || !req.body.message) {
+        return res.status(400).json({ error: "Title and message are required" });
+      }
+
+      const notification = await storage.createNotification({
+        userId: user.id,
+        title: req.body.title,
+        message: req.body.message,
+        type: req.body.type || "info",
+        isRead: Boolean(req.body.isRead),
+      });
+      res.status(201).json(notification);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/notifications/:id", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const updateData: UpdateNotification = {};
+      if (req.body.title !== undefined) updateData.title = req.body.title;
+      if (req.body.message !== undefined) updateData.message = req.body.message;
+      if (req.body.type !== undefined) updateData.type = req.body.type;
+      if (req.body.isRead !== undefined) updateData.isRead = req.body.isRead;
+
+      const updated = await storage.updateNotification(req.params.id, user.id, updateData);
+      if (!updated) {
+        return res.status(404).json({ error: "Notification not found" });
+      }
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/notifications/:id", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      await storage.deleteNotification(req.params.id, user.id);
+      res.status(204).send();
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
@@ -1908,11 +2005,29 @@ export async function registerRoutes(
   });
 
   // ===== AI KEYWORD ANALYSIS =====
+  app.get("/api/ai/usage", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.json([]);
+
+      const limitParam = req.query.limit ? Number(req.query.limit) : undefined;
+      const limit = Number.isFinite(limitParam) && limitParam ? Math.min(Math.max(limitParam, 1), 200) : 100;
+      const logs = await storage.getAiUsageLogs(user.id, limit);
+      res.json(logs);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.post("/api/ai/analyze-keywords", async (req: Request, res: Response) => {
     try {
       const user = await storage.getUserByUsername("demo");
       if (!user) {
         return res.status(401).json({ error: "Usuário não encontrado" });
+      }
+
+      if (!openai) {
+        return res.status(503).json({ error: "OpenAI não configurado" });
       }
 
       // Get all uncategorized transactions
@@ -1963,15 +2078,24 @@ Para cada palavra-chave, retorne um JSON com:
 
 Retorne APENAS um array JSON válido, sem markdown ou texto adicional.`;
 
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: JSON.stringify(keywordList, null, 2) }
-        ],
-        temperature: 0.3,
-        max_tokens: 4000
-      });
+      const response = await withOpenAIUsage(
+        {
+          featureTag: "keyword_analysis",
+          model: "gpt-4o-mini",
+          userId: user.id,
+          extractUsage: (result) => result.usage
+        },
+        () =>
+          openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: JSON.stringify(keywordList, null, 2) }
+            ],
+            temperature: 0.3,
+            max_tokens: 4000
+          })
+      );
 
       const content = response.choices[0]?.message?.content || "[]";
       let suggestions = [];

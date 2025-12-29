@@ -21,6 +21,10 @@ RitualFin is a personal finance app built around **"Lazy Mode"** - minimize manu
 - Backend: Express + PostgreSQL + Drizzle ORM
 - AI: OpenAI GPT-4o-mini (user provides API key)
 
+**Observability**:
+- OpenAI calls log safe usage metadata to `ai_usage_logs` (model, tokens, cost estimate, feature tag).
+- In-app notifications stored in `notifications` and fetched via polling endpoints.
+
 ---
 
 ## System Architecture (3 minutes)

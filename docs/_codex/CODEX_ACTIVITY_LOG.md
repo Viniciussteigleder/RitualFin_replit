@@ -138,6 +138,57 @@
   - Open questions recorded in ISSUES_REGISTER.
 - Approval gate status: Documentation-only work executed with user instruction; Claude review pending.
 
+## 2025-12-29T13:50:17Z (UTC)
+- Session goal: Implement approved deployment connectivity fixes, run QA checks, and document outcomes.
+- Commands executed (READ-ONLY):
+  - rg -n "DATABASE_URL|CORS_ORIGIN|VITE_API_URL|PORT|SESSION_SECRET|SUPABASE" server client shared .env* vercel.json package.json
+  - rg -n "cors\\(|allowedOrigins|origin:" server
+  - rg -n "health|/api/auth/me|/api/health" server
+  - sed -n '1,200p' server/index.ts
+  - sed -n '1,200p' server/db.ts
+  - sed -n '1,200p' client/src/lib/api.ts
+  - sed -n '1,200p' client/src/lib/queryClient.ts
+  - sed -n '1,200p' server/routes.ts
+  - cat vercel.json
+  - rg -n "pool|db" server/storage.ts server/logger.ts server/static.ts
+  - sed -n '1,200p' server/logger.ts
+  - rg -n "session|SESSION_SECRET|cookie" server
+  - rg -n "useQuery\\(|queryKey" client/src
+  - sed -n '1,200p' server/vite.ts
+  - rg -n "dotenv" server
+  - cat package.json
+  - rg -n "OpenAI|OPENAI_API_KEY" server
+  - rg -n "replit_integrations" server
+  - sed -n '1990,2085p' server/routes.ts
+  - sed -n '1,120p' .env.example
+  - rg -n "VITE_API_URL|SESSION_SECRET" docs/DEPLOYMENT_INSTRUCTIONS.md
+  - sed -n '200,260p' docs/DEPLOYMENT_INSTRUCTIONS.md
+  - rg -n "VITE_API_URL|SESSION_SECRET" docs/DEPLOYMENT_GUIDE.md
+  - sed -n '90,130p' docs/DEPLOYMENT_GUIDE.md
+  - sed -n '140,200p' docs/DEPLOYMENT_GUIDE.md
+  - sed -n '240,300p' docs/DEPLOYMENT_GUIDE.md
+  - date -u +%Y-%m-%dT%H:%M:%SZ
+- Commands executed (MUTATING):
+  - npm install
+  - npm run check (failed: missing tsc before install; then type errors in replit_integrations)
+  - npm run build
+  - DATABASE_URL=postgresql://localhost:5432/postgres npm run dev (failed to bind 0.0.0.0)
+  - curl -s http://localhost:5000/api/health (no response; server failed to start)
+  - tail -n 50 /tmp/ritualfin-dev.log
+  - ps -p <pid> -o pid,comm=
+- Files touched:
+  - Modified: client/src/lib/queryClient.ts, server/db.ts, server/routes.ts, .env.example, docs/DEPLOYMENT_GUIDE.md, docs/DEPLOYMENT_INSTRUCTIONS.md, docs/_codex/PLAN_LOG.md
+- Summary of changes:
+  - Fixed query client base URL to include `/api` in production and dev.
+  - Added conditional SSL for Supabase pooler connections.
+  - Added `/api/health` endpoint with DB ping and safe error handling.
+  - Made OpenAI client optional to avoid startup crash when key is unset.
+  - Updated deployment docs to clarify VITE_API_URL usage and remove SESSION_SECRET references.
+- QA results:
+  - `npm run check` failed due to existing TypeScript errors in `server/replit_integrations/*`.
+  - `npm run build` succeeded with chunk-size warnings.
+  - `npm run dev` failed to bind 0.0.0.0 (ENOTSUP) in this environment; `/api/health` could not be verified locally.
+
 ## 2025-12-29T13:07:57Z (UTC)
 - Session goal: Create a Codex handoff document for Claude and update governance logs.
 - Context links: docs/_codex/FEATURE_IMPLEMENTATION_PLAN.md, docs/_codex/USER_FEEDBACK_VERBATIM.md, docs/_codex/PRD_FROM_USER_FEEDBACK.md, docs/_codex/CATEGORY_CLASSIFICATION_PROPOSAL.md.
@@ -159,3 +210,35 @@
 - Observations & risks:
   - None beyond items in ISSUES_REGISTER.
 - Approval gate status: Documentation-only work executed with user instruction; Claude review pending.
+
+## 2025-12-29T13:51:48Z (UTC)
+- Session goal: Implement Batch 1 (C.4 AI usage tracking, C.5 notifications) and run QA.
+- Commands executed (READ-ONLY):
+  - rg -n "OpenAI|openai|gpt" server shared client
+  - rg -n "openai\\.(chat|images)" server
+  - rg -n "health" server/routes.ts server/index.ts
+  - sed -n '1,240p' server/routes.ts
+  - sed -n '1,200p' server/storage.ts
+  - sed -n '1,200p' shared/schema.ts
+  - sed -n '1860,2050p' server/routes.ts
+  - sed -n '1,200p' server/replit_integrations/chat/routes.ts
+  - sed -n '1,160p' server/replit_integrations/image/routes.ts
+  - sed -n '1,140p' server/replit_integrations/image/client.ts
+  - sed -n '1,200p' docs/ARCHITECTURE_AND_AI_LOGIC.md
+  - sed -n '1,200p' docs/IMPLEMENTATION_LOG.md
+  - sed -n '1,200p' docs/_codex/ISSUES_REGISTER.md
+  - sed -n '1,200p' docs/_codex/DECISION_LOG.md
+  - sed -n '1,200p' docs/_codex/DIFF_SUMMARY.md
+  - sed -n '1,200p' docs/_codex/QA_NOTES.md
+  - date -u +%Y-%m-%dT%H:%M:%SZ
+- Commands executed (MUTATING):
+  - apply_patch (shared/schema.ts, server/storage.ts, server/routes.ts, server/ai-usage.ts, server/replit_integrations/*, docs/*, docs/_codex/*)
+  - npm run check
+  - node -e "<dev smoke + health check script>"
+- Summary of changes:
+  - Added ai_usage_logs and notifications tables with storage and routes.
+  - Added AI usage logging helper and wired into OpenAI call sites.
+  - Added notifications CRUD endpoints and AI usage retrieval endpoint.
+  - Fixed TypeScript AbortError typing in batch utils.
+- Observations & risks:
+  - Dev server cannot start without DATABASE_URL; endpoint smoke test skipped.
