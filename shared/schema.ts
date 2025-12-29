@@ -10,7 +10,7 @@ export const category1Enum = pgEnum("category_1", [
   "Receitas", "Moradia", "Mercado", "Compras Online", 
   "Transporte", "Saúde", "Lazer", "Outros", "Interno"
 ]);
-export const uploadStatusEnum = pgEnum("upload_status", ["processing", "ready", "duplicate", "error"]);
+export const uploadStatusEnum = pgEnum("upload_status", ["processing", "ready", "completed", "duplicate", "error"]);
 export const accountTypeEnum = pgEnum("account_type", ["credit_card", "debit_card", "bank_account", "cash"]);
 export const notificationTypeEnum = pgEnum("notification_type", [
   "info",
@@ -118,6 +118,9 @@ export const uploads = pgTable("uploads", {
   userId: varchar("user_id").notNull().references(() => users.id),
   filename: text("filename").notNull(),
   status: uploadStatusEnum("status").notNull().default("processing"),
+  progress: integer("progress").notNull().default(0),
+  rowsProcessed: integer("rows_processed").notNull().default(0),
+  rowsFailed: integer("rows_failed").notNull().default(0),
   rowsTotal: integer("rows_total").notNull().default(0),
   rowsImported: integer("rows_imported").notNull().default(0),
   monthAffected: text("month_affected"),

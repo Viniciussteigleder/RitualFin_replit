@@ -52,9 +52,10 @@ export interface IStorage {
 
   // Uploads
   getUploads(userId: string): Promise<Upload[]>;
-  getUpload(id: string): Promise<Upload | undefined>;
+  getUpload(id: string, userId: string): Promise<Upload | undefined>;
   createUpload(upload: InsertUpload): Promise<Upload>;
   updateUpload(id: string, data: Partial<Upload>): Promise<Upload | undefined>;
+  updateUploadProgress(uploadId: string, progress: number): Promise<void>;
 
   // Upload Errors
   createUploadError(error: InsertUploadError): Promise<UploadError>;
@@ -311,8 +312,11 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(uploads.createdAt));
   }
 
-  async getUpload(id: string): Promise<Upload | undefined> {
-    const [upload] = await db.select().from(uploads).where(eq(uploads.id, id));
+  async getUpload(id: string, userId: string): Promise<Upload | undefined> {
+    const [upload] = await db
+      .select()
+      .from(uploads)
+      .where(and(eq(uploads.id, id), eq(uploads.userId, userId)));
     return upload || undefined;
   }
 
@@ -324,6 +328,13 @@ export class DatabaseStorage implements IStorage {
   async updateUpload(id: string, data: Partial<Upload>): Promise<Upload | undefined> {
     const [updated] = await db.update(uploads).set(data).where(eq(uploads.id, id)).returning();
     return updated || undefined;
+  }
+
+  async updateUploadProgress(uploadId: string, progress: number): Promise<void> {
+    await db
+      .update(uploads)
+      .set({ progress })
+      .where(eq(uploads.id, uploadId));
   }
 
   // Upload Errors

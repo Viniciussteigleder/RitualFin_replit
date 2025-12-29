@@ -95,3 +95,19 @@
 - Rationale: Preserve existing logging call sites while matching the spec enum.
 - Risks: Some operations may be bucketed as `categorize` even if not a perfect match.
 - Follow-ups: Refine mapping once feature taxonomy is finalized.
+
+## 2025-12-29T16:19:05Z (UTC)
+- Decision: Introduce `completed` upload status and keep existing `duplicate` status; UI treats `completed` as processed.
+- Alternatives considered: Reuse existing `ready` status only, or migrate UI to `completed` exclusively.
+- Tradeoffs: Aligns with spec while preserving existing duplicate semantics; minor UI adjustment.
+- Rationale: Spec calls for `completed`, but existing UI relies on `ready`/`duplicate` signals.
+- Risks: Mixed status values in data if legacy uploads exist.
+- Follow-ups: Consider normalizing legacy `ready` to `completed` in a future cleanup.
+
+## 2025-12-29T16:19:05Z (UTC)
+- Decision: Accept both `content` and legacy `csvContent` fields in upload requests.
+- Alternatives considered: Require only `content` and update client API.
+- Tradeoffs: Backward compatibility vs. stricter API contract.
+- Rationale: Avoid breaking existing client usage while aligning with spec request body.
+- Risks: None (explicit fallback).
+- Follow-ups: Standardize on `content` in a future cleanup.

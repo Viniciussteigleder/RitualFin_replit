@@ -326,3 +326,31 @@
   - `npm run check` passed.
   - `npm run db:push` failed: missing `DATABASE_URL`.
   - `npm run dev` failed: missing `DATABASE_URL`; endpoint smoke tests skipped.
+
+## 2025-12-29T16:19:05Z (UTC)
+- Session goal: Phase 3 (C.7) async CSV streaming + progress tracking and QA.
+- Commands executed (READ-ONLY):
+  - rg -n "uploads/process" server/routes.ts
+  - sed -n '320,520p' server/routes.ts
+  - rg -n "upload.*status|status" client/src/pages/uploads.tsx
+  - sed -n '80,140p' client/src/pages/uploads.tsx
+  - sed -n '250,300p' client/src/pages/uploads.tsx
+  - rg -n "getUpload" server/storage.ts
+  - sed -n '300,340p' server/storage.ts
+  - rg -n "ParseResult" server
+- Commands executed (MUTATING):
+  - apply_patch (shared/schema.ts, server/storage.ts, server/routes.ts, server/csv-parser.ts, client/src/pages/uploads.tsx)
+  - npm install csv-parse
+  - npm run check
+  - npm run db:push
+  - npm run dev (background)
+  - curl -s http://localhost:5000/api/health
+  - tail -n 60 /tmp/ritualfin-dev.log
+- Summary of changes:
+  - Added streaming CSV parser with progress callbacks and upload progress endpoint.
+  - Added progress/rows fields to uploads table and status `completed` handling.
+  - Updated uploads UI to treat `completed` as processed.
+- QA results:
+  - `npm run check` passed.
+  - `npm run db:push` failed: missing `DATABASE_URL`.
+  - `npm run dev` failed: missing `DATABASE_URL`; endpoint smoke tests skipped.

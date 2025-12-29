@@ -143,3 +143,23 @@
 - Modified: server/routes.ts
   - Change: Updated notification endpoints to GET/POST/PATCH :id/read/DELETE with validation.
   - Reason: Match C.5 CRUD behavior and validation requirements.
+
+## 2025-12-29T16:19:05Z (UTC)
+- Modified: shared/schema.ts
+  - Change: Added upload progress/rows fields and `completed` status enum value.
+  - Reason: Support async CSV progress tracking.
+- Modified: server/csv-parser.ts
+  - Change: Added streaming parser with progress callbacks; deprecated parseCSV to use streaming.
+  - Reason: Replace buffered parsing with chunked streaming.
+- Modified: server/storage.ts
+  - Change: Added upload progress updates and user-scoped getUpload.
+  - Reason: Store progress and enforce user isolation on progress polling.
+- Modified: server/routes.ts
+  - Change: Refactored uploads processing to use streaming parser with progress updates and added `/api/uploads/:id/progress`.
+  - Reason: Implement async CSV processing per C.7.
+- Modified: client/src/pages/uploads.tsx
+  - Change: Treat `completed` status as successful uploads in UI badges and stats.
+  - Reason: Align UI with new upload status.
+- Modified: package.json, package-lock.json
+  - Change: Added `csv-parse` dependency.
+  - Reason: Streaming CSV parsing requirement.

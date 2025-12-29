@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { aiUsageLogs, insertRuleSchema, insertGoalSchema, insertCategoryGoalSchema, insertRitualSchema, type MerchantMetadata } from "@shared/schema";
 import { z } from "zod";
-import { parseCSV, type ParsedTransaction } from "./csv-parser";
+import { parseCSVStreaming, type ParsedTransaction, type CSVParseProgress } from "./csv-parser";
 import { categorizeTransaction, suggestKeyword, AI_SEED_RULES } from "./rules-engine";
 import OpenAI from "openai";
 import { logger } from "./logger";
@@ -333,15 +333,16 @@ export async function registerRoutes(
         user = await storage.createUser({ username: "demo", password: "demo" });
       }
 
-      const { filename, csvContent } = req.body;
+      const { filename, csvContent, content } = req.body;
+      const fileContent = content ?? csvContent;
 
       logger.info("upload_start", {
         userId: user.id,
         filename: filename || "upload.csv",
-        contentLength: csvContent?.length || 0
+        contentLength: fileContent?.length || 0
       });
 
-      if (!csvContent) {
+      if (!fileContent) {
         logger.warn("upload_missing_content", { userId: user.id, filename });
         return res.status(400).json({ error: "CSV content is required" });
       }
@@ -351,14 +352,29 @@ export async function registerRoutes(
         userId: user.id,
         filename: filename || "upload.csv",
         status: "processing",
+        progress: 0,
+        rowsProcessed: 0,
+        rowsFailed: 0,
         rowsTotal: 0,
         rowsImported: 0,
       });
 
+      const updateProgress = async (progress: CSVParseProgress) => {
+        const percent = progress.rowsTotal > 0
+          ? Math.round((progress.rowsProcessed / progress.rowsTotal) * 100)
+          : Math.min(Math.round(progress.rowsProcessed / 10), 99);
+
+        await storage.updateUploadProgress(upload.id, percent);
+        logger.info("upload_progress", {
+          uploadId: upload.id,
+          progress: percent
+        });
+      };
+
       // Parse CSV
-      const parseResult = parseCSV(csvContent);
+      const parseResult = await parseCSVStreaming(fileContent, updateProgress);
       
-      if (!parseResult.success) {
+      if (parseResult.transactions.length === 0 && parseResult.errors.length > 0) {
         logger.error("upload_parse_failed", {
           userId: user.id,
           uploadId: upload.id,
@@ -371,6 +387,9 @@ export async function registerRoutes(
         await storage.updateUpload(upload.id, {
           status: "error",
           errorMessage: parseResult.errors.join("; "),
+          progress: 100,
+          rowsProcessed: parseResult.rowsProcessed,
+          rowsFailed: parseResult.rowsFailed,
           rowsTotal: parseResult.rowsTotal,
           rowsImported: 0
         });
@@ -550,18 +569,30 @@ export async function registerRoutes(
               errorMessage,
               rawData: null
             });
+          } else {
+            await storage.createUploadError({
+              uploadId: upload.id,
+              rowNumber: 0,
+              errorMessage: errorStr,
+              rawData: null
+            });
           }
         }
       }
 
       // Update upload status
-      const finalStatus = duplicateCount === parseResult.transactions.length ? "duplicate" : "ready";
+      const finalStatus = duplicateCount === parseResult.transactions.length ? "duplicate" : "completed";
+      const combinedErrors = [...parseResult.errors, ...errors];
+      const rowsFailed = parseResult.rowsFailed + errors.length;
       await storage.updateUpload(upload.id, {
         status: finalStatus,
+        progress: 100,
+        rowsProcessed: parseResult.rowsProcessed,
+        rowsFailed,
         rowsTotal: parseResult.rowsTotal,
         rowsImported: importedCount,
         monthAffected: parseResult.monthAffected,
-        errorMessage: errors.length > 0 ? errors.join("; ") : undefined
+        errorMessage: combinedErrors.length > 0 ? combinedErrors.join("; ") : undefined
       });
 
       const duration = Date.now() - startTime;
@@ -575,6 +606,8 @@ export async function registerRoutes(
         rowsTotal: parseResult.rowsTotal,
         rowsImported: importedCount,
         duplicates: duplicateCount,
+        rowsProcessed: parseResult.rowsProcessed,
+        rowsFailed,
         storageErrorsCount: errors.length,
         monthAffected: parseResult.monthAffected,
         durationMs: duration
@@ -587,12 +620,40 @@ export async function registerRoutes(
         rowsImported: importedCount,
         duplicates: duplicateCount,
         monthAffected: parseResult.monthAffected,
-        errors: errors.length > 0 ? errors : undefined
+        errors: combinedErrors.length > 0 ? combinedErrors.slice(0, 10) : undefined
       });
     } catch (error: any) {
       logger.error("upload_server_error", {
         error: error.message,
         stack: error.stack?.split('\n')[0]
+      });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // GET /api/uploads/:id/progress - Poll upload progress
+  app.get("/api/uploads/:id/progress", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      const upload = await storage.getUpload(req.params.id, user.id);
+      if (!upload) {
+        return res.status(404).json({ error: "Upload not found" });
+      }
+
+      res.json({
+        id: upload.id,
+        status: upload.status,
+        progress: upload.progress,
+        rowsProcessed: upload.rowsProcessed,
+        rowsFailed: upload.rowsFailed,
+      });
+    } catch (error: any) {
+      logger.error("upload_progress_failed", {
+        error: error instanceof Error ? error.message : String(error),
       });
       res.status(500).json({ error: error.message });
     }
@@ -607,8 +668,8 @@ export async function registerRoutes(
       }
 
       // Verify upload exists and belongs to user
-      const upload = await storage.getUpload(req.params.id);
-      if (!upload || upload.userId !== user.id) {
+      const upload = await storage.getUpload(req.params.id, user.id);
+      if (!upload) {
         return res.status(404).json({ error: "Upload not found" });
       }
 

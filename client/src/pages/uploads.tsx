@@ -97,7 +97,7 @@ export default function UploadsPage() {
   };
 
   const totalImported = uploads.reduce((sum: number, u: any) => sum + (u.rowsImported || 0), 0);
-  const successfulUploads = uploads.filter((u: any) => u.status === 'ready').length;
+  const successfulUploads = uploads.filter((u: any) => u.status === 'ready' || u.status === 'completed').length;
 
   return (
     <AppLayout>
@@ -269,7 +269,7 @@ export default function UploadsPage() {
                         <div className="flex items-center gap-2 mb-1">
                           <p className="font-semibold truncate">{upload.filename}</p>
                           <BankBadge provider={upload.filename} size="sm" variant="compact" />
-                          {upload.status === 'ready' && (
+                          {(upload.status === 'ready' || upload.status === 'completed') && (
                             <Badge variant="secondary" className="bg-primary/10 text-primary text-xs">
                               Processado
                             </Badge>
