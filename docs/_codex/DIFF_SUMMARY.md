@@ -120,3 +120,17 @@
 - Modified: docs/_codex/CODEX_ACTIVITY_LOG.md, docs/_codex/DECISION_LOG.md, docs/_codex/ISSUES_REGISTER.md
   - Change: Logged session constraints, decisions, and missing docs.
   - Reason: Codex governance.
+
+## 2025-12-29T17:20:16Z (UTC)
+- Modified: docs/_codex/CODEX_ACTIVITY_LOG.md
+  - Change: Logged QA session for fix/deployment-connectivity.
+  - Reason: Codex governance.
+- Modified: docs/_codex/QA_NOTES.md
+  - Change: Recorded QA commands, results, and runtime block.
+  - Reason: QA traceability.
+- Modified: docs/_codex/ISSUES_REGISTER.md
+  - Change: Logged missing deployment docs and runtime QA block.
+  - Reason: Track blockers and missing inputs.
+- New: docs/_codex/DEPLOYMENT_CONNECTIVITY_QA_COMPLETE_SUMMARY.md
+  - Change: Added QA completion summary and verdict for deployment connectivity branch.
+  - Reason: Required QA deliverable.

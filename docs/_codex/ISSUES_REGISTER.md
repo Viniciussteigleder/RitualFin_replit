@@ -78,3 +78,15 @@
   - Status: Open
   - Owner: Claude
   - Mitigation: Restore or confirm canonical locations for missing docs.
+
+## 2025-12-29T17:20:16Z (UTC)
+- Issue: Mandatory deployment docs not found at expected paths (`docs/DEPLOYMENT_STATUS.md`, `docs/WHY_GIT_INTEGRATION_BROKEN.md`).
+  - Severity: Low
+  - Status: Open
+  - Owner: Codex
+  - Mitigation: Confirm canonical paths or add redirects/links in docs.
+- Issue: Local runtime QA blocked by missing DATABASE_URL (dev server not started).
+  - Severity: Low
+  - Status: Open
+  - Owner: Codex
+  - Mitigation: Provide DATABASE_URL in environment and rerun `npm run dev` + `/api/health`.

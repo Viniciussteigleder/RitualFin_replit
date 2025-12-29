@@ -72,3 +72,24 @@
   - No secrets printed in test output.
 - Failures: Missing `DATABASE_URL` prevents dev server start.
 - Repro steps: Set `DATABASE_URL`, rerun `npm run dev`, then `curl http://localhost:5000/api/health`.
+
+## 2025-12-29T17:20:16Z (UTC)
+- Environment: local (branch: fix/deployment-connectivity)
+- Commands executed (READ-ONLY):
+  - `git status -sb`
+  - `npm run check`
+  - `npm run build`
+  - `node -e "process.exit(process.env.DATABASE_URL ? 0 : 1)"`
+  - Review of `client/src/lib/queryClient.ts`, `client/src/lib/api.ts`, `server/db.ts`, `server/index.ts`, `server/routes.ts`
+- Commands executed (MUTATING):
+  - `git checkout fix/deployment-connectivity`
+- Test results:
+  - `npm run check` passed.
+  - `npm run build` passed (bundle size warnings only).
+  - Runtime smoke test blocked: DATABASE_URL not set; dev server not started.
+  - `/api/health` not exercised due to missing DATABASE_URL.
+- Failures: Runtime QA blocked by missing DATABASE_URL.
+- Repro steps:
+  1) Set `DATABASE_URL` (do not print it).
+  2) Run `npm run dev`.
+  3) Run `curl http://localhost:5000/api/health`.

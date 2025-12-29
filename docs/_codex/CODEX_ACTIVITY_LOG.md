@@ -257,3 +257,39 @@
   - Fixed TypeScript AbortError typing in batch utils.
 - Observations & risks:
   - Dev server cannot start without DATABASE_URL; endpoint smoke test skipped.
+
+## 2025-12-29T17:20:16Z (UTC)
+- Session goal: Run QA/debug/testing only on branch fix/deployment-connectivity per instructions.
+- Context links: CLAUDE.md, docs/_codex/codex_instructions.md, deployment docs, docs/_codex/DEPLOYMENT_NOTES.md, docs/_codex/ISSUES_REGISTER.md.
+- Commands executed (READ-ONLY):
+  - git branch --show-current
+  - sed -n '1,200p' CLAUDE.md
+  - sed -n '1,200p' docs/_codex/codex_instructions.md
+  - ls docs/DEPLOYMENT_GUIDE.md docs/DEPLOYMENT_INSTRUCTIONS.md docs/DEPLOYMENT_SUPABASE_VERCEL.md docs/DEPLOYMENT_STATUS.md docs/WHY_GIT_INTEGRATION_BROKEN.md docs/_codex/DEPLOYMENT_NOTES.md docs/_codex/ISSUES_REGISTER.md
+  - sed -n '1,200p' docs/DEPLOYMENT_GUIDE.md
+  - sed -n '1,200p' docs/DEPLOYMENT_INSTRUCTIONS.md
+  - sed -n '1,200p' docs/DEPLOYMENT_SUPABASE_VERCEL.md
+  - sed -n '1,200p' docs/_codex/DEPLOYMENT_NOTES.md
+  - sed -n '1,200p' docs/_codex/ISSUES_REGISTER.md
+  - git status -sb
+  - ls -d node_modules
+  - npm run check
+  - npm run build
+  - node -e "process.exit(process.env.DATABASE_URL ? 0 : 1)"
+  - rg -n "useQuery\\(|queryKey" client/src
+  - rg -n "apiRequest\\(" client/src
+  - rg -n "api/health" server/routes.ts
+  - sed -n '20,60p' server/routes.ts
+  - sed -n '1,200p' server/index.ts
+  - sed -n '1,200p' server/db.ts
+  - sed -n '1,200p' client/src/lib/queryClient.ts
+  - sed -n '1,120p' client/src/lib/api.ts
+  - git diff --name-only origin/main...HEAD
+  - git log --oneline -n 5
+  - date -u +%Y-%m-%dT%H:%M:%SZ
+- Commands executed (MUTATING):
+  - git checkout fix/deployment-connectivity
+  - apply_patch (docs/_codex/ISSUES_REGISTER.md)
+- Observations & risks:
+  - DATABASE_URL not set; runtime smoke tests skipped.
+  - Deployment status and git integration docs missing under docs/ (noted in ISSUES_REGISTER).
