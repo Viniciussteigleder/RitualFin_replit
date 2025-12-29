@@ -6884,3 +6884,113 @@ const API_BASE = import.meta.env.VITE_API_URL
 4. **Deploy verification**: Don't trust "deployment succeeded" - verify actual behavior
 
 ---
+
+### RESOLUTION - Production Deployment via Vercel CLI (2025-12-29 02:30 UTC)
+
+**Status**: ✅ RESOLVED - Production is live and working
+
+**Final Solution**: Vercel CLI deployment (bypassed broken Git integration)
+
+**Actions Taken**:
+1. Diagnosed Git integration failure (webhooks not firing)
+2. Installed Vercel CLI (v50.1.3)
+3. Created comprehensive deployment guides (7 documents)
+4. User fixed vercel.json (removed invalid config mix)
+5. Deployed via: `vercel --prod --yes`
+6. Smoke test passed: Login working, no 404 errors
+
+**Production Environment**:
+- **Frontend URL**: https://ritual-fin-replit.vercel.app
+- **Backend URL**: https://ritualfin-api.onrender.com
+- **Database**: Supabase Transaction Pooler (aws-1-eu-west-1:6543)
+
+**Environment Variables (Vercel)**:
+```
+VITE_API_URL=https://ritualfin-api.onrender.com
+(No /api suffix, no trailing slash - correct)
+```
+
+**Smoke Test Results**:
+```
+✅ Login request URL: https://ritualfin-api.onrender.com/api/auth/login
+✅ Response status: 200 OK (not 404)
+✅ Authentication: Working
+✅ App navigation: Working
+✅ No CORS errors
+```
+
+**vercel.json Configuration** (fixed by user):
+- Removed invalid config combination
+- Kept SPA rewrites (routes)
+- Kept security headers
+- Build succeeds with current config
+
+**Git Integration Status**:
+- ❌ Still broken (no auto-deploy from GitHub pushes)
+- ✅ CLI deployment works as workaround
+- 📋 TODO: Fix Git integration for auto-deploy (see next steps)
+
+**Commits Deployed**:
+- Latest: 772bfc6 (CLI deployment guides)
+- Contains: c97afd9 (deployment fix trigger)
+- Contains: 547f756 (API base URL resolver - THE FIX)
+
+**Files Created During Debug**:
+1. DEPLOY_NOW.sh - Automated CLI deployment script
+2. DO_THIS_NOW.md - Quick start guide
+3. MANUAL_DEPLOY_GUIDE.md - Comprehensive step-by-step
+4. WHY_GIT_INTEGRATION_BROKEN.md - Root cause analysis
+5. VERCEL_DIAGNOSTIC_REPORT.md - Full diagnostics
+6. DEPLOYMENT_STATUS.md - Verification checklist
+7. VERCEL_CLI_DEPLOY.md - Emergency CLI guide
+
+**Lessons Learned**:
+1. **Vercel Git Integration Can Fail Silently**: No error messages, webhooks just don't work
+2. **CLI Deployment is Reliable Fallback**: Bypasses Git entirely, direct upload
+3. **Build-Time Env Vars Require Fresh Builds**: Cached builds ignore env var changes
+4. **vercel.json Validation is Strict**: Invalid config combinations cause silent failures
+5. **Always Verify in Built Bundle**: Search for expected strings in DevTools Sources
+
+**Time to Resolution**:
+- Issue reported: 2025-12-29 01:00 UTC
+- Initial fix committed: 547f756 (01:45 UTC)
+- Debug started: 02:00 UTC
+- CLI deployment: 02:30 UTC
+- **Total**: ~90 minutes (30 min fix, 60 min deployment debug)
+
+**Success Metrics**:
+- Production deployment: ✅ Working
+- Login flow: ✅ Working
+- API routing: ✅ Correct backend
+- User impact: ✅ Can access application
+- Critical blocker: ✅ RESOLVED
+
+---
+
+### NEXT STEPS - Git Integration Repair
+
+**Immediate** (Optional - not blocking):
+1. Vercel Dashboard → Settings → Git
+2. Disconnect current Git integration
+3. Reconnect to GitHub repository
+4. Re-authorize with full permissions
+5. Verify Production Branch = "main"
+6. Enable auto-deploy for all branches
+7. Test with dummy commit (update README)
+8. Verify auto-deploy triggers
+
+**Future Deployments**:
+- If Git integration fixed: Normal `git push` will auto-deploy
+- If Git integration still broken: Use `vercel --prod` for manual deployments
+
+**Monitoring**:
+- Watch for deployment emails from Vercel after pushes
+- Check Deployments tab after each commit
+- If no auto-deploy after 2 min → Use CLI
+
+**Security Cleanup**:
+- Delete any deploy hook URLs created (they contain auth tokens)
+- GitHub → Settings → Webhooks → Remove manual hooks
+- Rotate Vercel API tokens if exposed
+
+---
