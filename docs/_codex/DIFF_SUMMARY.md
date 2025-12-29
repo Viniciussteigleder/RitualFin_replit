@@ -87,6 +87,11 @@
   - Change: Logged plan amendment, activity, and QA outcomes.
   - Reason: Governance and traceability.
 
+## 2025-12-29T15:28:32Z (UTC)
+- Modified: docs/_codex/CODEX_ACTIVITY_LOG.md, docs/_codex/QA_NOTES.md
+  - Change: Logged branch push and PR creation details.
+  - Reason: Governance and traceability.
+
 ## 2025-12-29T13:49:17Z (UTC)
 - Modified: shared/schema.ts
   - Change: Added `ai_usage_logs` and `notifications` tables and schemas.
