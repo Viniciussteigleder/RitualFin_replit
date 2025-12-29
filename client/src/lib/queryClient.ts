@@ -4,13 +4,20 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
  * Get the base API URL from environment variable or default to same-origin
  * For development: API is on same server (relative URLs)
  * For production split deployment: API is on separate backend server
+ * Robust handling of trailing slashes and /api suffix
  */
 function getApiBaseUrl(): string {
-  return import.meta.env.VITE_API_URL || "";
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (!envUrl) {
+    return ""; // Development: use relative URLs
+  }
+  // Production: remove trailing slash for consistent URL building
+  return envUrl.replace(/\/+$/, "");
 }
 
 /**
  * Construct full API URL from relative path
+ * Handles both absolute URLs and relative paths correctly
  */
 function getApiUrl(path: string): string {
   const base = getApiBaseUrl();
