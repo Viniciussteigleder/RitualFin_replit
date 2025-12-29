@@ -680,7 +680,13 @@ function splitCSVLines(csvContent: string): string[] {
 }
 
 export function parseCSV(csvContent: string): ParseResult {
-  const allLines = splitCSVLines(csvContent);
+  // Remove UTF-8 BOM (Byte Order Mark) if present
+  // BOM is \uFEFF character often added by German banking CSV exports
+  const cleanedContent = csvContent.charCodeAt(0) === 0xFEFF
+    ? csvContent.slice(1)
+    : csvContent;
+
+  const allLines = splitCSVLines(cleanedContent);
   const lines = allLines.filter(line => line.trim() !== "");
 
   if (lines.length === 0) {
