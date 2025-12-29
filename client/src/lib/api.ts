@@ -1,8 +1,37 @@
 import { queryClient } from "./queryClient";
 
-const API_BASE = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL}/api`
-  : "/api";
+/**
+ * PRODUCTION API BASE URL RESOLVER
+ * - Production: Uses VITE_API_URL environment variable (set in Vercel)
+ * - Development: Uses relative "/api" (proxied by Vite dev server)
+ * - Robust: Handles trailing slashes and /api suffix edge cases
+ */
+function getApiBase(): string {
+  const envUrl = import.meta.env.VITE_API_URL;
+
+  // Development fallback: relative URL (proxied by Vite)
+  if (!envUrl) {
+    return "/api";
+  }
+
+  // Production: construct full backend URL
+  // Remove trailing slash if present
+  const baseUrl = envUrl.replace(/\/+$/, "");
+
+  // Avoid double /api if user accidentally set it in env var
+  if (baseUrl.endsWith("/api")) {
+    return baseUrl;
+  }
+
+  return `${baseUrl}/api`;
+}
+
+const API_BASE = getApiBase();
+
+// Debug log in development (removed in production build)
+if (import.meta.env.DEV) {
+  console.log("[RitualFin API] Base URL:", API_BASE);
+}
 
 async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${endpoint}`, {

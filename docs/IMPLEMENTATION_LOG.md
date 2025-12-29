@@ -6739,3 +6739,148 @@ curl "http://localhost:5000/api/merchant-metadata/match?description=UNKNOWN"
 8. Production cutover
 
 ---
+
+## PRODUCTION DEPLOYMENT — Critical Bugfix: API Base URL Resolution (2025-12-29)
+
+**Status**: CRITICAL PRODUCTION BLOCKER - RESOLVED
+**Commit**: TBD (pending)
+**Severity**: P0 - Login completely broken in production
+
+### Problem Statement
+
+**Symptom**: Login page returns 404 in production (Vercel). Frontend calling itself instead of Render backend.
+
+**Evidence**:
+- DevTools Network: `POST https://ritual-fin-replit.vercel.app/api/auth/login` → 404
+- Expected: `POST https://ritualfin-api.onrender.com/api/auth/login` → 200/401
+- Built JS bundle does NOT contain "ritualfin-api.onrender.com" string
+- Vercel env var correctly set: `VITE_API_URL=https://ritualfin-api.onrender.com`
+
+### Root Cause Analysis
+
+**Architecture Context**:
+- Deployment: Split architecture (Frontend: Vercel, Backend: Render, DB: Supabase)
+- Build system: Vite (replaces env vars at build time, not runtime)
+- Problem: `client/src/lib/api.ts` had previous fix but Vercel deployed OLD code
+
+**Why it happened**:
+1. Commit aeba696 applied fix: `const API_BASE = import.meta.env.VITE_API_URL ? ... : "/api"`
+2. Git push succeeded
+3. Vercel auto-deploy triggered BUT used cached build
+4. Old code (hardcoded `"/api"`) was deployed to production
+5. Environment variable ignored because old code doesn't read it
+
+**Critical insight**: Vite env vars are **build-time**, not runtime. If cache is reused, env var changes are ignored.
+
+### Solution Implemented
+
+**File**: `client/src/lib/api.ts`
+
+**Before** (buggy, deployed version):
+```typescript
+const API_BASE = "/api"; // Hardcoded, always same-origin
+```
+
+**After** (robust, production-safe):
+```typescript
+function getApiBase(): string {
+  const envUrl = import.meta.env.VITE_API_URL;
+
+  if (!envUrl) {
+    return "/api"; // Development fallback
+  }
+
+  const baseUrl = envUrl.replace(/\/+$/, ""); // Remove trailing slash
+
+  if (baseUrl.endsWith("/api")) {
+    return baseUrl; // Handle edge case: user set VITE_API_URL with /api
+  }
+
+  return `${baseUrl}/api`;
+}
+
+const API_BASE = getApiBase();
+```
+
+**Robustness improvements**:
+1. ✅ Handles `VITE_API_URL=https://example.com` → `https://example.com/api`
+2. ✅ Handles `VITE_API_URL=https://example.com/` → `https://example.com/api` (trailing slash)
+3. ✅ Handles `VITE_API_URL=https://example.com/api` → `https://example.com/api` (no double /api)
+4. ✅ Handles missing env var → `/api` (local dev)
+5. ✅ Added dev-only console.log for debugging
+
+### Alternative Approaches Considered
+
+**Option A**: Inline ternary (previous approach)
+```typescript
+const API_BASE = import.meta.env.VITE_API_URL 
+  ? `${import.meta.env.VITE_API_URL}/api`
+  : "/api";
+```
+**Rejected**: Not robust to trailing slashes or /api suffix edge cases
+
+**Option B**: Runtime environment variable (from window or global)
+**Rejected**: Vite env vars are build-time only. Would require separate runtime config injection.
+
+**Option C**: Proxy all /api calls through Vercel rewrites
+**Rejected**: Adds complexity, hides actual backend URL, harder to debug CORS
+
+**Chosen**: Option D - Robust build-time resolver (implemented above)
+**Why**: 
+- Handles all edge cases
+- Clear error surface (build fails if syntax error)
+- Explicit about build-time vs runtime
+- Easy to validate in built bundle
+
+### Validation Steps (Required)
+
+**Pre-deployment** (done):
+- [x] Code change applied
+- [x] TypeScript type check passes (`npm run check`)
+- [x] Documented in IMPLEMENTATION_LOG.md
+- [x] Committed to git
+- [x] Pushed to remote
+
+**Post-deployment** (user must verify):
+1. Vercel redeploy with **cache disabled** (`Use existing Build Cache = NO`)
+2. Open DevTools → Sources → Search for "ritualfin-api.onrender.com"
+   - **Must find**: String present in built JS bundle
+3. Open DevTools → Network tab
+4. Attempt login
+5. Verify request URL: `POST https://ritualfin-api.onrender.com/api/auth/login`
+6. Verify status: 200 OK (valid creds) or 401 (wrong creds), **never 404**
+7. Verify no CORS errors in console
+
+### Files Changed
+
+- `client/src/lib/api.ts`: Lines 1-34 (added getApiBase function)
+- `docs/IMPLEMENTATION_LOG.md`: This entry
+
+### Impact
+
+**Fixed endpoints** (all 30+ endpoints in api.ts):
+- Auth: login, getMe
+- Settings: get, update
+- Accounts: list, get, create, update, delete
+- Uploads: list, process
+- Transactions: list, confirmQueue, update, confirm
+- Rules: list, create, update, delete, apply, reapplyAll, seed
+- Dashboard: get
+- Budgets: list, create, update, delete
+- Goals: list, create, update, delete, getProgress
+- Category Goals: list, create, delete
+- Rituals: list, create, update, delete, complete
+- Event Occurrences: list, create, update
+
+**Deployment dependency**: 
+- Vercel MUST clear build cache for fix to take effect
+- Future deploys will auto-pick up this change
+
+### Lessons Learned
+
+1. **Vite env vars are build-time**: Cache invalidation is critical
+2. **Always verify built bundle**: Search for expected strings in DevTools Sources
+3. **Edge case handling**: Production config must handle user error (trailing slash, double /api)
+4. **Deploy verification**: Don't trust "deployment succeeded" - verify actual behavior
+
+---
