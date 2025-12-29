@@ -8,7 +8,7 @@
 ## Prerequisites
 
 ✅ Completed:
-- Supabase project created (rmbcplfvucvukiekvtxb, eu-west-1)
+- Supabase project created (project-ref: YOUR_PROJECT, region: eu-west-1)
 - Database schema applied (16 tables)
 - Codebase configured for split deployment
 - CORS enabled for cross-origin requests
@@ -57,8 +57,8 @@
 In Render dashboard → Environment, add:
 
 ```bash
-# Database
-DATABASE_URL=postgresql://postgres.rmbcplfvucvukiekvtxb:XUUZnhU0IOKp1uVn@aws-1-eu-west-1.pooler.supabase.com:6543/postgres
+# Database (get from Supabase Dashboard → Settings → Database → Connection String)
+DATABASE_URL=postgresql://postgres.YOUR_PROJECT_REF:YOUR_PASSWORD@aws-X-REGION.pooler.supabase.com:6543/postgres
 
 # CORS (add your Vercel URL after deployment)
 CORS_ORIGIN=https://YOUR-VERCEL-URL.vercel.app
@@ -112,8 +112,8 @@ In Vercel dashboard → Settings → Environment Variables, add:
 VITE_API_URL=https://YOUR-BACKEND-URL.onrender.com
 
 # Supabase (Optional - for future Supabase Auth integration)
-# NEXT_PUBLIC_SUPABASE_URL=https://rmbcplfvucvukiekvtxb.supabase.co
-# NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=sb_publishable_wnknwKk9-a4BuuJHurW6pQ_vxGeTvB_
+# NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+# NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_ANON_KEY
 ```
 
 ### 2.4 Deploy
