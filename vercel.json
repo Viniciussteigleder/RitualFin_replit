@@ -5,6 +5,7 @@
   "framework": null,
   "installCommand": "npm install",
   "devCommand": null,
+  "cleanUrls": true,
   "routes": [
     {
       "handle": "filesystem"
