@@ -8,6 +8,7 @@ export interface RuleMatch {
   fixVar: "Fixo" | "Variável";
   category1: string;
   category2?: string;
+  category3?: string;
   priority: number;
   strict: boolean;
   isSystem: boolean;
@@ -31,7 +32,17 @@ function normalizeForMatch(text: string): string {
     .trim();
 }
 
-export function matchRules(descNorm: string, rules: Rule[]): CategorizationResult {
+export interface UserSettings {
+  autoConfirmHighConfidence?: boolean;
+  confidenceThreshold?: number;
+}
+
+export function matchRules(descNorm: string, rules: Rule[], settings: UserSettings = {}): CategorizationResult {
+  const {
+    autoConfirmHighConfidence = false,
+    confidenceThreshold = 80
+  } = settings;
+
   const haystack = normalizeForMatch(descNorm);
   const matches: RuleMatch[] = [];
 
@@ -52,6 +63,7 @@ export function matchRules(descNorm: string, rules: Rule[]): CategorizationResul
         fixVar: rule.fixVar,
         category1: rule.category1,
         category2: rule.category2 || undefined,
+        category3: rule.category3 || undefined,
         priority: rule.priority || 500,
         strict: rule.strict || false,
         isSystem: rule.isSystem || false,
@@ -84,26 +96,30 @@ export function matchRules(descNorm: string, rules: Rule[]): CategorizationResul
   if (matches.length === 1) {
     const match = matches[0];
     const confidence = calculateConfidence(match);
-    const autoApply = confidence >= 80;
-    
+    const meetsThreshold = confidence >= confidenceThreshold;
+    const autoApply = autoConfirmHighConfidence && meetsThreshold;
+
     return {
       needsReview: !autoApply,
       matches,
       appliedRule: match,
       confidence,
-      reason: autoApply 
+      reason: autoApply
         ? `Alta confianca (${confidence}%) - aplicado automaticamente`
-        : `Confianca media (${confidence}%) - revisar`
+        : meetsThreshold
+          ? `Alta confianca (${confidence}%) - revisar (auto-confirm desativado)`
+          : `Confianca media (${confidence}%) - revisar`
     };
   }
 
   const topMatches = matches.filter(m => m.priority === matches[0].priority);
-  
+
   if (topMatches.length === 1) {
     const match = topMatches[0];
     const confidence = Math.min(calculateConfidence(match) - 10, 85);
-    const autoApply = confidence >= 80;
-    
+    const meetsThreshold = confidence >= confidenceThreshold;
+    const autoApply = autoConfirmHighConfidence && meetsThreshold;
+
     return {
       needsReview: !autoApply,
       matches,
@@ -111,7 +127,9 @@ export function matchRules(descNorm: string, rules: Rule[]): CategorizationResul
       confidence,
       reason: autoApply
         ? `Multiplas regras mas prioridade clara (${confidence}%)`
-        : `Multiplas regras (${confidence}%) - revisar`
+        : meetsThreshold
+          ? `Alta confianca (${confidence}%) - revisar (auto-confirm desativado)`
+          : `Multiplas regras (${confidence}%) - revisar`
     };
   }
 
@@ -138,10 +156,11 @@ function calculateConfidence(match: RuleMatch): number {
 }
 
 export function categorizeTransaction(
-  descNorm: string, 
-  rules: Rule[]
+  descNorm: string,
+  rules: Rule[],
+  settings: UserSettings = {}
 ): Partial<Transaction> & { confidence?: number } {
-  const result = matchRules(descNorm, rules);
+  const result = matchRules(descNorm, rules, settings);
   
   if (result.appliedRule && !result.needsReview) {
     const rule = result.appliedRule;
@@ -152,6 +171,7 @@ export function categorizeTransaction(
       fixVar: rule.fixVar,
       category1: rule.category1 as any,
       category2: rule.category2,
+      category3: rule.category3,
       needsReview: false,
       ruleIdApplied: rule.ruleId,
       internalTransfer: isInterno,
@@ -163,12 +183,13 @@ export function categorizeTransaction(
   if (result.appliedRule && result.needsReview) {
     const rule = result.appliedRule;
     const isInterno = rule.category1 === "Interno";
-    
+
     return {
       type: rule.type,
       fixVar: rule.fixVar,
       category1: rule.category1 as any,
       category2: rule.category2,
+      category3: rule.category3,
       needsReview: true,
       ruleIdApplied: rule.ruleId,
       internalTransfer: isInterno,

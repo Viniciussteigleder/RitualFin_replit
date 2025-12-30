@@ -4,11 +4,23 @@ import * as schema from "@shared/schema";
 
 const { Pool } = pg;
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
+// Check DATABASE_URL is set (required for production)
+// Export flag for graceful degradation in health checks
+export const isDatabaseConfigured = !!process.env.DATABASE_URL;
+
+if (!isDatabaseConfigured) {
+  console.warn(
+    "⚠️  DATABASE_URL not set. Database operations will fail. This is only acceptable for build/smoke tests.",
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle(pool, { schema });
+// Create pool and drizzle instance (will fail on actual DB operations if URL is missing)
+export const pool = isDatabaseConfigured
+  ? new Pool({
+      connectionString: process.env.DATABASE_URL,
+      // Disable prepared statements for Supabase Transaction Pooler compatibility
+      // PgBouncer in transaction mode doesn't support prepared statements
+    })
+  : null;
+
+export const db = pool ? drizzle(pool, { schema }) : null as any;

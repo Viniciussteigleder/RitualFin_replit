@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { OnboardingModal } from "@/components/onboarding-modal";
 import { 
   Wallet,
   TrendingUp,
@@ -42,10 +43,12 @@ import {
 import { format, subMonths, startOfMonth, endOfMonth, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
-import { dashboardApi, transactionsApi } from "@/lib/api";
+import { dashboardApi, transactionsApi, accountsApi } from "@/lib/api";
 import { Link } from "wouter";
 import { useMonth } from "@/lib/month-context";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState } from "react";
 
 const CATEGORY_ICONS: Record<string, any> = {
   "Moradia": Home,
@@ -97,6 +100,12 @@ interface Insight {
 
 export default function DashboardPage() {
   const { month, formatMonth } = useMonth();
+  const [accountFilter, setAccountFilter] = useState<string>("all");
+
+  const { data: accounts = [] } = useQuery({
+    queryKey: ["accounts"],
+    queryFn: accountsApi.list,
+  });
 
   const { data: dashboard, isLoading: dashboardLoading } = useQuery({
     queryKey: ["dashboard", month],
@@ -134,7 +143,13 @@ export default function DashboardPage() {
   });
 
   const pendingCount = confirmQueue.length;
-  const recentTransactions = transactions.slice(0, 5);
+
+  // Filter transactions by account
+  const filteredTransactions = accountFilter === "all"
+    ? transactions
+    : transactions.filter((t: any) => t.accountId === accountFilter);
+
+  const recentTransactions = filteredTransactions.slice(0, 5);
 
   const estimatedIncome = 8500;
   const spent = dashboard?.totalSpent || 0;
@@ -224,14 +239,31 @@ export default function DashboardPage() {
   }
 
   return (
-    <AppLayout>
-      <div className="space-y-6">
+    <>
+      <OnboardingModal />
+      <AppLayout>
+        <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground">Seu Mês em Foco</h1>
             <p className="text-muted-foreground">
               Uma visão clara do seu orçamento. Sempre atualizada.
             </p>
+          </div>
+          <div className="w-full md:w-64">
+            <Select value={accountFilter} onValueChange={setAccountFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Todas as contas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as contas</SelectItem>
+                {accounts.filter((a: any) => a.isActive).map((account: any) => (
+                  <SelectItem key={account.id} value={account.id}>
+                    {account.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -531,7 +563,7 @@ export default function DashboardPage() {
                     <Sparkles className="h-6 w-6 text-amber-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-amber-900">Lazy Mode Ativo</h3>
+                    <h3 className="font-semibold text-amber-900">Categorização Inteligente</h3>
                     <p className="text-sm text-amber-700/80 mt-0.5">
                       {pendingCount} transação(ões) aguardando sua confirmação. A IA já pré-analisou cada uma.
                     </p>
@@ -548,5 +580,6 @@ export default function DashboardPage() {
         )}
       </div>
     </AppLayout>
+    </>
   );
 }

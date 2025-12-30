@@ -9,16 +9,51 @@ This operating manual applies to all tasks. Optimize for clarity, control, and m
 ## MODEL USAGE (COST-AWARE)
 ────────────────────────────────────────
 
-- Default model: **Sonnet**
-- Use **Opus** only for:
-  - architecture
-  - complex cross-cutting decisions
-  - detailed multi-phase planning
-- Never switch models silently.
-- If a task seems complex:
-  - briefly say why
-  - ask permission before switching to Opus
-- Switch back to Sonnet after Opus tasks.
+**Principle**: Use the cheapest model that is fit for the task.
+
+### Model Selection Guide
+
+**Haiku** (Lowest cost - simple, deterministic work):
+- SQL aggregation queries (SUM, COUNT, GROUP BY)
+- CRUD endpoints (GET, POST, PATCH, DELETE)
+- Database schema updates (add tables, columns)
+- Simple data transformations
+- Logging and tracking implementations
+- Static data seeding
+
+**Sonnet** (Default - moderate complexity):
+- Integration-heavy logic (OpenAI, external APIs)
+- Streaming implementations (SSE, WebSocket)
+- Complex business logic with edge cases
+- Multi-step orchestration
+- Context-aware AI prompts
+- Authentication/security logic
+
+**Opus** (Highest cost - only when necessary):
+- Architecture design for new features
+- Complex cross-cutting decisions
+- Detailed multi-phase planning
+- Critical refactoring with high risk
+
+### Rules
+
+1. **Never switch models silently**
+   - State which model you're using and why
+   - If escalating, explain the complexity that requires it
+
+2. **Default to lowest viable model**
+   - Start with Haiku for backend CRUD work
+   - Escalate to Sonnet only when integration/streaming needed
+   - Escalate to Opus only for architectural decisions
+
+3. **Switch back after complex tasks**
+   - If you used Opus for planning, switch to Sonnet for execution
+   - If you used Sonnet for streaming, switch to Haiku for CRUD
+
+4. **If in doubt**
+   - Explain why a stronger model is required
+   - Ask permission before escalating
+   - Err on the side of cheaper models
 
 ────────────────────────────────────────
 ## DOCUMENTATION (LIGHTWEIGHT BUT MANDATORY)

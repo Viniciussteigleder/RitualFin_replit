@@ -12,11 +12,12 @@ import {
   ChevronRight,
   BookOpen,
   Sparkles,
-  TrendingUp,
   Calendar,
   Target,
   Brain,
-  Wallet
+  Wallet,
+  Receipt,
+  Bell
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -25,61 +26,109 @@ import { transactionsApi } from "@/lib/api";
 import { useMonth } from "@/lib/month-context";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-const NAV_ITEMS = [
-  { 
-    label: "Dashboard", 
-    icon: LayoutDashboard, 
-    href: "/dashboard",
-    description: "Visão geral do mês"
-  },
-  { 
-    label: "Calendário", 
-    icon: Calendar, 
-    href: "/calendar",
-    description: "Eventos e compromissos"
+const NAV_CLUSTERS = [
+  {
+    label: "Visão Geral",
+    items: [
+      {
+        label: "Dashboard",
+        icon: LayoutDashboard,
+        href: "/dashboard",
+        description: "Visão geral do mês"
+      },
+      {
+        label: "Calendário",
+        icon: Calendar,
+        href: "/calendar",
+        description: "Eventos e compromissos"
+      },
+      {
+        label: "Notificações",
+        icon: Bell,
+        href: "/notifications",
+        description: "Alertas e mensagens"
+      },
+    ]
   },
   {
-    label: "Metas",
-    icon: Target,
-    href: "/goals",
-    description: "Planejamento financeiro"
+    label: "Planejamento",
+    items: [
+      {
+        label: "Orçamentos",
+        icon: Wallet,
+        href: "/budgets",
+        description: "Limites por categoria"
+      },
+      {
+        label: "Metas",
+        icon: Target,
+        href: "/goals",
+        description: "Planejamento financeiro"
+      },
+    ]
   },
   {
-    label: "Orçamentos",
-    icon: Wallet,
-    href: "/budgets",
-    description: "Limites por categoria"
+    label: "Ações",
+    items: [
+      {
+        label: "Confirmar",
+        icon: CheckCircle2,
+        href: "/confirm",
+        showBadge: true,
+        description: "Transações pendentes"
+      },
+      {
+        label: "Transações",
+        icon: Receipt,
+        href: "/transactions",
+        description: "Histórico completo"
+      },
+    ]
   },
   {
-    label: "Rituais",
-    icon: Sparkles,
-    href: "/rituals",
-    description: "Revisão semanal e mensal"
+    label: "Automação",
+    items: [
+      {
+        label: "Regras",
+        icon: BookOpen,
+        href: "/rules",
+        description: "Categorização automática"
+      },
+      {
+        label: "IA Keywords",
+        icon: Brain,
+        href: "/ai-keywords",
+        description: "Análise inteligente em lote"
+      },
+    ]
   },
-  { 
-    label: "Uploads", 
-    icon: Upload, 
-    href: "/uploads",
-    description: "Importar CSV"
+  {
+    label: "Operações",
+    items: [
+      {
+        label: "Uploads",
+        icon: Upload,
+        href: "/uploads",
+        description: "Importar CSV"
+      },
+      {
+        label: "Contas",
+        icon: Wallet,
+        href: "/accounts",
+        description: "Gerenciar cartões e contas"
+      },
+    ]
   },
-  { 
-    label: "Confirmar", 
-    icon: CheckCircle2, 
-    href: "/confirm", 
-    showBadge: true,
-    description: "Transações pendentes"
-  },
-  { 
-    label: "Regras", 
-    icon: BookOpen, 
-    href: "/rules",
-    description: "Categorização automática"
-  },
-  { 
-    label: "IA Keywords", 
-    icon: Brain, 
-    href: "/ai-keywords",
-    description: "Análise inteligente em lote"
+  {
+    label: "Colaboração",
+    items: [
+      {
+        label: "Rituais",
+        icon: Sparkles,
+        href: "/rituals",
+        description: "Revisão semanal e mensal"
+      },
+    ]
   },
 ];
 
@@ -95,7 +144,6 @@ export function Sidebar() {
   });
 
   const pendingCount = confirmQueue.length;
-  const highConfidenceCount = confirmQueue.filter((t: any) => (t.confidence || 0) >= 80).length;
 
   const prevMonth = () => {
     const [year, m] = month.split("-").map(Number);
@@ -196,85 +244,79 @@ export function Sidebar() {
           </div>
         )}
 
-        <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
-          {NAV_ITEMS.map((item) => {
-            const isActive = location === item.href;
-            const badge = item.showBadge && pendingCount > 0 ? pendingCount : null;
-            
-            const NavLink = (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setIsOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group relative",
-                  isActive 
-                    ? "bg-primary text-white shadow-lg shadow-primary/30" 
-                    : "text-white/70 hover:bg-white/10 hover:text-white"
-                )}
-                data-testid={`nav-${item.label.toLowerCase()}`}
-              >
-                <item.icon className={cn(
-                  "h-5 w-5 transition-colors",
-                  isActive ? "text-white" : "text-white/60 group-hover:text-white"
-                )} />
-                {!isCollapsed && (
-                  <>
-                    <span className="flex-1">{item.label}</span>
-                    {badge && (
-                      <span className={cn(
-                        "text-[10px] font-bold px-2 py-0.5 rounded-full",
-                        isActive 
-                          ? "bg-white/20 text-white" 
-                          : "bg-amber-500/20 text-amber-400"
-                      )}>
-                        {badge > 99 ? "99+" : badge}
-                      </span>
-                    )}
-                  </>
-                )}
-                {isCollapsed && badge && (
-                  <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                    {badge > 9 ? "9+" : badge}
+        <nav className="flex-1 py-4 px-3 overflow-y-auto">
+          {NAV_CLUSTERS.map((cluster, clusterIdx) => (
+            <div key={cluster.label} className={clusterIdx > 0 ? "mt-6" : ""}>
+              {!isCollapsed && (
+                <div className="px-3 mb-2">
+                  <span className="text-[10px] uppercase tracking-wider text-white/40 font-bold">
+                    {cluster.label}
                   </span>
-                )}
-              </Link>
-            );
+                </div>
+              )}
+              <div className="space-y-1">
+                {cluster.items.map((item) => {
+                  const isActive = location === item.href;
+                  const badge = item.showBadge && pendingCount > 0 ? pendingCount : null;
 
-            if (isCollapsed) {
-              return (
-                <Tooltip key={item.href} delayDuration={0}>
-                  <TooltipTrigger asChild>{NavLink}</TooltipTrigger>
-                  <TooltipContent side="right" className="font-medium">
-                    {item.label}
-                    {badge && <span className="ml-2 text-amber-500">({badge})</span>}
-                  </TooltipContent>
-                </Tooltip>
-              );
-            }
+                  const NavLink = (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setIsOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group relative",
+                        isActive
+                          ? "bg-primary text-white shadow-lg shadow-primary/30"
+                          : "text-white/70 hover:bg-white/10 hover:text-white"
+                      )}
+                      data-testid={`nav-${item.label.toLowerCase()}`}
+                    >
+                      <item.icon className={cn(
+                        "h-5 w-5 transition-colors",
+                        isActive ? "text-white" : "text-white/60 group-hover:text-white"
+                      )} />
+                      {!isCollapsed && (
+                        <>
+                          <span className="flex-1">{item.label}</span>
+                          {badge && (
+                            <span className={cn(
+                              "text-[10px] font-bold px-2 py-0.5 rounded-full",
+                              isActive
+                                ? "bg-white/20 text-white"
+                                : "bg-amber-500/20 text-amber-400"
+                            )}>
+                              {badge > 99 ? "99+" : badge}
+                            </span>
+                          )}
+                        </>
+                      )}
+                      {isCollapsed && badge && (
+                        <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                          {badge > 9 ? "9+" : badge}
+                        </span>
+                      )}
+                    </Link>
+                  );
 
-            return NavLink;
-          })}
-        </nav>
-
-        {!isCollapsed && pendingCount > 0 && (
-          <div className="mx-3 mb-4 p-3 bg-gradient-to-r from-amber-500/20 to-orange-500/20 rounded-xl border border-amber-500/30">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0">
-                <TrendingUp className="h-4 w-4 text-amber-400" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-amber-400">Lazy Mode</p>
-                <p className="text-[11px] text-white/60 mt-0.5">
-                  {highConfidenceCount > 0 
-                    ? `${highConfidenceCount} com alta confianca`
-                    : `${pendingCount} aguardando revisao`
+                  if (isCollapsed) {
+                    return (
+                      <Tooltip key={item.href} delayDuration={0}>
+                        <TooltipTrigger asChild>{NavLink}</TooltipTrigger>
+                        <TooltipContent side="right" className="font-medium">
+                          {item.label}
+                          {badge && <span className="ml-2 text-amber-500">({badge})</span>}
+                        </TooltipContent>
+                      </Tooltip>
+                    );
                   }
-                </p>
+
+                  return NavLink;
+                })}
               </div>
             </div>
-          </div>
-        )}
+          ))}
+        </nav>
 
         <div className="p-3 border-t border-white/10 space-y-1">
           {isCollapsed ? (

@@ -632,8 +632,61 @@ function parseSparkasse(lines: string[]): ParseResult {
   };
 }
 
+/**
+ * Split CSV content into lines, respecting quoted fields that may contain newlines.
+ * This is critical for Amex CSVs which have multi-line address fields.
+ */
+function splitCSVLines(csvContent: string): string[] {
+  const lines: string[] = [];
+  let currentLine = "";
+  let inQuotes = false;
+  let i = 0;
+
+  while (i < csvContent.length) {
+    const char = csvContent[i];
+    const nextChar = i + 1 < csvContent.length ? csvContent[i + 1] : "";
+
+    if (char === '"') {
+      // Handle escaped quotes ("")
+      if (inQuotes && nextChar === '"') {
+        currentLine += '""';
+        i += 2;
+        continue;
+      }
+      // Toggle quote state
+      inQuotes = !inQuotes;
+      currentLine += char;
+    } else if ((char === '\n' || (char === '\r' && nextChar === '\n')) && !inQuotes) {
+      // End of line (not inside quotes)
+      if (currentLine.trim() !== "") {
+        lines.push(currentLine);
+      }
+      currentLine = "";
+      // Skip \r\n together
+      i += (char === '\r' && nextChar === '\n') ? 2 : 1;
+      continue;
+    } else {
+      currentLine += char;
+    }
+    i++;
+  }
+
+  // Push last line if exists
+  if (currentLine.trim() !== "") {
+    lines.push(currentLine);
+  }
+
+  return lines;
+}
+
 export function parseCSV(csvContent: string): ParseResult {
-  const allLines = csvContent.split(/\r?\n/);
+  // Remove UTF-8 BOM (Byte Order Mark) if present
+  // BOM is \uFEFF character often added by German banking CSV exports
+  const cleanedContent = csvContent.charCodeAt(0) === 0xFEFF
+    ? csvContent.slice(1)
+    : csvContent;
+
+  const allLines = splitCSVLines(cleanedContent);
   const lines = allLines.filter(line => line.trim() !== "");
 
   if (lines.length === 0) {

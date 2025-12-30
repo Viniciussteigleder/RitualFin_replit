@@ -17,6 +17,9 @@ import GoalsPage from "@/pages/goals";
 import RitualsPage from "@/pages/rituals";
 import BudgetsPage from "@/pages/budgets";
 import AIKeywordsPage from "@/pages/ai-keywords";
+import AccountsPage from "@/pages/accounts";
+import TransactionsPage from "@/pages/transactions";
+import NotificationsPage from "@/pages/notifications";
 
 function Router() {
   return (
@@ -24,6 +27,7 @@ function Router() {
       <Route path="/" component={LoginPage} />
       <Route path="/login" component={LoginPage} />
       <Route path="/dashboard" component={DashboardPage} />
+      <Route path="/notifications" component={NotificationsPage} />
       <Route path="/calendar" component={CalendarPage} />
       <Route path="/calendar/:id" component={EventDetailPage} />
       <Route path="/goals" component={GoalsPage} />
@@ -31,7 +35,9 @@ function Router() {
       <Route path="/rituals" component={RitualsPage} />
       <Route path="/uploads" component={UploadsPage} />
       <Route path="/confirm" component={ConfirmPage} />
+      <Route path="/transactions" component={TransactionsPage} />
       <Route path="/rules" component={RulesPage} />
+      <Route path="/accounts" component={AccountsPage} />
       <Route path="/ai-keywords" component={AIKeywordsPage} />
       <Route path="/settings" component={SettingsPage} />
       <Route component={NotFound} />

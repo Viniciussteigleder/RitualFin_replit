@@ -1,6 +1,37 @@
 import { queryClient } from "./queryClient";
 
-const API_BASE = "/api";
+/**
+ * PRODUCTION API BASE URL RESOLVER
+ * - Production: Uses VITE_API_URL environment variable (set in Vercel)
+ * - Development: Uses relative "/api" (proxied by Vite dev server)
+ * - Robust: Handles trailing slashes and /api suffix edge cases
+ */
+function getApiBase(): string {
+  const envUrl = import.meta.env.VITE_API_URL;
+
+  // Development fallback: relative URL (proxied by Vite)
+  if (!envUrl) {
+    return "/api";
+  }
+
+  // Production: construct full backend URL
+  // Remove trailing slash if present
+  const baseUrl = envUrl.replace(/\/+$/, "");
+
+  // Avoid double /api if user accidentally set it in env var
+  if (baseUrl.endsWith("/api")) {
+    return baseUrl;
+  }
+
+  return `${baseUrl}/api`;
+}
+
+const API_BASE = getApiBase();
+
+// Debug log in development (removed in production build)
+if (import.meta.env.DEV) {
+  console.log("[RitualFin API] Base URL:", API_BASE);
+}
 
 async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${endpoint}`, {
@@ -26,6 +57,43 @@ export const authApi = {
       body: JSON.stringify({ username, password }),
     }),
   getMe: () => fetchApi<{ id: string; username: string }>("/auth/me"),
+};
+
+// Settings
+export const settingsApi = {
+  get: () => fetchApi<{
+    id: string;
+    userId: string;
+    autoConfirmHighConfidence: boolean;
+    confidenceThreshold: number;
+    createdAt: string;
+    updatedAt: string;
+  }>("/settings"),
+  update: (data: { autoConfirmHighConfidence?: boolean; confidenceThreshold?: number }) =>
+    fetchApi<any>("/settings", {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+};
+
+// Accounts
+export const accountsApi = {
+  list: () => fetchApi<any[]>("/accounts"),
+  get: (id: string) => fetchApi<any>(`/accounts/${id}`),
+  create: (data: any) =>
+    fetchApi<any>("/accounts", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  update: (id: string, data: any) =>
+    fetchApi<any>(`/accounts/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    fetchApi<void>(`/accounts/${id}`, {
+      method: "DELETE",
+    }),
 };
 
 // Uploads

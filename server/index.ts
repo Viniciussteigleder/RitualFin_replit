@@ -1,10 +1,25 @@
 import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 
 const app = express();
 const httpServer = createServer(app);
+
+// Configure CORS for split deployment (Vercel frontend + separate backend)
+const corsOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",").map(origin => origin.trim())
+  : ["http://localhost:5000", "http://localhost:5173"]; // Default: local development
+
+app.use(
+  cors({
+    origin: corsOrigins,
+    credentials: true, // Allow cookies for authentication
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 declare module "http" {
   interface IncomingMessage {

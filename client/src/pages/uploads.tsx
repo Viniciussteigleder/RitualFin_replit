@@ -11,6 +11,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Link } from "wouter";
+import { BankBadge } from "@/components/bank-badge";
+import { detectBankProvider } from "@/lib/bank-logos";
+import { UploadHistorySkeleton } from "@/components/skeletons/upload-history-skeleton";
 
 export default function UploadsPage() {
   const queryClient = useQueryClient();
@@ -101,15 +104,15 @@ export default function UploadsPage() {
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-2xl font-bold">Centro de Importacao</h1>
-              <Badge variant="secondary" className="bg-primary/10 text-primary text-xs">
-                Miles & More
-              </Badge>
-            </div>
+            <h1 className="text-2xl font-bold">Centro de Importacao</h1>
             <p className="text-muted-foreground">
               Importe seus extratos CSV para categorizar transacoes automaticamente.
             </p>
+            <div className="flex flex-wrap gap-2 mt-2">
+              <BankBadge provider="miles_and_more" size="sm" variant="compact" />
+              <BankBadge provider="amex" size="sm" variant="compact" />
+              <BankBadge provider="sparkasse" size="sm" variant="compact" />
+            </div>
           </div>
         </div>
 
@@ -221,7 +224,7 @@ export default function UploadsPage() {
                   Selecionar Arquivo
                 </Button>
                 <p className="text-xs text-muted-foreground mt-4">
-                  Formatos aceitos: CSV do Miles & More. Limite de 10MB.
+                  Formatos aceitos: Miles & More, American Express, Sparkasse. Limite de 10MB.
                 </p>
               </>
             )}
@@ -235,11 +238,9 @@ export default function UploadsPage() {
               <h2 className="text-lg font-semibold">Historico de Importacoes</h2>
             </div>
           </div>
-          
+
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
+            <UploadHistorySkeleton count={4} />
           ) : uploads.length === 0 ? (
             <Card className="bg-white border-0 shadow-sm">
               <CardContent className="text-center py-16">
@@ -262,21 +263,12 @@ export default function UploadsPage() {
                 >
                   <CardContent className="p-4">
                     <div className="flex items-center gap-4">
-                      <div className={cn(
-                        "w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0",
-                        upload.status === 'ready' ? "bg-primary/10" :
-                        upload.status === 'error' ? "bg-rose-100" :
-                        upload.status === 'duplicate' ? "bg-amber-100" : "bg-muted"
-                      )}>
-                        {upload.status === 'ready' && <CheckCircle2 className="h-6 w-6 text-primary" />}
-                        {upload.status === 'processing' && <Loader2 className="h-6 w-6 text-muted-foreground animate-spin" />}
-                        {upload.status === 'error' && <XCircle className="h-6 w-6 text-rose-500" />}
-                        {upload.status === 'duplicate' && <AlertCircle className="h-6 w-6 text-amber-500" />}
-                      </div>
-                      
+                      <BankBadge provider={upload.filename} size="md" variant="icon" className="flex-shrink-0" />
+
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <p className="font-semibold truncate">{upload.filename}</p>
+                          <BankBadge provider={upload.filename} size="sm" variant="compact" />
                           {upload.status === 'ready' && (
                             <Badge variant="secondary" className="bg-primary/10 text-primary text-xs">
                               Processado

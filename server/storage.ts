@@ -1,7 +1,11 @@
-import { 
-  users, uploads, transactions, rules, budgets, calendarEvents, eventOccurrences, goals, categoryGoals, rituals,
+import {
+  users, accounts, uploads, uploadErrors, merchantMetadata, transactions, rules, budgets, calendarEvents, eventOccurrences, goals, categoryGoals, rituals, settings,
+  aiUsageLogs, notifications,
   type User, type InsertUser,
+  type Account, type InsertAccount,
   type Upload, type InsertUpload,
+  type UploadError, type InsertUploadError,
+  type MerchantMetadata, type InsertMerchantMetadata,
   type Transaction, type InsertTransaction,
   type Rule, type InsertRule,
   type Budget, type InsertBudget,
@@ -9,7 +13,10 @@ import {
   type EventOccurrence, type InsertEventOccurrence,
   type Goal, type InsertGoal,
   type CategoryGoal, type InsertCategoryGoal,
-  type Ritual, type InsertRitual
+  type Ritual, type InsertRitual,
+  type Settings, type InsertSettings, type UpdateSettings,
+  type AiUsageLog, type InsertAiUsageLog,
+  type Notification, type InsertNotification, type UpdateNotification
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql, like, gte, lt, or, isNull } from "drizzle-orm";
@@ -19,13 +26,48 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
+
+  // Settings
+  getSettings(userId: string): Promise<Settings | undefined>;
+  createSettings(settings: InsertSettings): Promise<Settings>;
+  updateSettings(userId: string, data: UpdateSettings): Promise<Settings | undefined>;
+
+  // AI Usage Logs
+  createAiUsageLog(log: InsertAiUsageLog): Promise<AiUsageLog>;
+  getAiUsageLogs(userId: string, limit?: number): Promise<AiUsageLog[]>;
+
+  // Notifications
+  getNotifications(userId: string, limit?: number): Promise<Notification[]>;
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  updateNotification(id: string, userId: string, data: UpdateNotification): Promise<Notification | undefined>;
+  deleteNotification(id: string, userId: string): Promise<void>;
+
+  // Accounts
+  getAccounts(userId: string): Promise<Account[]>;
+  getAccount(id: string): Promise<Account | undefined>;
+  createAccount(account: InsertAccount): Promise<Account>;
+  updateAccount(id: string, userId: string, data: Partial<Account>): Promise<Account | undefined>;
+  archiveAccount(id: string, userId: string): Promise<void>;
+  getAccountBalance(userId: string, accountId: string, options?: { startDate?: Date; endDate?: Date }): Promise<{ balance: number; currency: string; transactionCount: number }>;
+
   // Uploads
   getUploads(userId: string): Promise<Upload[]>;
   getUpload(id: string): Promise<Upload | undefined>;
   createUpload(upload: InsertUpload): Promise<Upload>;
   updateUpload(id: string, data: Partial<Upload>): Promise<Upload | undefined>;
-  
+
+  // Upload Errors
+  createUploadError(error: InsertUploadError): Promise<UploadError>;
+  getUploadErrors(uploadId: string): Promise<UploadError[]>;
+
+  // Merchant Metadata
+  getMerchantMetadata(userId: string): Promise<MerchantMetadata[]>;
+  getMerchantMetadataById(id: string, userId: string): Promise<MerchantMetadata | undefined>;
+  createMerchantMetadata(metadata: InsertMerchantMetadata): Promise<MerchantMetadata>;
+  updateMerchantMetadata(id: string, userId: string, data: Partial<MerchantMetadata>): Promise<MerchantMetadata | undefined>;
+  deleteMerchantMetadata(id: string, userId: string): Promise<void>;
+  findMerchantMatch(userId: string, description: string): Promise<MerchantMetadata | undefined>;
+
   // Transactions
   getTransactions(userId: string, month?: string): Promise<Transaction[]>;
   getTransactionsByNeedsReview(userId: string): Promise<Transaction[]>;
@@ -67,6 +109,7 @@ export interface IStorage {
   // Event Occurrences
   getEventOccurrences(eventId: string): Promise<EventOccurrence[]>;
   createEventOccurrence(occurrence: InsertEventOccurrence): Promise<EventOccurrence>;
+  updateEventOccurrence(id: string, data: Partial<EventOccurrence>): Promise<EventOccurrence | undefined>;
 
   // Goals
   getGoals(userId: string, month?: string): Promise<Goal[]>;
@@ -130,6 +173,137 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  // Settings
+  async getSettings(userId: string): Promise<Settings | undefined> {
+    const [userSettings] = await db.select().from(settings).where(eq(settings.userId, userId));
+    return userSettings || undefined;
+  }
+
+  async createSettings(insertSettings: InsertSettings): Promise<Settings> {
+    const [userSettings] = await db.insert(settings).values(insertSettings).returning();
+    return userSettings;
+  }
+
+  async updateSettings(userId: string, data: UpdateSettings): Promise<Settings | undefined> {
+    const [userSettings] = await db
+      .update(settings)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(settings.userId, userId))
+      .returning();
+    return userSettings || undefined;
+  }
+
+  // AI Usage Logs
+  async createAiUsageLog(log: InsertAiUsageLog): Promise<AiUsageLog> {
+    const [created] = await db.insert(aiUsageLogs).values(log).returning();
+    return created;
+  }
+
+  async getAiUsageLogs(userId: string, limit = 100): Promise<AiUsageLog[]> {
+    return db
+      .select()
+      .from(aiUsageLogs)
+      .where(eq(aiUsageLogs.userId, userId))
+      .orderBy(desc(aiUsageLogs.createdAt))
+      .limit(limit);
+  }
+
+  // Notifications
+  async getNotifications(userId: string, limit = 200): Promise<Notification[]> {
+    return db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt))
+      .limit(limit);
+  }
+
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    const [created] = await db.insert(notifications).values(notification).returning();
+    return created;
+  }
+
+  async updateNotification(id: string, userId: string, data: UpdateNotification): Promise<Notification | undefined> {
+    const [updated] = await db
+      .update(notifications)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(notifications.id, id), eq(notifications.userId, userId)))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteNotification(id: string, userId: string): Promise<void> {
+    await db.delete(notifications).where(and(eq(notifications.id, id), eq(notifications.userId, userId)));
+  }
+
+  // Accounts
+  async getAccounts(userId: string): Promise<Account[]> {
+    return db.select().from(accounts)
+      .where(eq(accounts.userId, userId))
+      .orderBy(desc(accounts.createdAt));
+  }
+
+  async getAccount(id: string): Promise<Account | undefined> {
+    return db.query.accounts.findFirst({
+      where: eq(accounts.id, id)
+    });
+  }
+
+  async createAccount(account: InsertAccount): Promise<Account> {
+    const [created] = await db.insert(accounts).values(account).returning();
+    return created;
+  }
+
+  async updateAccount(id: string, userId: string, data: Partial<Account>): Promise<Account | undefined> {
+    const [updated] = await db.update(accounts)
+      .set(data)
+      .where(and(eq(accounts.id, id), eq(accounts.userId, userId)))
+      .returning();
+    return updated || undefined;
+  }
+
+  async archiveAccount(id: string, userId: string): Promise<void> {
+    await db.update(accounts)
+      .set({ isActive: false })
+      .where(and(eq(accounts.id, id), eq(accounts.userId, userId)));
+  }
+
+  async getAccountBalance(
+    userId: string,
+    accountId: string,
+    options?: { startDate?: Date; endDate?: Date }
+  ): Promise<{ balance: number; currency: string; transactionCount: number }> {
+    // Build base query conditions
+    const conditions = [
+      eq(transactions.userId, userId),
+      eq(transactions.accountId, accountId),
+      eq(transactions.excludeFromBudget, false)
+    ];
+
+    // Add date filters if provided
+    if (options?.startDate) {
+      conditions.push(gte(transactions.paymentDate, options.startDate));
+    }
+    if (options?.endDate) {
+      conditions.push(lt(transactions.paymentDate, options.endDate));
+    }
+
+    const result = await db
+      .select({
+        balance: sql<number>`COALESCE(SUM(${transactions.amount}), 0)`,
+        transactionCount: sql<number>`COUNT(*)::int`,
+        currency: sql<string>`COALESCE(MAX(${transactions.currency}), 'EUR')`
+      })
+      .from(transactions)
+      .where(and(...conditions));
+
+    return {
+      balance: result[0]?.balance ?? 0,
+      currency: result[0]?.currency ?? "EUR",
+      transactionCount: result[0]?.transactionCount ?? 0
+    };
+  }
+
   // Uploads
   async getUploads(userId: string): Promise<Upload[]> {
     return db.select().from(uploads)
@@ -150,6 +324,62 @@ export class DatabaseStorage implements IStorage {
   async updateUpload(id: string, data: Partial<Upload>): Promise<Upload | undefined> {
     const [updated] = await db.update(uploads).set(data).where(eq(uploads.id, id)).returning();
     return updated || undefined;
+  }
+
+  // Upload Errors
+  async createUploadError(error: InsertUploadError): Promise<UploadError> {
+    const [created] = await db.insert(uploadErrors).values(error).returning();
+    return created;
+  }
+
+  async getUploadErrors(uploadId: string): Promise<UploadError[]> {
+    return db.select().from(uploadErrors)
+      .where(eq(uploadErrors.uploadId, uploadId))
+      .orderBy(uploadErrors.rowNumber);
+  }
+
+  // Merchant Metadata
+  async getMerchantMetadata(userId: string): Promise<MerchantMetadata[]> {
+    return db.select().from(merchantMetadata)
+      .where(eq(merchantMetadata.userId, userId))
+      .orderBy(desc(merchantMetadata.updatedAt));
+  }
+
+  async getMerchantMetadataById(id: string, userId: string): Promise<MerchantMetadata | undefined> {
+    const [metadata] = await db.select().from(merchantMetadata)
+      .where(and(eq(merchantMetadata.id, id), eq(merchantMetadata.userId, userId)));
+    return metadata || undefined;
+  }
+
+  async createMerchantMetadata(metadata: InsertMerchantMetadata): Promise<MerchantMetadata> {
+    const [created] = await db.insert(merchantMetadata).values(metadata).returning();
+    return created;
+  }
+
+  async updateMerchantMetadata(id: string, userId: string, data: Partial<MerchantMetadata>): Promise<MerchantMetadata | undefined> {
+    const [updated] = await db.update(merchantMetadata)
+      .set(data)
+      .where(and(eq(merchantMetadata.id, id), eq(merchantMetadata.userId, userId)))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteMerchantMetadata(id: string, userId: string): Promise<void> {
+    await db.delete(merchantMetadata)
+      .where(and(eq(merchantMetadata.id, id), eq(merchantMetadata.userId, userId)));
+  }
+
+  async findMerchantMatch(userId: string, description: string): Promise<MerchantMetadata | undefined> {
+    const allMetadata = await this.getMerchantMetadata(userId);
+    const descUpper = description.toUpperCase();
+
+    for (const meta of allMetadata) {
+      if (descUpper.includes(meta.pattern.toUpperCase())) {
+        return meta;
+      }
+    }
+
+    return undefined;
   }
 
   // Transactions
@@ -249,6 +479,10 @@ export class DatabaseStorage implements IStorage {
     return updated || undefined;
   }
 
+  async deleteBudget(id: string, userId: string): Promise<void> {
+    await db.delete(budgets).where(and(eq(budgets.id, id), eq(budgets.userId, userId)));
+  }
+
   // Dashboard aggregations
   async getDashboardData(userId: string, month: string): Promise<{
     spentByCategory: { category: string; amount: number }[];
@@ -343,6 +577,11 @@ export class DatabaseStorage implements IStorage {
   async createEventOccurrence(occurrence: InsertEventOccurrence): Promise<EventOccurrence> {
     const [created] = await db.insert(eventOccurrences).values(occurrence).returning();
     return created;
+  }
+
+  async updateEventOccurrence(id: string, data: Partial<EventOccurrence>): Promise<EventOccurrence | undefined> {
+    const [updated] = await db.update(eventOccurrences).set(data).where(eq(eventOccurrences.id, id)).returning();
+    return updated || undefined;
   }
 
   // Get all uncategorized transactions (needsReview = true and no category)

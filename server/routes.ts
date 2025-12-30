@@ -1,21 +1,58 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertRuleSchema, insertGoalSchema, insertCategoryGoalSchema, insertRitualSchema } from "@shared/schema";
+import { insertRuleSchema, insertGoalSchema, insertCategoryGoalSchema, insertRitualSchema, type MerchantMetadata, type UpdateNotification } from "@shared/schema";
 import { z } from "zod";
 import { parseCSV, type ParsedTransaction } from "./csv-parser";
 import { categorizeTransaction, suggestKeyword, AI_SEED_RULES } from "./rules-engine";
 import OpenAI from "openai";
 import { logger } from "./logger";
+import { withOpenAIUsage } from "./ai-usage";
+import { sql } from "drizzle-orm";
+import { db, isDatabaseConfigured } from "./db";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  : null;
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  // Health check endpoint (required for deployment monitoring)
+  app.get("/api/health", async (_req: Request, res: Response) => {
+    // If database is not configured, return degraded status
+    if (!isDatabaseConfigured) {
+      return res.status(200).json({
+        status: "degraded",
+        timestamp: new Date().toISOString(),
+        database: "not_configured",
+        version: "1.0.0",
+        warning: "DATABASE_URL not set - smoke test mode",
+      });
+    }
+
+    // Normal health check with database ping
+    try {
+      await db.execute(sql`SELECT 1`);
+      res.json({
+        status: "ok",
+        timestamp: new Date().toISOString(),
+        database: "connected",
+        version: "1.0.0",
+      });
+    } catch (_error: any) {
+      logger.error("health_check_failed", { database: "disconnected" });
+      res.status(503).json({
+        status: "error",
+        timestamp: new Date().toISOString(),
+        database: "disconnected",
+        error: "Database connection failed",
+      });
+    }
+  });
 
   // ===== AUTH / USER =====
   app.post("/api/auth/login", async (req: Request, res: Response) => {
@@ -42,6 +79,230 @@ export async function registerRoutes(
       res.json({ id: user.id, username: user.username });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===== SETTINGS =====
+  app.get("/api/settings", async (_req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      let userSettings = await storage.getSettings(user.id);
+
+      // Create default settings if they don't exist
+      if (!userSettings) {
+        userSettings = await storage.createSettings({ userId: user.id });
+      }
+
+      res.json(userSettings);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/settings", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      const updated = await storage.updateSettings(user.id, req.body);
+      if (!updated) {
+        return res.status(404).json({ error: "Settings not found" });
+      }
+
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===== NOTIFICATIONS =====
+  app.get("/api/notifications", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.json([]);
+
+      const limitParam = req.query.limit ? Number(req.query.limit) : undefined;
+      const limit = Number.isFinite(limitParam) && limitParam ? Math.min(Math.max(limitParam, 1), 200) : 200;
+      const notifications = await storage.getNotifications(user.id, limit);
+      res.json(notifications);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/notifications", async (req: Request, res: Response) => {
+    try {
+      let user = await storage.getUserByUsername("demo");
+      if (!user) {
+        user = await storage.createUser({ username: "demo", password: "demo" });
+      }
+
+      if (!req.body.title || !req.body.message) {
+        return res.status(400).json({ error: "Title and message are required" });
+      }
+
+      const notification = await storage.createNotification({
+        userId: user.id,
+        title: req.body.title,
+        message: req.body.message,
+        type: req.body.type || "info",
+        isRead: Boolean(req.body.isRead),
+      });
+      res.status(201).json(notification);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/notifications/:id", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const updateData: UpdateNotification = {};
+      if (req.body.title !== undefined) updateData.title = req.body.title;
+      if (req.body.message !== undefined) updateData.message = req.body.message;
+      if (req.body.type !== undefined) updateData.type = req.body.type;
+      if (req.body.isRead !== undefined) updateData.isRead = req.body.isRead;
+
+      const updated = await storage.updateNotification(req.params.id, user.id, updateData);
+      if (!updated) {
+        return res.status(404).json({ error: "Notification not found" });
+      }
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/notifications/:id", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      await storage.deleteNotification(req.params.id, user.id);
+      res.status(204).send();
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===== ACCOUNTS =====
+  app.get("/api/accounts", async (_req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.json([]);
+      const accounts = await storage.getAccounts(user.id);
+      res.json(accounts);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/accounts/:id", async (req: Request, res: Response) => {
+    try {
+      const account = await storage.getAccount(req.params.id);
+      if (!account) {
+        return res.status(404).json({ error: "Account not found" });
+      }
+      res.json(account);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/accounts", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      const accountData = {
+        userId: user.id,
+        name: req.body.name,
+        type: req.body.type,
+        accountNumber: req.body.accountNumber || null,
+        icon: req.body.icon || "credit-card",
+        color: req.body.color || "#6366f1",
+        isActive: req.body.isActive !== undefined ? req.body.isActive : true,
+      };
+
+      const account = await storage.createAccount(accountData);
+      res.status(201).json(account);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.put("/api/accounts/:id", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      const updateData: any = {};
+      if (req.body.name !== undefined) updateData.name = req.body.name;
+      if (req.body.type !== undefined) updateData.type = req.body.type;
+      if (req.body.accountNumber !== undefined) updateData.accountNumber = req.body.accountNumber;
+      if (req.body.icon !== undefined) updateData.icon = req.body.icon;
+      if (req.body.color !== undefined) updateData.color = req.body.color;
+      if (req.body.isActive !== undefined) updateData.isActive = req.body.isActive;
+
+      const updated = await storage.updateAccount(req.params.id, user.id, updateData);
+      if (!updated) {
+        return res.status(404).json({ error: "Account not found" });
+      }
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/accounts/:id", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      await storage.archiveAccount(req.params.id, user.id);
+      res.status(204).send();
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/accounts/:id/balance", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      // Verify account exists and belongs to user
+      const account = await storage.getAccount(req.params.id);
+      if (!account || account.userId !== user.id) {
+        return res.status(404).json({ error: "Account not found" });
+      }
+
+      // Parse optional date filters
+      const options: { startDate?: Date; endDate?: Date } = {};
+      if (req.query.startDate) {
+        options.startDate = new Date(req.query.startDate as string);
+      }
+      if (req.query.endDate) {
+        options.endDate = new Date(req.query.endDate as string);
+      }
+
+      const balance = await storage.getAccountBalance(user.id, req.params.id, options);
+      res.json(balance);
+    } catch (error: any) {
+      console.error("Error fetching account balance:", error);
+      res.status(500).json({ error: "Failed to calculate balance" });
     }
   });
 
@@ -107,6 +368,30 @@ export async function registerRoutes(
           rowsTotal: parseResult.rowsTotal,
           rowsImported: 0
         });
+
+        // Save parse errors to database
+        for (const errorStr of parseResult.errors) {
+          const match = errorStr.match(/^Linha (\d+): (.+)$/);
+          if (match) {
+            const rowNumber = parseInt(match[1], 10);
+            const errorMessage = match[2];
+            await storage.createUploadError({
+              uploadId: upload.id,
+              rowNumber,
+              errorMessage,
+              rawData: null
+            });
+          } else {
+            // General error without row number
+            await storage.createUploadError({
+              uploadId: upload.id,
+              rowNumber: 0,
+              errorMessage: errorStr,
+              rawData: null
+            });
+          }
+        }
+
         return res.status(400).json({
           success: false,
           uploadId: upload.id,
@@ -114,9 +399,87 @@ export async function registerRoutes(
         });
       }
 
-      // Get rules for categorization
+      // Get rules and settings for categorization
       const rules = await storage.getRules(user.id);
-      
+      let userSettings = await storage.getSettings(user.id);
+
+      // Create default settings if they don't exist
+      if (!userSettings) {
+        userSettings = await storage.createSettings({ userId: user.id });
+      }
+
+      // Build accountSource -> accountId mapping
+      const accountMap = new Map<string, string>();
+      const uniqueAccountSources = Array.from(new Set(parseResult.transactions.map(t => t.accountSource)));
+
+      for (const accountSource of uniqueAccountSources) {
+        // Parse accountSource to determine account metadata
+        let accountName: string;
+        let accountType: "credit_card" | "debit_card" | "bank_account" | "cash";
+        let accountNumber: string | null = null;
+        let icon: string;
+        let color: string;
+
+        // Pattern 1: "Amex - Name (1234)"
+        const amexMatch = accountSource.match(/Amex - (.+?) \((\d+)\)/i);
+        if (amexMatch) {
+          const [, name, lastDigits] = amexMatch;
+          accountName = `Amex - ${name}`;
+          accountType = "credit_card";
+          accountNumber = lastDigits;
+          icon = "credit-card";
+          color = "#3b82f6"; // Blue
+        }
+        // Pattern 2: "Sparkasse - 1234"
+        else if (accountSource.match(/Sparkasse - (\d+)/i)) {
+          const sparkasseMatch = accountSource.match(/Sparkasse - (\d+)/i);
+          const lastDigits = sparkasseMatch![1];
+          accountName = `Sparkasse (${lastDigits})`;
+          accountType = "bank_account";
+          accountNumber = lastDigits;
+          icon = "landmark";
+          color = "#ef4444"; // Red
+        }
+        // Pattern 3: "M&M" or "Miles & More..."
+        else if (accountSource.toLowerCase().includes("miles") || accountSource.toLowerCase().includes("m&m")) {
+          const cardMatch = accountSource.match(/(\d{4}X*\d{4})/);
+          const lastDigits = cardMatch ? cardMatch[1].replace(/X/g, "").slice(-4) : null;
+          accountName = lastDigits ? `Miles & More (${lastDigits})` : "Miles & More";
+          accountType = "credit_card";
+          accountNumber = lastDigits;
+          icon = "plane";
+          color = "#8b5cf6"; // Purple
+        }
+        // Default: Unknown account
+        else {
+          accountName = accountSource.length > 30 ? accountSource.substring(0, 30) + "..." : accountSource;
+          accountType = "credit_card";
+          accountNumber = null;
+          icon = "credit-card";
+          color = "#6b7280"; // Gray
+        }
+
+        // Check if account already exists by name
+        const existingAccounts = await storage.getAccounts(user.id);
+        const existingAccount = existingAccounts.find(a => a.name === accountName);
+
+        if (existingAccount) {
+          accountMap.set(accountSource, existingAccount.id);
+        } else {
+          // Create new account
+          const newAccount = await storage.createAccount({
+            userId: user.id,
+            name: accountName,
+            type: accountType,
+            accountNumber,
+            icon,
+            color,
+            isActive: true
+          });
+          accountMap.set(accountSource, newAccount.id);
+        }
+      }
+
       // Process each transaction
       let importedCount = 0;
       let duplicateCount = 0;
@@ -131,7 +494,10 @@ export async function registerRoutes(
         }
 
         // Categorize using rules with confidence level
-        const categorization = categorizeTransaction(parsed.descNorm, rules);
+        const categorization = categorizeTransaction(parsed.descNorm, rules, {
+          autoConfirmHighConfidence: userSettings.autoConfirmHighConfidence,
+          confidenceThreshold: userSettings.confidenceThreshold
+        });
         const keyword = suggestKeyword(parsed.descNorm);
 
         try {
@@ -139,6 +505,7 @@ export async function registerRoutes(
             userId: user.id,
             paymentDate: parsed.paymentDate,
             accountSource: parsed.accountSource,
+            accountId: accountMap.get(parsed.accountSource),
             descRaw: parsed.descRaw,
             descNorm: parsed.descNorm,
             amount: parsed.amount,
@@ -161,6 +528,23 @@ export async function registerRoutes(
             accountSource: parsed.accountSource,
             error: err.message
           });
+        }
+      }
+
+      // Save parse errors to database (row-level errors from CSV parsing)
+      if (parseResult.errors.length > 0) {
+        for (const errorStr of parseResult.errors) {
+          const match = errorStr.match(/^Linha (\d+): (.+)$/);
+          if (match) {
+            const rowNumber = parseInt(match[1], 10);
+            const errorMessage = match[2];
+            await storage.createUploadError({
+              uploadId: upload.id,
+              rowNumber,
+              errorMessage,
+              rawData: null
+            });
+          }
         }
       }
 
@@ -205,6 +589,137 @@ export async function registerRoutes(
         stack: error.stack?.split('\n')[0]
       });
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get errors for a specific upload
+  app.get("/api/uploads/:id/errors", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      // Verify upload exists and belongs to user
+      const upload = await storage.getUpload(req.params.id);
+      if (!upload || upload.userId !== user.id) {
+        return res.status(404).json({ error: "Upload not found" });
+      }
+
+      const errors = await storage.getUploadErrors(req.params.id);
+      res.json({
+        uploadId: req.params.id,
+        errors,
+        count: errors.length
+      });
+    } catch (error: any) {
+      console.error("Error fetching upload errors:", error);
+      res.status(500).json({ error: "Failed to retrieve errors" });
+    }
+  });
+
+  // ===== MERCHANT METADATA =====
+  app.get("/api/merchant-metadata", async (_req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      const metadata = await storage.getMerchantMetadata(user.id);
+      res.json(metadata);
+    } catch (error: any) {
+      console.error("Error fetching merchant metadata:", error);
+      res.status(500).json({ error: "Failed to retrieve metadata" });
+    }
+  });
+
+  app.post("/api/merchant-metadata", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      const { pattern, friendlyName, icon, color } = req.body;
+
+      if (!pattern || !friendlyName || !icon) {
+        return res.status(400).json({ error: "pattern, friendlyName, and icon are required" });
+      }
+
+      const metadata = await storage.createMerchantMetadata({
+        userId: user.id,
+        pattern: pattern.toUpperCase(),
+        friendlyName,
+        icon,
+        color: color || "#6366f1"
+      });
+
+      res.status(201).json(metadata);
+    } catch (error: any) {
+      console.error("Error creating merchant metadata:", error);
+      res.status(500).json({ error: "Failed to create metadata" });
+    }
+  });
+
+  app.put("/api/merchant-metadata/:id", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      const updateData: Partial<MerchantMetadata> = { updatedAt: new Date() };
+      if (req.body.pattern !== undefined) updateData.pattern = req.body.pattern.toUpperCase();
+      if (req.body.friendlyName !== undefined) updateData.friendlyName = req.body.friendlyName;
+      if (req.body.icon !== undefined) updateData.icon = req.body.icon;
+      if (req.body.color !== undefined) updateData.color = req.body.color;
+
+      const updated = await storage.updateMerchantMetadata(req.params.id, user.id, updateData);
+
+      if (!updated) {
+        return res.status(404).json({ error: "Metadata not found" });
+      }
+
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Error updating merchant metadata:", error);
+      res.status(500).json({ error: "Failed to update metadata" });
+    }
+  });
+
+  app.delete("/api/merchant-metadata/:id", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      await storage.deleteMerchantMetadata(req.params.id, user.id);
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error deleting merchant metadata:", error);
+      res.status(500).json({ error: "Failed to delete metadata" });
+    }
+  });
+
+  app.get("/api/merchant-metadata/match", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      const { description } = req.query;
+      if (!description) {
+        return res.status(400).json({ error: "description query parameter is required" });
+      }
+
+      const match = await storage.findMerchantMatch(user.id, description as string);
+      res.json(match || null);
+    } catch (error: any) {
+      console.error("Error finding merchant match:", error);
+      res.status(500).json({ error: "Failed to find match" });
     }
   });
 
@@ -258,17 +773,22 @@ export async function registerRoutes(
   // Bulk confirm with optional rule creation
   app.post("/api/transactions/confirm", async (req: Request, res: Response) => {
     try {
-      const { ids, createRule, keyword, type, fixVar, category1, category2, excludeFromBudget } = req.body;
-      
+      const { ids, createRule, keyword, type, fixVar, category1, category2, category3, excludeFromBudget } = req.body;
+
       if (!ids || ids.length === 0) {
         return res.status(400).json({ error: "No transaction IDs provided" });
       }
 
-      const updateData: any = { needsReview: false };
+      // CRITICAL: Manual confirmation sets manualOverride = true (immutable)
+      const updateData: any = {
+        needsReview: false,
+        manualOverride: true  // Prevent future auto-recategorization
+      };
       if (type) updateData.type = type;
       if (fixVar) updateData.fixVar = fixVar;
       if (category1) updateData.category1 = category1;
       if (category2 !== undefined) updateData.category2 = category2;
+      if (category3 !== undefined) updateData.category3 = category3;
       if (excludeFromBudget !== undefined) updateData.excludeFromBudget = excludeFromBudget;
       if (category1 === "Interno") {
         updateData.internalTransfer = true;
@@ -289,7 +809,8 @@ export async function registerRoutes(
             type,
             fixVar,
             category1,
-            category2
+            category2,
+            category3
           });
 
           // Update transactions with the new rule ID
@@ -369,20 +890,32 @@ export async function registerRoutes(
       if (!user) return res.status(404).json({ error: "User not found" });
 
       const rules = await storage.getRules(user.id);
+      let userSettings = await storage.getSettings(user.id);
+
+      // Create default settings if they don't exist
+      if (!userSettings) {
+        userSettings = await storage.createSettings({ userId: user.id });
+      }
+
       const transactions = await storage.getTransactionsByNeedsReview(user.id);
-      
+
       let categorizedCount = 0;
       let stillPendingCount = 0;
 
       for (const tx of transactions) {
-        const result = categorizeTransaction(tx.descNorm, rules);
-        
+        // CRITICAL: Never recategorize transactions with manual override
+        if (tx.manualOverride) {
+          continue;
+        }
+
+        const result = categorizeTransaction(tx.descNorm, rules, {
+          autoConfirmHighConfidence: userSettings.autoConfirmHighConfidence,
+          confidenceThreshold: userSettings.confidenceThreshold
+        });
+
         if (result.confidence && result.confidence > 0) {
-          await storage.updateTransaction(tx.id, {
-            ...result,
-            needsReview: result.confidence < 80
-          });
-          if (result.confidence >= 80) {
+          await storage.updateTransaction(tx.id, result);
+          if (!result.needsReview) {
             categorizedCount++;
           } else {
             stillPendingCount++;
@@ -422,15 +955,21 @@ export async function registerRoutes(
       let appliedCount = 0;
 
       for (const tx of transactions) {
+        // CRITICAL: Never recategorize transactions with manual override
+        if (tx.manualOverride) {
+          continue;
+        }
+
         const descNorm = tx.descNorm.toLowerCase();
         const matches = keywords.some(k => descNorm.includes(k));
-        
+
         if (matches) {
           await storage.updateTransaction(tx.id, {
             type: rule.type,
             fixVar: rule.fixVar,
             category1: rule.category1,
             category2: rule.category2,
+            category3: rule.category3,
             needsReview: false,
             ruleIdApplied: rule.id,
             internalTransfer: rule.category1 === "Interno",
@@ -530,7 +1069,7 @@ export async function registerRoutes(
       if (!user) return res.status(401).json({ error: "Unauthorized" });
 
       const { id } = req.params;
-      const updated = await storage.updateBudget(id, user.id, req.body);
+      const updated = await storage.updateBudget(id, req.body);
       if (!updated) {
         return res.status(404).json({ error: "Budget not found" });
       }
@@ -1478,11 +2017,29 @@ export async function registerRoutes(
   });
 
   // ===== AI KEYWORD ANALYSIS =====
+  app.get("/api/ai/usage", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.json([]);
+
+      const limitParam = req.query.limit ? Number(req.query.limit) : undefined;
+      const limit = Number.isFinite(limitParam) && limitParam ? Math.min(Math.max(limitParam, 1), 200) : 100;
+      const logs = await storage.getAiUsageLogs(user.id, limit);
+      res.json(logs);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.post("/api/ai/analyze-keywords", async (req: Request, res: Response) => {
     try {
       const user = await storage.getUserByUsername("demo");
       if (!user) {
         return res.status(401).json({ error: "Usuário não encontrado" });
+      }
+
+      if (!openai) {
+        return res.status(503).json({ error: "OpenAI não configurado" });
       }
 
       // Get all uncategorized transactions
@@ -1533,15 +2090,24 @@ Para cada palavra-chave, retorne um JSON com:
 
 Retorne APENAS um array JSON válido, sem markdown ou texto adicional.`;
 
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: JSON.stringify(keywordList, null, 2) }
-        ],
-        temperature: 0.3,
-        max_tokens: 4000
-      });
+      const response = await withOpenAIUsage(
+        {
+          featureTag: "keyword_analysis",
+          model: "gpt-4o-mini",
+          userId: user.id,
+          extractUsage: (result) => result.usage
+        },
+        () =>
+          openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: JSON.stringify(keywordList, null, 2) }
+            ],
+            temperature: 0.3,
+            max_tokens: 4000
+          })
+      );
 
       const content = response.choices[0]?.message?.content || "[]";
       let suggestions = [];

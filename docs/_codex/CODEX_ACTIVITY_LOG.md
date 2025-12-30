@@ -1,0 +1,244 @@
+# Codex Activity Log
+
+## 2025-12-29T11:40:14Z (UTC)
+- Session goal: Establish Codex-only documentation system; capture analysis-only actions and repository sync state.
+- Context links: CLAUDE.md, docs/ARCHITECTURE_AND_AI_LOGIC.md (headings scan), docs/IMPLEMENTATION_LOG.md (headings scan), docs/DEPLOYMENT_SUPABASE_VERCEL.md, docs/DEPLOYMENT_GUIDE.md, docs/IMPLEMENTATION_LOG.md, .env.local, .gitignore.
+- Commands executed (READ-ONLY):
+  - git rev-parse --is-inside-work-tree
+  - git remote -v
+  - git branch --show-current
+  - git status -sb
+  - git log --oneline -n 15
+  - git fetch --all --prune
+  - git rev-parse HEAD
+  - git ls-remote --heads origin
+  - git rev-list --left-right --count origin/main...HEAD
+  - find . -maxdepth 2 -type f -name "package.json" -o -name "pnpm-lock.yaml" -o -name "package-lock.json" -o -name "yarn.lock"
+  - cat package.json
+  - find . -maxdepth 3 -type f -name "*.md" -o -name "*.env*" -o -name "supabase*" -o -name "docker-compose.yml" -o -name "next.config.*" -o -name "vite.config.*" -o -name "tsconfig.json"
+  - rg -n "supabase|createClient|auth|RLS|csv|upload|rules|pipeline|OpenAI|LLM|prompt|AI" .
+  - rg -n "localhost:|127.0.0.1|PORT=|callback|redirect" .
+  - node -v; npm -v; pnpm -v; python -V; git --version
+  - ls -d node_modules
+  - find . -maxdepth 3 -type f -name ".env*" -o -name "*.example" -o -name "*.sample"
+  - cat .env.example
+  - rg -n "SUPABASE_URL|SUPABASE_ANON_KEY|SERVICE_ROLE|DATABASE_URL" .
+  - ls -la supabase; find supabase -maxdepth 4 -type f
+  - cat replit.md; cat server/index.ts
+  - cat .env.local (redacted in logs)
+  - cat docs/DEPLOYMENT_SUPABASE_VERCEL.md
+  - cat docs/IMPLEMENTATION_LOG.md
+  - sed -n '1,160p' CLAUDE.md
+  - rg -n "^#|^##" docs/ARCHITECTURE_AND_AI_LOGIC.md
+  - rg -n "^##" docs/IMPLEMENTATION_LOG.md
+- Commands executed (MUTATING):
+  - git reset --hard origin/main
+  - mkdir -p docs/_codex
+  - add .vercel/ to .gitignore
+  - create docs/_codex/* files
+- Files touched:
+  - Modified: .gitignore (added .vercel/ ignore entry)
+  - New: docs/_codex/README.md, CODEX_ACTIVITY_LOG.md, PLAN_LOG.md, DECISION_LOG.md, DIFF_SUMMARY.md, QA_NOTES.md, ISSUES_REGISTER.md, DEPLOYMENT_NOTES.md, DATA_PIPELINE_NOTES.md, AI_FEATURES_NOTES.md, ENVIRONMENT_DRIFT_NOTES.md, codex_instructions.md
+- Summary of changes:
+  - Initialized Codex documentation system under docs/_codex/.
+  - Added .vercel/ to .gitignore to avoid untracked deployment artifacts.
+- Observations & risks:
+  - Local .env.local contains sensitive Vercel token; redacted and not recorded.
+  - Documentation includes sensitive database connection strings; requires rotation and redaction in future work.
+- Next steps / open questions:
+  - Await Claude approval to redact secrets in docs and execute any non-doc changes.
+- Approval gate status: Needs Claude approval for any application changes; documentation-only work complete.
+
+## 2025-12-29T12:37:15Z (UTC)
+- Session goal: Produce Codex-owned documentation from provided user feedback and update required logs.
+- Context links: CLAUDE.md, docs/ARCHITECTURE_AND_AI_LOGIC.md, docs/IMPLEMENTATION_LOG.md, docs/_codex/codex_instructions.md.
+- Commands executed (READ-ONLY):
+  - ls
+  - cat CLAUDE.md
+  - cat docs/ARCHITECTURE_AND_AI_LOGIC.md
+  - cat docs/IMPLEMENTATION_LOG.md
+  - cat docs/_codex/codex_instructions.md
+  - ls docs/_codex
+  - cat docs/_codex/PLAN_LOG.md
+  - cat docs/_codex/CODEX_ACTIVITY_LOG.md
+  - cat docs/_codex/DECISION_LOG.md
+  - cat docs/_codex/ISSUES_REGISTER.md
+  - cat docs/_codex/DIFF_SUMMARY.md
+  - cat docs/_codex/QA_NOTES.md
+  - date -u +%Y-%m-%dT%H:%M:%SZ
+- Commands executed (MUTATING):
+  - update docs/_codex/PLAN_LOG.md (approval)
+  - create docs/_codex/USER_FEEDBACK_VERBATIM.md
+  - create docs/_codex/PRD_FROM_USER_FEEDBACK.md
+  - create docs/_codex/CATEGORY_CLASSIFICATION_PROPOSAL.md
+  - create docs/_codex/PLAN_STRUCTURE_CONTRACT.md
+  - update docs/_codex/CODEX_ACTIVITY_LOG.md
+  - update docs/_codex/DECISION_LOG.md
+  - update docs/_codex/ISSUES_REGISTER.md
+  - update docs/_codex/DIFF_SUMMARY.md
+  - update docs/_codex/QA_NOTES.md
+- Files touched:
+  - Modified: docs/_codex/PLAN_LOG.md, docs/_codex/CODEX_ACTIVITY_LOG.md, docs/_codex/DECISION_LOG.md, docs/_codex/ISSUES_REGISTER.md, docs/_codex/DIFF_SUMMARY.md, docs/_codex/QA_NOTES.md
+  - New: docs/_codex/USER_FEEDBACK_VERBATIM.md, docs/_codex/PRD_FROM_USER_FEEDBACK.md, docs/_codex/CATEGORY_CLASSIFICATION_PROPOSAL.md, docs/_codex/PLAN_STRUCTURE_CONTRACT.md
+- Summary of changes:
+  - Created Codex documentation deliverables and updated governance logs.
+- Observations & risks:
+  - None beyond items recorded in ISSUES_REGISTER.
+- Approval gate status: Documentation-only work executed with user approval.
+
+## 2025-12-29T12:44:32Z (UTC)
+- Session goal: Extend verbatim source with appended PRD/category table, expand taxonomy proposal with detailed reference table, and add feature implementation plan.
+- Context links: CLAUDE.md, docs/ARCHITECTURE_AND_AI_LOGIC.md, docs/IMPLEMENTATION_LOG.md, docs/_codex/codex_instructions.md, docs/_codex/PLAN_LOG.md.
+- Commands executed (READ-ONLY):
+  - date -u +%Y-%m-%dT%H:%M:%SZ
+- Commands executed (MUTATING):
+  - update docs/_codex/PLAN_LOG.md (approval)
+  - append to docs/_codex/USER_FEEDBACK_VERBATIM.md
+  - update docs/_codex/CATEGORY_CLASSIFICATION_PROPOSAL.md
+  - create docs/_codex/FEATURE_IMPLEMENTATION_PLAN.md
+  - update docs/_codex/CODEX_ACTIVITY_LOG.md
+  - update docs/_codex/DECISION_LOG.md
+  - update docs/_codex/ISSUES_REGISTER.md
+  - update docs/_codex/DIFF_SUMMARY.md
+  - update docs/_codex/QA_NOTES.md
+- Files touched:
+  - Modified: docs/_codex/PLAN_LOG.md, docs/_codex/USER_FEEDBACK_VERBATIM.md, docs/_codex/CATEGORY_CLASSIFICATION_PROPOSAL.md, docs/_codex/CODEX_ACTIVITY_LOG.md, docs/_codex/DECISION_LOG.md, docs/_codex/ISSUES_REGISTER.md, docs/_codex/DIFF_SUMMARY.md, docs/_codex/QA_NOTES.md
+  - New: docs/_codex/FEATURE_IMPLEMENTATION_PLAN.md
+- Summary of changes:
+  - Appended provided PRD and category table to verbatim source, expanded taxonomy proposal with full reference table, and added feature implementation plan.
+- Observations & risks:
+  - None beyond items recorded in ISSUES_REGISTER.
+- Approval gate status: Documentation-only work executed with user approval.
+
+## 2025-12-29T13:02:14Z (UTC)
+- Session goal: Rewrite FEATURE_IMPLEMENTATION_PLAN.md to the required contractual structure and update governance logs.
+- Context links: CLAUDE.md, docs/ARCHITECTURE_AND_AI_LOGIC.md, docs/IMPLEMENTATION_LOG.md, docs/_codex/codex_instructions.md, docs/_codex/USER_FEEDBACK_VERBATIM.md, docs/_codex/PRD_FROM_USER_FEEDBACK.md, docs/_codex/CATEGORY_CLASSIFICATION_PROPOSAL.md.
+- Commands executed (READ-ONLY):
+  - cat CLAUDE.md
+  - cat docs/ARCHITECTURE_AND_AI_LOGIC.md
+  - cat docs/IMPLEMENTATION_LOG.md
+  - cat docs/_codex/codex_instructions.md
+  - cat docs/_codex/USER_FEEDBACK_VERBATIM.md
+  - cat docs/_codex/PRD_FROM_USER_FEEDBACK.md
+  - cat docs/_codex/CATEGORY_CLASSIFICATION_PROPOSAL.md
+  - date -u +%Y-%m-%dT%H:%M:%SZ
+- Commands executed (MUTATING):
+  - update docs/_codex/PLAN_LOG.md (approval)
+  - rewrite docs/_codex/FEATURE_IMPLEMENTATION_PLAN.md
+  - update docs/_codex/CODEX_ACTIVITY_LOG.md
+  - update docs/_codex/DECISION_LOG.md
+  - update docs/_codex/ISSUES_REGISTER.md
+  - update docs/_codex/DIFF_SUMMARY.md
+  - update docs/_codex/QA_NOTES.md
+- Files touched:
+  - Modified: docs/_codex/PLAN_LOG.md, docs/_codex/FEATURE_IMPLEMENTATION_PLAN.md, docs/_codex/CODEX_ACTIVITY_LOG.md, docs/_codex/DECISION_LOG.md, docs/_codex/ISSUES_REGISTER.md, docs/_codex/DIFF_SUMMARY.md, docs/_codex/QA_NOTES.md
+- Summary of changes:
+  - Rewrote the feature implementation plan to the required package contract structure with phases and dependencies.
+- Observations & risks:
+  - Open questions recorded in ISSUES_REGISTER.
+- Approval gate status: Documentation-only work executed with user instruction; Claude review pending.
+
+## 2025-12-29T13:50:17Z (UTC)
+- Session goal: Implement approved deployment connectivity fixes, run QA checks, and document outcomes.
+- Commands executed (READ-ONLY):
+  - rg -n "DATABASE_URL|CORS_ORIGIN|VITE_API_URL|PORT|SESSION_SECRET|SUPABASE" server client shared .env* vercel.json package.json
+  - rg -n "cors\\(|allowedOrigins|origin:" server
+  - rg -n "health|/api/auth/me|/api/health" server
+  - sed -n '1,200p' server/index.ts
+  - sed -n '1,200p' server/db.ts
+  - sed -n '1,200p' client/src/lib/api.ts
+  - sed -n '1,200p' client/src/lib/queryClient.ts
+  - sed -n '1,200p' server/routes.ts
+  - cat vercel.json
+  - rg -n "pool|db" server/storage.ts server/logger.ts server/static.ts
+  - sed -n '1,200p' server/logger.ts
+  - rg -n "session|SESSION_SECRET|cookie" server
+  - rg -n "useQuery\\(|queryKey" client/src
+  - sed -n '1,200p' server/vite.ts
+  - rg -n "dotenv" server
+  - cat package.json
+  - rg -n "OpenAI|OPENAI_API_KEY" server
+  - rg -n "replit_integrations" server
+  - sed -n '1990,2085p' server/routes.ts
+  - sed -n '1,120p' .env.example
+  - rg -n "VITE_API_URL|SESSION_SECRET" docs/DEPLOYMENT_INSTRUCTIONS.md
+  - sed -n '200,260p' docs/DEPLOYMENT_INSTRUCTIONS.md
+  - rg -n "VITE_API_URL|SESSION_SECRET" docs/DEPLOYMENT_GUIDE.md
+  - sed -n '90,130p' docs/DEPLOYMENT_GUIDE.md
+  - sed -n '140,200p' docs/DEPLOYMENT_GUIDE.md
+  - sed -n '240,300p' docs/DEPLOYMENT_GUIDE.md
+  - date -u +%Y-%m-%dT%H:%M:%SZ
+- Commands executed (MUTATING):
+  - npm install
+  - npm run check (failed: missing tsc before install; then type errors in replit_integrations)
+  - npm run build
+  - DATABASE_URL=postgresql://localhost:5432/postgres npm run dev (failed to bind 0.0.0.0)
+  - curl -s http://localhost:5000/api/health (no response; server failed to start)
+  - tail -n 50 /tmp/ritualfin-dev.log
+  - ps -p <pid> -o pid,comm=
+- Files touched:
+  - Modified: client/src/lib/queryClient.ts, server/db.ts, server/routes.ts, .env.example, docs/DEPLOYMENT_GUIDE.md, docs/DEPLOYMENT_INSTRUCTIONS.md, docs/_codex/PLAN_LOG.md
+- Summary of changes:
+  - Fixed query client base URL to include `/api` in production and dev.
+  - Added conditional SSL for Supabase pooler connections.
+  - Added `/api/health` endpoint with DB ping and safe error handling.
+  - Made OpenAI client optional to avoid startup crash when key is unset.
+  - Updated deployment docs to clarify VITE_API_URL usage and remove SESSION_SECRET references.
+- QA results:
+  - `npm run check` failed due to existing TypeScript errors in `server/replit_integrations/*`.
+  - `npm run build` succeeded with chunk-size warnings.
+  - `npm run dev` failed to bind 0.0.0.0 (ENOTSUP) in this environment; `/api/health` could not be verified locally.
+
+## 2025-12-29T13:07:57Z (UTC)
+- Session goal: Create a Codex handoff document for Claude and update governance logs.
+- Context links: docs/_codex/FEATURE_IMPLEMENTATION_PLAN.md, docs/_codex/USER_FEEDBACK_VERBATIM.md, docs/_codex/PRD_FROM_USER_FEEDBACK.md, docs/_codex/CATEGORY_CLASSIFICATION_PROPOSAL.md.
+- Commands executed (READ-ONLY):
+  - date -u +%Y-%m-%dT%H:%M:%SZ
+- Commands executed (MUTATING):
+  - update docs/_codex/PLAN_LOG.md (approval)
+  - create docs/_codex/CODEX_HANDOFF_TO_CLAUDE.md
+  - update docs/_codex/CODEX_ACTIVITY_LOG.md
+  - update docs/_codex/DECISION_LOG.md
+  - update docs/_codex/ISSUES_REGISTER.md
+  - update docs/_codex/DIFF_SUMMARY.md
+  - update docs/_codex/QA_NOTES.md
+- Files touched:
+  - Modified: docs/_codex/PLAN_LOG.md, docs/_codex/CODEX_ACTIVITY_LOG.md, docs/_codex/DECISION_LOG.md, docs/_codex/ISSUES_REGISTER.md, docs/_codex/DIFF_SUMMARY.md, docs/_codex/QA_NOTES.md
+  - New: docs/_codex/CODEX_HANDOFF_TO_CLAUDE.md
+- Summary of changes:
+  - Added a Claude handoff document with review instructions and file references.
+- Observations & risks:
+  - None beyond items in ISSUES_REGISTER.
+- Approval gate status: Documentation-only work executed with user instruction; Claude review pending.
+
+## 2025-12-29T13:51:48Z (UTC)
+- Session goal: Implement Batch 1 (C.4 AI usage tracking, C.5 notifications) and run QA.
+- Commands executed (READ-ONLY):
+  - rg -n "OpenAI|openai|gpt" server shared client
+  - rg -n "openai\\.(chat|images)" server
+  - rg -n "health" server/routes.ts server/index.ts
+  - sed -n '1,240p' server/routes.ts
+  - sed -n '1,200p' server/storage.ts
+  - sed -n '1,200p' shared/schema.ts
+  - sed -n '1860,2050p' server/routes.ts
+  - sed -n '1,200p' server/replit_integrations/chat/routes.ts
+  - sed -n '1,160p' server/replit_integrations/image/routes.ts
+  - sed -n '1,140p' server/replit_integrations/image/client.ts
+  - sed -n '1,200p' docs/ARCHITECTURE_AND_AI_LOGIC.md
+  - sed -n '1,200p' docs/IMPLEMENTATION_LOG.md
+  - sed -n '1,200p' docs/_codex/ISSUES_REGISTER.md
+  - sed -n '1,200p' docs/_codex/DECISION_LOG.md
+  - sed -n '1,200p' docs/_codex/DIFF_SUMMARY.md
+  - sed -n '1,200p' docs/_codex/QA_NOTES.md
+  - date -u +%Y-%m-%dT%H:%M:%SZ
+- Commands executed (MUTATING):
+  - apply_patch (shared/schema.ts, server/storage.ts, server/routes.ts, server/ai-usage.ts, server/replit_integrations/*, docs/*, docs/_codex/*)
+  - npm run check
+  - node -e "<dev smoke + health check script>"
+- Summary of changes:
+  - Added ai_usage_logs and notifications tables with storage and routes.
+  - Added AI usage logging helper and wired into OpenAI call sites.
+  - Added notifications CRUD endpoints and AI usage retrieval endpoint.
+  - Fixed TypeScript AbortError typing in batch utils.
+- Observations & risks:
+  - Dev server cannot start without DATABASE_URL; endpoint smoke test skipped.

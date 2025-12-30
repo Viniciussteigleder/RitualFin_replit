@@ -7,10 +7,11 @@ import { format } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { transactionsApi } from "@/lib/api";
-import { useState } from "react";
+import { transactionsApi, accountsApi, settingsApi } from "@/lib/api";
+import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { AccountBadge } from "@/components/account-badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -44,6 +45,23 @@ export default function ConfirmPage() {
     queryKey: ["confirm-queue"],
     queryFn: transactionsApi.confirmQueue,
   });
+
+  const { data: accounts = [] } = useQuery({
+    queryKey: ["accounts"],
+    queryFn: accountsApi.list,
+  });
+
+  const { data: settings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: settingsApi.get,
+  });
+
+  const accountsById = useMemo(() => {
+    return accounts.reduce((map: any, account: any) => {
+      map[account.id] = account;
+      return map;
+    }, {});
+  }, [accounts]);
 
   const confirmMutation = useMutation({
     mutationFn: ({ ids, data, createRule, keyword }: { 
@@ -304,9 +322,7 @@ export default function ConfirmPage() {
                           {format(new Date(t.paymentDate), "dd/MM/yy")}
                         </td>
                         <td className="px-5 py-4">
-                          <Badge variant="outline" className="text-xs font-normal whitespace-nowrap">
-                            {t.accountSource}
-                          </Badge>
+                          <AccountBadge account={accountsById[t.accountId]} size="sm" />
                         </td>
                         <td className="px-5 py-4">
                           <p className="font-medium truncate max-w-[250px]">{t.descRaw?.split(" -- ")[0]}</p>
@@ -318,21 +334,27 @@ export default function ConfirmPage() {
                         </td>
                         <td className="px-5 py-4">
                           <div className="flex flex-col items-center gap-1.5">
-                            <Progress 
-                              value={confidence} 
+                            <Progress
+                              value={confidence}
                               className={cn(
                                 "h-1.5 w-14",
-                                confidence >= 80 ? "[&>div]:bg-emerald-500" : 
+                                confidence >= 80 ? "[&>div]:bg-emerald-500" :
                                 confidence >= 50 ? "[&>div]:bg-amber-500" : "[&>div]:bg-rose-500"
                               )}
                             />
                             <span className={cn(
                               "text-xs font-semibold",
-                              confidence >= 80 ? "text-emerald-600" : 
+                              confidence >= 80 ? "text-emerald-600" :
                               confidence >= 50 ? "text-amber-600" : "text-rose-600"
                             )}>
                               {confidence}%
                             </span>
+                            {!settings?.autoConfirmHighConfidence && confidence >= (settings?.confidenceThreshold || 80) && (
+                              <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-emerald-500/30 text-emerald-700 bg-emerald-50/50">
+                                <Zap className="h-2.5 w-2.5 mr-0.5" />
+                                Auto
+                              </Badge>
+                            )}
                           </div>
                         </td>
                         <td className="px-5 py-4">
