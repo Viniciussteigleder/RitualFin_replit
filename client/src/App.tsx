@@ -19,6 +19,7 @@ import BudgetsPage from "@/pages/budgets";
 import AIKeywordsPage from "@/pages/ai-keywords";
 import AccountsPage from "@/pages/accounts";
 import TransactionsPage from "@/pages/transactions";
+import NotificationsPage from "@/pages/notifications";
 
 function Router() {
   return (
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/" component={LoginPage} />
       <Route path="/login" component={LoginPage} />
       <Route path="/dashboard" component={DashboardPage} />
+      <Route path="/notifications" component={NotificationsPage} />
       <Route path="/calendar" component={CalendarPage} />
       <Route path="/calendar/:id" component={EventDetailPage} />
       <Route path="/goals" component={GoalsPage} />

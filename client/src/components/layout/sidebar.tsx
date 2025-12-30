@@ -17,7 +17,8 @@ import {
   Target,
   Brain,
   Wallet,
-  Receipt
+  Receipt,
+  Bell
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -27,15 +28,21 @@ import { useMonth } from "@/lib/month-context";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const NAV_ITEMS = [
-  { 
-    label: "Dashboard", 
-    icon: LayoutDashboard, 
+  {
+    label: "Dashboard",
+    icon: LayoutDashboard,
     href: "/dashboard",
     description: "Visão geral do mês"
   },
-  { 
-    label: "Calendário", 
-    icon: Calendar, 
+  {
+    label: "Notificações",
+    icon: Bell,
+    href: "/notifications",
+    description: "Alertas e mensagens"
+  },
+  {
+    label: "Calendário",
+    icon: Calendar,
     href: "/calendar",
     description: "Eventos e compromissos"
   },

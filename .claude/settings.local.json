@@ -34,7 +34,28 @@
       "Bash(head:*)",
       "Bash(git restore:*)",
       "Bash(timeout 10 npm run dev:*)",
-      "Bash(__NEW_LINE__ curl -s -X POST http://localhost:5000/api/uploads/process )"
+      "Bash(__NEW_LINE__ curl -s -X POST http://localhost:5000/api/uploads/process )",
+      "Bash(git merge:*)",
+      "Bash(grep:*)",
+      "Bash(timeout 10 curl:*)",
+      "Bash(echo \"CRITICAL: Deployment not found on ritualfin.vercel.app\" echo \"\" echo \"Searching for alternative Vercel URLs...\" grep -r \"\\\\.vercel\\\\.app\" . --include=\"*.md\" --include=\"*.json\" --include=\"*.ts\")",
+      "Bash(if [ -d \".vercel\" ])",
+      "Bash(then echo \"Found .vercel directory:\" find .vercel -name \"*.json\" -exec echo \"File: {}\" ; -exec cat {} ;)",
+      "Bash(else)",
+      "Bash(fi)",
+      "Bash(timeout 15 curl:*)",
+      "Bash(timeout 90 curl:*)",
+      "Bash(vercel --version:*)",
+      "Bash(vercel whoami:*)",
+      "Bash(if [ -n \"$VERCEL_TOKEN\" ])",
+      "Bash(then echo \"VERCEL_TOKEN is set\" vercel whoami --token \"$VERCEL_TOKEN\" 2)",
+      "Bash(1 else echo \"VERCEL_TOKEN not found in environment\" echo \"Checking for token in config files...\" ls -la ~/.vercel)",
+      "Bash(timeout 10 vercel login --help:*)",
+      "Bash(vercel login:*)",
+      "Bash(env)",
+      "Bash(timeout 20 curl:*)",
+      "Bash(git branch:*)",
+      "Bash(npm run build:*)"
     ]
   }
 }
