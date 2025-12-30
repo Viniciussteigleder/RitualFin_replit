@@ -2,7 +2,7 @@
 export type TransactionType = 'Despesa' | 'Receita';
 export type FixVar = 'Fixo' | 'Variável';
 
-export type Category1 = 
+export type Category1 =
   | 'Receitas'
   | 'Moradia'
   | 'Mercado'
@@ -10,6 +10,17 @@ export type Category1 =
   | 'Transporte'
   | 'Saúde'
   | 'Lazer'
+  | 'Viagem'
+  | 'Roupas'
+  | 'Tecnologia'
+  | 'Alimentação'
+  | 'Energia'
+  | 'Internet'
+  | 'Educação'
+  | 'Presentes'
+  | 'Streaming'
+  | 'Academia'
+  | 'Investimentos'
   | 'Outros'
   | 'Interno';
 

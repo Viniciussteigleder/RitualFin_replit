@@ -7,8 +7,11 @@ import { z } from "zod";
 export const transactionTypeEnum = pgEnum("transaction_type", ["Despesa", "Receita"]);
 export const fixVarEnum = pgEnum("fix_var", ["Fixo", "Variável"]);
 export const category1Enum = pgEnum("category_1", [
-  "Receitas", "Moradia", "Mercado", "Compras Online", 
-  "Transporte", "Saúde", "Lazer", "Outros", "Interno"
+  "Receitas", "Moradia", "Mercado", "Compras Online",
+  "Transporte", "Saúde", "Lazer", "Viagem", "Roupas",
+  "Tecnologia", "Alimentação", "Energia", "Internet",
+  "Educação", "Presentes", "Streaming", "Academia",
+  "Investimentos", "Outros", "Interno"
 ]);
 export const uploadStatusEnum = pgEnum("upload_status", ["processing", "ready", "duplicate", "error"]);
 export const accountTypeEnum = pgEnum("account_type", ["credit_card", "debit_card", "bank_account", "cash"]);
