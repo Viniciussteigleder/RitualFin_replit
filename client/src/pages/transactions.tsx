@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Download, Loader2, Edit2, Filter, X, Calendar, TrendingUp, TrendingDown, ArrowUpDown, Eye } from "lucide-react";
+import { Search, Download, Loader2, Edit2, Filter, X, Calendar, TrendingUp, TrendingDown, ArrowUpDown, Eye, Lock, RefreshCw, RotateCcw, ArrowLeftRight } from "lucide-react";
+import { getAccountIcon, getStatusIcon, IconBadge, TRANSACTION_ICONS } from "@/lib/icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { transactionsApi, accountsApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -379,7 +380,26 @@ export default function TransactionsPage() {
                                 </div>
                               )}
                               <div className="flex-1 min-w-0">
-                                <p className="font-medium truncate">{t.descRaw?.split(" -- ")[0]}</p>
+                                <div className="flex items-center gap-1.5">
+                                  <p className="font-medium truncate">
+                                    {t.descRaw?.split(" -- ")[0]?.replace(/\s+\d{4,}/g, '')}
+                                  </p>
+                                  {/* Icon badges for transaction attributes */}
+                                  <div className="flex items-center gap-1 flex-shrink-0">
+                                    {t.fixVar === "Fixo" && (
+                                      <IconBadge {...TRANSACTION_ICONS.fixed} size="xs" />
+                                    )}
+                                    {t.recurring && (
+                                      <IconBadge {...TRANSACTION_ICONS.recurring} size="xs" />
+                                    )}
+                                    {t.isRefund && (
+                                      <IconBadge {...TRANSACTION_ICONS.refund} size="xs" />
+                                    )}
+                                    {t.internalTransfer && (
+                                      <IconBadge {...TRANSACTION_ICONS.internal} size="xs" />
+                                    )}
+                                  </div>
+                                </div>
                                 {(t.category2 || t.category3) && (
                                   <p className="text-xs text-muted-foreground truncate">
                                     {[t.category2, t.category3].filter(Boolean).join(" → ")}
@@ -403,22 +423,20 @@ export default function TransactionsPage() {
                             </div>
                           </td>
                           <td className="px-5 py-4">
-                            <div className="flex justify-center gap-2">
-                              {t.manualOverride && (
-                                <Badge variant="outline" className="text-xs">
-                                  Manual
-                                </Badge>
-                              )}
-                              {t.excludeFromBudget && (
-                                <Badge variant="secondary" className="text-xs">
-                                  Excluído
-                                </Badge>
-                              )}
-                              {t.internalTransfer && (
-                                <Badge variant="secondary" className="text-xs">
-                                  Interno
-                                </Badge>
-                              )}
+                            <div className="flex justify-center">
+                              {(() => {
+                                const statusInfo = getStatusIcon(t);
+                                return (
+                                  <div className="flex items-center gap-1" title={statusInfo.label}>
+                                    <IconBadge {...statusInfo} size="sm" showTooltip={false} />
+                                    {t.excludeFromBudget && (
+                                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                        Exc
+                                      </Badge>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                             </div>
                           </td>
                           <td className="px-5 py-4 text-center">
