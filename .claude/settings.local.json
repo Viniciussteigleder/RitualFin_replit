@@ -55,7 +55,9 @@
       "Bash(env)",
       "Bash(timeout 20 curl:*)",
       "Bash(git branch:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(python3:*)",
+      "Bash(echo:*)"
     ]
   }
 }

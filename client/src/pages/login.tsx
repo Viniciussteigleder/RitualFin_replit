@@ -72,7 +72,7 @@ export default function LoginPage() {
               </div>
               <div className="text-center">
                 <h1 className="font-bold text-2xl text-foreground tracking-tight">RitualFin</h1>
-                <p className="text-xs text-muted-foreground mt-0.5">Lazy Mode Ativado</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Gestão Financeira Inteligente</p>
               </div>
             </div>
 

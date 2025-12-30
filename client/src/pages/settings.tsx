@@ -115,10 +115,6 @@ export default function SettingsPage() {
                         <p className="text-sm text-muted-foreground">Membro desde 2024</p>
                         <div className="flex items-center gap-2 mt-2">
                           <Badge className="bg-primary text-white">Plano Starter</Badge>
-                          <Badge variant="outline" className="border-primary/30 text-primary">
-                            <Sparkles className="h-3 w-3 mr-1" />
-                            Lazy Mode
-                          </Badge>
                         </div>
                       </div>
                       <Button variant="outline" size="sm">Editar Foto</Button>
@@ -239,7 +235,7 @@ export default function SettingsPage() {
                   <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
                       <Sparkles className="h-4 w-4 text-primary" />
-                      Lazy Mode
+                      Assistência IA
                     </CardTitle>
                     <CardDescription>
                       Configure como a IA ajuda na categorizacao.
@@ -248,7 +244,7 @@ export default function SettingsPage() {
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between p-4 bg-primary/5 rounded-xl border border-primary/20">
                       <div>
-                        <p className="font-medium">Lazy Mode Ativo</p>
+                        <p className="font-medium">Categorização Automática</p>
                         <p className="text-sm text-muted-foreground">IA pre-analisa e sugere categorias</p>
                       </div>
                       <Switch checked={lazyMode} onCheckedChange={setLazyMode} />

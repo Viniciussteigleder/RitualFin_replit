@@ -563,7 +563,7 @@ export default function DashboardPage() {
                     <Sparkles className="h-6 w-6 text-amber-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-amber-900">Lazy Mode Ativo</h3>
+                    <h3 className="font-semibold text-amber-900">Categorização Inteligente</h3>
                     <p className="text-sm text-amber-700/80 mt-0.5">
                       {pendingCount} transação(ões) aguardando sua confirmação. A IA já pré-analisou cada uma.
                     </p>

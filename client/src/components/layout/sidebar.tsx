@@ -27,79 +27,109 @@ import { transactionsApi } from "@/lib/api";
 import { useMonth } from "@/lib/month-context";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-const NAV_ITEMS = [
+const NAV_CLUSTERS = [
   {
-    label: "Dashboard",
-    icon: LayoutDashboard,
-    href: "/dashboard",
-    description: "Visão geral do mês"
+    label: "Visão Geral",
+    items: [
+      {
+        label: "Dashboard",
+        icon: LayoutDashboard,
+        href: "/dashboard",
+        description: "Visão geral do mês"
+      },
+      {
+        label: "Calendário",
+        icon: Calendar,
+        href: "/calendar",
+        description: "Eventos e compromissos"
+      },
+      {
+        label: "Notificações",
+        icon: Bell,
+        href: "/notifications",
+        description: "Alertas e mensagens"
+      },
+    ]
   },
   {
-    label: "Notificações",
-    icon: Bell,
-    href: "/notifications",
-    description: "Alertas e mensagens"
+    label: "Planejamento",
+    items: [
+      {
+        label: "Orçamentos",
+        icon: Wallet,
+        href: "/budgets",
+        description: "Limites por categoria"
+      },
+      {
+        label: "Metas",
+        icon: Target,
+        href: "/goals",
+        description: "Planejamento financeiro"
+      },
+    ]
   },
   {
-    label: "Calendário",
-    icon: Calendar,
-    href: "/calendar",
-    description: "Eventos e compromissos"
+    label: "Ações",
+    items: [
+      {
+        label: "Confirmar",
+        icon: CheckCircle2,
+        href: "/confirm",
+        showBadge: true,
+        description: "Transações pendentes"
+      },
+      {
+        label: "Transações",
+        icon: Receipt,
+        href: "/transactions",
+        description: "Histórico completo"
+      },
+    ]
   },
   {
-    label: "Metas",
-    icon: Target,
-    href: "/goals",
-    description: "Planejamento financeiro"
+    label: "Automação",
+    items: [
+      {
+        label: "Regras",
+        icon: BookOpen,
+        href: "/rules",
+        description: "Categorização automática"
+      },
+      {
+        label: "IA Keywords",
+        icon: Brain,
+        href: "/ai-keywords",
+        description: "Análise inteligente em lote"
+      },
+    ]
   },
   {
-    label: "Orçamentos",
-    icon: Wallet,
-    href: "/budgets",
-    description: "Limites por categoria"
+    label: "Operações",
+    items: [
+      {
+        label: "Uploads",
+        icon: Upload,
+        href: "/uploads",
+        description: "Importar CSV"
+      },
+      {
+        label: "Contas",
+        icon: Wallet,
+        href: "/accounts",
+        description: "Gerenciar cartões e contas"
+      },
+    ]
   },
   {
-    label: "Rituais",
-    icon: Sparkles,
-    href: "/rituals",
-    description: "Revisão semanal e mensal"
-  },
-  { 
-    label: "Uploads", 
-    icon: Upload, 
-    href: "/uploads",
-    description: "Importar CSV"
-  },
-  {
-    label: "Confirmar",
-    icon: CheckCircle2,
-    href: "/confirm",
-    showBadge: true,
-    description: "Transações pendentes"
-  },
-  {
-    label: "Transações",
-    icon: Receipt,
-    href: "/transactions",
-    description: "Histórico completo"
-  },
-  {
-    label: "Regras",
-    icon: BookOpen,
-    href: "/rules",
-    description: "Categorização automática"
-  },
-  {
-    label: "Contas",
-    icon: Wallet,
-    href: "/accounts",
-    description: "Gerenciar cartões e contas"
-  },
-  {
-    label: "IA Keywords",
-    icon: Brain,
-    href: "/ai-keywords",
-    description: "Análise inteligente em lote"
+    label: "Colaboração",
+    items: [
+      {
+        label: "Rituais",
+        icon: Sparkles,
+        href: "/rituals",
+        description: "Revisão semanal e mensal"
+      },
+    ]
   },
 ];
 
@@ -216,65 +246,78 @@ export function Sidebar() {
           </div>
         )}
 
-        <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
-          {NAV_ITEMS.map((item) => {
-            const isActive = location === item.href;
-            const badge = item.showBadge && pendingCount > 0 ? pendingCount : null;
-            
-            const NavLink = (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setIsOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group relative",
-                  isActive 
-                    ? "bg-primary text-white shadow-lg shadow-primary/30" 
-                    : "text-white/70 hover:bg-white/10 hover:text-white"
-                )}
-                data-testid={`nav-${item.label.toLowerCase()}`}
-              >
-                <item.icon className={cn(
-                  "h-5 w-5 transition-colors",
-                  isActive ? "text-white" : "text-white/60 group-hover:text-white"
-                )} />
-                {!isCollapsed && (
-                  <>
-                    <span className="flex-1">{item.label}</span>
-                    {badge && (
-                      <span className={cn(
-                        "text-[10px] font-bold px-2 py-0.5 rounded-full",
-                        isActive 
-                          ? "bg-white/20 text-white" 
-                          : "bg-amber-500/20 text-amber-400"
-                      )}>
-                        {badge > 99 ? "99+" : badge}
-                      </span>
-                    )}
-                  </>
-                )}
-                {isCollapsed && badge && (
-                  <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                    {badge > 9 ? "9+" : badge}
+        <nav className="flex-1 py-4 px-3 overflow-y-auto">
+          {NAV_CLUSTERS.map((cluster, clusterIdx) => (
+            <div key={cluster.label} className={clusterIdx > 0 ? "mt-6" : ""}>
+              {!isCollapsed && (
+                <div className="px-3 mb-2">
+                  <span className="text-[10px] uppercase tracking-wider text-white/40 font-bold">
+                    {cluster.label}
                   </span>
-                )}
-              </Link>
-            );
+                </div>
+              )}
+              <div className="space-y-1">
+                {cluster.items.map((item) => {
+                  const isActive = location === item.href;
+                  const badge = item.showBadge && pendingCount > 0 ? pendingCount : null;
 
-            if (isCollapsed) {
-              return (
-                <Tooltip key={item.href} delayDuration={0}>
-                  <TooltipTrigger asChild>{NavLink}</TooltipTrigger>
-                  <TooltipContent side="right" className="font-medium">
-                    {item.label}
-                    {badge && <span className="ml-2 text-amber-500">({badge})</span>}
-                  </TooltipContent>
-                </Tooltip>
-              );
-            }
+                  const NavLink = (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setIsOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group relative",
+                        isActive
+                          ? "bg-primary text-white shadow-lg shadow-primary/30"
+                          : "text-white/70 hover:bg-white/10 hover:text-white"
+                      )}
+                      data-testid={`nav-${item.label.toLowerCase()}`}
+                    >
+                      <item.icon className={cn(
+                        "h-5 w-5 transition-colors",
+                        isActive ? "text-white" : "text-white/60 group-hover:text-white"
+                      )} />
+                      {!isCollapsed && (
+                        <>
+                          <span className="flex-1">{item.label}</span>
+                          {badge && (
+                            <span className={cn(
+                              "text-[10px] font-bold px-2 py-0.5 rounded-full",
+                              isActive
+                                ? "bg-white/20 text-white"
+                                : "bg-amber-500/20 text-amber-400"
+                            )}>
+                              {badge > 99 ? "99+" : badge}
+                            </span>
+                          )}
+                        </>
+                      )}
+                      {isCollapsed && badge && (
+                        <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                          {badge > 9 ? "9+" : badge}
+                        </span>
+                      )}
+                    </Link>
+                  );
 
-            return NavLink;
-          })}
+                  if (isCollapsed) {
+                    return (
+                      <Tooltip key={item.href} delayDuration={0}>
+                        <TooltipTrigger asChild>{NavLink}</TooltipTrigger>
+                        <TooltipContent side="right" className="font-medium">
+                          {item.label}
+                          {badge && <span className="ml-2 text-amber-500">({badge})</span>}
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  }
+
+                  return NavLink;
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         {!isCollapsed && pendingCount > 0 && (
@@ -284,9 +327,9 @@ export function Sidebar() {
                 <TrendingUp className="h-4 w-4 text-amber-400" />
               </div>
               <div>
-                <p className="text-xs font-semibold text-amber-400">Lazy Mode</p>
+                <p className="text-xs font-semibold text-amber-400">IA Ativa</p>
                 <p className="text-[11px] text-white/60 mt-0.5">
-                  {highConfidenceCount > 0 
+                  {highConfidenceCount > 0
                     ? `${highConfidenceCount} com alta confianca`
                     : `${pendingCount} aguardando revisao`
                   }

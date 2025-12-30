@@ -8,7 +8,7 @@ import { budgetsApi, dashboardApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { Trash2, Plus, TrendingUp, TrendingDown } from "lucide-react";
+import { Trash2, Plus, TrendingUp, TrendingDown, Sparkles, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const CATEGORIES = [
@@ -26,6 +26,7 @@ export default function BudgetsPage() {
   const { toast } = useToast();
   const [newCategory, setNewCategory] = useState("");
   const [newAmount, setNewAmount] = useState("");
+  const [showAISuggestions, setShowAISuggestions] = useState(true);
 
   const { data: budgets = [] } = useQuery({
     queryKey: ["budgets", month],
@@ -35,6 +36,20 @@ export default function BudgetsPage() {
   const { data: dashboard } = useQuery({
     queryKey: ["dashboard", month],
     queryFn: () => dashboardApi.get(month),
+  });
+
+  // Get previous months for AI suggestions
+  const prevMonths = Array.from({ length: 3 }, (_, i) => {
+    const [year, m] = month.split("-").map(Number);
+    const d = new Date(year, m - 2 - i, 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
+
+  const { data: prevDashboards = [] } = useQuery({
+    queryKey: ["prev-dashboards", ...prevMonths],
+    queryFn: async () => {
+      return Promise.all(prevMonths.map(m => dashboardApi.get(m)));
+    },
   });
 
   const createBudget = useMutation({
@@ -93,6 +108,43 @@ export default function BudgetsPage() {
     (cat) => !budgets.find((b: any) => b.category1 === cat)
   );
 
+  // Calculate AI suggestions
+  const getAISuggestions = () => {
+    const suggestions: Record<string, { last: number; avg: number; trend: "up" | "down" | "stable" }> = {};
+
+    CATEGORIES.forEach(category => {
+      const amounts = prevDashboards
+        .map((dash: any) => {
+          const cat = dash?.spentByCategory?.find((c: any) => c.category === category);
+          return cat ? Math.abs(cat.amount) : 0;
+        })
+        .filter((amt: number) => amt > 0);
+
+      if (amounts.length > 0) {
+        const lastMonth = amounts[0] || 0;
+        const avg = amounts.reduce((sum: number, amt: number) => sum + amt, 0) / amounts.length;
+        const trend = lastMonth > avg * 1.1 ? "up" : lastMonth < avg * 0.9 ? "down" : "stable";
+        suggestions[category] = { last: lastMonth, avg: Math.round(avg), trend };
+      }
+    });
+
+    return suggestions;
+  };
+
+  const aiSuggestions = getAISuggestions();
+  const hasAISuggestions = Object.keys(aiSuggestions).length > 0;
+
+  const applyAISuggestions = () => {
+    Object.entries(aiSuggestions).forEach(([category, data]) => {
+      const existingBudget = budgets.find((b: any) => b.category1 === category);
+      if (!existingBudget && data.avg > 0) {
+        createBudget.mutate({ category1: category, amount: data.avg });
+      }
+    });
+    toast({ title: "Sugestões aplicadas com sucesso" });
+    setShowAISuggestions(false);
+  };
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -104,6 +156,71 @@ export default function BudgetsPage() {
             Defina limites de gasto por categoria para {formatMonth(month)}
           </p>
         </div>
+
+        {/* AI Budget Suggestions */}
+        {hasAISuggestions && showAISuggestions && (
+          <Card className="bg-gradient-to-r from-primary/5 to-emerald-50 border-primary/20">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  Sugestões Inteligentes de Orçamento
+                </CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={applyAISuggestions}
+                  className="gap-2"
+                >
+                  <Copy className="h-4 w-4" />
+                  Aplicar Sugestões
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Baseado nos últimos 3 meses de gastos
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {Object.entries(aiSuggestions).slice(0, 6).map(([category, data]) => (
+                  <div
+                    key={category}
+                    className="bg-white/80 backdrop-blur rounded-lg p-3 border border-primary/10"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className="font-semibold text-sm">{category}</h4>
+                      {data.trend === "up" ? (
+                        <TrendingUp className="h-4 w-4 text-red-500" />
+                      ) : data.trend === "down" ? (
+                        <TrendingDown className="h-4 w-4 text-green-500" />
+                      ) : null}
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Média 3 meses:</span>
+                        <span className="font-bold text-primary">
+                          {data.avg.toLocaleString("pt-BR", {
+                            style: "currency",
+                            currency: "EUR",
+                          })}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Mês anterior:</span>
+                        <span className="font-medium">
+                          {data.last.toLocaleString("pt-BR", {
+                            style: "currency",
+                            currency: "EUR",
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Add New Budget */}
         <Card>
