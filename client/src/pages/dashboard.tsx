@@ -51,6 +51,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const CATEGORY_ICONS: Record<string, any> = {
   "Moradia": Home,
@@ -103,6 +104,7 @@ interface Insight {
 export default function DashboardPage() {
   const { month, formatMonth } = useMonth();
   const [accountFilter, setAccountFilter] = useState<string>("all");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const { data: accounts = [] } = useQuery({
     queryKey: ["accounts"],
@@ -466,12 +468,14 @@ export default function DashboardPage() {
                     
                     return (
                       <div key={cat.category} className="flex items-center gap-3">
-                        <div 
-                          className="w-11 h-11 rounded-xl flex items-center justify-center"
+                        <button
+                          onClick={() => setSelectedCategory(cat.category)}
+                          className="w-11 h-11 rounded-xl flex items-center justify-center cursor-pointer hover:scale-110 transition-transform"
                           style={{ backgroundColor: `${color}15` }}
+                          title={`Ver detalhes de ${cat.category}`}
                         >
                           <Icon className="h-5 w-5" style={{ color }} />
-                        </div>
+                        </button>
                         <div className="flex-1">
                           <div className="flex items-center justify-between mb-1.5">
                             <span className="font-semibold text-sm">{cat.category}</span>
@@ -634,6 +638,159 @@ export default function DashboardPage() {
         )}
       </div>
     </AppLayout>
+
+    <Dialog open={!!selectedCategory} onOpenChange={() => setSelectedCategory(null)}>
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-3">
+            {selectedCategory && (() => {
+              const Icon = CATEGORY_ICONS[selectedCategory] || CreditCard;
+              const color = CATEGORY_COLORS[selectedCategory] || "#6b7280";
+              return (
+                <>
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    style={{ backgroundColor: `${color}15` }}
+                  >
+                    <Icon className="h-5 w-5" style={{ color }} />
+                  </div>
+                  <span>Detalhes: {selectedCategory}</span>
+                </>
+              );
+            })()}
+          </DialogTitle>
+        </DialogHeader>
+
+        {selectedCategory && (() => {
+          const categoryTransactions = filteredTransactions.filter(
+            (t: any) => t.category1 === selectedCategory
+          );
+          const categoryTotal = categoryTransactions.reduce((sum: number, t: any) => sum + Math.abs(t.amount), 0);
+
+          // Group by merchant
+          const merchantGroups = categoryTransactions.reduce((acc: any, t: any) => {
+            const merchantName = t.descRaw?.split(" -- ")[0]?.replace(/\s+\d{4,}/g, '').trim() || "Outros";
+            if (!acc[merchantName]) {
+              acc[merchantName] = { name: merchantName, total: 0, count: 0, transactions: [] };
+            }
+            acc[merchantName].total += Math.abs(t.amount);
+            acc[merchantName].count += 1;
+            acc[merchantName].transactions.push(t);
+            return acc;
+          }, {});
+
+          const topMerchants = Object.values(merchantGroups)
+            .sort((a: any, b: any) => b.total - a.total)
+            .slice(0, 5);
+
+          const color = CATEGORY_COLORS[selectedCategory] || "#6b7280";
+
+          return (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <Card className="border-0 shadow-sm">
+                  <CardContent className="p-4">
+                    <p className="text-xs text-muted-foreground uppercase mb-1">Total Gasto</p>
+                    <p className="text-2xl font-bold" style={{ color }}>
+                      {categoryTotal.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card className="border-0 shadow-sm">
+                  <CardContent className="p-4">
+                    <p className="text-xs text-muted-foreground uppercase mb-1">Transações</p>
+                    <p className="text-2xl font-bold text-foreground">
+                      {categoryTransactions.length}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-sm mb-3 text-muted-foreground uppercase tracking-wide">
+                  Top 5 Merchants
+                </h3>
+                <div className="space-y-2">
+                  {topMerchants.map((merchant: any) => {
+                    const merchantInfo = getMerchantIcon(merchant.name);
+                    const Icon = merchantInfo?.icon || (CATEGORY_ICONS[selectedCategory] || CreditCard);
+                    const iconColor = merchantInfo?.color || color;
+                    const percentage = categoryTotal > 0 ? Math.round((merchant.total / categoryTotal) * 100) : 0;
+
+                    return (
+                      <div key={merchant.name} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/30">
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                          style={{ backgroundColor: `${iconColor}15` }}
+                        >
+                          <Icon className="h-4 w-4" style={{ color: iconColor }} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{merchant.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {merchant.count} transação(ões)
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold">{percentage}%</p>
+                          <p className="text-xs text-muted-foreground">
+                            {merchant.total.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-sm mb-3 text-muted-foreground uppercase tracking-wide">
+                  Todas as Transações
+                </h3>
+                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                  {categoryTransactions.slice(0, 20).map((t: any) => {
+                    const merchantInfo = getMerchantIcon(t.descRaw);
+                    const Icon = merchantInfo?.icon || (CATEGORY_ICONS[t.category1] || CreditCard);
+                    const iconColor = merchantInfo?.color || color;
+                    const merchantName = t.descRaw?.split(" -- ")[0]?.replace(/\s+\d{4,}/g, '').trim() || t.descRaw;
+
+                    return (
+                      <div key={t.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/30">
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                          style={{ backgroundColor: `${iconColor}15` }}
+                        >
+                          <Icon className="h-4 w-4" style={{ color: iconColor }} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{merchantName}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(t.paymentDate), "dd MMM yyyy", { locale: ptBR })}
+                          </p>
+                        </div>
+                        <p className="text-sm font-bold text-foreground">
+                          {Math.abs(t.amount).toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+                {categoryTransactions.length > 20 && (
+                  <div className="mt-3 text-center">
+                    <Link href={`/transactions?category=${selectedCategory}`}>
+                      <Button variant="outline" size="sm" className="text-xs">
+                        Ver todas ({categoryTransactions.length} transações)
+                        <ChevronRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+      </DialogContent>
+    </Dialog>
     </>
   );
 }

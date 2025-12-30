@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { 
@@ -57,6 +58,8 @@ const CATEGORIES = ["Moradia", "Mercado", "Compras Online", "Transporte", "Saúd
 interface KeywordSuggestion {
   keyword: string;
   suggestedCategory: string;
+  suggestedCategory2?: string | null;
+  suggestedCategory3?: string | null;
   suggestedType: "Despesa" | "Receita";
   suggestedFixVar: "Fixo" | "Variável";
   confidence: number;
@@ -327,28 +330,59 @@ export default function AIKeywordsPage() {
                                 Exemplos: {suggestion.samples.join(", ")}
                               </p>
                             )}
+
+                            <div className="grid grid-cols-3 gap-2 mt-3">
+                              <div>
+                                <label className="text-[10px] text-muted-foreground uppercase font-semibold block mb-1">
+                                  Nível 1
+                                </label>
+                                <Select
+                                  value={effective.suggestedCategory}
+                                  onValueChange={(v) => updateSuggestion(suggestion.keyword, "suggestedCategory", v)}
+                                >
+                                  <SelectTrigger className="h-8 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {CATEGORIES.map(cat => (
+                                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div>
+                                <label className="text-[10px] text-muted-foreground uppercase font-semibold block mb-1">
+                                  Nível 2
+                                </label>
+                                <Input
+                                  value={effective.suggestedCategory2 || ""}
+                                  onChange={(e) => updateSuggestion(suggestion.keyword, "suggestedCategory2", e.target.value)}
+                                  placeholder="Ex: Supermercado"
+                                  className="h-8 text-xs"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="text-[10px] text-muted-foreground uppercase font-semibold block mb-1">
+                                  Nível 3
+                                </label>
+                                <Input
+                                  value={effective.suggestedCategory3 || ""}
+                                  onChange={(e) => updateSuggestion(suggestion.keyword, "suggestedCategory3", e.target.value)}
+                                  placeholder="Ex: LIDL"
+                                  className="h-8 text-xs"
+                                />
+                              </div>
+                            </div>
                           </div>
-                          
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <Select 
-                              value={effective.suggestedCategory}
-                              onValueChange={(v) => updateSuggestion(suggestion.keyword, "suggestedCategory", v)}
-                            >
-                              <SelectTrigger className="w-[140px] h-9">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {CATEGORIES.map(cat => (
-                                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            
-                            <Select 
+
+                          <div className="flex flex-col items-end gap-2 flex-shrink-0 ml-4">
+                            <Select
                               value={effective.suggestedType}
                               onValueChange={(v) => updateSuggestion(suggestion.keyword, "suggestedType", v)}
                             >
-                              <SelectTrigger className="w-[100px] h-9">
+                              <SelectTrigger className="w-[100px] h-8">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -356,7 +390,7 @@ export default function AIKeywordsPage() {
                                 <SelectItem value="Receita">Receita</SelectItem>
                               </SelectContent>
                             </Select>
-                            
+
                             <span className="font-bold text-sm w-24 text-right">
                               {suggestion.total.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
                             </span>
