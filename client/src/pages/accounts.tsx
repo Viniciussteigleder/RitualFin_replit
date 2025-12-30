@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Archive, Loader2, CreditCard, Landmark, Wallet, Coins, Edit2, CircleCheck } from "lucide-react";
+import { Plus, Search, Archive, Loader2, CreditCard, Landmark, Wallet, Coins, Edit2, CircleCheck, AlertTriangle, TrendingUp, Calendar as CalendarIcon } from "lucide-react";
+import { getAccountIcon } from "@/lib/icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { accountsApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -188,6 +189,51 @@ export default function AccountsPage() {
           </CardContent>
         </Card>
 
+        {/* Net Position Card */}
+        {!isLoading && accounts.length > 0 && (
+          <Card className="bg-gradient-to-r from-primary/5 to-emerald-50 border-primary/20">
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Posição Líquida Simulada</p>
+                  <h2 className="text-3xl font-bold text-primary">
+                    {(() => {
+                      // Calculate: Bank balance - (sum of card balances)
+                      const bankAccounts = accounts.filter((a: any) => a.type === "bank_account");
+                      const creditCards = accounts.filter((a: any) => a.type === "credit_card");
+
+                      const bankBalance = bankAccounts.reduce((sum: number, a: any) => sum + (a.balance || 0), 0);
+                      const cardUsed = creditCards.reduce((sum: number, a: any) => sum + Math.abs(a.balance || 0), 0);
+                      const netPosition = bankBalance - cardUsed;
+
+                      return netPosition.toLocaleString("pt-BR", { style: "currency", currency: "EUR" });
+                    })()}
+                  </h2>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Saldo bancário menos saldos dos cartões
+                  </p>
+                </div>
+                {(() => {
+                  const hasStaleBalance = accounts.some((a: any) => {
+                    if (!a.balanceUpdatedAt) return false;
+                    const daysSince = Math.floor(
+                      (new Date().getTime() - new Date(a.balanceUpdatedAt).getTime()) / (1000 * 60 * 60 * 24)
+                    );
+                    return daysSince > 7;
+                  });
+
+                  return hasStaleBalance && (
+                    <div className="flex items-center gap-2 text-amber-600 bg-amber-100 px-3 py-1.5 rounded-lg">
+                      <AlertTriangle className="h-4 w-4" />
+                      <span className="text-xs font-medium">Saldos desatualizados</span>
+                    </div>
+                  );
+                })()}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Accounts List */}
         {isLoading ? (
           <CardGridSkeleton count={6} />
@@ -241,18 +287,90 @@ export default function AccountsPage() {
                       </div>
                     </div>
                     <h3 className="font-semibold text-lg mb-1">{account.name}</h3>
-                    <div className="flex items-center gap-2 mb-3">
+                    <div className="flex items-center gap-2 mb-3 flex-wrap">
                       <Badge variant="outline" className="text-xs">
                         {ACCOUNT_TYPE_LABELS[account.type]}
                       </Badge>
+                      {account.lastUploadDate && (
+                        <Badge variant="secondary" className="text-[10px] px-1.5">
+                          <CalendarIcon className="h-3 w-3 mr-1" />
+                          Último upload: {new Date(account.lastUploadDate).toLocaleDateString("pt-BR")}
+                        </Badge>
+                      )}
                       {account.accountNumber && (
                         <span className="text-xs text-muted-foreground">
                           •••• {account.accountNumber}
                         </span>
                       )}
                     </div>
+
+                    {/* Balance */}
+                    {account.balance !== undefined && account.balance !== null && (
+                      <div className="mt-3 pt-3 border-t">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-muted-foreground">Saldo</span>
+                          {account.balanceUpdatedAt && (
+                            <span className="text-[10px] text-muted-foreground">
+                              Atualizado em {new Date(account.balanceUpdatedAt).toLocaleDateString("pt-BR")}
+                            </span>
+                          )}
+                        </div>
+                        <p className={cn(
+                          "text-xl font-bold",
+                          account.balance >= 0 ? "text-emerald-600" : "text-rose-600"
+                        )}>
+                          {account.balance.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Credit Card: Limit Bar + Available to Spend */}
+                    {account.type === "credit_card" && account.limit && (
+                      <div className="mt-3 pt-3 border-t space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">Limite</span>
+                          <span className="font-medium">
+                            {account.limit.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                          </span>
+                        </div>
+
+                        {/* Limit Bar */}
+                        {(() => {
+                          const used = Math.abs(account.balance || 0);
+                          const available = Math.max(0, account.limit - used);
+                          const usedPercent = account.limit > 0 ? (used / account.limit) * 100 : 0;
+
+                          return (
+                            <>
+                              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                <div
+                                  className={cn(
+                                    "h-full transition-all",
+                                    usedPercent > 90 ? "bg-red-500" :
+                                    usedPercent > 70 ? "bg-amber-500" : "bg-primary"
+                                  )}
+                                  style={{ width: `${Math.min(usedPercent, 100)}%` }}
+                                />
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs text-muted-foreground">
+                                  {used.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })} usado
+                                </span>
+                                <div className="flex items-center gap-1">
+                                  <TrendingUp className="h-3 w-3 text-emerald-600" />
+                                  <span className="text-xs font-bold text-emerald-600">
+                                    {available.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })} disponível
+                                  </span>
+                                </div>
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    )}
+
                     {account.isActive && (
-                      <div className="flex items-center gap-1 text-xs text-emerald-600">
+                      <div className="flex items-center gap-1 text-xs text-emerald-600 mt-3">
                         <CircleCheck className="h-3 w-3" />
                         Ativa
                       </div>
