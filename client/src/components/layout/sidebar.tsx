@@ -12,7 +12,6 @@ import {
   ChevronRight,
   BookOpen,
   Sparkles,
-  TrendingUp,
   Calendar,
   Target,
   Brain,
@@ -145,7 +144,6 @@ export function Sidebar() {
   });
 
   const pendingCount = confirmQueue.length;
-  const highConfidenceCount = confirmQueue.filter((t: any) => (t.confidence || 0) >= 80).length;
 
   const prevMonth = () => {
     const [year, m] = month.split("-").map(Number);
@@ -319,25 +317,6 @@ export function Sidebar() {
             </div>
           ))}
         </nav>
-
-        {!isCollapsed && pendingCount > 0 && (
-          <div className="mx-3 mb-4 p-3 bg-gradient-to-r from-amber-500/20 to-orange-500/20 rounded-xl border border-amber-500/30">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0">
-                <TrendingUp className="h-4 w-4 text-amber-400" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-amber-400">IA Ativa</p>
-                <p className="text-[11px] text-white/60 mt-0.5">
-                  {highConfidenceCount > 0
-                    ? `${highConfidenceCount} com alta confianca`
-                    : `${pendingCount} aguardando revisao`
-                  }
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
 
         <div className="p-3 border-t border-white/10 space-y-1">
           {isCollapsed ? (

@@ -57,7 +57,13 @@
       "Bash(git branch:*)",
       "Bash(npm run build:*)",
       "Bash(python3:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(if [ -f \".vercel/project.json\" ])",
+      "Bash(then cat .vercel/project.json)",
+      "Bash(else echo \"No .vercel/project.json found\")",
+      "Bash(xargs cat:*)",
+      "Bash(xargs ps:*)",
+      "Bash(timeout 5 curl:*)"
     ]
   }
 }
