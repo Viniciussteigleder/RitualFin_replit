@@ -186,6 +186,51 @@ export default function RulesPage() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Regras');
 
+    // Add reference sheet with all available categories
+    const categoryReference = [
+      { 'Categoria Nível 1': 'Mercado', 'Exemplos Nível 2': 'Supermercado, Padaria, Feira', 'Exemplos Nível 3': 'LIDL, REWE, EDEKA' },
+      { 'Categoria Nível 1': 'Lazer', 'Exemplos Nível 2': 'Streaming, Cinema, Restaurante', 'Exemplos Nível 3': 'Netflix, Spotify, McDonald\'s' },
+      { 'Categoria Nível 1': 'Transporte', 'Exemplos Nível 2': 'Combustível, Transporte Público, Taxi', 'Exemplos Nível 3': 'Shell, Uber, DB' },
+      { 'Categoria Nível 1': 'Moradia', 'Exemplos Nível 2': 'Aluguel, Condomínio, Utilidades', 'Exemplos Nível 3': 'Água, Luz, Gás' },
+      { 'Categoria Nível 1': 'Saúde', 'Exemplos Nível 2': 'Farmácia, Médico, Academia', 'Exemplos Nível 3': 'Plano de Saúde, Dentista' },
+      { 'Categoria Nível 1': 'Educação', 'Exemplos Nível 2': 'Cursos, Livros, Material', 'Exemplos Nível 3': 'Udemy, Coursera' },
+      { 'Categoria Nível 1': 'Compras Online', 'Exemplos Nível 2': 'E-commerce, Marketplace', 'Exemplos Nível 3': 'Amazon, eBay, Zalando' },
+      { 'Categoria Nível 1': 'Receitas', 'Exemplos Nível 2': 'Salário, Freelance, Investimentos', 'Exemplos Nível 3': 'Empresa, Cliente A' },
+      { 'Categoria Nível 1': 'Interno', 'Exemplos Nível 2': 'Transferências entre contas', 'Exemplos Nível 3': 'Poupança, Investimento' },
+      { 'Categoria Nível 1': 'Outros', 'Exemplos Nível 2': 'Diversos', 'Exemplos Nível 3': 'Não categorizado' }
+    ];
+
+    const wsReference = XLSX.utils.json_to_sheet(categoryReference);
+    wsReference['!cols'] = [
+      { wch: 25 }, // Categoria Nível 1
+      { wch: 40 }, // Exemplos Nível 2
+      { wch: 40 }  // Exemplos Nível 3
+    ];
+    XLSX.utils.book_append_sheet(wb, wsReference, 'Categorias Disponíveis');
+
+    // Add instructions sheet
+    const instructions = [
+      { 'INSTRUÇÕES': 'Como usar este arquivo de regras' },
+      { 'INSTRUÇÕES': '' },
+      { 'INSTRUÇÕES': '1. Aba "Regras": Suas regras de categorização atuais' },
+      { 'INSTRUÇÕES': '2. Aba "Categorias Disponíveis": Lista completa de categorias e exemplos' },
+      { 'INSTRUÇÕES': '' },
+      { 'INSTRUÇÕES': 'Para importar regras:' },
+      { 'INSTRUÇÕES': '- Edite a aba "Regras" com suas alterações' },
+      { 'INSTRUÇÕES': '- Use categorias da aba "Categorias Disponíveis"' },
+      { 'INSTRUÇÕES': '- Categorias 2 e 3 são opcionais' },
+      { 'INSTRUÇÕES': '- Salve e importe de volta no RitualFin' },
+      { 'INSTRUÇÕES': '' },
+      { 'INSTRUÇÕES': 'Hierarquia de Categorias:' },
+      { 'INSTRUÇÕES': '- Nível 1: Categoria principal (obrigatório)' },
+      { 'INSTRUÇÕES': '- Nível 2: Subcategoria (opcional, texto livre)' },
+      { 'INSTRUÇÕES': '- Nível 3: Especificação (opcional, texto livre)' }
+    ];
+
+    const wsInstructions = XLSX.utils.json_to_sheet(instructions);
+    wsInstructions['!cols'] = [{ wch: 80 }];
+    XLSX.utils.book_append_sheet(wb, wsInstructions, 'Instruções');
+
     // Generate filename with current date
     const date = new Date().toISOString().split('T')[0];
     const filename = `ritualfin_regras_${date}.xlsx`;
@@ -193,7 +238,10 @@ export default function RulesPage() {
     // Download file
     XLSX.writeFile(wb, filename);
 
-    toast({ title: `${rules.length} regras exportadas com sucesso` });
+    toast({
+      title: `${rules.length} regras exportadas com sucesso`,
+      description: "Inclui categorias disponíveis e instruções"
+    });
   };
 
   const handleUploadExcel = (event: React.ChangeEvent<HTMLInputElement>) => {
