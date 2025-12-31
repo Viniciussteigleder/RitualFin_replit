@@ -63,7 +63,9 @@
       "Bash(else echo \"No .vercel/project.json found\")",
       "Bash(xargs cat:*)",
       "Bash(xargs ps:*)",
-      "Bash(timeout 5 curl:*)"
+      "Bash(timeout 5 curl:*)",
+      "Bash(ls:*)",
+      "Bash(git fetch:*)"
     ]
   }
 }

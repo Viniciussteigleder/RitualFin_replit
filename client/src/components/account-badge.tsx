@@ -14,6 +14,7 @@ interface AccountBadgeProps {
   account: Account | null | undefined;
   className?: string;
   showIcon?: boolean;
+  iconOnly?: boolean;
   size?: "sm" | "md" | "lg";
 }
 
@@ -28,10 +29,11 @@ export function AccountBadge({
   account,
   className,
   showIcon = true,
+  iconOnly = false,
   size = "md"
 }: AccountBadgeProps) {
   if (!account) {
-    return (
+    return iconOnly ? null : (
       <span className={cn("text-xs text-muted-foreground", className)}>
         Sem conta
       </span>
@@ -52,6 +54,31 @@ export function AccountBadge({
     md: "h-3.5 w-3.5",
     lg: "h-4 w-4"
   };
+
+  const containerSizes = {
+    sm: "w-7 h-7",
+    md: "w-8 h-8",
+    lg: "w-9 h-9"
+  };
+
+  if (iconOnly) {
+    return (
+      <div
+        className={cn(
+          "inline-flex items-center justify-center rounded-lg",
+          containerSizes[size],
+          className
+        )}
+        style={{ backgroundColor: `${color}15` }}
+        title={account.name}
+      >
+        <IconComponent
+          className={iconSizes[size]}
+          style={{ color }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={cn(

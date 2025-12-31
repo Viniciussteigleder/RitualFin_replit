@@ -318,6 +318,69 @@ export async function registerRoutes(
     }
   });
 
+  // Get last upload status by account (Sparkasse, Amex, Miles & More)
+  app.get("/api/uploads/last-by-account", async (_req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.json([]);
+
+      const uploads = await storage.getUploads(user.id);
+
+      // Group by account type (detected from CSV format)
+      const byAccount: Record<string, any> = {};
+
+      for (const upload of uploads) {
+        // Detect account from filename patterns
+        let accountType = "unknown";
+        const filename = upload.filename.toLowerCase();
+
+        if (filename.includes("sparkasse") || filename.includes("umsatz")) {
+          accountType = "sparkasse";
+        } else if (filename.includes("amex") || filename.includes("activity")) {
+          accountType = "amex";
+        } else if (filename.includes("miles") || filename.includes("transactions_list")) {
+          accountType = "miles-more";
+        }
+
+        // Keep the most recent upload for each account
+        if (!byAccount[accountType] || new Date(upload.createdAt) > new Date(byAccount[accountType].createdAt)) {
+          byAccount[accountType] = upload;
+        }
+      }
+
+      // Get the latest transaction date for each account to show "imported through"
+      const accountsWithLatestDate = await Promise.all(
+        Object.entries(byAccount).map(async ([accountType, upload]) => {
+          // Get transactions from this upload
+          const allTransactions = await storage.getTransactions(user.id);
+          const uploadTransactions = allTransactions.filter((t: any) => t.uploadId === upload.id);
+
+          // Find latest payment date
+          let importedThrough = null;
+          if (uploadTransactions.length > 0) {
+            const latestDate = uploadTransactions.reduce((latest: Date, t: any) => {
+              const txDate = new Date(t.paymentDate);
+              return txDate > latest ? txDate : latest;
+            }, new Date(0));
+            importedThrough = latestDate.toISOString().split('T')[0];
+          }
+
+          return {
+            accountType,
+            lastUploadDate: upload.createdAt,
+            importedThrough,
+            rowsImported: upload.rowsImported,
+            status: upload.status
+          };
+        })
+      );
+
+      res.json(accountsWithLatestDate);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Process CSV upload
   app.post("/api/uploads/process", async (req: Request, res: Response) => {
     const startTime = Date.now();
@@ -2078,15 +2141,22 @@ export async function registerRoutes(
       const systemPrompt = `Você é um assistente financeiro especializado em categorização de transações bancárias.
 Analise a lista de palavras-chave e exemplos de transações e sugira a categoria mais adequada para cada uma.
 
-Categorias disponíveis: ${categories.join(", ")}
+Categorias disponíveis (Nível 1): ${categories.join(", ")}
 
-Para cada palavra-chave, retorne um JSON com:
+Para cada palavra-chave, retorne um JSON com categorização em 3 níveis:
 - keyword: a palavra-chave
-- suggestedCategory: a categoria sugerida
+- suggestedCategory: a categoria principal (Nível 1) - obrigatório, deve ser uma das categorias listadas acima
+- suggestedCategory2: subcategoria (Nível 2) - opcional, texto livre (ex: "Supermercado", "Restaurante", "Combustível")
+- suggestedCategory3: especificação (Nível 3) - opcional, texto livre (ex: "LIDL", "McDonald's", "Shell")
 - suggestedType: "Despesa" ou "Receita"
 - suggestedFixVar: "Fixo" ou "Variável"
 - confidence: número de 0 a 100 indicando sua confiança
 - reason: explicação breve em português
+
+Exemplos de categorização em 3 níveis:
+- "LIDL" → Nível 1: "Mercado", Nível 2: "Supermercado", Nível 3: "LIDL"
+- "STADTWERK" → Nível 1: "Moradia", Nível 2: "Utilidades", Nível 3: "Água/Gás"
+- "SHELL" → Nível 1: "Transporte", Nível 2: "Combustível", Nível 3: "Shell"
 
 Retorne APENAS um array JSON válido, sem markdown ou texto adicional.`;
 
@@ -2118,6 +2188,8 @@ Retorne APENAS um array JSON válido, sem markdown ou texto adicional.`;
         suggestions = keywordList.map(k => ({
           keyword: k.keyword,
           suggestedCategory: "Outros",
+          suggestedCategory2: null,
+          suggestedCategory3: null,
           suggestedType: "Despesa",
           suggestedFixVar: "Variável",
           confidence: 50,
@@ -2168,7 +2240,8 @@ Retorne APENAS um array JSON válido, sem markdown ou texto adicional.`;
           type: s.suggestedType || "Despesa",
           fixVar: s.suggestedFixVar || "Variável",
           category1: s.suggestedCategory || "Outros",
-          category2: null,
+          category2: s.suggestedCategory2 || null,
+          category3: s.suggestedCategory3 || null,
           priority: 600,
           strict: false,
           isSystem: false
@@ -2183,6 +2256,8 @@ Retorne APENAS um array JSON válido, sem markdown ou texto adicional.`;
               type: s.suggestedType || "Despesa",
               fixVar: s.suggestedFixVar || "Variável",
               category1: s.suggestedCategory || "Outros",
+              category2: s.suggestedCategory2 || null,
+              category3: s.suggestedCategory3 || null,
               needsReview: false,
               confidence: s.confidence || 80,
               ruleIdApplied: rule.id
