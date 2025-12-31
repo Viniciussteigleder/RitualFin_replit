@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { AccountBadge } from "@/components/account-badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getMerchantIcon } from "@/lib/merchant-icons";
 
 interface TransactionForm {
   type: string;
@@ -301,7 +302,8 @@ export default function ConfirmPage() {
                     const confidence = t.confidence || 0;
                     const hasSuggestion = !!t.category1;
                     const categoryColor = CATEGORY_COLORS[form.category1] || "#6b7280";
-                    
+                    const merchantInfo = getMerchantIcon(t.descRaw);
+
                     return (
                       <tr 
                         key={t.id} 
@@ -325,7 +327,17 @@ export default function ConfirmPage() {
                           <AccountBadge account={accountsById[t.accountId]} size="sm" />
                         </td>
                         <td className="px-5 py-4">
-                          <p className="font-medium truncate max-w-[250px]">{t.merchantAlias || t.descRaw?.split(" -- ")[0]}</p>
+                          <div className="flex items-center gap-2">
+                            {merchantInfo && (
+                              <div
+                                className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                                style={{ backgroundColor: `${merchantInfo.color}15` }}
+                              >
+                                <merchantInfo.icon className="w-4 h-4" style={{ color: merchantInfo.color }} />
+                              </div>
+                            )}
+                            <p className="font-medium truncate max-w-[220px]">{t.merchantAlias || t.descRaw?.split(" -- ")[0]}</p>
+                          </div>
                         </td>
                         <td className="px-5 py-4 text-right font-semibold whitespace-nowrap">
                           <span className={t.amount > 0 ? "text-emerald-600" : ""}>
