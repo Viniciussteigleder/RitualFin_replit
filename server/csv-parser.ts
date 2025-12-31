@@ -160,22 +160,36 @@ function detectCsvFormat(lines: string[]): { format: CsvFormat; separator: strin
     if (commaCols.some(c => c.toLowerCase() === "datum") &&
         commaCols.some(c => c.toLowerCase() === "beschreibung") &&
         commaCols.some(c => c.toLowerCase() === "karteninhaber")) {
+      logger.info("csv_format_detected", { format: "amex", line: i, headers: commaCols });
       return { format: "amex", separator: "," };
     }
 
     const semiCols = line.split(";").map(c => c.trim().replace(/^"|"$/g, ""));
 
     if (semiCols.some(c => c.toLowerCase() === "authorised on")) {
+      logger.info("csv_format_detected", { format: "miles_and_more", line: i, headers: semiCols });
       return { format: "miles_and_more", separator: ";" };
     }
 
     if (semiCols.some(c => c.toLowerCase() === "auftragskonto") &&
         semiCols.some(c => c.toLowerCase() === "buchungstag") &&
         semiCols.some(c => c.toLowerCase() === "verwendungszweck")) {
+      logger.info("csv_format_detected", {
+        format: "sparkasse",
+        line: i,
+        headers: semiCols,
+        hasAuftragskonto: true,
+        hasBuchungstag: true,
+        hasVerwendungszweck: true
+      });
       return { format: "sparkasse", separator: ";" };
     }
   }
 
+  logger.warn("csv_format_unknown", {
+    firstLine: lines[0]?.substring(0, 200),
+    lineCount: lines.length
+  });
   return { format: "unknown", separator: ";" };
 }
 
@@ -559,6 +573,12 @@ function parseSparkasse(lines: string[]): ParseResult {
   const headerIndex = 0;
   const headers = parseCSVLine(lines[headerIndex], ";");
 
+  logger.info("sparkasse_parse_start", {
+    totalLines: lines.length,
+    headersFound: headers,
+    headerCount: headers.length
+  });
+
   // Build column index
   const colIndex: Record<string, number> = {};
   headers.forEach((h, i) => {
@@ -571,10 +591,15 @@ function parseSparkasse(lines: string[]): ParseResult {
   );
 
   if (missingColumns.length > 0) {
+    logger.error("sparkasse_missing_columns", {
+      required: SPARKASSE_REQUIRED_COLUMNS,
+      found: headers,
+      missing: missingColumns
+    });
     return {
       success: false,
       transactions: [],
-      errors: [`Sparkasse CSV invalido: faltam colunas obrigatorias: ${missingColumns.join(", ")}`],
+      errors: [`Sparkasse CSV inválido: faltam colunas obrigatórias: ${missingColumns.join(", ")}. Colunas encontradas: ${headers.join(", ")}`],
       rowsTotal: lines.length - 1,
       rowsImported: 0,
       monthAffected: "",
@@ -590,13 +615,20 @@ function parseSparkasse(lines: string[]): ParseResult {
       const auftragskonto = cols[colIndex["auftragskonto"]] || "";
       const buchungstag = cols[colIndex["buchungstag"]] || "";
       const verwendungszweck = cols[colIndex["verwendungszweck"]] || "";
-      const beguenstigter = cols[colIndex["beguenstigter/zahlungspflichtiger"]] || "";
+
+      // Try different variations of beneficiary column name
+      const beguenstigter = cols[colIndex["beguenstigter/zahlungspflichtiger"]]
+        || cols[colIndex["begünstigter/zahlungspflichtiger"]]
+        || cols[colIndex["beguenstigter"]]
+        || cols[colIndex["begünstigter"]]
+        || "";
+
       const betragStr = cols[colIndex["betrag"]] || "";
 
       // Parse date (DD.MM.YY format)
       const paymentDate = parseDateMM(buchungstag);
       if (!paymentDate) {
-        errors.push(`Linha ${i + 1}: Data invalida`);
+        errors.push(`Linha ${i + 1}: Data inválida`);
         continue;
       }
 
