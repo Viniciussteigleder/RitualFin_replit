@@ -3,16 +3,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Trash2, Loader2, Sparkles, BookOpen, Settings2, Zap, Edit2, RefreshCw, ShoppingBag, Home, Car, Heart, Coffee, Globe, CircleDollarSign, ArrowLeftRight, Hash, Filter, Check } from "lucide-react";
+import { Plus, Search, Trash2, Loader2, Sparkles, BookOpen, Settings2, Zap, Edit2, RefreshCw, ShoppingBag, Home, Car, Heart, Coffee, Globe, CircleDollarSign, ArrowLeftRight, Hash, Filter, Check, Download, Upload } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { rulesApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
+import * as XLSX from 'xlsx';
 
 const TYPE_COLORS: Record<string, string> = {
   "Despesa": "bg-rose-100 text-rose-700",
@@ -75,6 +76,7 @@ export default function RulesPage() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [editingRule, setEditingRule] = useState<any>(null);
   const [formData, setFormData] = useState<RuleFormData>(EMPTY_RULE);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: rules = [], isLoading } = useQuery({
     queryKey: ["rules"],
@@ -141,6 +143,178 @@ export default function RulesPage() {
     setEditingRule(null);
     setFormData(EMPTY_RULE);
     setIsOpen(true);
+  };
+
+  const handleDownloadExcel = () => {
+    if (rules.length === 0) {
+      toast({ title: "Nenhuma regra para exportar", variant: "destructive" });
+      return;
+    }
+
+    // Prepare data for Excel
+    const excelData = rules.map((rule: any) => ({
+      'Nome': rule.name,
+      'Tipo (Despesa/Receita)': rule.type,
+      'Fixo/Variável': rule.fixVar,
+      'Categoria 1': rule.category1,
+      'Categoria 2': rule.category2 || '',
+      'Categoria 3': rule.category3 || '',
+      'Palavras-chave': rule.keywords,
+      'Prioridade': rule.priority,
+      'Regra Estrita': rule.strict ? 'Sim' : 'Não',
+      'Sistema': rule.isSystem ? 'Sim' : 'Não'
+    }));
+
+    // Create worksheet
+    const ws = XLSX.utils.json_to_sheet(excelData);
+
+    // Set column widths
+    ws['!cols'] = [
+      { wch: 25 }, // Nome
+      { wch: 20 }, // Tipo
+      { wch: 15 }, // Fixo/Variável
+      { wch: 20 }, // Categoria 1
+      { wch: 25 }, // Categoria 2
+      { wch: 25 }, // Categoria 3
+      { wch: 50 }, // Palavras-chave
+      { wch: 12 }, // Prioridade
+      { wch: 12 }, // Regra Estrita
+      { wch: 10 }  // Sistema
+    ];
+
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Regras');
+
+    // Generate filename with current date
+    const date = new Date().toISOString().split('T')[0];
+    const filename = `ritualfin_regras_${date}.xlsx`;
+
+    // Download file
+    XLSX.writeFile(wb, filename);
+
+    toast({ title: `${rules.length} regras exportadas com sucesso` });
+  };
+
+  const handleUploadExcel = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const data = e.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+        if (jsonData.length === 0) {
+          toast({ title: "Arquivo vazio", variant: "destructive" });
+          return;
+        }
+
+        // Validate and transform data
+        const rulesToImport: any[] = [];
+        const errors: string[] = [];
+
+        jsonData.forEach((row: any, index: number) => {
+          const rowNum = index + 2; // +2 because Excel is 1-indexed and has header row
+
+          // Validate required fields
+          if (!row['Nome']) {
+            errors.push(`Linha ${rowNum}: Nome é obrigatório`);
+            return;
+          }
+          if (!row['Palavras-chave']) {
+            errors.push(`Linha ${rowNum}: Palavras-chave é obrigatório`);
+            return;
+          }
+          if (!row['Tipo (Despesa/Receita)'] || !['Despesa', 'Receita'].includes(row['Tipo (Despesa/Receita)'])) {
+            errors.push(`Linha ${rowNum}: Tipo deve ser "Despesa" ou "Receita"`);
+            return;
+          }
+          if (!row['Fixo/Variável'] || !['Fixo', 'Variável'].includes(row['Fixo/Variável'])) {
+            errors.push(`Linha ${rowNum}: Deve ser "Fixo" ou "Variável"`);
+            return;
+          }
+          if (!row['Categoria 1']) {
+            errors.push(`Linha ${rowNum}: Categoria 1 é obrigatória`);
+            return;
+          }
+
+          // Skip system rules (don't allow importing/overwriting system rules)
+          if (row['Sistema'] === 'Sim') {
+            return;
+          }
+
+          rulesToImport.push({
+            name: row['Nome'],
+            keywords: row['Palavras-chave'],
+            type: row['Tipo (Despesa/Receita)'],
+            fixVar: row['Fixo/Variável'],
+            category1: row['Categoria 1'],
+            category2: row['Categoria 2'] || '',
+            category3: row['Categoria 3'] || '',
+            priority: row['Prioridade'] || 500,
+            strict: row['Regra Estrita'] === 'Sim'
+          });
+        });
+
+        if (errors.length > 0) {
+          toast({
+            title: "Erros encontrados no arquivo",
+            description: errors.slice(0, 3).join('; '),
+            variant: "destructive"
+          });
+          return;
+        }
+
+        if (rulesToImport.length === 0) {
+          toast({ title: "Nenhuma regra válida para importar", variant: "destructive" });
+          return;
+        }
+
+        // Import rules one by one
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const ruleData of rulesToImport) {
+          try {
+            await rulesApi.create(ruleData);
+            successCount++;
+          } catch (error) {
+            failCount++;
+          }
+        }
+
+        // Refresh rules list
+        queryClient.invalidateQueries({ queryKey: ["rules"] });
+
+        if (failCount === 0) {
+          toast({ title: `${successCount} regras importadas com sucesso` });
+        } else {
+          toast({
+            title: "Importação concluída com erros",
+            description: `${successCount} importadas, ${failCount} falharam`
+          });
+        }
+
+      } catch (error: any) {
+        toast({
+          title: "Erro ao processar arquivo",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
+    };
+
+    reader.readAsBinaryString(file);
+
+    // Reset input so the same file can be uploaded again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const openEditDialog = (rule: any) => {
@@ -214,8 +388,8 @@ export default function RulesPage() {
           
           <div className="flex gap-2">
             {rules.length === 0 && (
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => seedMutation.mutate()}
                 disabled={seedMutation.isPending}
                 className="gap-2"
@@ -224,9 +398,9 @@ export default function RulesPage() {
                 {seedMutation.isPending ? "Gerando..." : "Criar Regras Padrao"}
               </Button>
             )}
-            
-            <Button 
-              variant="outline" 
+
+            <Button
+              variant="outline"
               className="gap-2"
               onClick={() => reapplyMutation.mutate()}
               disabled={reapplyMutation.isPending}
@@ -238,7 +412,34 @@ export default function RulesPage() {
               )}
               Reaplicar Regras
             </Button>
-            
+
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={handleDownloadExcel}
+              disabled={rules.length === 0}
+            >
+              <Download className="h-4 w-4" />
+              Excel
+            </Button>
+
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="h-4 w-4" />
+              Importar
+            </Button>
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleUploadExcel}
+              accept=".xlsx,.xls"
+              className="hidden"
+            />
+
             <Button className="bg-primary hover:bg-primary/90 gap-2" onClick={openNewDialog} data-testid="btn-new-rule">
               <Plus className="h-4 w-4" />
               Nova Regra
