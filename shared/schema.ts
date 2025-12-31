@@ -15,6 +15,7 @@ export const category1Enum = pgEnum("category_1", [
 ]);
 export const uploadStatusEnum = pgEnum("upload_status", ["processing", "ready", "duplicate", "error"]);
 export const accountTypeEnum = pgEnum("account_type", ["credit_card", "debit_card", "bank_account", "cash"]);
+export const transactionSourceEnum = pgEnum("transaction_source", ["Sparkasse", "Amex", "M&M"]);
 
 // Users table
 export const users = pgTable("users", {
@@ -395,3 +396,50 @@ export const messagesRelations = relations(messages, ({ one }) => ({
 export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, createdAt: true });
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type Message = typeof messages.$inferSelect;
+
+// Merchant Descriptions table (maps source + key_desc to standardized alias_desc)
+export const merchantDescriptions = pgTable("merchant_descriptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  source: transactionSourceEnum("source").notNull(),
+  keyDesc: text("key_desc").notNull(),
+  aliasDesc: text("alias_desc").notNull(),
+  isManual: boolean("is_manual").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  // Unique constraint: one mapping per user per source per key_desc
+  uniqueMapping: sql`UNIQUE (user_id, source, key_desc)`,
+}));
+
+export const merchantDescriptionsRelations = relations(merchantDescriptions, ({ one }) => ({
+  user: one(users, { fields: [merchantDescriptions.userId], references: [users.id] }),
+}));
+
+export const insertMerchantDescriptionSchema = createInsertSchema(merchantDescriptions).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertMerchantDescription = z.infer<typeof insertMerchantDescriptionSchema>;
+export type MerchantDescription = typeof merchantDescriptions.$inferSelect;
+
+// Merchant Icons table (manages icon state per alias_desc)
+export const merchantIcons = pgTable("merchant_icons", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  aliasDesc: text("alias_desc").notNull(),
+  shouldFetchIcon: boolean("should_fetch_icon").notNull().default(true),
+  iconSourceUrl: text("icon_source_url"),
+  iconLocalPath: text("icon_local_path"),
+  iconLastCheckedAt: timestamp("icon_last_checked_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  // Unique constraint: one icon record per user per alias_desc
+  uniqueAlias: sql`UNIQUE (user_id, alias_desc)`,
+}));
+
+export const merchantIconsRelations = relations(merchantIcons, ({ one }) => ({
+  user: one(users, { fields: [merchantIcons.userId], references: [users.id] }),
+}));
+
+export const insertMerchantIconSchema = createInsertSchema(merchantIcons).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertMerchantIcon = z.infer<typeof insertMerchantIconSchema>;
+export type MerchantIcon = typeof merchantIcons.$inferSelect;
