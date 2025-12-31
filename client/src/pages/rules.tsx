@@ -51,6 +51,7 @@ interface RuleFormData {
   fixVar: "Fixo" | "Variável";
   category1: string;
   category2: string;
+  category3: string;
   priority: number;
   strict: boolean;
 }
@@ -62,6 +63,7 @@ const EMPTY_RULE: RuleFormData = {
   fixVar: "Variável",
   category1: "Outros",
   category2: "",
+  category3: "",
   priority: 500,
   strict: false
 };
@@ -324,6 +326,7 @@ export default function RulesPage() {
       fixVar: rule.fixVar,
       category1: rule.category1,
       category2: rule.category2 || "",
+      category3: rule.category3 || "",
       priority: rule.priority,
       strict: rule.strict
     });
@@ -585,7 +588,11 @@ export default function RulesPage() {
                               <Badge className="text-[10px] bg-primary/10 text-primary border-0">IA</Badge>
                             )}
                           </div>
-                          <p className="text-xs text-muted-foreground">{rule.category1}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {[rule.category1, rule.category2, rule.category3]
+                              .filter(Boolean)
+                              .join(" → ")}
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -657,38 +664,66 @@ export default function RulesPage() {
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Nome</Label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Ex: Supermercado LIDL"
+                  className="bg-muted/30 border-0"
+                  data-testid="input-rule-name"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+                  Categoria (Nível 1) <span className="text-rose-500">*</span>
+                </Label>
+                <Select
+                  value={formData.category1}
+                  onValueChange={(v) => setFormData({ ...formData, category1: v as any })}
+                >
+                  <SelectTrigger className="bg-muted/30 border-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Mercado">Mercado</SelectItem>
+                    <SelectItem value="Moradia">Moradia</SelectItem>
+                    <SelectItem value="Transporte">Transporte</SelectItem>
+                    <SelectItem value="Saúde">Saude</SelectItem>
+                    <SelectItem value="Lazer">Lazer</SelectItem>
+                    <SelectItem value="Compras Online">Compras Online</SelectItem>
+                    <SelectItem value="Receitas">Receitas</SelectItem>
+                    <SelectItem value="Interno">Interno</SelectItem>
+                    <SelectItem value="Outros">Outros</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Nome</Label>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+                    Subcategoria (Nível 2)
+                  </Label>
                   <Input
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    value={formData.category2}
+                    onChange={(e) => setFormData({ ...formData, category2: e.target.value })}
                     placeholder="Ex: Supermercado"
                     className="bg-muted/30 border-0"
-                    data-testid="input-rule-name"
+                    data-testid="input-rule-category2"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Categoria</Label>
-                  <Select 
-                    value={formData.category1} 
-                    onValueChange={(v) => setFormData({ ...formData, category1: v as any })}
-                  >
-                    <SelectTrigger className="bg-muted/30 border-0">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Mercado">Mercado</SelectItem>
-                      <SelectItem value="Moradia">Moradia</SelectItem>
-                      <SelectItem value="Transporte">Transporte</SelectItem>
-                      <SelectItem value="Saúde">Saude</SelectItem>
-                      <SelectItem value="Lazer">Lazer</SelectItem>
-                      <SelectItem value="Compras Online">Compras Online</SelectItem>
-                      <SelectItem value="Receitas">Receitas</SelectItem>
-                      <SelectItem value="Interno">Interno</SelectItem>
-                      <SelectItem value="Outros">Outros</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+                    Especificação (Nível 3)
+                  </Label>
+                  <Input
+                    value={formData.category3}
+                    onChange={(e) => setFormData({ ...formData, category3: e.target.value })}
+                    placeholder="Ex: LIDL"
+                    className="bg-muted/30 border-0"
+                    data-testid="input-rule-category3"
+                  />
                 </div>
               </div>
 
