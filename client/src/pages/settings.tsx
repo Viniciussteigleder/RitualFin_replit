@@ -18,10 +18,11 @@ import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 const TABS = [
-  { id: "conta", label: "Conta", icon: User, description: "Perfil e informacoes pessoais" },
-  { id: "preferencias", label: "Preferencias", icon: Settings, description: "Aparencia e comportamento" },
-  { id: "integracoes", label: "Integracoes", icon: Database, description: "Conexoes com outros servicos" },
-  { id: "seguranca", label: "Seguranca", icon: Shield, description: "Senha e autenticacao" },
+  { id: "conta", label: "Conta", icon: User, description: "Perfil e informações pessoais" },
+  { id: "preferencias", label: "Preferências", icon: Settings, description: "Aparência e comportamento" },
+  { id: "dicionarios", label: "Dicionários", icon: Database, description: "Comerciantes e categorias" },
+  { id: "integracoes", label: "Integrações", icon: Database, description: "Conexões com outros serviços" },
+  { id: "seguranca", label: "Segurança", icon: Shield, description: "Senha e autenticação" },
 ];
 
 export default function SettingsPage() {
@@ -61,7 +62,7 @@ export default function SettingsPage() {
     <AppLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">Configuracoes</h1>
+          <h1 className="text-2xl font-bold">Configurações</h1>
           <p className="text-muted-foreground mt-1">
             Gerencie sua conta e personalize o RitualFin.
           </p>
