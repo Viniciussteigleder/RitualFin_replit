@@ -21,7 +21,7 @@ interface Message {
 }
 
 const QUICK_ACTIONS = [
-  { icon: TrendingUp, label: "Analise este mês", prompt: "Analise meus gastos este mês e dê sugestões." },
+  { icon: TrendingUp, label: "Análise este mês", prompt: "Analise meus gastos este mês e dê sugestões." },
   { icon: Target, label: "Sugerir economia", prompt: "Onde posso economizar mais?" },
   { icon: FileText, label: "Encontrar duplicatas", prompt: "Há transações duplicadas?" },
 ];

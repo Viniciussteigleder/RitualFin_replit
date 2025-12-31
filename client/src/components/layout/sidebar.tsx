@@ -136,6 +136,17 @@ const NAV_CLUSTERS = [
       },
     ]
   },
+  {
+    label: "Sistema",
+    items: [
+      {
+        label: "Configurações",
+        icon: Settings,
+        href: "/settings",
+        description: "Preferências e integrações"
+      },
+    ]
+  },
 ];
 
 export function Sidebar() {

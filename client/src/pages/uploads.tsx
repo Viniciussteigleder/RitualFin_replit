@@ -56,13 +56,13 @@ export default function UploadsPage() {
       
       if (result.rowsImported > 0) {
         toast({
-          title: "Importacao concluida",
-          description: `${result.rowsImported} transacoes importadas${result.duplicates > 0 ? `, ${result.duplicates} duplicatas ignoradas` : ""}`
+          title: "Importação concluída",
+          description: `${result.rowsImported} transações importadas${result.duplicates > 0 ? `, ${result.duplicates} duplicatas ignoradas` : ""}`
         });
       } else if (result.duplicates > 0) {
         toast({
-          title: "Arquivo ja importado",
-          description: `Todas as ${result.duplicates} transacoes ja existem no sistema`,
+          title: "Arquivo já importado",
+          description: `Todas as ${result.duplicates} transações já existem no sistema`,
           variant: "destructive"
         });
       }
@@ -70,7 +70,7 @@ export default function UploadsPage() {
     onError: (error: any) => {
       setUploadProgress(0);
       toast({
-        title: "Erro na importacao",
+        title: "Erro na importação",
         description: error.message || "Falha ao processar o arquivo",
         variant: "destructive"
       });
@@ -80,7 +80,7 @@ export default function UploadsPage() {
   const handleFileSelect = (file: File) => {
     if (!file.name.endsWith(".csv")) {
       toast({
-        title: "Formato invalido",
+        title: "Formato inválido",
         description: "Por favor, selecione um arquivo CSV",
         variant: "destructive"
       });
@@ -104,9 +104,9 @@ export default function UploadsPage() {
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold">Centro de Importacao</h1>
+            <h1 className="text-2xl font-bold">Centro de Importação</h1>
             <p className="text-muted-foreground">
-              Importe seus extratos CSV para categorizar transacoes automaticamente.
+              Importe seus extratos CSV para categorizar transações automaticamente.
             </p>
             <div className="flex flex-wrap gap-2 mt-2">
               <BankBadge provider="miles_and_more" size="sm" variant="compact" />
@@ -123,7 +123,7 @@ export default function UploadsPage() {
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total Importado</p>
                   <p className="text-3xl font-bold mt-1">{totalImported}</p>
-                  <p className="text-xs text-muted-foreground mt-1">transacoes</p>
+                  <p className="text-xs text-muted-foreground mt-1">transações</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
                   <TrendingUp className="h-6 w-6 text-primary" />
@@ -199,7 +199,7 @@ export default function UploadsPage() {
                 <h3 className="font-semibold text-lg mb-2">Processando arquivo...</h3>
                 <Progress value={uploadProgress} className="h-2 mb-2" />
                 <p className="text-sm text-muted-foreground">
-                  Validando e categorizando transacoes
+                  Validando e categorizando transações
                 </p>
               </div>
             ) : (
@@ -235,7 +235,7 @@ export default function UploadsPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Clock className="h-5 w-5 text-muted-foreground" />
-              <h2 className="text-lg font-semibold">Historico de Importacoes</h2>
+              <h2 className="text-lg font-semibold">Histórico de Importações</h2>
             </div>
           </div>
 
@@ -249,7 +249,7 @@ export default function UploadsPage() {
                 </div>
                 <h3 className="font-semibold text-lg mb-2">Nenhum arquivo importado</h3>
                 <p className="text-muted-foreground text-sm max-w-sm mx-auto">
-                  Arraste um arquivo CSV acima para comecar a organizar suas financas.
+                  Arraste um arquivo CSV acima para começar a organizar suas finanças.
                 </p>
               </CardContent>
             </Card>
@@ -293,7 +293,7 @@ export default function UploadsPage() {
                       
                       <div className="text-right">
                         <p className="text-2xl font-bold">{upload.rowsImported}</p>
-                        <p className="text-xs text-muted-foreground">transacoes</p>
+                        <p className="text-xs text-muted-foreground">transações</p>
                       </div>
                       
                       <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0">
