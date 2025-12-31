@@ -381,9 +381,26 @@ export default function TransactionsPage() {
                                 </div>
                               )}
                               <div className="flex-1 min-w-0">
-                                <p className="font-medium truncate">
-                                  {t.descRaw?.split(" -- ")[0]?.replace(/\s+\d{4,}/g, '')}
-                                </p>
+                                <div className="flex items-center gap-1.5">
+                                  <p className="font-medium truncate">
+                                    {t.merchantAlias || t.descRaw?.split(" -- ")[0]?.replace(/\s+\d{4,}/g, '')}
+                                  </p>
+                                  {/* Icon badges for transaction attributes */}
+                                  <div className="flex items-center gap-1 flex-shrink-0">
+                                    {t.fixVar === "Fixo" && (
+                                      <IconBadge {...TRANSACTION_ICONS.fixed} size="xs" />
+                                    )}
+                                    {t.recurring && (
+                                      <IconBadge {...TRANSACTION_ICONS.recurring} size="xs" />
+                                    )}
+                                    {t.isRefund && (
+                                      <IconBadge {...TRANSACTION_ICONS.refund} size="xs" />
+                                    )}
+                                    {t.internalTransfer && (
+                                      <IconBadge {...TRANSACTION_ICONS.internal} size="xs" />
+                                    )}
+                                  </div>
+                                </div>
                                 {(t.category2 || t.category3) && (
                                   <p className="text-xs text-muted-foreground truncate">
                                     {[t.category2, t.category3].filter(Boolean).join(" → ")}

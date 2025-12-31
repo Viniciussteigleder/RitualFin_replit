@@ -161,6 +161,49 @@ export const rulesApi = {
     }),
 };
 
+// Merchant Dictionary
+export const merchantDictionaryApi = {
+  // Merchant Descriptions
+  listDescriptions: (filters?: { source?: string; search?: string; isManual?: boolean }) => {
+    const params = new URLSearchParams();
+    if (filters?.source) params.append("source", filters.source);
+    if (filters?.search) params.append("search", filters.search);
+    if (filters?.isManual !== undefined) params.append("isManual", String(filters.isManual));
+    const query = params.toString();
+    return fetchApi<any[]>(`/merchant-descriptions${query ? `?${query}` : ""}`);
+  },
+  createDescription: (data: { source: string; keyDesc: string; aliasDesc: string }) =>
+    fetchApi<any>("/merchant-descriptions", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateDescription: (id: string, data: { aliasDesc: string }) =>
+    fetchApi<any>(`/merchant-descriptions/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  deleteDescription: (id: string) =>
+    fetchApi<{ success: boolean }>(`/merchant-descriptions/${id}`, {
+      method: "DELETE",
+    }),
+  exportDescriptions: () =>
+    fetchApi<any[]>("/merchant-descriptions/export"),
+
+  // Merchant Icons
+  listIcons: (filters?: { needsFetch?: boolean; search?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.needsFetch !== undefined) params.append("needsFetch", String(filters.needsFetch));
+    if (filters?.search) params.append("search", filters.search);
+    const query = params.toString();
+    return fetchApi<any[]>(`/merchant-icons${query ? `?${query}` : ""}`);
+  },
+  updateIcon: (aliasDesc: string, data: Partial<{ shouldFetchIcon: boolean; iconSourceUrl: string; iconLocalPath: string }>) =>
+    fetchApi<any>(`/merchant-icons/${encodeURIComponent(aliasDesc)}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+};
+
 // Dashboard
 export const dashboardApi = {
   get: (month?: string) =>

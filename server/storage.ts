@@ -1,6 +1,6 @@
 import {
   users, accounts, uploads, uploadErrors, merchantMetadata, transactions, rules, budgets, calendarEvents, eventOccurrences, goals, categoryGoals, rituals, settings,
-  aiUsageLogs, notifications,
+  aiUsageLogs, notifications, merchantDescriptions, merchantIcons,
   type User, type InsertUser,
   type Account, type InsertAccount,
   type Upload, type InsertUpload,
@@ -16,7 +16,9 @@ import {
   type Ritual, type InsertRitual,
   type Settings, type InsertSettings, type UpdateSettings,
   type AiUsageLog, type InsertAiUsageLog,
-  type Notification, type InsertNotification, type UpdateNotification
+  type Notification, type InsertNotification, type UpdateNotification,
+  type MerchantDescription, type InsertMerchantDescription,
+  type MerchantIcon, type InsertMerchantIcon
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql, like, gte, lt, or, isNull } from "drizzle-orm";
@@ -70,6 +72,7 @@ export interface IStorage {
 
   // Transactions
   getTransactions(userId: string, month?: string): Promise<Transaction[]>;
+  getTransactionsWithMerchantAlias(userId: string, month?: string): Promise<(Transaction & { merchantAlias?: string })[]>;
   getTransactionsByNeedsReview(userId: string): Promise<Transaction[]>;
   getTransaction(id: string): Promise<Transaction | undefined>;
   getTransactionByKey(key: string): Promise<Transaction | undefined>;
@@ -154,6 +157,24 @@ export interface IStorage {
   updateRitual(ritualId: string, userId: string, data: Partial<Ritual>): Promise<Ritual | undefined>;
   deleteRitual(ritualId: string, userId: string): Promise<void>;
   completeRitual(ritualId: string, userId: string, notes?: string): Promise<Ritual | undefined>;
+
+  // Merchant Descriptions
+  getMerchantDescriptions(userId: string, filters?: { source?: string; search?: string; isManual?: boolean }): Promise<MerchantDescription[]>;
+  getMerchantDescription(userId: string, source: string, keyDesc: string): Promise<MerchantDescription | undefined>;
+  getMerchantDescriptionById(id: string): Promise<MerchantDescription | undefined>;
+  createMerchantDescription(description: InsertMerchantDescription): Promise<MerchantDescription>;
+  updateMerchantDescription(id: string, data: Partial<MerchantDescription>): Promise<MerchantDescription | undefined>;
+  deleteMerchantDescription(id: string): Promise<void>;
+  upsertMerchantDescription(userId: string, source: string, keyDesc: string, aliasDesc: string, isManual: boolean): Promise<MerchantDescription>;
+
+  // Merchant Icons
+  getMerchantIcons(userId: string, filters?: { needsFetch?: boolean; search?: string }): Promise<MerchantIcon[]>;
+  getMerchantIcon(userId: string, aliasDesc: string): Promise<MerchantIcon | undefined>;
+  getMerchantIconById(id: string): Promise<MerchantIcon | undefined>;
+  createMerchantIcon(icon: InsertMerchantIcon): Promise<MerchantIcon>;
+  updateMerchantIcon(userId: string, aliasDesc: string, data: Partial<MerchantIcon>): Promise<MerchantIcon | undefined>;
+  deleteMerchantIcon(id: string): Promise<void>;
+  upsertMerchantIcon(userId: string, aliasDesc: string, data: Partial<InsertMerchantIcon>): Promise<MerchantIcon>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -388,7 +409,7 @@ export class DatabaseStorage implements IStorage {
       const startDate = new Date(`${month}-01`);
       const endDate = new Date(startDate);
       endDate.setMonth(endDate.getMonth() + 1);
-      
+
       return db.select().from(transactions)
         .where(and(
           eq(transactions.userId, userId),
@@ -400,6 +421,29 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(transactions)
       .where(eq(transactions.userId, userId))
       .orderBy(desc(transactions.paymentDate));
+  }
+
+  // Get transactions with merchant alias enrichment
+  async getTransactionsWithMerchantAlias(userId: string, month?: string): Promise<(Transaction & { merchantAlias?: string })[]> {
+    const { generateKeyDesc, detectTransactionSource } = await import("./key-desc-generator");
+    const txs = await this.getTransactions(userId, month);
+    const result: (Transaction & { merchantAlias?: string })[] = [];
+
+    for (const tx of txs) {
+      // Extract merchant key from descRaw using the same logic as key-desc-generator
+      const source = detectTransactionSource(tx.accountSource);
+      const keyDesc = generateKeyDesc(tx.descRaw, tx.accountSource);
+
+      // Look up merchant alias
+      const merchantDesc = await this.getMerchantDescription(userId, source, keyDesc);
+
+      result.push({
+        ...tx,
+        merchantAlias: merchantDesc?.aliasDesc
+      });
+    }
+
+    return result;
   }
 
   async getTransactionsByNeedsReview(userId: string): Promise<Transaction[]> {
@@ -895,6 +939,157 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(rituals.id, ritualId), eq(rituals.userId, userId)))
       .returning();
     return updated || undefined;
+  }
+
+  // Merchant Descriptions
+  async getMerchantDescriptions(userId: string, filters?: { source?: string; search?: string; isManual?: boolean }): Promise<MerchantDescription[]> {
+    let query = db.select().from(merchantDescriptions).where(eq(merchantDescriptions.userId, userId));
+
+    if (filters?.source) {
+      query = query.where(and(
+        eq(merchantDescriptions.userId, userId),
+        eq(merchantDescriptions.source, filters.source as any)
+      ));
+    }
+
+    if (filters?.isManual !== undefined) {
+      query = query.where(and(
+        eq(merchantDescriptions.userId, userId),
+        eq(merchantDescriptions.isManual, filters.isManual)
+      ));
+    }
+
+    if (filters?.search) {
+      const searchPattern = `%${filters.search}%`;
+      query = query.where(and(
+        eq(merchantDescriptions.userId, userId),
+        or(
+          like(merchantDescriptions.keyDesc, searchPattern),
+          like(merchantDescriptions.aliasDesc, searchPattern)
+        )
+      ));
+    }
+
+    return query.orderBy(desc(merchantDescriptions.updatedAt));
+  }
+
+  async getMerchantDescription(userId: string, source: string, keyDesc: string): Promise<MerchantDescription | undefined> {
+    const [description] = await db.select().from(merchantDescriptions)
+      .where(and(
+        eq(merchantDescriptions.userId, userId),
+        eq(merchantDescriptions.source, source as any),
+        eq(merchantDescriptions.keyDesc, keyDesc)
+      ));
+    return description || undefined;
+  }
+
+  async getMerchantDescriptionById(id: string): Promise<MerchantDescription | undefined> {
+    const [description] = await db.select().from(merchantDescriptions)
+      .where(eq(merchantDescriptions.id, id));
+    return description || undefined;
+  }
+
+  async createMerchantDescription(description: InsertMerchantDescription): Promise<MerchantDescription> {
+    const [created] = await db.insert(merchantDescriptions).values(description).returning();
+    return created;
+  }
+
+  async updateMerchantDescription(id: string, data: Partial<MerchantDescription>): Promise<MerchantDescription | undefined> {
+    const [updated] = await db.update(merchantDescriptions)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(merchantDescriptions.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteMerchantDescription(id: string): Promise<void> {
+    await db.delete(merchantDescriptions).where(eq(merchantDescriptions.id, id));
+  }
+
+  async upsertMerchantDescription(userId: string, source: string, keyDesc: string, aliasDesc: string, isManual: boolean): Promise<MerchantDescription> {
+    const existing = await this.getMerchantDescription(userId, source, keyDesc);
+
+    if (existing) {
+      const [updated] = await db.update(merchantDescriptions)
+        .set({ aliasDesc, isManual, updatedAt: new Date() })
+        .where(eq(merchantDescriptions.id, existing.id))
+        .returning();
+      return updated;
+    }
+
+    return this.createMerchantDescription({ userId, source: source as any, keyDesc, aliasDesc, isManual });
+  }
+
+  // Merchant Icons
+  async getMerchantIcons(userId: string, filters?: { needsFetch?: boolean; search?: string }): Promise<MerchantIcon[]> {
+    let query = db.select().from(merchantIcons).where(eq(merchantIcons.userId, userId));
+
+    if (filters?.needsFetch) {
+      query = query.where(and(
+        eq(merchantIcons.userId, userId),
+        eq(merchantIcons.shouldFetchIcon, true),
+        isNull(merchantIcons.iconLocalPath)
+      ));
+    }
+
+    if (filters?.search) {
+      const searchPattern = `%${filters.search}%`;
+      query = query.where(and(
+        eq(merchantIcons.userId, userId),
+        like(merchantIcons.aliasDesc, searchPattern)
+      ));
+    }
+
+    return query.orderBy(desc(merchantIcons.updatedAt));
+  }
+
+  async getMerchantIcon(userId: string, aliasDesc: string): Promise<MerchantIcon | undefined> {
+    const [icon] = await db.select().from(merchantIcons)
+      .where(and(
+        eq(merchantIcons.userId, userId),
+        eq(merchantIcons.aliasDesc, aliasDesc)
+      ));
+    return icon || undefined;
+  }
+
+  async getMerchantIconById(id: string): Promise<MerchantIcon | undefined> {
+    const [icon] = await db.select().from(merchantIcons)
+      .where(eq(merchantIcons.id, id));
+    return icon || undefined;
+  }
+
+  async createMerchantIcon(icon: InsertMerchantIcon): Promise<MerchantIcon> {
+    const [created] = await db.insert(merchantIcons).values(icon).returning();
+    return created;
+  }
+
+  async updateMerchantIcon(userId: string, aliasDesc: string, data: Partial<MerchantIcon>): Promise<MerchantIcon | undefined> {
+    const [updated] = await db.update(merchantIcons)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(
+        eq(merchantIcons.userId, userId),
+        eq(merchantIcons.aliasDesc, aliasDesc)
+      ))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteMerchantIcon(id: string): Promise<void> {
+    await db.delete(merchantIcons).where(eq(merchantIcons.id, id));
+  }
+
+  async upsertMerchantIcon(userId: string, aliasDesc: string, data: Partial<InsertMerchantIcon>): Promise<MerchantIcon> {
+    const existing = await this.getMerchantIcon(userId, aliasDesc);
+
+    if (existing) {
+      const [updated] = await db.update(merchantIcons)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(merchantIcons.id, existing.id))
+        .returning();
+      return updated;
+    }
+
+    return this.createMerchantIcon({ userId, aliasDesc, ...data } as InsertMerchantIcon);
   }
 }
 

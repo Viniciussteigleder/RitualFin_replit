@@ -325,7 +325,7 @@ export default function ConfirmPage() {
                           <AccountBadge account={accountsById[t.accountId]} size="sm" />
                         </td>
                         <td className="px-5 py-4">
-                          <p className="font-medium truncate max-w-[250px]">{t.descRaw?.split(" -- ")[0]}</p>
+                          <p className="font-medium truncate max-w-[250px]">{t.merchantAlias || t.descRaw?.split(" -- ")[0]}</p>
                         </td>
                         <td className="px-5 py-4 text-right font-semibold whitespace-nowrap">
                           <span className={t.amount > 0 ? "text-emerald-600" : ""}>
