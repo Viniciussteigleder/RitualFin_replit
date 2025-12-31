@@ -7,7 +7,8 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
-import { User, Shield, Settings, Bell, Eye, Check, Globe, Palette, Database, Trash2, Download, Key, CreditCard, Mail, Moon, Sun, Sparkles } from "lucide-react";
+import { User, Shield, Settings, Bell, Eye, Check, Globe, Palette, Database, Trash2, Download, Key, CreditCard, Mail, Moon, Sun, Sparkles, BookOpen, ArrowRight } from "lucide-react";
+import { Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -287,6 +288,65 @@ export default function SettingsPage() {
                         </p>
                       </div>
                     )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
+
+            {activeTab === "dicionarios" && (
+              <>
+                <Card className="bg-white border-0 shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <BookOpen className="h-5 w-5 text-primary" />
+                      Dicionário de Comerciantes
+                    </CardTitle>
+                    <CardDescription>
+                      Gerencie aliases padronizados para descrições de transações
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="p-6 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl border border-primary/20">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
+                          <BookOpen className="h-6 w-6 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-lg mb-1">Centralize suas descrições</h3>
+                          <p className="text-muted-foreground text-sm mb-4">
+                            Crie aliases personalizados para comerciantes e transações recorrentes.
+                            Mantenha suas finanças organizadas com descrições consistentes e fáceis de entender.
+                          </p>
+                          <Link href="/merchant-dictionary">
+                            <Button className="bg-primary hover:bg-primary/90 gap-2">
+                              Acessar Dicionário Completo
+                              <ArrowRight className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-4 bg-muted/30 rounded-xl">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 rounded-full bg-primary"></div>
+                          <p className="font-medium text-sm">Importação em Massa</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Importe e exporte aliases via Excel para gerenciamento em lote
+                        </p>
+                      </div>
+                      <div className="p-4 bg-muted/30 rounded-xl">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 rounded-full bg-primary"></div>
+                          <p className="font-medium text-sm">Geração Automática</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Cria automaticamente chaves únicas baseadas nas transações
+                        </p>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               </>
