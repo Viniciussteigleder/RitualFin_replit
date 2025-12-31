@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Loader2, Edit2, Trash2, BookOpen, Filter, Download, Upload } from "lucide-react";
+import { Search, Loader2, Edit2, Trash2, BookOpen, Filter, Download, Upload, Sparkles, CheckCircle2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { merchantDictionaryApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -21,7 +21,13 @@ export default function MerchantDictionaryPage() {
   const [manualFilter, setManualFilter] = useState("all");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingAlias, setEditingAlias] = useState("");
+  const [selectedSuggestions, setSelectedSuggestions] = useState<Set<string>>(new Set());
+  const [editedSuggestions, setEditedSuggestions] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importPreview, setImportPreview] = useState<{
+    rows: Array<{ source: string; keyDesc: string; aliasDesc: string }>;
+    errors: string[];
+  } | null>(null);
 
   // Fetch descriptions with filters
   const { data: descriptions = [], isLoading } = useQuery({
@@ -59,6 +65,34 @@ export default function MerchantDictionaryPage() {
     },
   });
 
+  const suggestionsMutation = useMutation({
+    mutationFn: merchantDictionaryApi.suggestAliases,
+    onSuccess: (data) => {
+      const suggestions = data?.suggestions || [];
+      setSelectedSuggestions(new Set(suggestions.map((s: any) => s.id)));
+      toast({ title: `${suggestions.length} sugestões geradas` });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro ao gerar sugestões", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const applySuggestionsMutation = useMutation({
+    mutationFn: async (items: any[]) => {
+      for (const item of items) {
+        await merchantDictionaryApi.updateDescription(item.id, { aliasDesc: item.suggestedAlias });
+      }
+      return items.length;
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ["merchant-descriptions"] });
+      toast({ title: `${count} sugestões aplicadas` });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro ao aplicar sugestões", description: error.message, variant: "destructive" });
+    },
+  });
+
   const handleEdit = (desc: any) => {
     setEditingId(desc.id);
     setEditingAlias(desc.aliasDesc);
@@ -80,19 +114,50 @@ export default function MerchantDictionaryPage() {
     }
   };
 
+  const suggestions = suggestionsMutation.data?.suggestions || [];
+
+  const toggleSuggestion = (id: string) => {
+    const next = new Set(selectedSuggestions);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    setSelectedSuggestions(next);
+  };
+
+  const updateSuggestion = (id: string, value: string) => {
+    setEditedSuggestions((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const applySelected = () => {
+    const toApply = suggestions
+      .filter((s: any) => selectedSuggestions.has(s.id))
+      .map((s: any) => ({
+        ...s,
+        suggestedAlias: editedSuggestions[s.id] || s.suggestedAlias
+      }));
+    if (toApply.length === 0) {
+      toast({ title: "Selecione ao menos uma sugestão", variant: "destructive" });
+      return;
+    }
+    applySuggestionsMutation.mutate(toApply);
+  };
+
   const handleDownloadExcel = async () => {
-    if (descriptions.length === 0) {
+    const exportData = await merchantDictionaryApi.exportDescriptions();
+    if (!exportData || exportData.length === 0) {
       toast({ title: "Nenhum dado para exportar", variant: "destructive" });
       return;
     }
 
-    const excelData = descriptions.map((d: any) => ({
-      'Fonte': d.source,
-      'Descrição Chave': d.keyDesc,
-      'Alias': d.aliasDesc,
-      'Manual': d.isManual ? 'Sim' : 'Não',
-      'Criado em': new Date(d.createdAt).toLocaleString('pt-BR'),
-      'Atualizado em': new Date(d.updatedAt).toLocaleString('pt-BR')
+    const excelData = exportData.map((d: any) => ({
+      'Fonte': d.Source,
+      'Descrição Chave': d['Key Description'],
+      'Alias': d.Alias,
+      'Manual': d.Manual === 'Yes' ? 'Sim' : 'Não',
+      'Criado em': new Date(d.Created).toLocaleString('pt-BR'),
+      'Atualizado em': new Date(d.Updated).toLocaleString('pt-BR')
     }));
 
     const ws = XLSX.utils.json_to_sheet(excelData);
@@ -111,7 +176,28 @@ export default function MerchantDictionaryPage() {
     const date = new Date().toISOString().split('T')[0];
     XLSX.writeFile(wb, `ritualfin_merchant_aliases_${date}.xlsx`);
 
-    toast({ title: `${descriptions.length} registros exportados` });
+    toast({ title: `${excelData.length} registros exportados` });
+  };
+
+  const handleDownloadTemplate = () => {
+    const excelData = [{
+      'Fonte': 'Sparkasse',
+      'Descrição Chave': 'Exemplo de descrição do banco',
+      'Alias': 'Exemplo de alias amigável'
+    }];
+
+    const ws = XLSX.utils.json_to_sheet(excelData);
+    ws['!cols'] = [
+      { wch: 15 },
+      { wch: 50 },
+      { wch: 30 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Merchant Aliases');
+
+    const date = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `ritualfin_merchant_aliases_modelo_${date}.xlsx`);
   };
 
   const handleUploadExcel = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -160,44 +246,12 @@ export default function MerchantDictionaryPage() {
           });
         });
 
-        if (errors.length > 0) {
-          toast({
-            title: "Erros encontrados no arquivo",
-            description: errors.slice(0, 3).join('; '),
-            variant: "destructive"
-          });
-          return;
-        }
-
         if (toImport.length === 0) {
           toast({ title: "Nenhum registro válido para importar", variant: "destructive" });
           return;
         }
 
-        // Import records one by one
-        let successCount = 0;
-        let failCount = 0;
-
-        for (const record of toImport) {
-          try {
-            await merchantDictionaryApi.createDescription(record);
-            successCount++;
-          } catch (error) {
-            failCount++;
-          }
-        }
-
-        // Refresh list
-        queryClient.invalidateQueries({ queryKey: ["merchant-descriptions"] });
-
-        if (failCount === 0) {
-          toast({ title: `${successCount} registros importados com sucesso` });
-        } else {
-          toast({
-            title: "Importação concluída com erros",
-            description: `${successCount} importados, ${failCount} falharam`
-          });
-        }
+        setImportPreview({ rows: toImport, errors });
 
       } catch (error: any) {
         toast({
@@ -213,6 +267,35 @@ export default function MerchantDictionaryPage() {
     // Reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  };
+
+  const handleConfirmImport = async () => {
+    if (!importPreview) return;
+
+    try {
+      const result = await merchantDictionaryApi.bulkUpsertDescriptions(importPreview.rows);
+      queryClient.invalidateQueries({ queryKey: ["merchant-descriptions"] });
+      setImportPreview(null);
+
+      const created = result?.created || 0;
+      const updated = result?.updated || 0;
+      const failed = result?.failed || 0;
+      const baseMessage = `${created} novos, ${updated} atualizados`;
+      if (failed > 0) {
+        toast({
+          title: "Importação concluída com alertas",
+          description: `${baseMessage} • ${failed} com erro`
+        });
+      } else {
+        toast({ title: "Importação concluída", description: baseMessage });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro ao importar",
+        description: error.message,
+        variant: "destructive"
+      });
     }
   };
 
@@ -244,7 +327,15 @@ export default function MerchantDictionaryPage() {
             </p>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="ghost"
+              className="gap-2"
+              onClick={handleDownloadTemplate}
+            >
+              <Download className="h-4 w-4" />
+              Baixar modelo
+            </Button>
             <Button
               variant="outline"
               className="gap-2"
@@ -273,6 +364,82 @@ export default function MerchantDictionaryPage() {
             />
           </div>
         </div>
+
+        <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
+          <CardContent className="p-6 space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  Sugestões IA para Aliases
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Gere aliases amigáveis com base nas keywords do dicionário.
+                </p>
+              </div>
+              <Button
+                className="gap-2"
+                onClick={() => suggestionsMutation.mutate()}
+                disabled={suggestionsMutation.isPending}
+              >
+                {suggestionsMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                Gerar sugestões
+              </Button>
+            </div>
+
+            {suggestions.length > 0 && (
+              <div className="space-y-3">
+                {suggestions.map((s: any) => (
+                  <div key={s.id} className="flex flex-col md:flex-row md:items-center gap-3 border rounded-lg p-3 bg-white/70">
+                    <div className="flex items-start gap-3 flex-1">
+                      <input
+                        type="checkbox"
+                        checked={selectedSuggestions.has(s.id)}
+                        onChange={() => toggleSuggestion(s.id)}
+                        className="mt-1"
+                      />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium">{s.keyDesc}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Atual: {s.currentAlias || "—"}
+                        </p>
+                        {s.reason && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {s.reason}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        className="h-8 w-[220px]"
+                        value={editedSuggestions[s.id] ?? s.suggestedAlias}
+                        onChange={(e) => updateSuggestion(s.id, e.target.value)}
+                      />
+                      <Badge variant="secondary" className="text-[10px]">
+                        {s.confidence ?? 0}%
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+                <div className="flex justify-end">
+                  <Button
+                    className="gap-2"
+                    onClick={applySelected}
+                    disabled={applySuggestionsMutation.isPending}
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    Aplicar sugestões
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -452,6 +619,69 @@ export default function MerchantDictionaryPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={!!importPreview} onOpenChange={(open) => !open && setImportPreview(null)}>
+        <DialogContent className="sm:max-w-[640px]">
+          <DialogHeader>
+            <DialogTitle>Pré-visualizar importação</DialogTitle>
+          </DialogHeader>
+          {importPreview && (
+            <div className="space-y-4">
+              <div className="rounded-lg border bg-muted/20 p-3 text-sm">
+                <div className="flex flex-wrap gap-3">
+                  <span>
+                    <strong>{importPreview.rows.length}</strong> válidos
+                  </span>
+                  <span>
+                    <strong>{importPreview.errors.length}</strong> com erro
+                  </span>
+                </div>
+                {importPreview.errors.length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Corrija os erros no arquivo e reimporte para máxima precisão.
+                  </p>
+                )}
+              </div>
+
+              {importPreview.errors.length > 0 && (
+                <div className="rounded-lg border p-3 text-xs text-rose-700 bg-rose-50">
+                  <p className="font-semibold mb-2">Erros encontrados</p>
+                  <ul className="space-y-1">
+                    {importPreview.errors.slice(0, 5).map((error) => (
+                      <li key={error}>{error}</li>
+                    ))}
+                  </ul>
+                  {importPreview.errors.length > 5 && (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      +{importPreview.errors.length - 5} erros adicionais
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="rounded-lg border p-3 text-xs text-muted-foreground">
+                <p className="font-semibold text-foreground mb-2">Amostra</p>
+                <div className="space-y-2">
+                  {importPreview.rows.slice(0, 3).map((row, index) => (
+                    <div key={`${row.keyDesc}-${index}`}>
+                      <p className="font-medium text-foreground">{row.aliasDesc}</p>
+                      <p>{row.source} • {row.keyDesc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImportPreview(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleConfirmImport}>
+              Importar agora
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }

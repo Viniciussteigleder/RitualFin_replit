@@ -3,17 +3,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Archive, Loader2, CreditCard, Landmark, Wallet, Coins, Edit2, CircleCheck, AlertTriangle, TrendingUp, Calendar as CalendarIcon } from "lucide-react";
+import { Plus, Search, Archive, Loader2, CreditCard, Landmark, Wallet, Coins, Edit2, CircleCheck, TrendingUp, Calendar as CalendarIcon } from "lucide-react";
 import { getAccountIcon } from "@/lib/icons";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, useQueries } from "@tanstack/react-query";
 import { accountsApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { CardGridSkeleton } from "@/components/skeletons/card-grid-skeleton";
+import { format } from "date-fns";
+import { Link } from "wouter";
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   credit_card: "Cartão de Crédito",
@@ -70,11 +72,37 @@ export default function AccountsPage() {
   const [search, setSearch] = useState("");
   const [editingAccount, setEditingAccount] = useState<any>(null);
   const [formData, setFormData] = useState<AccountFormData>(EMPTY_ACCOUNT);
+  const [balancesUpdatedAt, setBalancesUpdatedAt] = useState<Date | null>(null);
 
   const { data: accounts = [], isLoading } = useQuery({
     queryKey: ["accounts"],
     queryFn: accountsApi.list,
   });
+
+  const balanceQueries = useQueries({
+    queries: accounts.map((account: any) => ({
+      queryKey: ["account-balance", account.id],
+      queryFn: () => accountsApi.balance(account.id),
+      enabled: !!account.id,
+    })),
+  });
+
+  const balancesById = balanceQueries.reduce<Record<string, { balance: number; currency: string; transactionCount: number }>>(
+    (map, query, index) => {
+      const account = accounts[index];
+      if (account && query.data) {
+        map[account.id] = query.data;
+      }
+      return map;
+    },
+    {}
+  );
+
+  useEffect(() => {
+    if (Object.keys(balancesById).length > 0) {
+      setBalancesUpdatedAt(new Date());
+    }
+  }, [balancesById]);
 
   const createMutation = useMutation({
     mutationFn: accountsApi.create,
@@ -202,8 +230,14 @@ export default function AccountsPage() {
                       const bankAccounts = accounts.filter((a: any) => a.type === "bank_account");
                       const creditCards = accounts.filter((a: any) => a.type === "credit_card");
 
-                      const bankBalance = bankAccounts.reduce((sum: number, a: any) => sum + (a.balance || 0), 0);
-                      const cardUsed = creditCards.reduce((sum: number, a: any) => sum + Math.abs(a.balance || 0), 0);
+                      const bankBalance = bankAccounts.reduce((sum: number, a: any) => {
+                        const balance = balancesById[a.id]?.balance ?? 0;
+                        return sum + balance;
+                      }, 0);
+                      const cardUsed = creditCards.reduce((sum: number, a: any) => {
+                        const balance = balancesById[a.id]?.balance ?? 0;
+                        return sum + Math.abs(balance);
+                      }, 0);
                       const netPosition = bankBalance - cardUsed;
 
                       return netPosition.toLocaleString("pt-BR", { style: "currency", currency: "EUR" });
@@ -213,22 +247,17 @@ export default function AccountsPage() {
                     Saldo bancário menos saldos dos cartões
                   </p>
                 </div>
-                {(() => {
-                  const hasStaleBalance = accounts.some((a: any) => {
-                    if (!a.balanceUpdatedAt) return false;
-                    const daysSince = Math.floor(
-                      (new Date().getTime() - new Date(a.balanceUpdatedAt).getTime()) / (1000 * 60 * 60 * 24)
-                    );
-                    return daysSince > 7;
-                  });
-
-                  return hasStaleBalance && (
-                    <div className="flex items-center gap-2 text-amber-600 bg-amber-100 px-3 py-1.5 rounded-lg">
-                      <AlertTriangle className="h-4 w-4" />
-                      <span className="text-xs font-medium">Saldos desatualizados</span>
-                    </div>
-                  );
-                })()}
+                <div className="flex flex-col items-end gap-1 text-emerald-600 bg-emerald-100 px-3 py-1.5 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <CircleCheck className="h-4 w-4" />
+                    <span className="text-xs font-medium">Saldo calculado</span>
+                  </div>
+                  {balancesUpdatedAt && (
+                    <span className="text-[10px] text-emerald-700">
+                      Atualizado {format(balancesUpdatedAt, "HH:mm")}
+                    </span>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -274,6 +303,7 @@ export default function AccountsPage() {
                           size="icon"
                           variant="ghost"
                           onClick={() => openEditDialog(account)}
+                          aria-label="Editar conta"
                         >
                           <Edit2 className="h-4 w-4" />
                         </Button>
@@ -281,6 +311,7 @@ export default function AccountsPage() {
                           size="icon"
                           variant="ghost"
                           onClick={() => handleArchive(account.id)}
+                          aria-label="Arquivar conta"
                         >
                           <Archive className="h-4 w-4" />
                         </Button>
@@ -305,27 +336,29 @@ export default function AccountsPage() {
                     </div>
 
                     {/* Balance */}
-                    {account.balance !== undefined && account.balance !== null && (
+                    {balancesById[account.id] ? (
                       <div className="mt-3 pt-3 border-t">
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-xs text-muted-foreground">Saldo</span>
-                          {account.balanceUpdatedAt && (
-                            <span className="text-[10px] text-muted-foreground">
-                              Atualizado em {new Date(account.balanceUpdatedAt).toLocaleDateString("pt-BR")}
-                            </span>
-                          )}
+                          <span className="text-[10px] text-muted-foreground">
+                            Baseado em {balancesById[account.id]?.transactionCount || 0} transações
+                          </span>
                         </div>
                         <p className={cn(
                           "text-xl font-bold",
-                          account.balance >= 0 ? "text-emerald-600" : "text-rose-600"
+                          (balancesById[account.id]?.balance || 0) >= 0 ? "text-emerald-600" : "text-rose-600"
                         )}>
-                          {account.balance.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                          {(balancesById[account.id]?.balance || 0).toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
                         </p>
+                      </div>
+                    ) : (
+                      <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
+                        Saldo indisponível (sem transações)
                       </div>
                     )}
 
                     {/* Credit Card: Limit Bar + Available to Spend */}
-                    {account.type === "credit_card" && account.limit && (
+                    {account.type === "credit_card" && account.limit && balancesById[account.id] && (
                       <div className="mt-3 pt-3 border-t space-y-2">
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-muted-foreground">Limite</span>
@@ -336,7 +369,7 @@ export default function AccountsPage() {
 
                         {/* Limit Bar */}
                         {(() => {
-                          const used = Math.abs(account.balance || 0);
+                          const used = Math.abs(balancesById[account.id]?.balance || 0);
                           const available = Math.max(0, account.limit - used);
                           const usedPercent = account.limit > 0 ? (used / account.limit) * 100 : 0;
 
@@ -383,6 +416,25 @@ export default function AccountsPage() {
         )}
 
         {/* Create/Edit Dialog */}
+        <Card className="bg-gradient-to-r from-slate-50 to-primary/5 border-primary/10 shadow-sm">
+          <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h3 className="font-semibold text-foreground">Próximo passo</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Revise transações por conta ou importe novos extratos para manter os saldos atualizados.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Link href="/transactions">
+                <Button variant="outline">Ver transações</Button>
+              </Link>
+              <Link href="/uploads">
+                <Button className="bg-primary hover:bg-primary/90">Importar extrato</Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>

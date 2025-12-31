@@ -20,6 +20,9 @@ import { Calendar, TrendingUp, TrendingDown } from "lucide-react";
 import { getMerchantIcon } from "@/lib/merchant-icons";
 import { getAccountIcon, IconBadge, TRANSACTION_ICONS } from "@/lib/icons";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import { merchantMetadataApi } from "@/lib/api";
+import { resolveMerchantMetadata } from "@/lib/merchant-metadata";
 
 interface Transaction {
   id: string;
@@ -34,6 +37,7 @@ interface Transaction {
   recurring?: boolean;
   isRefund?: boolean;
   internalTransfer?: boolean;
+  projected?: boolean;
   accountSource?: string;
 }
 
@@ -44,6 +48,11 @@ interface DetailPanelProps {
 }
 
 export function DetailPanel({ mode, selectedDate, transactions }: DetailPanelProps) {
+  const { data: merchantMetadata = [] } = useQuery({
+    queryKey: ["merchant-metadata"],
+    queryFn: merchantMetadataApi.list,
+  });
+
   if (!mode || !selectedDate) {
     return (
       <Card className="sticky top-6">
@@ -134,8 +143,12 @@ export function DetailPanel({ mode, selectedDate, transactions }: DetailPanelPro
             </p>
           ) : (
             filteredTransactions.map((t) => {
-              const merchantInfo = getMerchantIcon(t.descRaw);
+              const metadataOverride = resolveMerchantMetadata(merchantMetadata, t.descRaw);
+              const merchantInfo = metadataOverride || getMerchantIcon(t.descRaw);
               const accountInfo = getAccountIcon(t.accountSource);
+              const merchantLabel =
+                metadataOverride?.friendlyName ||
+                t.descRaw?.split(" -- ")[0]?.replace(/\s+\d{4,}/g, "");
 
               return (
                 <div
@@ -161,7 +174,7 @@ export function DetailPanel({ mode, selectedDate, transactions }: DetailPanelPro
                       {/* Merchant + Badges */}
                       <div className="flex items-center gap-1.5 mb-0.5">
                         <p className="font-medium text-sm truncate">
-                          {t.descRaw?.split(" -- ")[0]?.replace(/\s+\d{4,}/g, "")}
+                          {merchantLabel}
                         </p>
                         {/* Icon badges */}
                         <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -176,6 +189,11 @@ export function DetailPanel({ mode, selectedDate, transactions }: DetailPanelPro
                           )}
                           {t.internalTransfer && (
                             <IconBadge {...TRANSACTION_ICONS.internal} size="xs" />
+                          )}
+                          {t.projected && (
+                            <span className="text-[9px] px-1 py-0.5 rounded-full border border-dashed border-amber-400 text-amber-700">
+                              Projetado
+                            </span>
                           )}
                         </div>
                       </div>

@@ -6,12 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Download, Loader2, Edit2, Filter, X, Calendar, TrendingUp, TrendingDown, ArrowUpDown, Eye, Lock, RefreshCw, RotateCcw, ArrowLeftRight } from "lucide-react";
 import { getAccountIcon, getStatusIcon, IconBadge, TRANSACTION_ICONS } from "@/lib/icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { transactionsApi, accountsApi } from "@/lib/api";
+import { transactionsApi, accountsApi, rulesApi, merchantMetadataApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -20,7 +20,10 @@ import { useMonth } from "@/lib/month-context";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TransactionDetailModal } from "@/components/transaction-detail-modal";
 import { getMerchantIcon } from "@/lib/merchant-icons";
+import { resolveMerchantMetadata } from "@/lib/merchant-metadata";
 import { TransactionListSkeleton } from "@/components/skeletons/transaction-list-skeleton";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Link } from "wouter";
 
 const CATEGORY_COLORS: Record<string, string> = {
   "Mercado": "#22c55e",
@@ -54,6 +57,7 @@ export default function TransactionsPage() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
+  const [page, setPage] = useState(1);
   const [editingTransaction, setEditingTransaction] = useState<any>(null);
   const [viewingTransaction, setViewingTransaction] = useState<any>(null);
   const [formData, setFormData] = useState<TransactionForm | null>(null);
@@ -68,12 +72,29 @@ export default function TransactionsPage() {
     queryFn: accountsApi.list,
   });
 
+  const { data: rules = [] } = useQuery({
+    queryKey: ["rules"],
+    queryFn: rulesApi.list,
+  });
+
+  const { data: merchantMetadata = [] } = useQuery({
+    queryKey: ["merchant-metadata"],
+    queryFn: merchantMetadataApi.list,
+  });
+
   const accountsById = useMemo(() => {
     return accounts.reduce((map: any, account: any) => {
       map[account.id] = account;
       return map;
     }, {});
   }, [accounts]);
+
+  const rulesById = useMemo(() => {
+    return rules.reduce((map: any, rule: any) => {
+      map[rule.id] = rule;
+      return map;
+    }, {});
+  }, [rules]);
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => transactionsApi.update(id, data),
@@ -156,6 +177,18 @@ export default function TransactionsPage() {
       return true;
     });
   }, [transactions, search, accountFilter, categoryFilter, typeFilter]);
+
+  const pageSize = 50;
+  const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / pageSize));
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, accountFilter, categoryFilter, typeFilter, month]);
+
+  const pagedTransactions = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredTransactions.slice(start, start + pageSize);
+  }, [filteredTransactions, page]);
 
   const stats = useMemo(() => {
     const totalIncome = filteredTransactions
@@ -355,9 +388,11 @@ export default function TransactionsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/50">
-                    {filteredTransactions.map((t: any) => {
+                    {pagedTransactions.map((t: any) => {
                       const categoryColor = CATEGORY_COLORS[t.category1] || "#6b7280";
-                      const merchantInfo = getMerchantIcon(t.descRaw);
+                      const metadataOverride = resolveMerchantMetadata(merchantMetadata, t.descRaw);
+                      const merchantInfo = metadataOverride || getMerchantIcon(t.descRaw);
+                      const rule = t.ruleIdApplied ? rulesById[t.ruleIdApplied] : null;
                       return (
                         <tr
                           key={t.id}
@@ -383,7 +418,9 @@ export default function TransactionsPage() {
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5">
                                   <p className="font-medium truncate">
-                                    {t.merchantAlias || t.descRaw?.split(" -- ")[0]?.replace(/\s+\d{4,}/g, '')}
+                                    {metadataOverride?.friendlyName ||
+                                      t.merchantAlias ||
+                                      t.descRaw?.split(" -- ")[0]?.replace(/\s+\d{4,}/g, '')}
                                   </p>
                                   {/* Icon badges for transaction attributes */}
                                   <div className="flex items-center gap-1 flex-shrink-0">
@@ -446,6 +483,30 @@ export default function TransactionsPage() {
                                 style={{ backgroundColor: categoryColor }}
                               />
                               <span className="text-sm">{t.category1}</span>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 px-2 text-[10px]"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    Por que?
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-64 text-xs">
+                                  <p className="font-semibold mb-1">Motivo da categoria</p>
+                                  <p className="text-muted-foreground">
+                                    {rule ? `Regra: ${rule.name}` : "Sem regra aplicada"}
+                                  </p>
+                                  {t.suggestedKeyword && (
+                                    <p className="text-muted-foreground">Keyword: {t.suggestedKeyword}</p>
+                                  )}
+                                  {t.confidence !== undefined && (
+                                  <p className="text-muted-foreground">Confiança: {t.confidence}%</p>
+                                  )}
+                                </PopoverContent>
+                              </Popover>
                             </div>
                           </td>
                           <td className="px-5 py-4">
@@ -474,6 +535,7 @@ export default function TransactionsPage() {
                                   e.stopPropagation();
                                   setViewingTransaction(t);
                                 }}
+                                aria-label="Ver detalhes da transação"
                                 title="Ver detalhes"
                               >
                                 <Eye className="h-4 w-4" />
@@ -485,6 +547,7 @@ export default function TransactionsPage() {
                                   e.stopPropagation();
                                   openEditDialog(t);
                                 }}
+                                aria-label="Editar transação"
                                 title="Editar"
                               >
                                 <Edit2 className="h-4 w-4" />
@@ -496,6 +559,50 @@ export default function TransactionsPage() {
                     })}
                   </tbody>
                 </table>
+              </div>
+            </CardContent>
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-5 py-3 border-t text-sm text-muted-foreground">
+                <span>Página {page} de {totalPages}</span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={page === 1}
+                    onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                  >
+                    Anterior
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={page === totalPages}
+                    onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+                  >
+                    Próxima
+                  </Button>
+                </div>
+              </div>
+            )}
+          </Card>
+        )}
+
+        {!isLoading && (
+          <Card className="bg-gradient-to-r from-slate-50 to-primary/5 border-primary/10 shadow-sm">
+            <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h3 className="font-semibold text-foreground">Próximo passo</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Exporte este mês ou revise transações pendentes na fila.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={handleExportCSV}>
+                  Exportar CSV
+                </Button>
+                <Link href="/confirm">
+                  <Button className="bg-primary hover:bg-primary/90">Ir para confirmação</Button>
+                </Link>
               </div>
             </CardContent>
           </Card>

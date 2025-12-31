@@ -154,7 +154,7 @@ function parseAmountStandard(amountStr: string): number {
 
 function detectCsvFormat(lines: string[]): { format: CsvFormat; separator: string } {
   for (let i = 0; i < Math.min(5, lines.length); i++) {
-    const line = lines[i];
+    const line = lines[i].replace(/^\uFEFF/, "");
 
     const commaCols = line.split(",").map(c => c.trim().replace(/^"|"$/g, ""));
     if (commaCols.some(c => c.toLowerCase() === "datum") &&
@@ -163,7 +163,7 @@ function detectCsvFormat(lines: string[]): { format: CsvFormat; separator: strin
       return { format: "amex", separator: "," };
     }
 
-    const semiCols = line.split(";").map(c => c.trim().replace(/^"|"$/g, ""));
+    const semiCols = line.split(";").map(c => c.trim().replace(/^"|"$/g, "").replace(/^\uFEFF/, ""));
 
     if (semiCols.some(c => c.toLowerCase() === "authorised on")) {
       return { format: "miles_and_more", separator: ";" };
@@ -196,14 +196,14 @@ function parseCSVLine(line: string, separator: string): string[] {
       }
       inQuotes = !inQuotes;
     } else if (char === separator && !inQuotes) {
-      result.push(current.trim().replace(/^"|"$/g, ""));
+      result.push(current.trim().replace(/^"|"$/g, "").replace(/^\uFEFF/, ""));
       current = "";
     } else {
       current += char;
     }
     i++;
   }
-  result.push(current.trim().replace(/^"|"$/g, ""));
+  result.push(current.trim().replace(/^"|"$/g, "").replace(/^\uFEFF/, ""));
   
   return result;
 }

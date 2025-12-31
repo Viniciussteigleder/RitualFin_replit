@@ -1,6 +1,6 @@
 import {
-  users, accounts, uploads, uploadErrors, merchantMetadata, transactions, rules, budgets, calendarEvents, eventOccurrences, goals, categoryGoals, rituals, settings,
-  aiUsageLogs, notifications, merchantDescriptions, merchantIcons,
+  users, accounts, uploads, uploadErrors, merchantMetadata, transactions, rules, categoryHierarchy, budgets, calendarEvents, eventOccurrences, goals, categoryGoals, rituals, settings,
+  aiUsageLogs, notifications, merchantDescriptions, merchantIcons, conversations, messages,
   type User, type InsertUser,
   type Account, type InsertAccount,
   type Upload, type InsertUpload,
@@ -8,6 +8,7 @@ import {
   type MerchantMetadata, type InsertMerchantMetadata,
   type Transaction, type InsertTransaction,
   type Rule, type InsertRule,
+  type CategoryHierarchy, type InsertCategoryHierarchy,
   type Budget, type InsertBudget,
   type CalendarEvent, type InsertCalendarEvent,
   type EventOccurrence, type InsertEventOccurrence,
@@ -18,7 +19,9 @@ import {
   type AiUsageLog, type InsertAiUsageLog,
   type Notification, type InsertNotification, type UpdateNotification,
   type MerchantDescription, type InsertMerchantDescription,
-  type MerchantIcon, type InsertMerchantIcon
+  type MerchantIcon, type InsertMerchantIcon,
+  type Conversation, type InsertConversation,
+  type Message, type InsertMessage
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql, like, gte, lt, or, isNull } from "drizzle-orm";
@@ -43,6 +46,13 @@ export interface IStorage {
   createNotification(notification: InsertNotification): Promise<Notification>;
   updateNotification(id: string, userId: string, data: UpdateNotification): Promise<Notification | undefined>;
   deleteNotification(id: string, userId: string): Promise<void>;
+
+  // Conversations & Messages
+  getConversations(userId: string): Promise<Conversation[]>;
+  getConversationById(id: string, userId: string): Promise<Conversation | undefined>;
+  createConversation(conversation: InsertConversation): Promise<Conversation>;
+  getMessages(conversationId: string): Promise<Message[]>;
+  createMessage(message: InsertMessage): Promise<Message>;
 
   // Accounts
   getAccounts(userId: string): Promise<Account[]>;
@@ -88,6 +98,13 @@ export interface IStorage {
   createRule(rule: InsertRule): Promise<Rule>;
   updateRule(id: string, data: Partial<Rule>): Promise<Rule | undefined>;
   deleteRule(id: string): Promise<void>;
+
+  // Category Hierarchy
+  getCategoryHierarchy(userId: string): Promise<CategoryHierarchy[]>;
+  getCategoryHierarchyById(id: string, userId: string): Promise<CategoryHierarchy | undefined>;
+  createCategoryHierarchy(entry: InsertCategoryHierarchy): Promise<CategoryHierarchy>;
+  updateCategoryHierarchy(id: string, userId: string, data: Partial<CategoryHierarchy>): Promise<CategoryHierarchy | undefined>;
+  deleteCategoryHierarchy(id: string, userId: string): Promise<void>;
   
   // Budgets
   getBudgets(userId: string, month: string): Promise<Budget[]>;
@@ -255,6 +272,35 @@ export class DatabaseStorage implements IStorage {
 
   async deleteNotification(id: string, userId: string): Promise<void> {
     await db.delete(notifications).where(and(eq(notifications.id, id), eq(notifications.userId, userId)));
+  }
+
+  // Conversations & Messages
+  async getConversations(userId: string): Promise<Conversation[]> {
+    return db.select().from(conversations)
+      .where(eq(conversations.userId, userId))
+      .orderBy(desc(conversations.createdAt));
+  }
+
+  async getConversationById(id: string, userId: string): Promise<Conversation | undefined> {
+    const [conversation] = await db.select().from(conversations)
+      .where(and(eq(conversations.id, id), eq(conversations.userId, userId)));
+    return conversation || undefined;
+  }
+
+  async createConversation(conversation: InsertConversation): Promise<Conversation> {
+    const [created] = await db.insert(conversations).values(conversation).returning();
+    return created;
+  }
+
+  async getMessages(conversationId: string): Promise<Message[]> {
+    return db.select().from(messages)
+      .where(eq(messages.conversationId, conversationId))
+      .orderBy(messages.createdAt);
+  }
+
+  async createMessage(message: InsertMessage): Promise<Message> {
+    const [created] = await db.insert(messages).values(message).returning();
+    return created;
   }
 
   // Accounts
@@ -505,6 +551,37 @@ export class DatabaseStorage implements IStorage {
 
   async deleteRule(id: string): Promise<void> {
     await db.delete(rules).where(eq(rules.id, id));
+  }
+
+  // Category Hierarchy
+  async getCategoryHierarchy(userId: string): Promise<CategoryHierarchy[]> {
+    return db.select().from(categoryHierarchy)
+      .where(eq(categoryHierarchy.userId, userId))
+      .orderBy(categoryHierarchy.category1, categoryHierarchy.category2, categoryHierarchy.category3);
+  }
+
+  async getCategoryHierarchyById(id: string, userId: string): Promise<CategoryHierarchy | undefined> {
+    const [entry] = await db.select().from(categoryHierarchy)
+      .where(and(eq(categoryHierarchy.id, id), eq(categoryHierarchy.userId, userId)));
+    return entry || undefined;
+  }
+
+  async createCategoryHierarchy(entry: InsertCategoryHierarchy): Promise<CategoryHierarchy> {
+    const [created] = await db.insert(categoryHierarchy).values(entry).returning();
+    return created;
+  }
+
+  async updateCategoryHierarchy(id: string, userId: string, data: Partial<CategoryHierarchy>): Promise<CategoryHierarchy | undefined> {
+    const [updated] = await db.update(categoryHierarchy)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(categoryHierarchy.id, id), eq(categoryHierarchy.userId, userId)))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteCategoryHierarchy(id: string, userId: string): Promise<void> {
+    await db.delete(categoryHierarchy)
+      .where(and(eq(categoryHierarchy.id, id), eq(categoryHierarchy.userId, userId)));
   }
 
   // Budgets

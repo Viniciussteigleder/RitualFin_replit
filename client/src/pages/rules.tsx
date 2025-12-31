@@ -5,14 +5,17 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Trash2, Loader2, Sparkles, BookOpen, Settings2, Zap, Edit2, RefreshCw, ShoppingBag, Home, Car, Heart, Coffee, Globe, CircleDollarSign, ArrowLeftRight, Hash, Filter, Check, Download, Upload } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { rulesApi } from "@/lib/api";
+import { rulesApi, transactionsApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState, useRef } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useEffect, useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
+import { AIKeywordsPanel } from "@/components/ai-keywords-panel";
+import { useLocation } from "wouter";
 import * as XLSX from 'xlsx';
 
 const TYPE_COLORS: Record<string, string> = {
@@ -44,6 +47,18 @@ const CATEGORY_COLORS: Record<string, string> = {
   "Outros": "#6b7280"
 };
 
+const CATEGORY_OPTIONS = [
+  "Mercado",
+  "Moradia",
+  "Transporte",
+  "Saúde",
+  "Lazer",
+  "Compras Online",
+  "Receitas",
+  "Interno",
+  "Outros"
+];
+
 interface RuleFormData {
   name: string;
   keywords: string;
@@ -69,6 +84,7 @@ const EMPTY_RULE: RuleFormData = {
 };
 
 export default function RulesPage() {
+  const [location] = useLocation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
@@ -76,11 +92,21 @@ export default function RulesPage() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [editingRule, setEditingRule] = useState<any>(null);
   const [formData, setFormData] = useState<RuleFormData>(EMPTY_RULE);
+  const [activeTab, setActiveTab] = useState("rules");
+  const [previewData, setPreviewData] = useState<{ count: number; samples: string[]; scanned: number } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const prefillHandledRef = useRef(false);
+  const previewTimeoutRef = useRef<number | null>(null);
 
   const { data: rules = [], isLoading } = useQuery({
     queryKey: ["rules"],
     queryFn: rulesApi.list,
+  });
+
+  const { data: confirmQueue = [] } = useQuery({
+    queryKey: ["confirm-queue"],
+    queryFn: transactionsApi.confirmQueue,
   });
 
   const createMutation = useMutation({
@@ -145,6 +171,68 @@ export default function RulesPage() {
     setIsOpen(true);
   };
 
+  useEffect(() => {
+    if (prefillHandledRef.current) return;
+    const search = location.split("?")[1];
+    if (!search) return;
+
+    const params = new URLSearchParams(search);
+    if (params.get("prefill") !== "1") return;
+
+    const prefillData: RuleFormData = {
+      name: params.get("name") || "",
+      keywords: params.get("keywords") || "",
+      type: (params.get("type") as RuleFormData["type"]) || "Despesa",
+      fixVar: (params.get("fixVar") as RuleFormData["fixVar"]) || "Variável",
+      category1: params.get("category1") || "Outros",
+      category2: params.get("category2") || "",
+      category3: params.get("category3") || "",
+      priority: 600,
+      strict: false
+    };
+
+    setFormData({ ...EMPTY_RULE, ...prefillData });
+    setEditingRule(null);
+    setIsOpen(true);
+    prefillHandledRef.current = true;
+
+    window.history.replaceState({}, "", "/rules");
+  }, [location]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setPreviewData(null);
+      return;
+    }
+    if (!formData.keywords.trim()) {
+      setPreviewData(null);
+      return;
+    }
+    if (previewTimeoutRef.current) {
+      window.clearTimeout(previewTimeoutRef.current);
+    }
+    previewTimeoutRef.current = window.setTimeout(async () => {
+      try {
+        setPreviewLoading(true);
+        const data = await rulesApi.preview({
+          keywords: formData.keywords,
+          scope: "pending"
+        });
+        setPreviewData(data);
+      } catch (_error) {
+        setPreviewData(null);
+      } finally {
+        setPreviewLoading(false);
+      }
+    }, 500);
+
+    return () => {
+      if (previewTimeoutRef.current) {
+        window.clearTimeout(previewTimeoutRef.current);
+      }
+    };
+  }, [formData.keywords, isOpen]);
+
   const handleDownloadExcel = () => {
     if (rules.length === 0) {
       toast({ title: "Nenhuma regra para exportar", variant: "destructive" });
@@ -182,9 +270,29 @@ export default function RulesPage() {
       { wch: 10 }  // Sistema
     ];
 
+    const classificationRows = CATEGORY_OPTIONS.map((category) => ({
+      'Categoria 1': category,
+      'Categoria 2': '',
+      'Categoria 3': '',
+      'Tipo (Despesa/Receita)': '',
+      'Fixo/Variável': '',
+      'Palavras-chave': ''
+    }));
+
+    const classificationsSheet = XLSX.utils.json_to_sheet(classificationRows);
+    classificationsSheet['!cols'] = [
+      { wch: 20 }, // Categoria 1
+      { wch: 25 }, // Categoria 2
+      { wch: 25 }, // Categoria 3
+      { wch: 18 }, // Tipo
+      { wch: 15 }, // Fixo/Variável
+      { wch: 50 }  // Palavras-chave
+    ];
+
     // Create workbook
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Regras');
+    XLSX.utils.book_append_sheet(wb, classificationsSheet, 'Classificacoes');
 
     // Generate filename with current date
     const date = new Date().toISOString().split('T')[0];
@@ -205,9 +313,15 @@ export default function RulesPage() {
       try {
         const data = e.target?.result;
         const workbook = XLSX.read(data, { type: 'binary' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        const targetSheets = workbook.SheetNames.filter((name: string) =>
+          ["regras", "classificacoes", "classificações"].includes(name.toLowerCase())
+        );
+
+        const sheetsToParse = targetSheets.length > 0 ? targetSheets : [workbook.SheetNames[0]];
+        const jsonData = sheetsToParse.flatMap((sheetName: string) => {
+          const worksheet = workbook.Sheets[sheetName];
+          return XLSX.utils.sheet_to_json(worksheet);
+        });
 
         if (jsonData.length === 0) {
           toast({ title: "Arquivo vazio", variant: "destructive" });
@@ -222,12 +336,8 @@ export default function RulesPage() {
           const rowNum = index + 2; // +2 because Excel is 1-indexed and has header row
 
           // Validate required fields
-          if (!row['Nome']) {
-            errors.push(`Linha ${rowNum}: Nome é obrigatório`);
-            return;
-          }
-          if (!row['Palavras-chave']) {
-            errors.push(`Linha ${rowNum}: Palavras-chave é obrigatório`);
+          const hasKeywords = !!row['Palavras-chave'];
+          if (!hasKeywords) {
             return;
           }
           if (!row['Tipo (Despesa/Receita)'] || !['Despesa', 'Receita'].includes(row['Tipo (Despesa/Receita)'])) {
@@ -248,8 +358,10 @@ export default function RulesPage() {
             return;
           }
 
+          const name = row['Nome'] || row['Categoria 3'] || row['Categoria 2'] || row['Categoria 1'];
+
           rulesToImport.push({
-            name: row['Nome'],
+            name,
             keywords: row['Palavras-chave'],
             type: row['Tipo (Despesa/Receita)'],
             fixVar: row['Fixo/Variável'],
@@ -358,6 +470,7 @@ export default function RulesPage() {
   const systemRules = filteredRules.filter((r: any) => r.isSystem);
   const userRules = filteredRules.filter((r: any) => !r.isSystem);
   const categories = Array.from(new Set(rules.map((r: any) => r.category1))) as string[];
+  const pendingCount = confirmQueue.length;
 
   if (isLoading) {
     return (
@@ -371,8 +484,14 @@ export default function RulesPage() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="w-full max-w-[420px] grid grid-cols-2">
+          <TabsTrigger value="rules">Regras</TabsTrigger>
+          <TabsTrigger value="suggestions">Sugestões IA</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="rules" className="space-y-6">
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <h1 className="text-2xl font-bold">Motor de Regras</h1>
@@ -382,7 +501,7 @@ export default function RulesPage() {
               </Badge>
             </div>
             <p className="text-muted-foreground">
-              Categorize transacoes automaticamente com regras baseadas em palavras-chave.
+              Categorize transações automaticamente com regras baseadas em palavras-chave.
             </p>
           </div>
           
@@ -411,6 +530,11 @@ export default function RulesPage() {
                 <RefreshCw className="h-4 w-4" />
               )}
               Reaplicar Regras
+              {pendingCount > 0 && (
+                <Badge variant="secondary" className="bg-muted text-muted-foreground text-[10px] ml-1">
+                  {pendingCount} pendentes
+                </Badge>
+              )}
             </Button>
 
             <Button
@@ -538,7 +662,7 @@ export default function RulesPage() {
               </div>
               <h3 className="text-lg font-semibold mb-2">Nenhuma regra configurada</h3>
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                Crie regras para categorizar suas transacoes automaticamente durante a importacao.
+                Crie regras para categorizar suas transações automaticamente durante a importação.
               </p>
               <div className="flex gap-3 justify-center">
                 <Button 
@@ -548,7 +672,7 @@ export default function RulesPage() {
                   className="gap-2"
                 >
                   <Zap className="h-4 w-4" />
-                  Criar Regras Padrao
+                  Criar Regras Padrão
                 </Button>
                 <Button className="gap-2" onClick={openNewDialog}>
                   <Plus className="h-4 w-4" />
@@ -601,6 +725,7 @@ export default function RulesPage() {
                           size="icon" 
                           className="h-8 w-8"
                           onClick={() => openEditDialog(rule)}
+                          aria-label="Editar regra"
                         >
                           <Edit2 className="h-4 w-4" />
                         </Button>
@@ -611,6 +736,7 @@ export default function RulesPage() {
                             className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50"
                             onClick={() => deleteMutation.mutate(rule.id)}
                             data-testid={`btn-delete-rule-${rule.id}`}
+                            aria-label="Excluir regra"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -687,15 +813,11 @@ export default function RulesPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Mercado">Mercado</SelectItem>
-                    <SelectItem value="Moradia">Moradia</SelectItem>
-                    <SelectItem value="Transporte">Transporte</SelectItem>
-                    <SelectItem value="Saúde">Saude</SelectItem>
-                    <SelectItem value="Lazer">Lazer</SelectItem>
-                    <SelectItem value="Compras Online">Compras Online</SelectItem>
-                    <SelectItem value="Receitas">Receitas</SelectItem>
-                    <SelectItem value="Interno">Interno</SelectItem>
-                    <SelectItem value="Outros">Outros</SelectItem>
+                    {CATEGORY_OPTIONS.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -727,6 +849,10 @@ export default function RulesPage() {
                 </div>
               </div>
 
+              <p className="text-xs text-muted-foreground">
+                Nível 1 define a macro categoria. Nível 2 aprofunda o tipo (ex: Supermercado). Nível 3 detalha o merchant (ex: LIDL).
+              </p>
+
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground uppercase tracking-wide">Palavras-chave</Label>
                 <Input
@@ -736,7 +862,22 @@ export default function RulesPage() {
                   className="bg-muted/30 border-0"
                   data-testid="input-rule-keywords"
                 />
-                <p className="text-xs text-muted-foreground">Separe multiplas palavras com ponto e virgula (;)</p>
+                <p className="text-xs text-muted-foreground">Separe múltiplas palavras com ponto e vírgula (;)</p>
+                {previewLoading && (
+                  <div className="text-xs text-muted-foreground">Calculando impacto...</div>
+                )}
+                {previewData && !previewLoading && (
+                  <div className="rounded-lg border bg-muted/20 p-3 text-xs text-muted-foreground">
+                    <p className="font-semibold text-foreground">
+                      Impacto estimado: {previewData.count} transações na fila
+                    </p>
+                    {previewData.samples.length > 0 && (
+                      <p className="mt-2">
+                        Exemplos: {previewData.samples.slice(0, 3).map((sample) => sample.split(" -- ")[0]).join(" • ")}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -770,7 +911,7 @@ export default function RulesPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Variacao</Label>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Variação</Label>
                   <div className="flex gap-2">
                     <Button
                       type="button"
@@ -788,7 +929,7 @@ export default function RulesPage() {
                       className="flex-1"
                       onClick={() => setFormData({ ...formData, fixVar: "Variável" })}
                     >
-                      Variavel
+                      Variável
                     </Button>
                   </div>
                 </div>
@@ -797,7 +938,7 @@ export default function RulesPage() {
               <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
                 <div>
                   <p className="font-medium text-sm">Regra Estrita</p>
-                  <p className="text-xs text-muted-foreground">Aplicar automaticamente com 100% confianca</p>
+                  <p className="text-xs text-muted-foreground">Aplicar automaticamente com 100% confiança</p>
                 </div>
                 <Switch
                   checked={formData.strict}
@@ -824,7 +965,11 @@ export default function RulesPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
+        </TabsContent>
+        <TabsContent value="suggestions">
+          <AIKeywordsPanel embedded />
+        </TabsContent>
+      </Tabs>
     </AppLayout>
   );
 }

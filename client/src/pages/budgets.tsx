@@ -8,6 +8,7 @@ import { budgetsApi, dashboardApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { Link } from "wouter";
 import { Trash2, Plus, TrendingUp, TrendingDown, Sparkles, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -150,10 +151,10 @@ export default function BudgetsPage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-            Orçamentos Mensais
+            Orçamento do Mês
           </h1>
           <p className="text-muted-foreground mt-1">
-            Defina limites de gasto por categoria para {formatMonth(month)}
+            Defina limites por categoria (planejamento do mês atual) para {formatMonth(month)}
           </p>
         </div>
 
@@ -376,6 +377,25 @@ export default function BudgetsPage() {
             </CardContent>
           </Card>
         )}
+
+        <Card className="bg-gradient-to-r from-slate-50 to-primary/5 border-primary/10 shadow-sm">
+          <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h3 className="font-semibold text-foreground">Próximo passo</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Ajuste suas metas ou revise a fila de confirmação para manter o orçamento atualizado.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Link href="/goals">
+                <Button variant="outline">Rever metas</Button>
+              </Link>
+              <Link href="/confirm">
+                <Button className="bg-primary hover:bg-primary/90">Revisar fila</Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </AppLayout>
   );

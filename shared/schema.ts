@@ -204,6 +204,23 @@ export const insertRuleSchema = createInsertSchema(rules).omit({ id: true, creat
 export type InsertRule = z.infer<typeof insertRuleSchema>;
 export type Rule = typeof rules.$inferSelect;
 
+// Category Hierarchy (N1 -> N2 -> N3)
+export const categoryHierarchy = pgTable("category_hierarchy", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  category1: category1Enum("category_1").notNull(),
+  category2: text("category_2").notNull(),
+  category3: text("category_3"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  uniqueEntry: sql`UNIQUE (user_id, category_1, category_2, category_3)`
+}));
+
+export const insertCategoryHierarchySchema = createInsertSchema(categoryHierarchy).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertCategoryHierarchy = z.infer<typeof insertCategoryHierarchySchema>;
+export type CategoryHierarchy = typeof categoryHierarchy.$inferSelect;
+
 // Transactions table (ledger canonico)
 export const transactions = pgTable("transactions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

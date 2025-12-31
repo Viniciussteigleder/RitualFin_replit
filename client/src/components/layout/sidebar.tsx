@@ -14,7 +14,6 @@ import {
   Sparkles,
   Calendar,
   Target,
-  Brain,
   Wallet,
   Receipt,
   Bell
@@ -22,7 +21,7 @@ import {
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
-import { transactionsApi } from "@/lib/api";
+import { transactionsApi, notificationsApi } from "@/lib/api";
 import { useMonth } from "@/lib/month-context";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -46,6 +45,7 @@ const NAV_CLUSTERS = [
         label: "Notificações",
         icon: Bell,
         href: "/notifications",
+        badgeKey: "notifications",
         description: "Alertas e mensagens"
       },
     ]
@@ -74,7 +74,7 @@ const NAV_CLUSTERS = [
         label: "Confirmar",
         icon: CheckCircle2,
         href: "/confirm",
-        showBadge: true,
+        badgeKey: "confirm",
         description: "Transações pendentes"
       },
       {
@@ -95,16 +95,10 @@ const NAV_CLUSTERS = [
         description: "Categorização automática"
       },
       {
-        label: "Dicionário",
+        label: "Categorias",
         icon: BookOpen,
-        href: "/merchant-dictionary",
-        description: "Aliases de comerciantes"
-      },
-      {
-        label: "IA Keywords",
-        icon: Brain,
-        href: "/ai-keywords",
-        description: "Análise inteligente em lote"
+        href: "/categories",
+        description: "Hierarquia N1-N3"
       },
     ]
   },
@@ -150,6 +144,13 @@ export function Sidebar() {
   });
 
   const pendingCount = confirmQueue.length;
+
+  const { data: notifications = [] } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: () => notificationsApi.list(),
+  });
+
+  const unreadNotifications = notifications.filter((n: any) => !n.isRead).length;
 
   const prevMonth = () => {
     const [year, m] = month.split("-").map(Number);
@@ -263,7 +264,11 @@ export function Sidebar() {
               <div className="space-y-1">
                 {cluster.items.map((item) => {
                   const isActive = location === item.href;
-                  const badge = item.showBadge && pendingCount > 0 ? pendingCount : null;
+                  const badge = (() => {
+                    if (item.badgeKey === "confirm") return pendingCount > 0 ? pendingCount : null;
+                    if (item.badgeKey === "notifications") return unreadNotifications > 0 ? unreadNotifications : null;
+                    return null;
+                  })();
 
                   const NavLink = (
                     <Link
@@ -341,7 +346,7 @@ export function Sidebar() {
                     <Settings className="h-5 w-5" />
                   </Link>
                 </TooltipTrigger>
-                <TooltipContent side="right">Configuracoes</TooltipContent>
+                <TooltipContent side="right">Configurações</TooltipContent>
               </Tooltip>
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
@@ -369,7 +374,7 @@ export function Sidebar() {
                 data-testid="nav-settings"
               >
                 <Settings className="h-5 w-5" />
-                Configuracoes
+                Configurações
               </Link>
               <Link
                 href="/login"

@@ -43,8 +43,9 @@ import {
 import { format, subMonths, startOfMonth, endOfMonth, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
-import { dashboardApi, transactionsApi, accountsApi } from "@/lib/api";
+import { dashboardApi, transactionsApi, accountsApi, uploadsApi, calendarEventsApi, goalsApi, merchantMetadataApi } from "@/lib/api";
 import { getAccountIcon, getMerchantIcon } from "@/lib/icons";
+import { resolveMerchantMetadata } from "@/lib/merchant-metadata";
 import { Link } from "wouter";
 import { useMonth } from "@/lib/month-context";
 import { Badge } from "@/components/ui/badge";
@@ -137,23 +138,28 @@ export default function DashboardPage() {
 
   const { data: lastUploads = [] } = useQuery({
     queryKey: ["last-uploads-by-account"],
-    queryFn: async () => {
-      const res = await fetch("/api/uploads/last-by-account");
-      if (!res.ok) return [];
-      return res.json();
-    }
+    queryFn: uploadsApi.lastByAccount,
   });
 
   const { data: calendarEvents = [] } = useQuery({
     queryKey: ["calendar-events"],
-    queryFn: async () => {
-      const res = await fetch("/api/calendar-events");
-      if (!res.ok) return [];
-      return res.json();
-    }
+    queryFn: calendarEventsApi.list,
   });
 
+  const { data: merchantMetadata = [] } = useQuery({
+    queryKey: ["merchant-metadata"],
+    queryFn: merchantMetadataApi.list,
+  });
+
+  const { data: goalsData } = useQuery({
+    queryKey: ["goals", month],
+    queryFn: () => goalsApi.list(month),
+  });
+
+  const currentGoal = goalsData?.goals?.[0];
+
   const pendingCount = confirmQueue.length;
+  const hasData = transactions.length > 0 || lastUploads.length > 0;
 
   // Filter transactions by account
   const filteredTransactions = accountFilter === "all"
@@ -162,22 +168,25 @@ export default function DashboardPage() {
 
   const recentTransactions = filteredTransactions.slice(0, 5);
 
-  const estimatedIncome = 8500;
+  const estimatedIncome = currentGoal?.estimatedIncome || 0;
   const spent = dashboard?.totalSpent || 0;
-  const income = dashboard?.totalIncome || 0;
-  
   const today = new Date();
   const [year, monthNum] = month.split("-").map(Number);
-  const currentMonthDate = new Date(year, monthNum - 1, 1);
   const daysInMonth = new Date(year, monthNum, 0).getDate();
   const daysPassed = today.getMonth() === monthNum - 1 && today.getFullYear() === year ? today.getDate() : daysInMonth;
   const dailyAvg = daysPassed > 0 ? spent / daysPassed : 0;
   const projection = spent + dailyAvg * (daysInMonth - daysPassed);
   const daysRemaining = today.getMonth() === monthNum - 1 && today.getFullYear() === year ? daysInMonth - today.getDate() : 0;
 
-  const upcomingCommitments = calendarEvents.filter((e: any) => e.isActive).slice(0, 3);
-  const totalCommitted = upcomingCommitments.reduce((sum: number, e: any) => sum + e.amount, 0);
-  const remaining = Math.max(0, estimatedIncome - spent);
+  const upcomingCommitments = calendarEvents
+    .filter((e: any) => {
+      if (!e.isActive || !e.nextDueDate) return false;
+      const dueDate = new Date(e.nextDueDate);
+      return dueDate >= today;
+    })
+    .slice(0, 3);
+  const totalCommitted = upcomingCommitments.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+  const availableReal = Math.max(0, estimatedIncome - spent - totalCommitted);
 
   const generateInsights = (): Insight[] => {
     const insights: Insight[] = [];
@@ -278,6 +287,24 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {!hasData && (
+          <Card className="bg-gradient-to-r from-primary/5 to-emerald-50 border-primary/20 shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h3 className="font-semibold text-foreground">Comece importando seu primeiro extrato</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Assim que você importar um CSV, o dashboard vai mostrar gastos, categorias e insights.
+                  </p>
+                </div>
+                <Link href="/uploads">
+                  <Button className="bg-primary hover:bg-primary/90">Importar extrato</Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Card className="bg-white border-0 shadow-sm">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -341,17 +368,22 @@ export default function DashboardPage() {
               
               <div className="grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-border">
                 <div className="p-3 rounded-xl bg-primary/5 border border-primary/10">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Restante do Mês</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Disponível real</p>
                   <p className="text-primary font-bold flex items-center gap-1 text-xl">
                     <ArrowUpRight className="h-5 w-5" />
-                    {remaining.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                    {availableReal.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
                   </p>
+                  {estimatedIncome === 0 && (
+                    <p className="text-[10px] text-amber-700 mt-1">
+                      Defina a renda em Metas ou Orçamento
+                    </p>
+                  )}
                 </div>
                 <div className="p-3 rounded-xl bg-rose-50 border border-rose-100">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Já Comprometido</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Compromissos</p>
                   <p className="text-rose-600 font-bold flex items-center gap-1 text-xl">
                     <ArrowDownRight className="h-5 w-5" />
-                    {spent.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                    {totalCommitted.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
                   </p>
                 </div>
               </div>
@@ -567,11 +599,16 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   recentTransactions.map((t: any) => {
-                    const merchantInfo = getMerchantIcon(t.descRaw);
+                    const metadataOverride = resolveMerchantMetadata(merchantMetadata, t.descRaw);
+                    const merchantInfo = metadataOverride || getMerchantIcon(t.descRaw);
                     const Icon = merchantInfo?.icon || (CATEGORY_ICONS[t.category1] || CreditCard);
                     const color = merchantInfo?.color || (CATEGORY_COLORS[t.category1] || "#6b7280");
                     const isIncome = t.amount > 0;
-                    const merchantName = t.descRaw?.split(" -- ")[0]?.replace(/\s+\d{4,}/g, '').trim() || t.descRaw;
+                    const merchantName =
+                      metadataOverride?.friendlyName ||
+                      t.merchantAlias ||
+                      t.descRaw?.split(" -- ")[0]?.replace(/\s+\d{4,}/g, '').trim() ||
+                      t.descRaw;
 
                     return (
                       <div
@@ -626,6 +663,33 @@ export default function DashboardPage() {
                 <Link href="/confirm">
                   <Button className="bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-500/20">
                     Revisar agora
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {pendingCount === 0 && (
+          <Card className="bg-gradient-to-r from-slate-50 to-emerald-50 border-emerald-200/40 shadow-sm">
+            <CardContent className="p-5">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                    <TrendingUp className="h-6 w-6 text-emerald-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-emerald-900">Próximo passo</h3>
+                    <p className="text-sm text-emerald-700/80 mt-0.5">
+                      {lastUploads.length === 0
+                        ? "Importe seu primeiro extrato para começar a analisar seus gastos."
+                        : "Revise suas transações e acompanhe as categorias deste mês."}
+                    </p>
+                  </div>
+                </div>
+                <Link href={lastUploads.length === 0 ? "/uploads" : "/transactions"}>
+                  <Button className="bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20">
+                    {lastUploads.length === 0 ? "Importar extrato" : "Ver transações"}
                   </Button>
                 </Link>
               </div>

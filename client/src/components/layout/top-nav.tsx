@@ -8,8 +8,8 @@ import { useMonth } from "@/lib/month-context";
 
 const NAV_TABS = [
   { label: "Painel", href: "/dashboard" },
-  { label: "Transacoes", href: "/confirm" },
-  { label: "Orcamento", href: "/rules" },
+  { label: "Transações", href: "/confirm" },
+  { label: "Orçamento", href: "/rules" },
 ];
 
 export function TopNav() {
@@ -78,14 +78,14 @@ export function TopNav() {
 
           <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-1 bg-muted/50 rounded-lg p-1">
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={prevMonth}>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={prevMonth} aria-label="Mês anterior">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <div className="flex items-center gap-2 px-2 min-w-[140px] justify-center">
                 <Calendar className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium">{formatMonth(month)}</span>
               </div>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={nextMonth}>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={nextMonth} aria-label="Próximo mês">
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -97,12 +97,12 @@ export function TopNav() {
               </Button>
             </Link>
 
-            <Button variant="ghost" size="icon" className="relative">
+            <Button variant="ghost" size="icon" className="relative" aria-label="Notificações">
               <Bell className="h-5 w-5" />
             </Button>
 
             <Link href="/settings">
-              <Button variant="ghost" size="icon" className="rounded-full bg-primary/10">
+              <Button variant="ghost" size="icon" className="rounded-full bg-primary/10" aria-label="Configurações">
                 <User className="h-5 w-5 text-primary" />
               </Button>
             </Link>

@@ -242,3 +242,59 @@
   - Fixed TypeScript AbortError typing in batch utils.
 - Observations & risks:
   - Dev server cannot start without DATABASE_URL; endpoint smoke test skipped.
+
+## 2025-12-29 21:02:58 +0100
+- Branch: main
+- Commands:
+  - git branch --show-current
+  - ls
+  - cat CLAUDE.md
+  - cat docs/ARCHITECTURE_AND_AI_LOGIC.md
+  - cat docs/IMPLEMENTATION_LOG.md
+  - ls docs/_codex
+  - cat docs/_codex/FEATURE_IMPLEMENTATION_PLAN.md
+  - cat docs/_codex/PRD_FROM_USER_FEEDBACK.md
+  - cat docs/_codex/USER_FEEDBACK_VERBATIM.md
+  - cat docs/_codex/RESOLVED_DECISIONS.md
+  - ls docs/_codex | rg NEXT_10_WORKPACKAGES
+  - cat package.json
+  - rg "process.env" -g"*.ts" -g"*.tsx"
+  - rg "VITE_" -g"*.ts" -g"*.tsx"
+  - rg "app\.(get|post|put|patch|delete)\(" server/routes.ts
+  - rg "/api/ai" server/routes.ts
+  - rg "fetch\(" client/src | rg "/api"
+  - node -e "env presence check"
+  - npm run check
+  - npm run build
+  - rg "pgTable\(" -n shared/schema.ts
+  - cat client/src/lib/api.ts
+  - sed -n 1,240p client/src/pages/dashboard.tsx
+  - sed -n 1,240p client/src/pages/confirm.tsx
+  - sed -n 1,220p client/src/pages/uploads.tsx
+  - sed -n 1,220p client/src/pages/settings.tsx
+  - sed -n 1,200p client/src/pages/ai-keywords.tsx
+  - sed -n 1,200p client/src/pages/login.tsx
+  - sed -n 1,200p client/src/pages/budgets.tsx
+  - sed -n 1,200p client/src/pages/goals.tsx
+  - sed -n 1,200p client/src/pages/rituals.tsx
+  - sed -n 1,220p client/src/components/layout/sidebar.tsx
+  - sed -n 1,220p server/index.ts
+  - sed -n 1,220p server/routes.ts
+  - cat server/db.ts
+  - cat vercel.json
+  - mkdir -p docs/_codex/reviews/2025-12-29
+- Output:
+  - Created review package in `docs/_codex/reviews/2025-12-29/`:
+    - EXECUTIVE_SUMMARY.md
+    - FEATURE_VERIFICATION_MATRIX.md
+    - UX_UI_REVIEW.md
+    - TECHNICAL_ASSESSMENT.md
+    - IMPROVEMENT_ROADMAP.md
+    - QA_RUNBOOK.md
+
+## 2025-12-29 (branch_feat)
+- Added calendar projected/realized filters, upload error previews, and goals onboarding CTA.
+- Applied merchant metadata overrides in dashboard/transactions/calendar/detail.
+- Added rules N1/N2/N3 guidance + pending impact badge.
+- Added balance updated timestamp and copy/accent normalization + aria labels.
+- Updated UX review docs and roadmap statuses.

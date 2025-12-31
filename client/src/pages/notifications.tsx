@@ -2,7 +2,6 @@
  * Notifications Page
  *
  * Timeline of system notifications with filtering and mark-as-read functionality.
- * Note: This is a UI shell - backend integration pending.
  */
 
 import AppLayout from "@/components/layout/app-layout";
@@ -13,20 +12,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Bell,
   CheckCheck,
-  Upload,
   AlertTriangle,
-  TrendingUp,
-  Calendar,
-  CreditCard,
-  Target,
-  Sparkles,
-  ChevronRight,
   Check
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { notificationsApi } from "@/lib/api";
+import { Link } from "wouter";
 
 interface Notification {
   id: string;
@@ -34,84 +29,24 @@ interface Notification {
   message: string;
   type: "success" | "warning" | "info" | "error";
   isRead: boolean;
-  createdAt: Date;
+  createdAt: string;
   actionUrl?: string;
   icon?: React.ComponentType<any>;
 }
 
-// Mock notifications (replace with API call when backend is ready)
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: "1",
-    title: "Upload concluído",
-    message: "426 transações importadas de Miles & More",
-    type: "success",
-    isRead: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 15), // 15 min ago
-    actionUrl: "/transactions",
-    icon: Upload
-  },
-  {
-    id: "2",
-    title: "Orçamento excedido",
-    message: "Você gastou €250/€200 em Lazer este mês",
-    type: "warning",
-    isRead: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-    actionUrl: "/dashboard",
-    icon: AlertTriangle
-  },
-  {
-    id: "3",
-    title: "Ritual semanal disponível",
-    message: "Está na hora de revisar suas finanças da semana",
-    type: "info",
-    isRead: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5), // 5 hours ago
-    actionUrl: "/rituals",
-    icon: Calendar
-  },
-  {
-    id: "4",
-    title: "Novas transações para confirmar",
-    message: "23 transações aguardam revisão na fila de confirmação",
-    type: "info",
-    isRead: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-    actionUrl: "/confirm",
-    icon: CheckCheck
-  },
-  {
-    id: "5",
-    title: "Meta atingida",
-    message: "Parabéns! Você economizou €500 este mês",
-    type: "success",
-    isRead: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2), // 2 days ago
-    actionUrl: "/goals",
-    icon: Target
-  },
-  {
-    id: "6",
-    title: "Fatura do cartão próxima",
-    message: "American Express vence em 5 dias (€1,234.56)",
-    type: "warning",
-    isRead: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3), // 3 days ago
-    actionUrl: "/accounts",
-    icon: CreditCard
-  },
-  {
-    id: "7",
-    title: "Análise de IA disponível",
-    message: "Identificamos 15 novas palavras-chave para categorização",
-    type: "info",
-    isRead: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5), // 5 days ago
-    actionUrl: "/ai-keywords",
-    icon: Sparkles
+const resolveNotificationAction = (notification: Notification) => {
+  const title = notification.title.toLowerCase();
+  if (title.includes("upload")) {
+    return { label: "Ver uploads", href: "/uploads" };
   }
-];
+  if (title.includes("meta")) {
+    return { label: "Ver metas", href: "/goals" };
+  }
+  if (title.includes("ritual")) {
+    return { label: "Ver rituais", href: "/rituals" };
+  }
+  return null;
+};
 
 const NOTIFICATION_COLORS = {
   success: {
@@ -141,28 +76,46 @@ const NOTIFICATION_COLORS = {
 };
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
   const [activeTab, setActiveTab] = useState("all");
+  const queryClient = useQueryClient();
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const { data: notifications = [], isLoading } = useQuery<Notification[]>({
+    queryKey: ["notifications"],
+    queryFn: () => notificationsApi.list(),
+  });
 
-  const markAsRead = (id: string) => {
-    setNotifications(prev =>
-      prev.map(n => n.id === id ? { ...n, isRead: true } : n)
-    );
-  };
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  const markReadMutation = useMutation({
+    mutationFn: ({ id, isRead }: { id: string; isRead: boolean }) => notificationsApi.markRead(id, isRead),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => notificationsApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
 
   const markAllAsRead = () => {
-    setNotifications(prev =>
-      prev.map(n => ({ ...n, isRead: true }))
-    );
+    const unread = notifications.filter((n) => !n.isRead);
+    Promise.all(unread.map((n) => markReadMutation.mutateAsync({ id: n.id, isRead: true })));
   };
 
-  const filteredNotifications = notifications.filter(n => {
+  const filteredNotifications = notifications.filter((n) => {
     if (activeTab === "unread") return !n.isRead;
     if (activeTab === "important") return n.type === "warning" || n.type === "error";
     return true;
   });
+
+  const typeCounts = useMemo(() => {
+    return {
+      important: notifications.filter((n) => n.type === "warning" || n.type === "error").length,
+    };
+  }, [notifications]);
 
   return (
     <AppLayout>
@@ -232,7 +185,7 @@ export default function NotificationsPage() {
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Importantes</p>
                   <p className="text-3xl font-bold mt-1">
-                    {notifications.filter(n => n.type === "warning" || n.type === "error").length}
+                    {typeCounts.important}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">alertas</p>
                 </div>
@@ -266,138 +219,118 @@ export default function NotificationsPage() {
               </TabsList>
             </div>
 
-            <TabsContent value={activeTab} className="m-0">
-              <CardContent className="p-0">
-                {filteredNotifications.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-16 px-4">
-                    <div className="w-16 h-16 rounded-full bg-muted/30 flex items-center justify-center mb-4">
-                      <Bell className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                    <h3 className="text-lg font-semibold mb-1">Nenhuma notificação</h3>
-                    <p className="text-sm text-muted-foreground text-center">
-                      {activeTab === "unread"
-                        ? "Você está em dia! Não há notificações não lidas."
-                        : "Não há notificações para exibir neste momento."}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="divide-y">
-                    {filteredNotifications.map((notification) => {
-                      const colors = NOTIFICATION_COLORS[notification.type];
-                      const Icon = notification.icon || Bell;
+            <TabsContent value={activeTab} className="p-6">
+              {isLoading ? (
+                <div className="py-12 text-center text-muted-foreground">
+                  Carregando notificações...
+                </div>
+              ) : filteredNotifications.length === 0 ? (
+                <div className="text-center py-12">
+                  <Bell className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-1">Nenhuma notificação</h3>
+                  <p className="text-muted-foreground text-sm max-w-sm mx-auto">
+                    {activeTab === "unread"
+                      ? "Você está em dia! Não há notificações não lidas."
+                      : "Não há notificações para exibir neste momento."}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {filteredNotifications.map((notification) => {
+                    const colors = NOTIFICATION_COLORS[notification.type];
+                    const Icon = notification.icon || Bell;
+                    const action = resolveNotificationAction(notification);
 
-                      return (
-                        <div
-                          key={notification.id}
-                          className={cn(
-                            "p-5 transition-colors hover:bg-muted/30 cursor-pointer relative",
-                            !notification.isRead && "bg-primary/[0.02]"
-                          )}
-                          onClick={() => {
-                            if (!notification.isRead) {
-                              markAsRead(notification.id);
-                            }
-                            if (notification.actionUrl) {
-                              window.location.href = notification.actionUrl;
-                            }
-                          }}
-                        >
-                          {/* Unread indicator */}
-                          {!notification.isRead && (
-                            <div className={cn("absolute left-0 top-0 bottom-0 w-1", colors.dot)} />
-                          )}
-
-                          <div className="flex items-start gap-4">
-                            {/* Icon */}
-                            <div
-                              className={cn(
-                                "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0",
-                                colors.bg,
-                                "border",
-                                colors.border
-                              )}
-                            >
-                              <Icon className={cn("h-5 w-5", colors.icon)} />
-                            </div>
-
-                            {/* Content */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-2 mb-1">
-                                <h3 className={cn(
-                                  "font-semibold text-sm",
+                    return (
+                      <div
+                        key={notification.id}
+                        className={cn(
+                          "p-4 rounded-lg border transition-all cursor-pointer",
+                          colors.bg,
+                          colors.border,
+                          !notification.isRead && "bg-primary/[0.02]"
+                        )}
+                        onClick={() => {
+                          if (!notification.isRead) {
+                            markReadMutation.mutate({ id: notification.id, isRead: true });
+                          }
+                        }}
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", colors.bg)}>
+                            <Icon className={cn("h-5 w-5", colors.icon)} />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-1">
+                              <h3
+                                className={cn(
+                                  "font-semibold",
                                   !notification.isRead && "text-foreground"
-                                )}>
-                                  {notification.title}
-                                </h3>
-                                <time className="text-xs text-muted-foreground flex-shrink-0">
-                                  {format(notification.createdAt, "HH:mm", { locale: ptBR })}
-                                </time>
-                              </div>
-                              <p className="text-sm text-muted-foreground mb-2">
-                                {notification.message}
-                              </p>
-                              <div className="flex items-center gap-3">
-                                <time className="text-xs text-muted-foreground">
-                                  {format(notification.createdAt, "dd 'de' MMMM", { locale: ptBR })}
-                                </time>
-                                {notification.actionUrl && (
-                                  <>
-                                    <span className="text-xs text-muted-foreground">•</span>
-                                    <button
-                                      className="text-xs font-medium text-primary hover:underline flex items-center gap-1"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        window.location.href = notification.actionUrl!;
-                                      }}
-                                    >
-                                      Ver detalhes
-                                      <ChevronRight className="h-3 w-3" />
-                                    </button>
-                                  </>
                                 )}
+                              >
+                                {notification.title}
+                              </h3>
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(notification.createdAt), "HH:mm", { locale: ptBR })}
+                              </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-2">
+                              {notification.message}
+                            </p>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(notification.createdAt), "dd 'de' MMMM", { locale: ptBR })}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                {action && (
+                                  <Link href={action.href}>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-xs"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      {action.label}
+                                    </Button>
+                                  </Link>
+                                )}
+                                {!notification.isRead && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-xs"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      markReadMutation.mutate({ id: notification.id, isRead: true });
+                                    }}
+                                  >
+                                    <Check className="h-3.5 w-3.5 mr-1" />
+                                    Marcar como lida
+                                  </Button>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-xs text-rose-600"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteMutation.mutate(notification.id);
+                                  }}
+                                >
+                                  Excluir
+                                </Button>
                               </div>
                             </div>
-
-                            {/* Mark as read button */}
-                            {!notification.isRead && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  markAsRead(notification.id);
-                                }}
-                                className="flex-shrink-0 h-8 w-8 p-0"
-                              >
-                                <Check className="h-4 w-4" />
-                              </Button>
-                            )}
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </Card>
-
-        {/* Backend Integration Note */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <Sparkles className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="font-medium text-sm text-blue-900 mb-1">
-                Página em desenvolvimento
-              </p>
-              <p className="text-xs text-blue-700">
-                Esta é uma interface de demonstração. A integração com o backend para
-                notificações reais está pendente e será implementada na próxima fase.
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
     </AppLayout>
   );

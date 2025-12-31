@@ -1,16 +1,17 @@
 import AppLayout from "@/components/layout/app-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { UploadCloud, FileSpreadsheet, CheckCircle2, XCircle, AlertCircle, Loader2, MoreVertical, Trash2, Filter, Clock, FileUp, Sparkles, RefreshCw, ChevronRight, Calendar, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { uploadsApi } from "@/lib/api";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Link } from "wouter";
 import { BankBadge } from "@/components/bank-badge";
 import { detectBankProvider } from "@/lib/bank-logos";
 import { UploadHistorySkeleton } from "@/components/skeletons/upload-history-skeleton";
@@ -21,6 +22,11 @@ export default function UploadsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [errorDialogOpen, setErrorDialogOpen] = useState(false);
+  const [selectedUpload, setSelectedUpload] = useState<any>(null);
+  const [uploadErrors, setUploadErrors] = useState<any[]>([]);
+  const [errorsLoading, setErrorsLoading] = useState(false);
+  const [errorsByUpload, setErrorsByUpload] = useState<Record<string, any[]>>({});
 
   const { data: uploads = [], isLoading } = useQuery({
     queryKey: ["uploads"],
@@ -56,13 +62,13 @@ export default function UploadsPage() {
       
       if (result.rowsImported > 0) {
         toast({
-          title: "Importacao concluida",
-          description: `${result.rowsImported} transacoes importadas${result.duplicates > 0 ? `, ${result.duplicates} duplicatas ignoradas` : ""}`
+        title: "Importação concluída",
+          description: `${result.rowsImported} transações importadas${result.duplicates > 0 ? `, ${result.duplicates} duplicatas ignoradas` : ""}`
         });
       } else if (result.duplicates > 0) {
         toast({
           title: "Arquivo ja importado",
-          description: `Todas as ${result.duplicates} transacoes ja existem no sistema`,
+          description: `Todas as ${result.duplicates} transações já existem no sistema`,
           variant: "destructive"
         });
       }
@@ -70,7 +76,7 @@ export default function UploadsPage() {
     onError: (error: any) => {
       setUploadProgress(0);
       toast({
-        title: "Erro na importacao",
+        title: "Erro na importação",
         description: error.message || "Falha ao processar o arquivo",
         variant: "destructive"
       });
@@ -96,6 +102,65 @@ export default function UploadsPage() {
     if (file) handleFileSelect(file);
   };
 
+  const openErrors = async (upload: any) => {
+    setSelectedUpload(upload);
+    setErrorDialogOpen(true);
+    setErrorsLoading(true);
+    try {
+      const result = await uploadsApi.getErrors(upload.id);
+      setUploadErrors(result.errors || []);
+    } catch (error: any) {
+      toast({
+        title: "Erro ao carregar erros",
+        description: error.message || "Nao foi possivel carregar os erros deste upload",
+        variant: "destructive"
+      });
+      setUploadErrors([]);
+    } finally {
+      setErrorsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const errorUploads = uploads.filter((upload: any) => (
+      (upload.status === "error" || upload.errorMessage) &&
+      !errorsByUpload[upload.id]
+    ));
+
+    if (errorUploads.length === 0) return;
+
+    let cancelled = false;
+
+    const loadErrorSummaries = async () => {
+      const entries = await Promise.all(
+        errorUploads.map(async (upload: any) => {
+          try {
+            const result = await uploadsApi.getErrors(upload.id);
+            return [upload.id, (result.errors || []).slice(0, 2)];
+          } catch {
+            return [upload.id, []];
+          }
+        })
+      );
+
+      if (cancelled) return;
+
+      setErrorsByUpload((prev) => {
+        const next = { ...prev };
+        entries.forEach(([id, errors]) => {
+          next[id as string] = errors as any[];
+        });
+        return next;
+      });
+    };
+
+    loadErrorSummaries();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [uploads, errorsByUpload]);
+
   const totalImported = uploads.reduce((sum: number, u: any) => sum + (u.rowsImported || 0), 0);
   const successfulUploads = uploads.filter((u: any) => u.status === 'ready').length;
 
@@ -104,9 +169,9 @@ export default function UploadsPage() {
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold">Centro de Importacao</h1>
+            <h1 className="text-2xl font-bold">Centro de Importação</h1>
             <p className="text-muted-foreground">
-              Importe seus extratos CSV para categorizar transacoes automaticamente.
+              Importe seus extratos CSV para categorizar transações automaticamente.
             </p>
             <div className="flex flex-wrap gap-2 mt-2">
               <BankBadge provider="miles_and_more" size="sm" variant="compact" />
@@ -123,7 +188,7 @@ export default function UploadsPage() {
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total Importado</p>
                   <p className="text-3xl font-bold mt-1">{totalImported}</p>
-                  <p className="text-xs text-muted-foreground mt-1">transacoes</p>
+                  <p className="text-xs text-muted-foreground mt-1">transações</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
                   <TrendingUp className="h-6 w-6 text-primary" />
@@ -151,7 +216,7 @@ export default function UploadsPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Proximo Passo</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Próximo passo</p>
                   <p className="text-lg font-semibold mt-1">Revisar</p>
                   <Link href="/confirm" className="text-xs text-primary hover:underline flex items-center gap-1 mt-1">
                     Ver fila <ChevronRight className="h-3 w-3" />
@@ -199,7 +264,7 @@ export default function UploadsPage() {
                 <h3 className="font-semibold text-lg mb-2">Processando arquivo...</h3>
                 <Progress value={uploadProgress} className="h-2 mb-2" />
                 <p className="text-sm text-muted-foreground">
-                  Validando e categorizando transacoes
+                  Validando e categorizando transações
                 </p>
               </div>
             ) : (
@@ -235,7 +300,7 @@ export default function UploadsPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Clock className="h-5 w-5 text-muted-foreground" />
-              <h2 className="text-lg font-semibold">Historico de Importacoes</h2>
+              <h2 className="text-lg font-semibold">Histórico de Importações</h2>
             </div>
           </div>
 
@@ -249,7 +314,7 @@ export default function UploadsPage() {
                 </div>
                 <h3 className="font-semibold text-lg mb-2">Nenhum arquivo importado</h3>
                 <p className="text-muted-foreground text-sm max-w-sm mx-auto">
-                  Arraste um arquivo CSV acima para comecar a organizar suas financas.
+                  Arraste um arquivo CSV acima para começar a organizar suas finanças.
                 </p>
               </CardContent>
             </Card>
@@ -262,6 +327,9 @@ export default function UploadsPage() {
                   data-testid={`card-upload-${upload.id}`}
                 >
                   <CardContent className="p-4">
+                    {(() => {
+                      const provider = detectBankProvider(upload.filename);
+                      return (
                     <div className="flex items-center gap-4">
                       <BankBadge provider={upload.filename} size="md" variant="icon" className="flex-shrink-0" />
 
@@ -269,6 +337,9 @@ export default function UploadsPage() {
                         <div className="flex items-center gap-2 mb-1">
                           <p className="font-semibold truncate">{upload.filename}</p>
                           <BankBadge provider={upload.filename} size="sm" variant="compact" />
+                          <Badge variant="outline" className="text-[10px] px-2 py-0.5">
+                            Formato: {provider.displayName}
+                          </Badge>
                           {upload.status === 'ready' && (
                             <Badge variant="secondary" className="bg-primary/10 text-primary text-xs">
                               Processado
@@ -289,17 +360,40 @@ export default function UploadsPage() {
                             <span>Ref: {upload.monthAffected}</span>
                           )}
                         </div>
+                        {errorsByUpload[upload.id]?.length > 0 && (
+                          <div className="mt-2 space-y-1 text-xs text-rose-600">
+                            {errorsByUpload[upload.id].map((err) => (
+                              <div key={err.id} className="truncate">
+                                Linha {err.rowNumber}: {err.errorMessage}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {(upload.status === "error" || upload.errorMessage) && (
+                          <button
+                            type="button"
+                            className="text-xs text-rose-600 hover:underline mt-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openErrors(upload);
+                            }}
+                          >
+                            Ver erros
+                          </button>
+                        )}
                       </div>
                       
                       <div className="text-right">
                         <p className="text-2xl font-bold">{upload.rowsImported}</p>
-                        <p className="text-xs text-muted-foreground">transacoes</p>
+                        <p className="text-xs text-muted-foreground">transações</p>
                       </div>
                       
-                      <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0">
+                      <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0" aria-label="Ações do upload">
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </div>
+                      );
+                    })()}
                   </CardContent>
                 </Card>
               ))}
@@ -307,6 +401,57 @@ export default function UploadsPage() {
           )}
         </div>
       </div>
+      {uploads.length > 0 && (
+        <Card className="bg-gradient-to-r from-primary/5 to-emerald-50 border-primary/20 shadow-sm">
+          <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h3 className="font-semibold text-foreground">Próximo passo</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Revise a fila de confirmação ou confira todas as transações importadas.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Link href="/confirm">
+                <Button variant="outline">Revisar fila</Button>
+              </Link>
+              <Link href="/transactions">
+                <Button className="bg-primary hover:bg-primary/90">Ver transações</Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      <Dialog open={errorDialogOpen} onOpenChange={setErrorDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Erros de Importação</DialogTitle>
+          </DialogHeader>
+          {errorsLoading ? (
+            <div className="py-6 text-sm text-muted-foreground">Carregando erros...</div>
+          ) : uploadErrors.length === 0 ? (
+            <div className="py-6 text-sm text-muted-foreground">
+              Nenhum erro encontrado para este upload.
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-[400px] overflow-y-auto">
+              {uploadErrors.map((err) => (
+                <div key={err.id} className="border rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-semibold text-muted-foreground">Linha {err.rowNumber}</span>
+                    <span className="text-xs text-rose-600">Erro</span>
+                  </div>
+                  <p className="text-sm">{err.errorMessage}</p>
+                  {err.rawData && (
+                    <p className="text-xs text-muted-foreground mt-2 break-all">
+                      {err.rawData}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }

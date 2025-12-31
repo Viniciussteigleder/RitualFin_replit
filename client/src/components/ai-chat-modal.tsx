@@ -1,17 +1,20 @@
 /**
  * AI Chat Modal
  *
- * Chat interface for AI assistant (UI shell only).
- * Backend integration to be implemented by Codex.
+ * Chat interface for AI assistant.
+ * Connected to backend for context-aware responses and history.
  */
 
-import { useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Send, Loader2, TrendingUp, FileText, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocation } from "wouter";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { aiChatApi } from "@/lib/api";
 
 interface Message {
   id: string;
@@ -21,7 +24,7 @@ interface Message {
 }
 
 const QUICK_ACTIONS = [
-  { icon: TrendingUp, label: "Analise este mês", prompt: "Analise meus gastos este mês e dê sugestões." },
+  { icon: TrendingUp, label: "Análise deste mês", prompt: "Analise meus gastos este mês e dê sugestões." },
   { icon: Target, label: "Sugerir economia", prompt: "Onde posso economizar mais?" },
   { icon: FileText, label: "Encontrar duplicatas", prompt: "Há transações duplicadas?" },
 ];
@@ -39,9 +42,55 @@ interface AIChatModalProps {
 }
 
 export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
+  const [location] = useLocation();
   const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  const { data: conversations = [] } = useQuery({
+    queryKey: ["ai-conversations"],
+    queryFn: aiChatApi.listConversations,
+    enabled: isOpen,
+  });
+
+  const { data: conversationMessages = [], isLoading: messagesLoading } = useQuery({
+    queryKey: ["ai-messages", activeConversationId],
+    queryFn: () => aiChatApi.listMessages(activeConversationId as string),
+    enabled: !!activeConversationId && isOpen,
+  });
+
+  const chatMutation = useMutation({
+    mutationFn: (payload: { message: string; conversationId?: string; context?: { screen?: string } }) =>
+      aiChatApi.chat(payload),
+    onSuccess: (data) => {
+      if (data?.conversationId && data.conversationId !== activeConversationId) {
+        setActiveConversationId(data.conversationId);
+      }
+      queryClient.invalidateQueries({ queryKey: ["ai-conversations"] });
+    }
+  });
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (!activeConversationId && conversations.length > 0) {
+      setActiveConversationId(conversations[0].id);
+    }
+  }, [conversations, activeConversationId, isOpen]);
+
+  const contextLabel = useMemo(() => {
+    if (location.startsWith("/dashboard")) return "Dashboard";
+    if (location.startsWith("/transactions")) return "Transações";
+    if (location.startsWith("/confirm")) return "Fila de Confirmação";
+    if (location.startsWith("/uploads")) return "Uploads";
+    if (location.startsWith("/calendar")) return "Calendário";
+    if (location.startsWith("/accounts")) return "Contas";
+    if (location.startsWith("/rules")) return "Regras";
+    if (location.startsWith("/goals")) return "Metas";
+    if (location.startsWith("/budgets")) return "Orçamentos";
+    return "Geral";
+  }, [location]);
 
   const handleSend = async (prompt?: string) => {
     const messageText = prompt || input;
@@ -58,18 +107,50 @@ export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
     setInput("");
     setIsLoading(true);
 
-    // Simulate AI response (backend to be implemented by Codex)
-    setTimeout(() => {
+    try {
+      const response = await chatMutation.mutateAsync({
+        message: messageText,
+        conversationId: activeConversationId || undefined,
+        context: { screen: contextLabel }
+      });
+
       const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: response?.replyId || (Date.now() + 1).toString(),
         role: "assistant",
-        content: "🚧 **Backend em desenvolvimento**\n\nEste é um protótipo da interface do assistente IA. A integração com OpenAI será implementada pelo Codex.\n\nFuncionalidades planejadas:\n- Análise de gastos com insights personalizados\n- Detecção de padrões e anomalias\n- Sugestões de economia baseadas em histórico\n- Busca natural por transações\n- Previsões de gastos futuros",
+        content: response?.reply || "Não consegui gerar uma resposta agora.",
         timestamp: new Date()
       };
+
       setMessages(prev => [...prev, aiMessage]);
+    } catch (_error) {
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: "Tive um problema ao gerar a resposta. Tente novamente.",
+        timestamp: new Date()
+      }]);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
+
+  useEffect(() => {
+    if (!activeConversationId) {
+      setMessages([WELCOME_MESSAGE]);
+      return;
+    }
+    if (!conversationMessages || conversationMessages.length === 0) {
+      setMessages([WELCOME_MESSAGE]);
+      return;
+    }
+    const mapped = conversationMessages.map((msg: any) => ({
+      id: msg.id,
+      role: msg.role,
+      content: msg.content,
+      timestamp: new Date(msg.createdAt)
+    })) as Message[];
+    setMessages(mapped);
+  }, [activeConversationId, conversationMessages]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -86,6 +167,9 @@ export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
             </div>
             <Badge className="ml-auto bg-white/20 text-white border-0">
               Beta
+            </Badge>
+            <Badge className="bg-white/20 text-white border-0">
+              Contexto: {contextLabel}
             </Badge>
           </div>
         </div>
@@ -110,8 +194,31 @@ export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
           </div>
         </div>
 
+        {conversations.length > 0 && (
+          <div className="px-6 py-3 border-b bg-white">
+            <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wide">Conversas recentes</p>
+            <div className="flex flex-wrap gap-2">
+              {conversations.slice(0, 6).map((item: any) => (
+                <Badge
+                  key={item.id}
+                  variant={item.id === activeConversationId ? "default" : "outline"}
+                  className="text-xs cursor-pointer"
+                  onClick={() => setActiveConversationId(item.id)}
+                >
+                  {item.title?.slice(0, 30) || "Conversa"}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          {messagesLoading && (
+            <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
+              Carregando conversa...
+            </div>
+          )}
           {messages.map((message) => (
             <div
               key={message.id}

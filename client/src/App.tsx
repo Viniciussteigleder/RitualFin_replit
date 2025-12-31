@@ -11,6 +11,7 @@ import UploadsPage from "@/pages/uploads";
 import ConfirmPage from "@/pages/confirm";
 import RulesPage from "@/pages/rules";
 import MerchantDictionaryPage from "@/pages/merchant-dictionary";
+import MerchantMetadataPage from "@/pages/merchant-metadata";
 import SettingsPage from "@/pages/settings";
 import CalendarPage from "@/pages/calendar";
 import EventDetailPage from "@/pages/event-detail";
@@ -21,6 +22,7 @@ import AIKeywordsPage from "@/pages/ai-keywords";
 import AccountsPage from "@/pages/accounts";
 import TransactionsPage from "@/pages/transactions";
 import NotificationsPage from "@/pages/notifications";
+import CategoriesPage from "@/pages/categories";
 
 function Router() {
   return (
@@ -39,6 +41,8 @@ function Router() {
       <Route path="/transactions" component={TransactionsPage} />
       <Route path="/rules" component={RulesPage} />
       <Route path="/merchant-dictionary" component={MerchantDictionaryPage} />
+      <Route path="/merchant-metadata" component={MerchantMetadataPage} />
+      <Route path="/categories" component={CategoriesPage} />
       <Route path="/accounts" component={AccountsPage} />
       <Route path="/ai-keywords" component={AIKeywordsPage} />
       <Route path="/settings" component={SettingsPage} />

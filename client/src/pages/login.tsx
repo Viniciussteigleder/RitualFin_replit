@@ -17,6 +17,7 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { authApi } from "@/lib/api";
 import { Eye, EyeOff, Sparkles, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { animations, buttonPress, focusRing } from "@/lib/animations";
 
@@ -26,6 +27,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const demoMode = true;
 
   const loginMutation = useMutation({
     mutationFn: () => authApi.login(email || "demo", password || "demo"),
@@ -121,8 +123,7 @@ export default function LoginPage() {
                 animations.delay[300]
               )}
               type="button"
-              onClick={() => loginMutation.mutate()}
-              disabled={loginMutation.isPending || isSuccess}
+              disabled={demoMode || loginMutation.isPending || isSuccess}
               data-testid="btn-google-login"
             >
               {isSuccess ? (
@@ -136,6 +137,11 @@ export default function LoginPage() {
                 </svg>
               )}
               {isSuccess ? "Conectado! Redirecionando..." : "Continuar com Google"}
+              {demoMode && (
+                <Badge variant="secondary" className="ml-2 text-[10px]">
+                  Em breve
+                </Badge>
+              )}
             </Button>
 
             {/* Divider */}
@@ -186,9 +192,10 @@ export default function LoginPage() {
                   <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
                   <button
                     type="button"
-                    className="text-sm text-primary hover:underline font-medium transition-colors duration-200"
+                    className="text-sm text-muted-foreground font-medium cursor-not-allowed"
+                    disabled
                   >
-                    Esqueceu?
+                    Esqueceu? <span className="text-[10px] ml-1">Em breve</span>
                   </button>
                 </div>
                 <div className="relative">
@@ -254,12 +261,9 @@ export default function LoginPage() {
               animations.delay[600]
             )}>
               Não tem uma conta?{" "}
-              <button
-                type="button"
-                className="text-primary font-medium hover:underline transition-colors duration-200"
-              >
-                Cadastre-se gratuitamente
-              </button>
+              <span className="text-muted-foreground font-medium">
+                Cadastre-se gratuitamente <span className="text-[10px] ml-1">Em breve</span>
+              </span>
             </p>
           </CardContent>
         </Card>

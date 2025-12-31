@@ -94,11 +94,22 @@ export const accountsApi = {
     fetchApi<void>(`/accounts/${id}`, {
       method: "DELETE",
     }),
+  balance: (id: string, params?: { startDate?: string; endDate?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.startDate) query.append("startDate", params.startDate);
+    if (params?.endDate) query.append("endDate", params.endDate);
+    return fetchApi<{ balance: number; currency: string; transactionCount: number }>(
+      `/accounts/${id}/balance${query.toString() ? `?${query.toString()}` : ""}`
+    );
+  },
 };
 
 // Uploads
 export const uploadsApi = {
   list: () => fetchApi<any[]>("/uploads"),
+  lastByAccount: () => fetchApi<any[]>("/uploads/last-by-account"),
+  getErrors: (id: string) =>
+    fetchApi<{ uploadId: string; errors: any[]; count: number }>(`/uploads/${id}/errors`),
   process: (filename: string, csvContent: string) =>
     fetchApi<{
       success: boolean;
@@ -130,9 +141,57 @@ export const transactionsApi = {
     }),
 };
 
+// Calendar Events
+export const calendarEventsApi = {
+  list: () => fetchApi<any[]>("/calendar-events"),
+  get: (id: string) => fetchApi<any>(`/calendar-events/${id}`),
+  delete: (id: string) =>
+    fetchApi<{ success: boolean }>(`/calendar-events/${id}`, {
+      method: "DELETE",
+    }),
+};
+
+// Notifications
+export const notificationsApi = {
+  list: (limit?: number) => fetchApi<any[]>(`/notifications${limit ? `?limit=${limit}` : ""}`),
+  markRead: (id: string, isRead: boolean) =>
+    fetchApi<any>(`/notifications/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ isRead }),
+    }),
+  delete: (id: string) =>
+    fetchApi<void>(`/notifications/${id}`, {
+      method: "DELETE",
+    }),
+};
+
+// Merchant Metadata
+export const merchantMetadataApi = {
+  list: () => fetchApi<any[]>("/merchant-metadata"),
+  create: (data: any) =>
+    fetchApi<any>("/merchant-metadata", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  update: (id: string, data: any) =>
+    fetchApi<any>(`/merchant-metadata/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    fetchApi<void>(`/merchant-metadata/${id}`, {
+      method: "DELETE",
+    }),
+};
+
 // Rules
 export const rulesApi = {
   list: () => fetchApi<any[]>("/rules"),
+  preview: (data: { keywords: string; scope?: "pending" | "all"; month?: string }) =>
+    fetchApi<{ count: number; samples: string[]; scanned: number }>("/rules/preview", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
   create: (data: any) =>
     fetchApi<any>("/rules", {
       method: "POST",
@@ -161,6 +220,47 @@ export const rulesApi = {
     }),
 };
 
+// Categories
+export const categoriesApi = {
+  list: () => fetchApi<any[]>("/categories"),
+  create: (data: { category1: string; category2: string; category3?: string | null }) =>
+    fetchApi<any>("/categories", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  update: (id: string, data: { category1?: string; category2?: string; category3?: string | null }) =>
+    fetchApi<any>(`/categories/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    fetchApi<{ success: boolean }>(`/categories/${id}`, {
+      method: "DELETE",
+    }),
+};
+
+// AI Keywords
+export const aiKeywordsApi = {
+  analyze: () => fetchApi<any>("/ai/analyze-keywords", { method: "POST" }),
+  apply: (suggestions: any[]) =>
+    fetchApi<any>("/ai/apply-suggestions", {
+      method: "POST",
+      body: JSON.stringify({ suggestions }),
+    }),
+  merchantSuggestions: () => fetchApi<any>("/ai/merchant-suggestions", { method: "POST" }),
+};
+
+// AI Chat
+export const aiChatApi = {
+  listConversations: () => fetchApi<any[]>("/ai/conversations"),
+  listMessages: (conversationId: string) => fetchApi<any[]>(`/ai/conversations/${conversationId}/messages`),
+  chat: (data: { message: string; conversationId?: string; context?: { screen?: string; month?: string } }) =>
+    fetchApi<any>("/ai/chat", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+};
+
 // Merchant Dictionary
 export const merchantDictionaryApi = {
   // Merchant Descriptions
@@ -177,6 +277,11 @@ export const merchantDictionaryApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+  bulkUpsertDescriptions: (items: Array<{ source: string; keyDesc: string; aliasDesc: string }>) =>
+    fetchApi<any>("/merchant-descriptions/bulk", {
+      method: "POST",
+      body: JSON.stringify({ items }),
+    }),
   updateDescription: (id: string, data: { aliasDesc: string }) =>
     fetchApi<any>(`/merchant-descriptions/${id}`, {
       method: "PATCH",
@@ -188,6 +293,7 @@ export const merchantDictionaryApi = {
     }),
   exportDescriptions: () =>
     fetchApi<any[]>("/merchant-descriptions/export"),
+  suggestAliases: () => aiKeywordsApi.merchantSuggestions(),
 
   // Merchant Icons
   listIcons: (filters?: { needsFetch?: boolean; search?: string }) => {

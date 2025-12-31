@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
-import { User, Shield, Settings, Bell, Eye, Check, Globe, Palette, Database, Trash2, Download, Key, CreditCard, Mail, Moon, Sun, Sparkles } from "lucide-react";
+import { User, Shield, Settings, Bell, Eye, Check, Globe, Palette, Database, Trash2, Download, Key, CreditCard, Mail, Moon, Sun, Sparkles, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -16,12 +16,13 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { settingsApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
 
 const TABS = [
-  { id: "conta", label: "Conta", icon: User, description: "Perfil e informacoes pessoais" },
-  { id: "preferencias", label: "Preferencias", icon: Settings, description: "Aparencia e comportamento" },
-  { id: "integracoes", label: "Integracoes", icon: Database, description: "Conexoes com outros servicos" },
-  { id: "seguranca", label: "Seguranca", icon: Shield, description: "Senha e autenticacao" },
+  { id: "conta", label: "Conta", icon: User, description: "Perfil e informações pessoais" },
+  { id: "preferencias", label: "Preferências", icon: Settings, description: "Aparência e comportamento" },
+  { id: "integracoes", label: "Integrações", icon: Database, description: "Conexões com outros serviços" },
+  { id: "seguranca", label: "Segurança", icon: Shield, description: "Senha e autenticação" },
 ];
 
 export default function SettingsPage() {
@@ -44,14 +45,14 @@ export default function SettingsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["settings"] });
       toast({
-        title: "Configuracoes salvas",
+        title: "Configurações salvas",
         description: "Suas preferencias foram atualizadas com sucesso.",
       });
     },
     onError: () => {
       toast({
         title: "Erro ao salvar",
-        description: "Nao foi possivel salvar as configuracoes.",
+        description: "Não foi possível salvar as configurações.",
         variant: "destructive",
       });
     },
@@ -61,7 +62,7 @@ export default function SettingsPage() {
     <AppLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">Configuracoes</h1>
+        <h1 className="text-2xl font-bold">Configurações</h1>
           <p className="text-muted-foreground mt-1">
             Gerencie sua conta e personalize o RitualFin.
           </p>
@@ -142,18 +143,19 @@ export default function SettingsPage() {
                     <CardTitle className="text-base flex items-center gap-2">
                       <Download className="h-4 w-4 text-primary" />
                       Exportar Dados
+                      <Badge variant="secondary" className="text-[10px]">Em breve</Badge>
                     </CardTitle>
                     <CardDescription>
-                      Baixe todas as suas transacoes e configuracoes.
+                      Baixe todas as suas transações e configurações.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="flex gap-3">
-                      <Button variant="outline" className="gap-2">
+                      <Button variant="outline" className="gap-2" disabled>
                         <Download className="h-4 w-4" />
                         Exportar CSV
                       </Button>
-                      <Button variant="outline" className="gap-2">
+                      <Button variant="outline" className="gap-2" disabled>
                         <Download className="h-4 w-4" />
                         Exportar JSON
                       </Button>
@@ -219,7 +221,10 @@ export default function SettingsPage() {
                           <p className="text-sm text-muted-foreground">Ativar modo noturno</p>
                         </div>
                       </div>
-                      <Switch checked={darkMode} onCheckedChange={setDarkMode} />
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-[10px]">Em breve</Badge>
+                        <Switch checked={darkMode} onCheckedChange={setDarkMode} disabled />
+                      </div>
                     </div>
                     <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
                       <div>
@@ -251,9 +256,9 @@ export default function SettingsPage() {
                     </div>
                     <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
                       <div>
-                        <p className="font-medium">Auto-confirmar Alta Confianca</p>
+                          <p className="font-medium">Auto-confirmar Alta Confiança</p>
                         <p className="text-sm text-muted-foreground">
-                          Aceitar automaticamente sugestoes com {settings?.confidenceThreshold || 80}%+ de confianca
+                          Aceitar automaticamente sugestões com {settings?.confidenceThreshold || 80}%+ de confiança
                         </p>
                       </div>
                       <Switch
@@ -267,7 +272,7 @@ export default function SettingsPage() {
                     {settings?.autoConfirmHighConfidence && (
                       <div className="p-4 bg-muted/30 rounded-xl space-y-3">
                         <div className="flex items-center justify-between">
-                          <Label className="text-sm font-medium">Limite de Confianca</Label>
+                          <Label className="text-sm font-medium">Limite de Confiança</Label>
                           <span className="text-sm font-bold text-primary">{settings?.confidenceThreshold || 80}%</span>
                         </div>
                         <Slider
@@ -282,7 +287,7 @@ export default function SettingsPage() {
                           className="w-full"
                         />
                         <p className="text-xs text-muted-foreground">
-                          Transacoes com confianca acima deste limite serao confirmadas automaticamente
+                        Transações com confiança acima deste limite serão confirmadas automaticamente
                         </p>
                       </div>
                     )}
@@ -292,60 +297,88 @@ export default function SettingsPage() {
             )}
 
             {activeTab === "integracoes" && (
-              <Card className="bg-white border-0 shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Database className="h-4 w-4 text-primary" />
-                    Fontes de Dados
-                  </CardTitle>
-                  <CardDescription>
-                    Conecte suas contas bancarias e cartoes via importacao CSV.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-primary/5 rounded-xl border border-primary/20">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                        <CreditCard className="h-5 w-5 text-blue-600" />
+              <>
+                <Card className="bg-white border-0 shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Database className="h-4 w-4 text-primary" />
+                      Fontes de Dados
+                    </CardTitle>
+                    <CardDescription>
+                      Conecte suas contas bancárias e cartões via importação CSV.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-primary/5 rounded-xl border border-primary/20">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                          <CreditCard className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium">Miles & More</p>
+                          <p className="text-sm text-muted-foreground">Importação CSV ativa</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium">Miles & More</p>
-                        <p className="text-sm text-muted-foreground">Importacao CSV ativa</p>
-                      </div>
+                      <Badge className="bg-primary/10 text-primary border-0">Ativo</Badge>
                     </div>
-                    <Badge className="bg-primary/10 text-primary border-0">Ativo</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-primary/5 rounded-xl border border-primary/20">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                        <CreditCard className="h-5 w-5 text-blue-600" />
+                    <div className="flex items-center justify-between p-4 bg-primary/5 rounded-xl border border-primary/20">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                          <CreditCard className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium">American Express</p>
+                          <p className="text-sm text-muted-foreground">Multi-cartões suportado</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium">American Express</p>
-                        <p className="text-sm text-muted-foreground">Multi-cartoes suportado</p>
-                      </div>
+                      <Badge className="bg-primary/10 text-primary border-0">Ativo</Badge>
                     </div>
-                    <Badge className="bg-primary/10 text-primary border-0">Ativo</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-primary/5 rounded-xl border border-primary/20">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
-                        <CreditCard className="h-5 w-5 text-red-600" />
+                    <div className="flex items-center justify-between p-4 bg-primary/5 rounded-xl border border-primary/20">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                          <CreditCard className="h-5 w-5 text-red-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium">Sparkasse</p>
+                          <p className="text-sm text-muted-foreground">Conta bancária IBAN</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium">Sparkasse</p>
-                        <p className="text-sm text-muted-foreground">Conta bancaria IBAN</p>
-                      </div>
+                      <Badge className="bg-primary/10 text-primary border-0">Ativo</Badge>
                     </div>
-                    <Badge className="bg-primary/10 text-primary border-0">Ativo</Badge>
-                  </div>
-                  <div className="p-4 bg-muted/20 rounded-xl border-2 border-dashed">
-                    <p className="text-sm text-muted-foreground">
-                      <strong>Proximas integracoes:</strong> Nubank, Revolut, N26, Wise
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+                    <div className="p-4 bg-muted/20 rounded-xl border-2 border-dashed">
+                      <p className="text-sm text-muted-foreground">
+                        <strong>Próximas integrações:</strong> Nubank, Revolut, N26, Wise
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-white border-0 shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <BookOpen className="h-4 w-4 text-primary" />
+                      Dicionário e Merchants
+                    </CardTitle>
+                    <CardDescription>
+                      Gerencie aliases e padrões de comerciantes para padronizar descrições.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex flex-col md:flex-row gap-3">
+                    <Link href="/merchant-dictionary">
+                      <Button variant="outline" className="gap-2">
+                        <BookOpen className="h-4 w-4" />
+                        Dicionário de Comerciantes
+                      </Button>
+                    </Link>
+                    <Link href="/merchant-metadata">
+                      <Button variant="outline" className="gap-2">
+                        <Sparkles className="h-4 w-4" />
+                        Padrões de Merchants
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              </>
             )}
 
             {activeTab === "seguranca" && (

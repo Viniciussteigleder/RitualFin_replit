@@ -17,7 +17,11 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { getMerchantIcon, getCategoryIcon } from "@/lib/merchant-icons";
+import { useQuery } from "@tanstack/react-query";
+import { merchantMetadataApi } from "@/lib/api";
+import { resolveMerchantMetadata } from "@/lib/merchant-metadata";
 import { AccountBadge } from "@/components/account-badge";
+import { Link } from "wouter";
 import {
   Calendar,
   CreditCard,
@@ -50,14 +54,37 @@ export function TransactionDetailModal({
 }: TransactionDetailModalProps) {
   if (!transaction) return null;
 
+  const { data: merchantMetadata = [] } = useQuery({
+    queryKey: ["merchant-metadata"],
+    queryFn: merchantMetadataApi.list,
+  });
+
   // Get merchant icon or fallback to category icon
-  const merchantInfo = getMerchantIcon(transaction.descRaw);
+  const metadataOverride = resolveMerchantMetadata(merchantMetadata, transaction.descRaw);
+  const merchantInfo = metadataOverride || getMerchantIcon(transaction.descRaw);
   const MerchantIcon = merchantInfo?.icon || getCategoryIcon(transaction.category1);
   const iconColor = merchantInfo?.color || "#6b7280";
 
   // Split description parts (if formatted as "Main -- Additional")
   const [mainDesc, ...additionalParts] = (transaction.descRaw || "").split(" -- ");
   const additionalDesc = additionalParts.join(" -- ");
+  const merchantLabel = metadataOverride?.friendlyName || transaction.merchantAlias || mainDesc;
+  const keywordSeed = merchantLabel
+    ?.toLowerCase()
+    .replace(/\d+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const ruleQuery = new URLSearchParams({
+    prefill: "1",
+    name: merchantLabel ? `Regra ${merchantLabel}` : "Nova regra",
+    keywords: keywordSeed || "",
+    category1: transaction.category1 || "",
+    category2: transaction.category2 || "",
+    category3: transaction.category3 || "",
+    type: transaction.type || "",
+    fixVar: transaction.fixVar || "",
+  }).toString();
+  const ruleLink = `/rules?${ruleQuery}`;
 
   const CATEGORY_COLORS: Record<string, string> = {
     "Mercado": "#22c55e",
@@ -94,6 +121,11 @@ export function TransactionDetailModal({
               <p className="text-sm text-muted-foreground mt-1">{additionalDesc}</p>
             )}
             <div className="flex items-center gap-2 mt-2">
+              {metadataOverride?.friendlyName && (
+                <Badge variant="outline" className="text-xs">
+                  {metadataOverride.friendlyName}
+                </Badge>
+              )}
               {merchantInfo?.merchantName && (
                 <Badge variant="outline" className="text-xs capitalize">
                   {merchantInfo.merchantName.replace(/_/g, " ")}
@@ -253,6 +285,17 @@ export function TransactionDetailModal({
               Editar
             </Button>
           )}
+          <Link href={ruleLink}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => onClose()}
+            >
+              <Tag className="w-4 h-4" />
+              Criar regra
+            </Button>
+          </Link>
           <Button variant="outline" size="sm" className="gap-2">
             <Copy className="w-4 h-4" />
             Duplicar

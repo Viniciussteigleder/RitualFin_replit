@@ -34,7 +34,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { eventOccurrencesApi } from "@/lib/api";
+import { calendarEventsApi, eventOccurrencesApi } from "@/lib/api";
 
 const CATEGORY_ICONS: Record<string, any> = {
   "Moradia": Home,
@@ -99,29 +99,18 @@ export default function EventDetailPage() {
 
   const { data: event, isLoading } = useQuery<CalendarEvent>({
     queryKey: ["calendar-event", id],
-    queryFn: async () => {
-      const res = await fetch(`/api/calendar-events/${id}`);
-      if (!res.ok) throw new Error("Evento não encontrado");
-      return res.json();
-    },
+    queryFn: () => calendarEventsApi.get(id),
     enabled: !!id
   });
 
   const { data: occurrences = [] } = useQuery<EventOccurrence[]>({
     queryKey: ["event-occurrences", id],
-    queryFn: async () => {
-      const res = await fetch(`/api/calendar-events/${id}/occurrences`);
-      if (!res.ok) return [];
-      return res.json();
-    },
+    queryFn: () => eventOccurrencesApi.list(id),
     enabled: !!id
   });
 
   const deleteEvent = useMutation({
-    mutationFn: async () => {
-      const res = await fetch(`/api/calendar-events/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Erro ao excluir evento");
-    },
+    mutationFn: () => calendarEventsApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
       toast({ title: "Evento excluído com sucesso" });

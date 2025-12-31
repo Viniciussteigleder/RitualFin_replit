@@ -30,9 +30,10 @@ import {
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMonth } from "@/lib/month-context";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { goalsApi, categoryGoalsApi } from "@/lib/api";
+import { goalsApi, categoryGoalsApi, dashboardApi } from "@/lib/api";
+import { Link } from "wouter";
 
 const CATEGORY_ICONS: Record<string, any> = {
   "Moradia": Home,
@@ -75,6 +76,7 @@ export default function GoalsPage() {
   const { month, formatMonth } = useMonth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const incomeInputRef = useRef<HTMLInputElement>(null);
 
   const [estimatedIncome, setEstimatedIncome] = useState("8500");
   const [categoryBudgets, setCategoryBudgets] = useState<Record<string, string>>({});
@@ -104,20 +106,12 @@ export default function GoalsPage() {
 
   const { data: dashboard } = useQuery({
     queryKey: ["dashboard", month],
-    queryFn: async () => {
-      const res = await fetch(`/api/dashboard?month=${month}`);
-      if (!res.ok) return null;
-      return res.json();
-    }
+    queryFn: () => dashboardApi.get(month),
   });
 
   const { data: previousMonth } = useQuery({
     queryKey: ["dashboard", getPreviousMonth(month)],
-    queryFn: async () => {
-      const res = await fetch(`/api/dashboard?month=${getPreviousMonth(month)}`);
-      if (!res.ok) return null;
-      return res.json();
-    }
+    queryFn: () => dashboardApi.get(getPreviousMonth(month)),
   });
 
   // Load goal data into state when fetched
@@ -255,9 +249,9 @@ export default function GoalsPage() {
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">Metas Financeiras</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">Objetivos Financeiros</h1>
             <p className="text-muted-foreground">
-              Planeje e acompanhe seus limites de gastos para {formatMonth(month)}
+              Objetivos estratégicos do mês (separados do orçamento) para {formatMonth(month)}
             </p>
           </div>
           
@@ -281,6 +275,22 @@ export default function GoalsPage() {
             </Button>
           </div>
         </div>
+
+        {!currentGoal && categoryData.length === 0 && !goalsLoading && (
+          <Card className="bg-white border-0 shadow-sm">
+            <CardContent className="p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <h3 className="font-semibold text-foreground">Comece com uma meta simples</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Defina sua renda estimada e as categorias principais para o mês.
+                </p>
+              </div>
+              <Button variant="outline" onClick={() => incomeInputRef.current?.focus()}>
+                Definir renda
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="bg-gradient-to-r from-white to-primary/5 border-primary/20 shadow-sm">
           <CardContent className="p-6 md:p-8">
@@ -319,6 +329,7 @@ export default function GoalsPage() {
                     className="pl-8 text-2xl font-bold h-12 border-0 bg-muted/30"
                     value={estimatedIncome}
                     onChange={(e) => setEstimatedIncome(e.target.value)}
+                    ref={incomeInputRef}
                   />
                 </div>
                 <Badge className="bg-green-100 text-green-700 mb-2">Confirmado</Badge>
@@ -467,6 +478,26 @@ export default function GoalsPage() {
             </CardContent>
           </Card>
         </div>
+
+        <Card className="bg-gradient-to-r from-slate-50 to-primary/5 border-primary/10 shadow-sm">
+          <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h3 className="font-semibold text-foreground">Próximo passo</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                {currentGoal
+                  ? "Revise seu progresso no dashboard e ajuste categorias se necessário."
+                  : "Defina sua renda estimada para calcular metas realistas."}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Link href={currentGoal ? "/dashboard" : "/budgets"}>
+                <Button className="bg-primary hover:bg-primary/90">
+                  {currentGoal ? "Ver dashboard" : "Definir orçamento"}
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </AppLayout>
   );

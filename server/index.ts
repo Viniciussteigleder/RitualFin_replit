@@ -64,8 +64,14 @@ app.use((req, res, next) => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+      if (capturedJsonResponse && res.statusCode >= 400) {
+        const allowedKeys = ["error", "message", "success", "count", "status", "uploadId", "errorsCount"];
+        const safePayload = Object.fromEntries(
+          Object.entries(capturedJsonResponse).filter(([key]) => allowedKeys.includes(key)),
+        );
+        if (Object.keys(safePayload).length > 0) {
+          logLine += ` :: ${JSON.stringify(safePayload)}`;
+        }
       }
 
       log(logLine);
@@ -101,10 +107,11 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || "5000", 10);
+  const host = process.env.HOST || "0.0.0.0";
   httpServer.listen(
     {
       port,
-      host: "0.0.0.0",
+      host,
       reusePort: true,
     },
     () => {

@@ -5,6 +5,7 @@ import { insertRuleSchema, insertGoalSchema, insertCategoryGoalSchema, insertRit
 import { z } from "zod";
 import { parseCSV, type ParsedTransaction } from "./csv-parser";
 import { categorizeTransaction, suggestKeyword, AI_SEED_RULES } from "./rules-engine";
+import { generateAliasDescHeuristic } from "./key-desc-generator";
 import OpenAI from "openai";
 import { logger } from "./logger";
 import { withOpenAIUsage } from "./ai-usage";
@@ -432,6 +433,17 @@ export async function registerRoutes(
           rowsImported: 0
         });
 
+        try {
+          await storage.createNotification({
+            userId: user.id,
+            title: "Upload falhou",
+            message: `${filename || "Arquivo"}: ${parseResult.errors[0] || "Erro ao processar CSV"}`,
+            type: "error"
+          });
+        } catch (notifyError) {
+          logger.warn("upload_notification_failed", { uploadId: upload.id });
+        }
+
         // Save parse errors to database
         for (const errorStr of parseResult.errors) {
           const match = errorStr.match(/^Linha (\d+): (.+)$/);
@@ -640,6 +652,22 @@ export async function registerRoutes(
         monthAffected: parseResult.monthAffected,
         errorMessage: errors.length > 0 ? errors.join("; ") : undefined
       });
+
+      try {
+        const title = finalStatus === "duplicate" ? "Upload duplicado" : "Upload concluído";
+        const message = finalStatus === "duplicate"
+          ? `${filename || "Arquivo"} já foi importado anteriormente.`
+          : `${filename || "Arquivo"}: ${importedCount} transações importadas, ${duplicateCount} duplicatas.`;
+
+        await storage.createNotification({
+          userId: user.id,
+          title,
+          message,
+          type: finalStatus === "duplicate" ? "info" : "success"
+        });
+      } catch (notifyError) {
+        logger.warn("upload_notification_failed", { uploadId: upload.id });
+      }
 
       const duration = Date.now() - startTime;
 
@@ -913,6 +941,61 @@ export async function registerRoutes(
   });
 
   // ===== RULES =====
+  const normalizeForMatch = (text: string) => {
+    return text
+      .toUpperCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  };
+
+  app.post("/api/rules/preview", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "Usuário não encontrado" });
+
+      const { keywords, scope = "pending", month } = req.body || {};
+      if (!keywords || typeof keywords !== "string") {
+        return res.status(400).json({ error: "Palavras-chave são obrigatórias" });
+      }
+
+      const keywordList = keywords
+        .split(";")
+        .map((k) => normalizeForMatch(k))
+        .filter((k) => k.length > 0);
+
+      if (keywordList.length === 0) {
+        return res.json({ count: 0, samples: [], scanned: 0 });
+      }
+
+      const transactions =
+        scope === "all"
+          ? await storage.getTransactions(user.id, month)
+          : await storage.getTransactionsByNeedsReview(user.id);
+
+      let count = 0;
+      const samples: string[] = [];
+      for (const tx of transactions) {
+        const haystack = normalizeForMatch(tx.descNorm || tx.descRaw || "");
+        if (keywordList.some((keyword) => haystack.includes(keyword))) {
+          count++;
+          if (samples.length < 5 && tx.descRaw) {
+            samples.push(tx.descRaw);
+          }
+        }
+      }
+
+      res.json({
+        count,
+        samples,
+        scanned: transactions.length
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get("/api/rules", async (_req: Request, res: Response) => {
     try {
       const user = await storage.getUserByUsername("demo");
@@ -1091,6 +1174,75 @@ export async function registerRoutes(
     }
   });
 
+  // ===== CATEGORY HIERARCHY =====
+  app.get("/api/categories", async (_req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.json([]);
+      const entries = await storage.getCategoryHierarchy(user.id);
+      res.json(entries);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/categories", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      const { category1, category2, category3 } = req.body;
+      if (!category1 || !category2) {
+        return res.status(400).json({ error: "Categoria 1 e Categoria 2 são obrigatórias" });
+      }
+
+      const created = await storage.createCategoryHierarchy({
+        userId: user.id,
+        category1,
+        category2,
+        category3: category3 || null
+      });
+
+      res.status(201).json(created);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/categories/:id", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      const { category1, category2, category3 } = req.body;
+      const updated = await storage.updateCategoryHierarchy(req.params.id, user.id, {
+        category1,
+        category2,
+        category3: category3 || null
+      });
+
+      if (!updated) {
+        return res.status(404).json({ error: "Categoria não encontrada" });
+      }
+
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/categories/:id", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      await storage.deleteCategoryHierarchy(req.params.id, user.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // ===== DASHBOARD =====
   app.get("/api/dashboard", async (req: Request, res: Response) => {
     try {
@@ -1162,6 +1314,78 @@ export async function registerRoutes(
       }
 
       res.json(description);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Bulk upsert merchant descriptions
+  app.post("/api/merchant-descriptions/bulk", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      const items = Array.isArray(req.body?.items) ? req.body.items : [];
+      if (items.length === 0) {
+        return res.status(400).json({ error: "Items are required" });
+      }
+
+      const allowedSources = new Set(["Sparkasse", "Amex", "M&M"]);
+      const errors: Array<{ row: number; message: string }> = [];
+      let created = 0;
+      let updated = 0;
+
+      for (let index = 0; index < items.length; index++) {
+        const row = items[index];
+        const rowNum = index + 1;
+        const source = row?.source;
+        const keyDesc = row?.keyDesc;
+        const aliasDesc = row?.aliasDesc;
+
+        if (!allowedSources.has(source)) {
+          errors.push({ row: rowNum, message: "Fonte inválida (use Sparkasse, Amex ou M&M)" });
+          continue;
+        }
+        if (!keyDesc || typeof keyDesc !== "string") {
+          errors.push({ row: rowNum, message: "Descrição Chave é obrigatória" });
+          continue;
+        }
+        if (!aliasDesc || typeof aliasDesc !== "string") {
+          errors.push({ row: rowNum, message: "Alias é obrigatório" });
+          continue;
+        }
+
+        const existing = await storage.getMerchantDescription(user.id, source, keyDesc);
+        const result = await storage.upsertMerchantDescription(
+          user.id,
+          source,
+          keyDesc,
+          aliasDesc,
+          true
+        );
+
+        if (existing) {
+          updated++;
+        } else if (result) {
+          created++;
+        }
+
+        const existingIcon = await storage.getMerchantIcon(user.id, aliasDesc);
+        if (!existingIcon) {
+          await storage.createMerchantIcon({
+            userId: user.id,
+            aliasDesc,
+            shouldFetchIcon: true
+          });
+        }
+      }
+
+      res.json({
+        created,
+        updated,
+        failed: errors.length,
+        errors
+      });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
@@ -1429,6 +1653,24 @@ export async function registerRoutes(
 
       const goal = await storage.createGoal(validatedData);
 
+      try {
+        await storage.createNotification({
+          userId: user.id,
+          title: "Meta criada",
+          message: `Meta de ${goal.month} criada com renda estimada de ${goal.estimatedIncome.toFixed(2)}.`,
+          type: "success"
+        });
+      } catch (notifyError) {
+        console.log(JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: "WARN",
+          endpoint: `${req.method} ${req.path}`,
+          userId: user.id,
+          action: "goal_notification_failed",
+          metadata: { goalId: goal.id }
+        }));
+      }
+
       console.log(JSON.stringify({
         timestamp: new Date().toISOString(),
         level: "INFO",
@@ -1497,6 +1739,24 @@ export async function registerRoutes(
           metadata: { goalId }
         }));
         return res.status(404).json({ error: "Goal not found" });
+      }
+
+      try {
+        await storage.createNotification({
+          userId: user.id,
+          title: "Meta atualizada",
+          message: `Meta de ${updated.month} atualizada.`,
+          type: "info"
+        });
+      } catch (notifyError) {
+        console.log(JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: "WARN",
+          endpoint: `${req.method} ${req.path}`,
+          userId: user.id,
+          action: "goal_notification_failed",
+          metadata: { goalId }
+        }));
       }
 
       console.log(JSON.stringify({
@@ -2223,6 +2483,24 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Ritual not found" });
       }
 
+      try {
+        await storage.createNotification({
+          userId: user.id,
+          title: "Ritual concluído",
+          message: `Ritual ${completed.type} de ${completed.period} concluído.`,
+          type: "success"
+        });
+      } catch (notifyError) {
+        console.log(JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: "WARN",
+          endpoint: `${req.method} ${req.path}`,
+          userId: user.id,
+          action: "ritual_notification_failed",
+          metadata: { ritualId }
+        }));
+      }
+
       console.log(JSON.stringify({
         timestamp: new Date().toISOString(),
         level: "INFO",
@@ -2275,22 +2553,52 @@ export async function registerRoutes(
 
       // Get all uncategorized transactions
       const uncategorized = await storage.getUncategorizedTransactions(user.id);
-      
-      if (uncategorized.length === 0) {
-        return res.json({ suggestions: [], message: "Nenhuma transação pendente de categorização" });
-      }
 
-      // Group by suggested keyword
-      const grouped: Record<string, { count: number; total: number; samples: string[] }> = {};
-      for (const tx of uncategorized) {
-        const keyword = tx.suggestedKeyword || suggestKeyword(tx.descNorm);
-        if (!grouped[keyword]) {
-          grouped[keyword] = { count: 0, total: 0, samples: [] };
+      const grouped: Record<string, { count: number; total: number; samples: string[]; alias?: string }> = {};
+
+      if (uncategorized.length > 0) {
+        // Group by suggested keyword (transactions)
+        for (const tx of uncategorized) {
+          const keyword = tx.suggestedKeyword || suggestKeyword(tx.descNorm);
+          if (!grouped[keyword]) {
+            grouped[keyword] = { count: 0, total: 0, samples: [] };
+          }
+          grouped[keyword].count++;
+          grouped[keyword].total += Math.abs(tx.amount);
+          if (grouped[keyword].samples.length < 3) {
+            grouped[keyword].samples.push(tx.descRaw);
+          }
         }
-        grouped[keyword].count++;
-        grouped[keyword].total += Math.abs(tx.amount);
-        if (grouped[keyword].samples.length < 3) {
-          grouped[keyword].samples.push(tx.descRaw);
+      } else {
+        // Fallback: use merchant dictionary mapping table
+        const rules = await storage.getRules(user.id);
+        const ruleKeywords = new Set<string>();
+        for (const rule of rules) {
+          rule.keywords
+            .split(";")
+            .map(k => k.trim().toLowerCase())
+            .filter(Boolean)
+            .forEach(k => ruleKeywords.add(k));
+        }
+
+        const merchantDescriptions = await storage.getMerchantDescriptions(user.id);
+        const candidates = merchantDescriptions
+          .filter((d) => d.keyDesc && !ruleKeywords.has(d.keyDesc.toLowerCase()))
+          .slice(0, 200);
+
+        for (const desc of candidates) {
+          const keyword = desc.keyDesc;
+          const matches = await storage.getTransactionsByKeyword(user.id, keyword);
+          grouped[keyword] = {
+            count: matches.length,
+            total: matches.reduce((sum, t) => sum + Math.abs(t.amount), 0),
+            samples: matches.slice(0, 3).map(t => t.descRaw),
+            alias: desc.aliasDesc
+          };
+        }
+
+        if (Object.keys(grouped).length === 0) {
+          return res.json({ suggestions: [], message: "Nenhuma transação pendente de categorização" });
         }
       }
 
@@ -2299,6 +2607,7 @@ export async function registerRoutes(
         .filter(([_, data]) => data.count >= 1)
         .map(([keyword, data]) => ({
           keyword,
+          alias: data.alias,
           count: data.count,
           total: data.total,
           samples: data.samples
@@ -2320,6 +2629,8 @@ Para cada palavra-chave, retorne um JSON com categorização em 3 níveis:
 - suggestedFixVar: "Fixo" ou "Variável"
 - confidence: número de 0 a 100 indicando sua confiança
 - reason: explicação breve em português
+
+Se o campo "alias" estiver presente, use como contexto para entender o merchant.
 
 Exemplos de categorização em 3 níveis:
 - "LIDL" → Nível 1: "Mercado", Nível 2: "Supermercado", Nível 3: "LIDL"
@@ -2379,6 +2690,231 @@ Retorne APENAS um array JSON válido, sem markdown ou texto adicional.`;
       res.json({ suggestions: enriched, total: uncategorized.length });
     } catch (error: any) {
       console.error("AI analysis error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/ai/merchant-suggestions", async (_req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        return res.status(401).json({ error: "Usuário não encontrado" });
+      }
+
+      const merchantDescriptions = await storage.getMerchantDescriptions(user.id);
+      if (merchantDescriptions.length === 0) {
+        return res.json({ suggestions: [], message: "Nenhum merchant para analisar" });
+      }
+
+      const candidates = merchantDescriptions
+        .filter((d) => d.keyDesc)
+        .slice(0, 120);
+
+      if (!openai) {
+        const fallback = candidates.map((desc) => ({
+          id: desc.id,
+          keyDesc: desc.keyDesc,
+          source: desc.source,
+          currentAlias: desc.aliasDesc,
+          suggestedAlias: generateAliasDescHeuristic(desc.keyDesc),
+          confidence: 50,
+          reason: "Sugestão heurística baseada na descrição-chave"
+        }));
+        return res.json({ suggestions: fallback, total: fallback.length, mode: "heuristic" });
+      }
+
+      const systemPrompt = `Você é um assistente especializado em padronização de nomes de comerciantes.
+Receba descrições-chave (keyDesc) e proponha um alias amigável e consistente em português.
+Responda APENAS com um array JSON contendo:
+- id
+- suggestedAlias
+- confidence (0-100)
+- reason (breve)
+`;
+
+      const response = await withOpenAIUsage(
+        {
+          featureTag: "merchant_suggestions",
+          model: "gpt-4o-mini",
+          userId: user.id,
+          extractUsage: (result) => result.usage
+        },
+        () =>
+          openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: JSON.stringify(candidates.map((c) => ({
+                id: c.id,
+                keyDesc: c.keyDesc,
+                source: c.source,
+                currentAlias: c.aliasDesc
+              }))) }
+            ],
+            temperature: 0.3,
+            max_tokens: 2000
+          })
+      );
+
+      const content = response.choices[0]?.message?.content || "[]";
+      let aiSuggestions: any[] = [];
+      try {
+        aiSuggestions = JSON.parse(content.replace(/```json\n?|\n?```/g, ""));
+      } catch (e) {
+        aiSuggestions = [];
+      }
+
+      const merged = candidates.map((desc) => {
+        const match = aiSuggestions.find((s) => s.id === desc.id) || {};
+        return {
+          id: desc.id,
+          keyDesc: desc.keyDesc,
+          source: desc.source,
+          currentAlias: desc.aliasDesc,
+          suggestedAlias: match.suggestedAlias || generateAliasDescHeuristic(desc.keyDesc),
+          confidence: match.confidence ?? 50,
+          reason: match.reason || "Sugestão automática"
+        };
+      });
+
+      res.json({ suggestions: merged, total: merged.length, mode: "ai" });
+    } catch (error: any) {
+      console.error("Merchant suggestions error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===== AI CHAT =====
+  app.get("/api/ai/conversations", async (_req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.json([]);
+      const conversations = await storage.getConversations(user.id);
+      res.json(conversations);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/ai/conversations/:id/messages", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "Usuário não encontrado" });
+
+      const conversation = await storage.getConversationById(req.params.id, user.id);
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversa não encontrada" });
+      }
+
+      const messages = await storage.getMessages(conversation.id);
+      res.json(messages);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/ai/chat", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        return res.status(401).json({ error: "Usuário não encontrado" });
+      }
+
+      const { message, conversationId, context } = req.body || {};
+      if (!message || typeof message !== "string") {
+        return res.status(400).json({ error: "Mensagem é obrigatória" });
+      }
+
+      let activeConversationId = conversationId as string | undefined;
+      if (activeConversationId) {
+        const conversation = await storage.getConversationById(activeConversationId, user.id);
+        if (!conversation) {
+          return res.status(404).json({ error: "Conversa não encontrada" });
+        }
+      } else {
+        const title = message.slice(0, 60);
+        const createdConversation = await storage.createConversation({
+          userId: user.id,
+          title
+        });
+        activeConversationId = createdConversation.id;
+      }
+
+      const userMessage = await storage.createMessage({
+        conversationId: activeConversationId,
+        role: "user",
+        content: message
+      });
+
+      const month = context?.month || new Date().toISOString().slice(0, 7);
+      const dashboard = await storage.getDashboardData(user.id, month);
+      const pending = await storage.getTransactionsByNeedsReview(user.id);
+
+      const contextSummary = {
+        screen: context?.screen || "Geral",
+        month,
+        totalSpent: dashboard.totalSpent,
+        totalIncome: dashboard.totalIncome,
+        pendingReviewCount: pending.length,
+        topCategories: dashboard.spentByCategory?.slice(0, 5) || []
+      };
+
+      if (!openai) {
+        const fallbackContent = `No momento estou sem acesso ao modelo IA. Aqui vai um resumo rápido:\n- Mês: ${contextSummary.month}\n- Gastos: ${contextSummary.totalSpent.toFixed(2)}\n- Receitas: ${contextSummary.totalIncome.toFixed(2)}\n- Pendentes: ${contextSummary.pendingReviewCount}\n\nPosso ajudar com insights básicos quando a IA estiver ativa.`;
+        const assistantMessage = await storage.createMessage({
+          conversationId: activeConversationId,
+          role: "assistant",
+          content: fallbackContent
+        });
+
+        return res.json({
+          conversationId: activeConversationId,
+          messageId: userMessage.id,
+          replyId: assistantMessage.id,
+          reply: assistantMessage.content,
+          context: contextSummary,
+          mode: "fallback"
+        });
+      }
+
+      const systemPrompt = `Você é um assistente financeiro pessoal. Responda em português, de forma clara e objetiva.\nContexto atual (JSON): ${JSON.stringify(contextSummary)}.\nSe faltar informação, peça ao usuário.`;
+
+      const response = await withOpenAIUsage(
+        {
+          featureTag: "ai_chat",
+          model: "gpt-4o-mini",
+          userId: user.id,
+          extractUsage: (result) => result.usage
+        },
+        () =>
+          openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: message }
+            ],
+            temperature: 0.3,
+            max_tokens: 800
+          })
+      );
+
+      const reply = response.choices[0]?.message?.content || "Não consegui gerar uma resposta.";
+      const assistantMessage = await storage.createMessage({
+        conversationId: activeConversationId,
+        role: "assistant",
+        content: reply
+      });
+
+      res.json({
+        conversationId: activeConversationId,
+        messageId: userMessage.id,
+        replyId: assistantMessage.id,
+        reply,
+        context: contextSummary,
+        mode: "ai"
+      });
+    } catch (error: any) {
+      console.error("AI chat error:", error);
       res.status(500).json({ error: error.message });
     }
   });
