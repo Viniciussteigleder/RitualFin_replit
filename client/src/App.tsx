@@ -10,6 +10,7 @@ import DashboardPage from "@/pages/dashboard";
 import UploadsPage from "@/pages/uploads";
 import ConfirmPage from "@/pages/confirm";
 import RulesPage from "@/pages/rules";
+import MerchantDictionaryPage from "@/pages/merchant-dictionary";
 import SettingsPage from "@/pages/settings";
 import CalendarPage from "@/pages/calendar";
 import EventDetailPage from "@/pages/event-detail";
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/confirm" component={ConfirmPage} />
       <Route path="/transactions" component={TransactionsPage} />
       <Route path="/rules" component={RulesPage} />
+      <Route path="/merchant-dictionary" component={MerchantDictionaryPage} />
       <Route path="/accounts" component={AccountsPage} />
       <Route path="/ai-keywords" component={AIKeywordsPage} />
       <Route path="/settings" component={SettingsPage} />

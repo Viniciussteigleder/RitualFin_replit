@@ -95,6 +95,12 @@ const NAV_CLUSTERS = [
         description: "Categorização automática"
       },
       {
+        label: "Dicionário",
+        icon: BookOpen,
+        href: "/merchant-dictionary",
+        description: "Aliases de comerciantes"
+      },
+      {
         label: "IA Keywords",
         icon: Brain,
         href: "/ai-keywords",

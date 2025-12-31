@@ -1032,6 +1032,154 @@ export async function registerRoutes(
     }
   });
 
+  // ===== MERCHANT DICTIONARY =====
+  // List merchant descriptions
+  app.get("/api/merchant-descriptions", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.json([]);
+
+      const { source, search, isManual } = req.query;
+      const filters: any = {};
+
+      if (source) filters.source = source as string;
+      if (search) filters.search = search as string;
+      if (isManual !== undefined) filters.isManual = isManual === 'true';
+
+      const descriptions = await storage.getMerchantDescriptions(user.id, filters);
+      res.json(descriptions);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Create merchant description
+  app.post("/api/merchant-descriptions", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      const { source, keyDesc, aliasDesc } = req.body;
+      const description = await storage.createMerchantDescription({
+        userId: user.id,
+        source,
+        keyDesc,
+        aliasDesc,
+        isManual: true
+      });
+
+      // Auto-create icon record if doesn't exist
+      const existingIcon = await storage.getMerchantIcon(user.id, aliasDesc);
+      if (!existingIcon) {
+        await storage.createMerchantIcon({
+          userId: user.id,
+          aliasDesc,
+          shouldFetchIcon: true
+        });
+      }
+
+      res.json(description);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Update merchant description
+  app.patch("/api/merchant-descriptions/:id", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { aliasDesc } = req.body;
+
+      const updated = await storage.updateMerchantDescription(id, {
+        aliasDesc,
+        isManual: true
+      });
+
+      if (!updated) {
+        return res.status(404).json({ error: "Merchant description not found" });
+      }
+
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Delete merchant description
+  app.delete("/api/merchant-descriptions/:id", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteMerchantDescription(id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Export merchant descriptions to Excel
+  app.get("/api/merchant-descriptions/export", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.json([]);
+
+      const descriptions = await storage.getMerchantDescriptions(user.id);
+
+      // Transform to Excel-friendly format
+      const excelData = descriptions.map(d => ({
+        'Source': d.source,
+        'Key Description': d.keyDesc,
+        'Alias': d.aliasDesc,
+        'Manual': d.isManual ? 'Yes' : 'No',
+        'Created': d.createdAt,
+        'Updated': d.updatedAt
+      }));
+
+      res.json(excelData);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // List merchant icons
+  app.get("/api/merchant-icons", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.json([]);
+
+      const { needsFetch, search } = req.query;
+      const filters: any = {};
+
+      if (needsFetch !== undefined) filters.needsFetch = needsFetch === 'true';
+      if (search) filters.search = search as string;
+
+      const icons = await storage.getMerchantIcons(user.id, filters);
+      res.json(icons);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Update merchant icon
+  app.patch("/api/merchant-icons/:aliasDesc", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      const { aliasDesc } = req.params;
+      const data = req.body;
+
+      const updated = await storage.updateMerchantIcon(user.id, decodeURIComponent(aliasDesc), data);
+
+      if (!updated) {
+        return res.status(404).json({ error: "Merchant icon not found" });
+      }
+
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // ===== BUDGETS =====
   app.get("/api/budgets", async (req: Request, res: Response) => {
     try {
