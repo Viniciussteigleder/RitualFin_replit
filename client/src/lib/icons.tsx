@@ -21,6 +21,12 @@ import {
   AlertCircle,
   CheckCircle2,
   HelpCircle,
+  ShoppingBag,
+  Package,
+  Film,
+  Music,
+  Car,
+  Utensils,
   type LucideIcon,
 } from "lucide-react";
 
@@ -200,6 +206,30 @@ export function IconBadge({
 // ============================================================================
 // MERCHANT ICON HELPERS
 // ============================================================================
+
+/**
+ * Get merchant icon information based on merchant name
+ * Returns icon component, color, and label for known merchants
+ */
+export function getMerchantIcon(description?: string): { icon: LucideIcon; color: string; label: string } | null {
+  if (!description) return null;
+
+  const desc = description.toLowerCase();
+
+  // Common German merchants
+  if (desc.includes('lidl')) return { icon: ShoppingBag, color: "#0050AA", label: "LIDL" };
+  if (desc.includes('rewe')) return { icon: ShoppingBag, color: "#CC071E", label: "REWE" };
+  if (desc.includes('edeka')) return { icon: ShoppingBag, color: "#006AB3", label: "EDEKA" };
+  if (desc.includes('aldi')) return { icon: ShoppingBag, color: "#009EE3", label: "ALDI" };
+  if (desc.includes('amazon')) return { icon: Package, color: "#FF9900", label: "Amazon" };
+  if (desc.includes('paypal')) return { icon: CreditCard, color: "#003087", label: "PayPal" };
+  if (desc.includes('netflix')) return { icon: Film, color: "#E50914", label: "Netflix" };
+  if (desc.includes('spotify')) return { icon: Music, color: "#1DB954", label: "Spotify" };
+  if (desc.includes('uber')) return { icon: Car, color: "#000000", label: "Uber" };
+  if (desc.includes('mcdonald')) return { icon: Utensils, color: "#FFC72C", label: "McDonald's" };
+
+  return null;
+}
 
 /**
  * Get merchant icon URL from merchant-icons.ts registry
