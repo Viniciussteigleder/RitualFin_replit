@@ -3,11 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Loader2, Edit2, Trash2, BookOpen, Filter, Download } from "lucide-react";
+import { Search, Loader2, Edit2, Trash2, BookOpen, Filter, Download, Upload } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { merchantDictionaryApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -21,6 +21,7 @@ export default function MerchantDictionaryPage() {
   const [manualFilter, setManualFilter] = useState("all");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingAlias, setEditingAlias] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch descriptions with filters
   const { data: descriptions = [], isLoading } = useQuery({
@@ -113,6 +114,108 @@ export default function MerchantDictionaryPage() {
     toast({ title: `${descriptions.length} registros exportados` });
   };
 
+  const handleUploadExcel = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const data = e.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+        if (jsonData.length === 0) {
+          toast({ title: "Arquivo vazio", variant: "destructive" });
+          return;
+        }
+
+        // Validate and import data
+        const toImport: any[] = [];
+        const errors: string[] = [];
+
+        jsonData.forEach((row: any, index: number) => {
+          const rowNum = index + 2;
+
+          // Validate required fields
+          if (!row['Fonte'] || !['Sparkasse', 'Amex', 'M&M'].includes(row['Fonte'])) {
+            errors.push(`Linha ${rowNum}: Fonte deve ser "Sparkasse", "Amex" ou "M&M"`);
+            return;
+          }
+          if (!row['Descrição Chave']) {
+            errors.push(`Linha ${rowNum}: Descrição Chave é obrigatória`);
+            return;
+          }
+          if (!row['Alias']) {
+            errors.push(`Linha ${rowNum}: Alias é obrigatório`);
+            return;
+          }
+
+          toImport.push({
+            source: row['Fonte'],
+            keyDesc: row['Descrição Chave'],
+            aliasDesc: row['Alias']
+          });
+        });
+
+        if (errors.length > 0) {
+          toast({
+            title: "Erros encontrados no arquivo",
+            description: errors.slice(0, 3).join('; '),
+            variant: "destructive"
+          });
+          return;
+        }
+
+        if (toImport.length === 0) {
+          toast({ title: "Nenhum registro válido para importar", variant: "destructive" });
+          return;
+        }
+
+        // Import records one by one
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const record of toImport) {
+          try {
+            await merchantDictionaryApi.createDescription(record);
+            successCount++;
+          } catch (error) {
+            failCount++;
+          }
+        }
+
+        // Refresh list
+        queryClient.invalidateQueries({ queryKey: ["merchant-descriptions"] });
+
+        if (failCount === 0) {
+          toast({ title: `${successCount} registros importados com sucesso` });
+        } else {
+          toast({
+            title: "Importação concluída com erros",
+            description: `${successCount} importados, ${failCount} falharam`
+          });
+        }
+
+      } catch (error: any) {
+        toast({
+          title: "Erro ao processar arquivo",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
+    };
+
+    reader.readAsBinaryString(file);
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const SOURCE_COLORS: Record<string, string> = {
     "Sparkasse": "bg-blue-100 text-blue-700",
     "Amex": "bg-green-100 text-green-700",
@@ -141,15 +244,34 @@ export default function MerchantDictionaryPage() {
             </p>
           </div>
 
-          <Button
-            variant="outline"
-            className="gap-2"
-            onClick={handleDownloadExcel}
-            disabled={descriptions.length === 0}
-          >
-            <Download className="h-4 w-4" />
-            Exportar Excel
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={handleDownloadExcel}
+              disabled={descriptions.length === 0}
+            >
+              <Download className="h-4 w-4" />
+              Exportar
+            </Button>
+
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="h-4 w-4" />
+              Importar
+            </Button>
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleUploadExcel}
+              accept=".xlsx,.xls"
+              className="hidden"
+            />
+          </div>
         </div>
 
         {/* Stats */}
