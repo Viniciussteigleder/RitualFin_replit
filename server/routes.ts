@@ -1223,6 +1223,61 @@ export async function registerRoutes(
     }
   });
 
+  // AI suggest alias for merchant description
+  app.post("/api/merchant-descriptions/ai-suggest", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "Usuário não encontrado" });
+
+      if (!openai) {
+        return res.status(503).json({ error: "OpenAI não configurado" });
+      }
+
+      const { keyDesc, source } = req.body;
+
+      if (!keyDesc) {
+        return res.status(400).json({ error: "keyDesc é obrigatório" });
+      }
+
+      const prompt = `Como especialista em finanças alemãs e categorização de transações, sugira um alias curto e claro (máximo 30 caracteres) para este comerciante:
+
+Fonte: ${source || 'Desconhecida'}
+Descrição original: ${keyDesc}
+
+O alias deve ser:
+- Curto e memorável (máx 30 caracteres)
+- Em português brasileiro
+- Focado no nome do comerciante principal
+- Remover números de referência, datas, IDs
+- Manter apenas o essencial para identificação
+
+Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
+
+      const response = await withOpenAIUsage(
+        {
+          featureTag: "merchant_alias_suggestion",
+          model: "gpt-4o-mini",
+          userId: user.id,
+          extractUsage: (result) => result.usage
+        },
+        () =>
+          openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [{ role: "user", content: prompt }],
+            temperature: 0.3,
+            max_tokens: 100
+          })
+      );
+
+      const suggestedAlias = response.choices[0]?.message?.content?.trim() || keyDesc;
+
+      res.json({ suggestedAlias });
+    } catch (error: any) {
+      logger.error("ai_suggest_alias_error", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // List merchant icons
   app.get("/api/merchant-icons", async (req: Request, res: Response) => {
     try {

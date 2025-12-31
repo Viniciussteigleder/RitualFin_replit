@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Loader2, Edit2, Trash2, BookOpen, Filter, Download, Upload } from "lucide-react";
+import { Search, Loader2, Edit2, Trash2, BookOpen, Filter, Download, Upload, Sparkles } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { merchantDictionaryApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -59,9 +59,40 @@ export default function MerchantDictionaryPage() {
     },
   });
 
+  // AI suggestion mutation
+  const aiSuggestMutation = useMutation({
+    mutationFn: async ({ keyDesc, source }: { keyDesc: string; source: string }) => {
+      const res = await fetch("/api/merchant-descriptions/ai-suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keyDesc, source })
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Erro ao sugerir alias");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setEditingAlias(data.suggestedAlias);
+      toast({ title: "Sugestão recebida!", description: "Revise e salve se aprovar" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro na sugestão AI",
+        description: error.message,
+        variant: "destructive"
+      });
+    },
+  });
+
   const handleEdit = (desc: any) => {
     setEditingId(desc.id);
     setEditingAlias(desc.aliasDesc);
+  };
+
+  const handleAISuggest = (keyDesc: string, source: string) => {
+    aiSuggestMutation.mutate({ keyDesc, source });
   };
 
   const handleSaveEdit = () => {
@@ -403,7 +434,7 @@ export default function MerchantDictionaryPage() {
                         </p>
 
                         {editingId === desc.id ? (
-                          <div className="flex gap-2 items-center">
+                          <div className="flex gap-2 items-center flex-wrap">
                             <Input
                               value={editingAlias}
                               onChange={(e) => setEditingAlias(e.target.value)}
@@ -414,6 +445,20 @@ export default function MerchantDictionaryPage() {
                                 if (e.key === 'Escape') handleCancelEdit();
                               }}
                             />
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleAISuggest(desc.keyDesc, desc.source)}
+                              disabled={aiSuggestMutation.isPending}
+                              className="gap-1.5"
+                            >
+                              {aiSuggestMutation.isPending ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Sparkles className="h-3.5 w-3.5" />
+                              )}
+                              Sugerir com IA
+                            </Button>
                             <Button size="sm" onClick={handleSaveEdit} disabled={updateMutation.isPending}>
                               Salvar
                             </Button>
