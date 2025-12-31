@@ -518,6 +518,26 @@ export async function registerRoutes(
             suggestedKeyword: keyword,
             ...categorization
           });
+
+          // Auto-create/update merchant description entry
+          try {
+            await storage.upsertMerchantDescription(
+              user.id,
+              parsed.merchantSource,
+              parsed.merchantKeyDesc,
+              parsed.merchantAliasDesc,
+              false // isManual=false for auto-generated entries
+            );
+          } catch (merchantErr: any) {
+            // Log but don't fail the transaction import if merchant dict fails
+            logger.warn("merchant_upsert_failed", {
+              userId: user.id,
+              source: parsed.merchantSource,
+              keyDesc: parsed.merchantKeyDesc,
+              error: merchantErr.message
+            });
+          }
+
           importedCount++;
         } catch (err: any) {
           const errorMsg = `Failed to import: ${parsed.descRaw.slice(0, 50)}`;
@@ -728,9 +748,9 @@ export async function registerRoutes(
     try {
       const user = await storage.getUserByUsername("demo");
       if (!user) return res.json([]);
-      
+
       const month = req.query.month as string | undefined;
-      const transactions = await storage.getTransactions(user.id, month);
+      const transactions = await storage.getTransactionsWithMerchantAlias(user.id, month);
       res.json(transactions);
     } catch (error: any) {
       res.status(500).json({ error: error.message });

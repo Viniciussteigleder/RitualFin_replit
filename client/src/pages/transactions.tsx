@@ -382,7 +382,7 @@ export default function TransactionsPage() {
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5">
                                   <p className="font-medium truncate">
-                                    {t.descRaw?.split(" -- ")[0]?.replace(/\s+\d{4,}/g, '')}
+                                    {t.merchantAlias || t.descRaw?.split(" -- ")[0]?.replace(/\s+\d{4,}/g, '')}
                                   </p>
                                   {/* Icon badges for transaction attributes */}
                                   <div className="flex items-center gap-1 flex-shrink-0">

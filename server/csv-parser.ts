@@ -1,6 +1,7 @@
 // Multi-format CSV Parser (Miles & More + Amex)
 
 import { logger } from "./logger";
+import { generateMerchantDescription } from "./key-desc-generator";
 
 export interface MilesAndMoreRow {
   authorisedOn: string;
@@ -42,6 +43,10 @@ export interface ParsedTransaction {
   exchangeRate?: number;
   key: string;
   accountSource: string;
+  // Merchant dictionary fields
+  merchantSource: "Sparkasse" | "Amex" | "M&M";
+  merchantKeyDesc: string;
+  merchantAliasDesc: string;
 }
 
 export interface ParseResult {
@@ -363,7 +368,10 @@ function parseMilesAndMore(lines: string[]): ParseResult {
       
       const monthStr = `${paymentDate.getFullYear()}-${String(paymentDate.getMonth() + 1).padStart(2, "0")}`;
       months.add(monthStr);
-      
+
+      // Generate merchant description fields
+      const merchantDesc = generateMerchantDescription(descRaw, accountSource);
+
       transactions.push({
         paymentDate,
         descRaw,
@@ -374,7 +382,10 @@ function parseMilesAndMore(lines: string[]): ParseResult {
         foreignCurrency: row.foreignCurrency,
         exchangeRate: row.exchangeRate,
         key,
-        accountSource
+        accountSource,
+        merchantSource: merchantDesc.source,
+        merchantKeyDesc: merchantDesc.keyDesc,
+        merchantAliasDesc: merchantDesc.aliasDesc
       });
     } catch (err) {
       errors.push(`Linha ${i + 1}: Erro ao processar`);
@@ -502,6 +513,9 @@ function parseAmex(lines: string[]): ParseResult {
       const accountLast4 = row.konto.replace(/[^0-9]/g, "").slice(-4);
       const accountSource = `Amex - ${capitalizedFirstName} (${accountLast4})`;
 
+      // Generate merchant description fields
+      const merchantDesc = generateMerchantDescription(descRaw, accountSource);
+
       transactions.push({
         paymentDate,
         descRaw,
@@ -512,7 +526,10 @@ function parseAmex(lines: string[]): ParseResult {
         foreignCurrency,
         exchangeRate,
         key,
-        accountSource
+        accountSource,
+        merchantSource: merchantDesc.source,
+        merchantKeyDesc: merchantDesc.keyDesc,
+        merchantAliasDesc: merchantDesc.aliasDesc
       });
     } catch (err) {
       errors.push(`Linha ${i + 1}: Erro ao processar`);
@@ -601,6 +618,9 @@ function parseSparkasse(lines: string[]): ParseResult {
       const ibanLast4 = auftragskonto.slice(-4);
       const accountSource = `Sparkasse - ${ibanLast4}`;
 
+      // Generate merchant description fields
+      const merchantDesc = generateMerchantDescription(descRaw, accountSource);
+
       transactions.push({
         paymentDate,
         descRaw,
@@ -611,7 +631,10 @@ function parseSparkasse(lines: string[]): ParseResult {
         foreignCurrency: undefined,
         exchangeRate: undefined,
         key,
-        accountSource
+        accountSource,
+        merchantSource: merchantDesc.source,
+        merchantKeyDesc: merchantDesc.keyDesc,
+        merchantAliasDesc: merchantDesc.aliasDesc
       });
     } catch (err) {
       errors.push(`Linha ${i + 1}: Erro ao processar`);

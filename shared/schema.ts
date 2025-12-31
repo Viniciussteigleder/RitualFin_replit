@@ -16,6 +16,7 @@ export const category1Enum = pgEnum("category_1", [
 export const uploadStatusEnum = pgEnum("upload_status", ["processing", "ready", "duplicate", "error"]);
 export const accountTypeEnum = pgEnum("account_type", ["credit_card", "debit_card", "bank_account", "cash"]);
 export const transactionSourceEnum = pgEnum("transaction_source", ["Sparkasse", "Amex", "M&M"]);
+export type TransactionSource = typeof transactionSourceEnum.enumValues[number];
 
 // Users table
 export const users = pgTable("users", {

@@ -72,6 +72,7 @@ export interface IStorage {
 
   // Transactions
   getTransactions(userId: string, month?: string): Promise<Transaction[]>;
+  getTransactionsWithMerchantAlias(userId: string, month?: string): Promise<(Transaction & { merchantAlias?: string })[]>;
   getTransactionsByNeedsReview(userId: string): Promise<Transaction[]>;
   getTransaction(id: string): Promise<Transaction | undefined>;
   getTransactionByKey(key: string): Promise<Transaction | undefined>;
@@ -408,7 +409,7 @@ export class DatabaseStorage implements IStorage {
       const startDate = new Date(`${month}-01`);
       const endDate = new Date(startDate);
       endDate.setMonth(endDate.getMonth() + 1);
-      
+
       return db.select().from(transactions)
         .where(and(
           eq(transactions.userId, userId),
@@ -420,6 +421,29 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(transactions)
       .where(eq(transactions.userId, userId))
       .orderBy(desc(transactions.paymentDate));
+  }
+
+  // Get transactions with merchant alias enrichment
+  async getTransactionsWithMerchantAlias(userId: string, month?: string): Promise<(Transaction & { merchantAlias?: string })[]> {
+    const { generateKeyDesc, detectTransactionSource } = await import("./key-desc-generator");
+    const txs = await this.getTransactions(userId, month);
+    const result: (Transaction & { merchantAlias?: string })[] = [];
+
+    for (const tx of txs) {
+      // Extract merchant key from descRaw using the same logic as key-desc-generator
+      const source = detectTransactionSource(tx.accountSource);
+      const keyDesc = generateKeyDesc(tx.descRaw, tx.accountSource);
+
+      // Look up merchant alias
+      const merchantDesc = await this.getMerchantDescription(userId, source, keyDesc);
+
+      result.push({
+        ...tx,
+        merchantAlias: merchantDesc?.aliasDesc
+      });
+    }
+
+    return result;
   }
 
   async getTransactionsByNeedsReview(userId: string): Promise<Transaction[]> {
