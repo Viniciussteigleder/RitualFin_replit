@@ -239,22 +239,22 @@ export default function SettingsPage() {
                       Assistência IA
                     </CardTitle>
                     <CardDescription>
-                      Configure como a IA ajuda na categorizacao.
+                      Configure como a IA ajuda na categorização.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between p-4 bg-primary/5 rounded-xl border border-primary/20">
                       <div>
                         <p className="font-medium">Categorização Automática</p>
-                        <p className="text-sm text-muted-foreground">IA pre-analisa e sugere categorias</p>
+                        <p className="text-sm text-muted-foreground">IA pré-analisa e sugere categorias</p>
                       </div>
                       <Switch checked={lazyMode} onCheckedChange={setLazyMode} />
                     </div>
                     <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
                       <div>
-                        <p className="font-medium">Auto-confirmar Alta Confianca</p>
+                        <p className="font-medium">Auto-confirmar Alta Confiança</p>
                         <p className="text-sm text-muted-foreground">
-                          Aceitar automaticamente sugestoes com {settings?.confidenceThreshold || 80}%+ de confianca
+                          Aceitar automaticamente sugestões com {settings?.confidenceThreshold || 80}%+ de confiança
                         </p>
                       </div>
                       <Switch
@@ -300,7 +300,7 @@ export default function SettingsPage() {
                     Fontes de Dados
                   </CardTitle>
                   <CardDescription>
-                    Conecte suas contas bancarias e cartoes via importacao CSV.
+                    Conecte suas contas bancárias e cartões via importação CSV.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -311,7 +311,7 @@ export default function SettingsPage() {
                       </div>
                       <div>
                         <p className="font-medium">Miles & More</p>
-                        <p className="text-sm text-muted-foreground">Importacao CSV ativa</p>
+                        <p className="text-sm text-muted-foreground">Importação CSV ativa</p>
                       </div>
                     </div>
                     <Badge className="bg-primary/10 text-primary border-0">Ativo</Badge>

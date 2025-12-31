@@ -76,7 +76,7 @@ export default function ConfirmPage() {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["rules"] });
       setSelectedIds(new Set());
-      toast({ title: `${result.count} transacao(oes) confirmada(s)` });
+      toast({ title: `${result.count} transação(ões) confirmada(s)` });
     },
   });
 
@@ -161,7 +161,7 @@ export default function ConfirmPage() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-2xl font-bold">Fila de Confirmacao</h1>
+              <h1 className="text-2xl font-bold">Fila de Confirmação</h1>
               {items.length > 0 && (
                 <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-amber-100 text-amber-700 text-sm font-bold">
                   {items.length}
@@ -169,7 +169,7 @@ export default function ConfirmPage() {
               )}
             </div>
             <p className="text-muted-foreground">
-              A IA pre-analisou cada transacao. Revise as sugestoes e confirme.
+              A IA pré-analisou cada transação. Revise as sugestões e confirme.
             </p>
           </div>
           
@@ -431,9 +431,9 @@ export default function ConfirmPage() {
               </div>
               <h3 className="text-lg font-semibold mb-2">Tudo limpo!</h3>
               <p className="text-muted-foreground text-sm">
-                {activeTab === "all" 
-                  ? "Nenhuma transacao pendente de revisao."
-                  : `Nenhuma transacao com ${activeTab === "high" ? "alta" : activeTab === "medium" ? "media" : "baixa"} confianca.`
+                {activeTab === "all"
+                  ? "Nenhuma transação pendente de revisão."
+                  : `Nenhuma transação com ${activeTab === "high" ? "alta" : activeTab === "medium" ? "média" : "baixa"} confiança.`
                 }
               </p>
             </CardContent>

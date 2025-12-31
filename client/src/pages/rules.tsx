@@ -538,7 +538,7 @@ export default function RulesPage() {
               </div>
               <h3 className="text-lg font-semibold mb-2">Nenhuma regra configurada</h3>
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                Crie regras para categorizar suas transacoes automaticamente durante a importacao.
+                Crie regras para categorizar suas transações automaticamente durante a importação.
               </p>
               <div className="flex gap-3 justify-center">
                 <Button 
@@ -770,7 +770,7 @@ export default function RulesPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Variacao</Label>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Variação</Label>
                   <div className="flex gap-2">
                     <Button
                       type="button"
