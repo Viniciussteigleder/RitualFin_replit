@@ -44,10 +44,12 @@ import { format, subMonths, startOfMonth, endOfMonth, differenceInDays } from "d
 import { ptBR } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
 import { dashboardApi, transactionsApi, accountsApi } from "@/lib/api";
+import { getAccountIcon, getMerchantIcon } from "@/lib/icons";
 import { Link } from "wouter";
 import { useMonth } from "@/lib/month-context";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
 
 const CATEGORY_ICONS: Record<string, any> = {
@@ -131,6 +133,15 @@ export default function DashboardPage() {
   const { data: confirmQueue = [] } = useQuery({
     queryKey: ["confirm-queue"],
     queryFn: transactionsApi.confirmQueue,
+  });
+
+  const { data: lastUploads = [] } = useQuery({
+    queryKey: ["last-uploads-by-account"],
+    queryFn: async () => {
+      const res = await fetch("/api/uploads/last-by-account");
+      if (!res.ok) return [];
+      return res.json();
+    }
   });
 
   const { data: calendarEvents = [] } = useQuery({
@@ -268,30 +279,51 @@ export default function DashboardPage() {
         </div>
 
         <Card className="bg-white border-0 shadow-sm">
-          <CardContent className="p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                <RefreshCw className="h-5 w-5" />
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <RefreshCw className="h-5 w-5 text-primary" />
+                <CardTitle className="text-base">Última Atualização</CardTitle>
               </div>
-              <div>
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Status do Último Importe</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-foreground">Atualizado hoje às 14:00</span>
-                  <Link href="/uploads" className="text-xs font-bold text-primary hover:underline">Ver detalhes</Link>
-                </div>
-              </div>
-            </div>
-            {pendingCount > 0 && (
-              <Link href="/confirm">
-                <Button className="bg-slate-900 hover:bg-slate-800 gap-2 shadow-lg" data-testid="button-review-transactions">
-                  <AlertCircle className="h-4 w-4" />
-                  Revisar Transações
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-white text-[10px] font-bold">
-                    {pendingCount}
-                  </span>
-                </Button>
+              <Link href="/uploads" className="text-xs font-bold text-primary hover:underline">
+                Ver todos uploads
               </Link>
-            )}
+            </div>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {['sparkasse', 'amex', 'miles-more'].map((accountType) => {
+              const upload = lastUploads.find((u: any) => u.accountType === accountType);
+              const accountInfo = getAccountIcon(accountType);
+
+              return (
+                <div key={accountType} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
+                  <div
+                    className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: `${accountInfo.color}20` }}
+                  >
+                    <accountInfo.icon className="h-5 w-5" style={{ color: accountInfo.color }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate">{accountInfo.label}</p>
+                    {upload ? (
+                      <>
+                        <p className="text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3 inline mr-1" />
+                          {format(new Date(upload.lastUploadDate), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                        </p>
+                        {upload.importedThrough && (
+                          <p className="text-xs text-primary font-medium">
+                            Até {format(new Date(upload.importedThrough), "dd/MM/yyyy", { locale: ptBR })}
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Sem upload</p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </CardContent>
         </Card>
 
@@ -503,9 +535,28 @@ export default function DashboardPage() {
           <Card className="bg-white border-0 shadow-sm">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-base font-semibold">Atividade Recente</CardTitle>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" title="Mais opções">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link href="/transactions" className="cursor-pointer">
+                      Ver todas as transações
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setAccountFilter("all")}>
+                    Mostrar todas as contas
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/uploads" className="cursor-pointer">
+                      Gerenciar uploads
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </CardHeader>
             <CardContent className="p-0">
               <div className="divide-y divide-border/50">
@@ -516,16 +567,19 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   recentTransactions.map((t: any) => {
-                    const Icon = CATEGORY_ICONS[t.category1] || CreditCard;
-                    const color = CATEGORY_COLORS[t.category1] || "#6b7280";
+                    const merchantInfo = getMerchantIcon(t.descRaw);
+                    const Icon = merchantInfo?.icon || (CATEGORY_ICONS[t.category1] || CreditCard);
+                    const color = merchantInfo?.color || (CATEGORY_COLORS[t.category1] || "#6b7280");
                     const isIncome = t.amount > 0;
+                    const merchantName = t.descRaw?.split(" -- ")[0]?.replace(/\s+\d{4,}/g, '').trim() || t.descRaw;
+
                     return (
-                      <div 
-                        key={t.id} 
+                      <div
+                        key={t.id}
                         className="px-5 py-3 hover:bg-muted/30 transition-colors flex items-center gap-3"
                         data-testid={`row-transaction-${t.id}`}
                       >
-                        <div 
+                        <div
                           className="w-10 h-10 rounded-xl flex items-center justify-center"
                           style={{ backgroundColor: `${color}15` }}
                         >
@@ -533,7 +587,7 @@ export default function DashboardPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">
-                            {t.descRaw?.split(" -- ")[0]?.substring(0, 20) || t.descRaw}
+                            {merchantName.substring(0, 30)}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {format(new Date(t.paymentDate), "dd MMM, HH:mm", { locale: ptBR })}

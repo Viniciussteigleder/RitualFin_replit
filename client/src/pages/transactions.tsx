@@ -347,6 +347,7 @@ export default function TransactionsPage() {
                       <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">Data</th>
                       <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">Conta</th>
                       <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">Descrição</th>
+                      <th className="px-5 py-3 text-center font-medium text-xs uppercase tracking-wide">Sinais</th>
                       <th className="px-5 py-3 text-right font-medium text-xs uppercase tracking-wide">Valor</th>
                       <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">Categoria</th>
                       <th className="px-5 py-3 text-center font-medium text-xs uppercase tracking-wide">Status</th>
@@ -367,7 +368,7 @@ export default function TransactionsPage() {
                             {format(new Date(t.paymentDate), "dd/MM/yy")}
                           </td>
                           <td className="px-5 py-4">
-                            <AccountBadge account={accountsById[t.accountId]} size="sm" />
+                            <AccountBadge account={accountsById[t.accountId]} size="sm" iconOnly />
                           </td>
                           <td className="px-5 py-4 max-w-[300px]">
                             <div className="flex items-center gap-2">
@@ -406,6 +407,31 @@ export default function TransactionsPage() {
                                   </p>
                                 )}
                               </div>
+                            </div>
+                          </td>
+                          <td className="px-5 py-4">
+                            <div className="flex items-center justify-center gap-1 flex-wrap">
+                              {t.type && (
+                                <IconBadge
+                                  {...(t.type === "Receita" ? TRANSACTION_ICONS.income : TRANSACTION_ICONS.expense)}
+                                  size="xs"
+                                />
+                              )}
+                              {t.fixVar === "Fixo" && (
+                                <IconBadge {...TRANSACTION_ICONS.fixed} size="xs" />
+                              )}
+                              {t.fixVar === "Variável" && (
+                                <IconBadge {...TRANSACTION_ICONS.variable} size="xs" />
+                              )}
+                              {t.recurring && (
+                                <IconBadge {...TRANSACTION_ICONS.recurring} size="xs" />
+                              )}
+                              {t.isRefund && (
+                                <IconBadge {...TRANSACTION_ICONS.refund} size="xs" />
+                              )}
+                              {t.internalTransfer && (
+                                <IconBadge {...TRANSACTION_ICONS.internal} size="xs" />
+                              )}
                             </div>
                           </td>
                           <td className="px-5 py-4 text-right font-semibold whitespace-nowrap">
