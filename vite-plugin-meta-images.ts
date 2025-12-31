@@ -4,7 +4,12 @@ import path from 'path';
 
 /**
  * Vite plugin that updates og:image and twitter:image meta tags
- * to point to the app's opengraph image with the correct Replit domain.
+ * to point to the app's opengraph image with the correct deployment domain.
+ * 
+ * Supports:
+ * - VITE_APP_URL: Production deployment URL (Vercel)
+ * - REPLIT_INTERNAL_APP_DOMAIN: Replit production domain
+ * - REPLIT_DEV_DOMAIN: Replit development domain
  */
 export function metaImagesPlugin(): Plugin {
   return {
@@ -12,7 +17,7 @@ export function metaImagesPlugin(): Plugin {
     transformIndexHtml(html) {
       const baseUrl = getDeploymentUrl();
       if (!baseUrl) {
-        log('[meta-images] no Replit deployment domain found, skipping meta tag updates');
+        log('[meta-images] no deployment domain found, skipping meta tag updates');
         return html;
       }
 
@@ -56,12 +61,21 @@ export function metaImagesPlugin(): Plugin {
 }
 
 function getDeploymentUrl(): string | null {
+  // Priority 1: Explicit production URL (set in Vercel or custom deployment)
+  if (process.env.VITE_APP_URL) {
+    const url = process.env.VITE_APP_URL.replace(/\/+$/, ''); // Remove trailing slashes
+    log('[meta-images] using VITE_APP_URL:', url);
+    return url;
+  }
+
+  // Priority 2: Replit internal app domain (production)
   if (process.env.REPLIT_INTERNAL_APP_DOMAIN) {
     const url = `https://${process.env.REPLIT_INTERNAL_APP_DOMAIN}`;
     log('[meta-images] using internal app domain:', url);
     return url;
   }
 
+  // Priority 3: Replit dev domain (development)
   if (process.env.REPLIT_DEV_DOMAIN) {
     const url = `https://${process.env.REPLIT_DEV_DOMAIN}`;
     log('[meta-images] using dev domain:', url);
@@ -72,7 +86,6 @@ function getDeploymentUrl(): string | null {
 }
 
 function log(...args: any[]): void {
-  if (process.env.NODE_ENV === 'production') {
-    console.log(...args);
-  }
+  // Always log in build context for debugging
+  console.log(...args);
 }
