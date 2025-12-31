@@ -35,7 +35,26 @@ export default function UploadsPage() {
       }, 100);
       
       try {
-        const content = await file.text();
+        // Read file as ArrayBuffer to handle multiple encodings
+        const buffer = await file.arrayBuffer();
+        
+        // Try UTF-8 first
+        const utf8Decoder = new TextDecoder('utf-8', { fatal: false });
+        let content = utf8Decoder.decode(buffer);
+        
+        // Check if UTF-8 produced replacement characters (means encoding is wrong)
+        // Or check for German bank file indicators that might need ISO-8859-1
+        const hasReplacementChars = content.includes('\uFFFD');
+        const looksLikeGermanBankFile = content.toLowerCase().includes('umsatz') || 
+                                         content.toLowerCase().includes('buchung') ||
+                                         content.toLowerCase().includes('sparkasse') ||
+                                         file.name.toLowerCase().includes('umsatz');
+        
+        if (hasReplacementChars || (looksLikeGermanBankFile && !content.includes('Auftragskonto'))) {
+          const latin1Decoder = new TextDecoder('iso-8859-1');
+          content = latin1Decoder.decode(buffer);
+        }
+        
         const result = await uploadsApi.process(file.name, content);
         clearInterval(interval);
         setUploadProgress(100);
