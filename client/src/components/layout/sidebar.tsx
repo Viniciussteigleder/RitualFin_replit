@@ -293,7 +293,7 @@ export function Sidebar() {
                     <Settings className="h-5 w-5" />
                   </Link>
                 </TooltipTrigger>
-                <TooltipContent side="right">Configuracoes</TooltipContent>
+                <TooltipContent side="right">Configurações</TooltipContent>
               </Tooltip>
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
@@ -321,7 +321,7 @@ export function Sidebar() {
                 data-testid="nav-settings"
               >
                 <Settings className="h-5 w-5" />
-                Configuracoes
+                Configurações
               </Link>
               <Link
                 href="/login"

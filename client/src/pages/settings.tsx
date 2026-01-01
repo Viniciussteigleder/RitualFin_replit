@@ -110,14 +110,14 @@ export default function SettingsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["settings"] });
       toast({
-        title: "Configuracoes salvas",
-        description: "Suas preferencias foram atualizadas com sucesso.",
+        title: "Configurações salvas",
+        description: "Suas preferências foram atualizadas com sucesso.",
       });
     },
     onError: () => {
       toast({
         title: "Erro ao salvar",
-        description: "Nao foi possivel salvar as configuracoes.",
+        description: "Não foi possível salvar as configurações.",
         variant: "destructive",
       });
     },

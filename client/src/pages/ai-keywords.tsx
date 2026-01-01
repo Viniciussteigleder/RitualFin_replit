@@ -16,6 +16,7 @@ import {
   ShoppingCart,
   Car,
   Heart,
+  BookOpen,
   Coffee,
   Package,
   Film,
@@ -32,33 +33,60 @@ import { Link } from "wouter";
 
 const CATEGORY_ICONS: Record<string, any> = {
   "Moradia": Home,
-  "Mercado": ShoppingCart,
-  "Transporte": Car,
-  "Saúde": Heart,
-  "Lazer": Film,
-  "Compras Online": Package,
+  "Alimentação": ShoppingCart,
+  "Compras & Estilo de Vida": Package,
+  "Mobilidade": Car,
+  "Saúde & Seguros": Heart,
+  "Educação & Crianças": BookOpen,
+  "Lazer & Viagens": Film,
+  "Interna": CreditCard,
+  "Finanças & Transferências": CreditCard,
+  "Trabalho & Receitas": Coffee,
+  "Doações & Outros": Heart,
+  "Revisão & Não Classificado": AlertCircle,
   "Outros": CreditCard
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  "Mercado": "#22c55e",
   "Moradia": "#f97316",
-  "Transporte": "#3b82f6",
-  "Lazer": "#a855f7",
-  "Saúde": "#ef4444",
-  "Compras Online": "#ec4899",
-  "Receitas": "#10b981",
-  "Interno": "#475569",
+  "Alimentação": "#22c55e",
+  "Compras & Estilo de Vida": "#ec4899",
+  "Mobilidade": "#3b82f6",
+  "Saúde & Seguros": "#ef4444",
+  "Educação & Crianças": "#0ea5e9",
+  "Lazer & Viagens": "#a855f7",
+  "Interna": "#475569",
+  "Finanças & Transferências": "#0f766e",
+  "Trabalho & Receitas": "#10b981",
+  "Doações & Outros": "#16a34a",
+  "Revisão & Não Classificado": "#f59e0b",
   "Outros": "#6b7280"
 };
 
-const CATEGORIES = ["Moradia", "Mercado", "Compras Online", "Transporte", "Saúde", "Lazer", "Receitas", "Interno", "Outros"];
+const CATEGORIES = [
+  "Moradia",
+  "Alimentação",
+  "Compras & Estilo de Vida",
+  "Mobilidade",
+  "Saúde & Seguros",
+  "Educação & Crianças",
+  "Lazer & Viagens",
+  "Interna",
+  "Finanças & Transferências",
+  "Trabalho & Receitas",
+  "Doações & Outros",
+  "Revisão & Não Classificado",
+  "Outros"
+];
 
 interface KeywordSuggestion {
   keyword: string;
   suggestedCategory: string;
   suggestedType: "Despesa" | "Receita";
   suggestedFixVar: "Fixo" | "Variável";
+  leafId?: string;
+  suggestedCategory2?: string;
+  suggestedCategory3?: string;
   confidence: number;
   reason: string;
   count: number;

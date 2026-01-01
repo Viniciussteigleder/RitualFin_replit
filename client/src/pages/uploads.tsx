@@ -291,7 +291,7 @@ export default function UploadsPage() {
 
               {lastSummary && !lastError && (
                 <div className="rounded-md border border-emerald-100 bg-emerald-50 p-3 text-xs text-emerald-700">
-                  <p className="font-semibold">Resumo da importacao</p>
+                  <p className="font-semibold">Resumo da importação</p>
                   <p>Inseridas: {lastSummary.rowsImported}</p>
                   <p>Duplicadas: {lastSummary.duplicates}</p>
                 </div>
