@@ -80,7 +80,7 @@ export interface IStorage {
 
   // Transactions
   getTransactions(userId: string, month?: string): Promise<Transaction[]>;
-  getTransactionsWithMerchantAlias(userId: string, month?: string): Promise<(Transaction & { aliasDesc: string | null; logoLocalPath: string | null })[]>;
+  getTransactionsWithMerchantAlias(userId: string, month?: string): Promise<(Transaction & { aliasDesc: string | null; logoLocalPath: string | null; appCategory: string | null })[]>;
   getTransactionsByNeedsReview(userId: string): Promise<Transaction[]>;
   getTransaction(id: string): Promise<Transaction | undefined>;
   getTransactionByKey(userId: string, key: string): Promise<Transaction | undefined>;
@@ -460,19 +460,28 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Get transactions with alias + logo enrichment
-  async getTransactionsWithMerchantAlias(userId: string, month?: string): Promise<(Transaction & { aliasDesc: string | null; logoLocalPath: string | null })[]> {
+  async getTransactionsWithMerchantAlias(userId: string, month?: string): Promise<(Transaction & { aliasDesc: string | null; logoLocalPath: string | null; appCategory: string | null })[]> {
     const txs = await this.getTransactions(userId, month);
-    const keyDescRows = await this.getKeyDescMap(userId);
-    const aliasRows = await this.getAliasAssets(userId);
+    const [keyDescRows, aliasRows, appCats, appLeafs] = await Promise.all([
+      this.getKeyDescMap(userId),
+      this.getAliasAssets(userId),
+      this.getAppCategories(userId),
+      this.getAppCategoryLeaf(userId)
+    ]);
 
     const keyDescToAlias = new Map(keyDescRows.map(row => [row.keyDesc, row.aliasDesc || undefined]));
     const aliasToLogo = new Map(aliasRows.map(row => [row.aliasDesc, row.logoLocalPath || undefined]));
+    const appCatMap = new Map(appCats.map(cat => [cat.appCatId, cat.name]));
+    const leafToApp = new Map(appLeafs.map(link => [link.leafId, appCatMap.get(link.appCatId) || "Em aberto"]));
 
     return txs.map(tx => {
       const resolvedAlias = tx.aliasDesc || (tx.keyDesc ? keyDescToAlias.get(tx.keyDesc) : undefined);
       const resolvedLogo = resolvedAlias ? aliasToLogo.get(resolvedAlias) : undefined;
+      const resolvedCategory = tx.leafId ? leafToApp.get(tx.leafId) : undefined;
       return {
         ...tx,
+        category1: (resolvedCategory || tx.category1) as any,
+        appCategory: resolvedCategory || null,
         aliasDesc: resolvedAlias ?? null,
         logoLocalPath: resolvedLogo ?? null
       };
@@ -604,11 +613,11 @@ export class DatabaseStorage implements IStorage {
 
   async deleteTaxonomyForUser(userId: string): Promise<void> {
     await db.delete(appCategoryLeaf).where(eq(appCategoryLeaf.userId, userId));
-    await db.delete(appCategory).where(eq(appCategory.userId, userId));
+    await db.delete(rules).where(eq(rules.userId, userId));
     await db.delete(taxonomyLeaf).where(eq(taxonomyLeaf.userId, userId));
     await db.delete(taxonomyLevel2).where(eq(taxonomyLevel2.userId, userId));
     await db.delete(taxonomyLevel1).where(eq(taxonomyLevel1.userId, userId));
-    await db.delete(rules).where(eq(rules.userId, userId));
+    await db.delete(appCategory).where(eq(appCategory.userId, userId));
   }
 
   // Alias + key_desc mapping

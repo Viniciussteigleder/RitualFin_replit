@@ -194,7 +194,7 @@ export const resetApi = {
 // Transactions
 export const transactionsApi = {
   list: (month?: string) => fetchApi<any[]>(`/transactions${month ? `?month=${month}` : ""}`),
-  confirmQueue: () => fetchApi<any[]>("/transactions/confirm-queue"),
+  confirmQueue: () => fetchApi<any[]>("/classification/review-queue"),
   update: (id: string, data: any) =>
     fetchApi<any>(`/transactions/${id}`, {
       method: "PATCH",

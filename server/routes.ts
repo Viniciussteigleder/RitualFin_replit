@@ -1,7 +1,33 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertRuleSchema, insertGoalSchema, insertCategoryGoalSchema, insertRitualSchema, type MerchantMetadata, type UpdateNotification, keyDescMap, aliasAssets, transactions } from "@shared/schema";
+import {
+  insertRuleSchema,
+  insertGoalSchema,
+  insertCategoryGoalSchema,
+  insertRitualSchema,
+  type MerchantMetadata,
+  type UpdateNotification,
+  accounts,
+  uploads,
+  uploadErrors,
+  merchantMetadata,
+  merchantDescriptions,
+  merchantIcons,
+  budgets,
+  calendarEvents,
+  eventOccurrences,
+  goals,
+  categoryGoals,
+  rituals,
+  notifications,
+  aiUsageLogs,
+  conversations,
+  messages,
+  keyDescMap,
+  aliasAssets,
+  transactions
+} from "@shared/schema";
 import { z } from "zod";
 import * as XLSX from "xlsx";
 import { parseCSV, previewCSV } from "./csv-parser";
@@ -12,9 +38,10 @@ import { updateRecurringGroups } from "./recurrence";
 import OpenAI from "openai";
 import { logger } from "./logger";
 import { withOpenAIUsage } from "./ai-usage";
-import { sql, eq } from "drizzle-orm";
+import { sql, eq, inArray } from "drizzle-orm";
 import { db, isDatabaseConfigured } from "./db";
 import fs from "node:fs/promises";
+import path from "node:path";
 
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({
@@ -30,6 +57,24 @@ function readWorkbookFromBase64(base64: string) {
 function sheetToRows(sheet?: XLSX.Sheet) {
   if (!sheet) return [];
   return XLSX.utils.sheet_to_json<Record<string, string>>(sheet, { defval: "" });
+}
+
+async function readSeedFile(filename: string) {
+  const baseCandidates = [
+    path.resolve(process.cwd(), "dist/seed-data"),
+    path.resolve(process.cwd(), "server/seed-data")
+  ];
+
+  for (const base of baseCandidates) {
+    const fullPath = path.join(base, filename);
+    try {
+      return await fs.readFile(fullPath);
+    } catch {
+      continue;
+    }
+  }
+
+  throw new Error(`Seed file not found: ${filename}`);
 }
 
 export async function registerRoutes(
@@ -1243,12 +1288,46 @@ export async function registerRoutes(
       if (!user) return res.status(401).json({ error: "User not found" });
 
       await db.delete(transactions).where(eq(transactions.userId, user.id));
+
+      const uploadIds = await db.select({ id: uploads.id }).from(uploads).where(eq(uploads.userId, user.id));
+      if (uploadIds.length > 0) {
+        await db.delete(uploadErrors).where(inArray(uploadErrors.uploadId, uploadIds.map((row: { id: string }) => row.id)));
+      }
+      await db.delete(uploads).where(eq(uploads.userId, user.id));
+
+      const eventIds = await db.select({ id: calendarEvents.id }).from(calendarEvents).where(eq(calendarEvents.userId, user.id));
+      if (eventIds.length > 0) {
+        await db.delete(eventOccurrences).where(inArray(eventOccurrences.eventId, eventIds.map((row: { id: string }) => row.id)));
+      }
+      await db.delete(calendarEvents).where(eq(calendarEvents.userId, user.id));
+
+      const goalIds = await db.select({ id: goals.id }).from(goals).where(eq(goals.userId, user.id));
+      if (goalIds.length > 0) {
+        await db.delete(categoryGoals).where(inArray(categoryGoals.goalId, goalIds.map((row: { id: string }) => row.id)));
+      }
+      await db.delete(goals).where(eq(goals.userId, user.id));
+      await db.delete(budgets).where(eq(budgets.userId, user.id));
+      await db.delete(rituals).where(eq(rituals.userId, user.id));
+      await db.delete(notifications).where(eq(notifications.userId, user.id));
+      await db.delete(aiUsageLogs).where(eq(aiUsageLogs.userId, user.id));
+
+      const conversationIds = await db.select({ id: conversations.id }).from(conversations).where(eq(conversations.userId, user.id));
+      if (conversationIds.length > 0) {
+        await db.delete(messages).where(inArray(messages.conversationId, conversationIds.map((row: { id: string }) => row.id)));
+      }
+      await db.delete(conversations).where(eq(conversations.userId, user.id));
+
+      await db.delete(merchantMetadata).where(eq(merchantMetadata.userId, user.id));
+      await db.delete(merchantDescriptions).where(eq(merchantDescriptions.userId, user.id));
+      await db.delete(merchantIcons).where(eq(merchantIcons.userId, user.id));
+
+      await db.delete(accounts).where(eq(accounts.userId, user.id));
       await db.delete(keyDescMap).where(eq(keyDescMap.userId, user.id));
       await db.delete(aliasAssets).where(eq(aliasAssets.userId, user.id));
       await storage.deleteTaxonomyForUser(user.id);
 
-      const categoriasCsv = await fs.readFile("server/seed-data/categorias.csv");
-      const aliasCsv = await fs.readFile("server/seed-data/alias_desc.csv");
+      const categoriasCsv = await readSeedFile("categorias.csv");
+      const aliasCsv = await readSeedFile("alias_desc.csv");
 
       const catWb = XLSX.read(categoriasCsv, { type: "buffer" });
       const aliasWb = XLSX.read(aliasCsv, { type: "buffer" });

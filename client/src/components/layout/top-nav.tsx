@@ -2,26 +2,17 @@ import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Upload, Bell, User, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { transactionsApi } from "@/lib/api";
 import { useMonth } from "@/lib/month-context";
 
 const NAV_TABS = [
   { label: "Painel", href: "/dashboard" },
-  { label: "Transacoes", href: "/confirm" },
-  { label: "Orcamento", href: "/rules" },
+  { label: "Transacoes", href: "/transactions" },
+  { label: "Configuracoes", href: "/settings" },
 ];
 
 export function TopNav() {
   const [location] = useLocation();
   const { month, setMonth, formatMonth } = useMonth();
-
-  const { data: confirmQueue = [] } = useQuery({
-    queryKey: ["confirm-queue"],
-    queryFn: transactionsApi.confirmQueue,
-  });
-
-  const pendingCount = confirmQueue.length;
 
   const prevMonth = () => {
     const [year, m] = month.split("-").map(Number);
@@ -62,11 +53,6 @@ export function TopNav() {
                     )}
                   >
                     {tab.label}
-                    {tab.href === "/confirm" && pendingCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
-                        {pendingCount > 9 ? "9+" : pendingCount}
-                      </span>
-                    )}
                     {isActive && (
                       <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-foreground rounded-full" />
                     )}

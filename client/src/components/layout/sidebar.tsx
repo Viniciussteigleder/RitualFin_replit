@@ -3,26 +3,21 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
   Upload,
-  CheckCircle2,
   Settings,
   LogOut,
   Menu,
   X,
   ChevronLeft,
   ChevronRight,
-  BookOpen,
   Sparkles,
   Calendar,
   Target,
-  Brain,
   Wallet,
   Receipt,
   Bell
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
-import { transactionsApi } from "@/lib/api";
 import { useMonth } from "@/lib/month-context";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -71,40 +66,10 @@ const NAV_CLUSTERS = [
     label: "Ações",
     items: [
       {
-        label: "Confirmar",
-        icon: CheckCircle2,
-        href: "/confirm",
-        showBadge: true,
-        description: "Transações pendentes"
-      },
-      {
         label: "Transações",
         icon: Receipt,
         href: "/transactions",
         description: "Histórico completo"
-      },
-    ]
-  },
-  {
-    label: "Automação",
-    items: [
-      {
-        label: "Regras",
-        icon: BookOpen,
-        href: "/rules",
-        description: "Categorização automática"
-      },
-      {
-        label: "Dicionário",
-        icon: BookOpen,
-        href: "/merchant-dictionary",
-        description: "Aliases de comerciantes"
-      },
-      {
-        label: "IA Keywords",
-        icon: Brain,
-        href: "/ai-keywords",
-        description: "Análise inteligente em lote"
       },
     ]
   },
@@ -154,13 +119,6 @@ export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { month, setMonth, formatMonth } = useMonth();
-
-  const { data: confirmQueue = [] } = useQuery({
-    queryKey: ["confirm-queue"],
-    queryFn: transactionsApi.confirmQueue,
-  });
-
-  const pendingCount = confirmQueue.length;
 
   const prevMonth = () => {
     const [year, m] = month.split("-").map(Number);
@@ -274,7 +232,6 @@ export function Sidebar() {
               <div className="space-y-1">
                 {cluster.items.map((item) => {
                   const isActive = location === item.href;
-                  const badge = item.showBadge && pendingCount > 0 ? pendingCount : null;
 
                   const NavLink = (
                     <Link
@@ -296,22 +253,7 @@ export function Sidebar() {
                       {!isCollapsed && (
                         <>
                           <span className="flex-1">{item.label}</span>
-                          {badge && (
-                            <span className={cn(
-                              "text-[10px] font-bold px-2 py-0.5 rounded-full",
-                              isActive
-                                ? "bg-white/20 text-white"
-                                : "bg-amber-500/20 text-amber-400"
-                            )}>
-                              {badge > 99 ? "99+" : badge}
-                            </span>
-                          )}
                         </>
-                      )}
-                      {isCollapsed && badge && (
-                        <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                          {badge > 9 ? "9+" : badge}
-                        </span>
                       )}
                     </Link>
                   );
@@ -322,7 +264,6 @@ export function Sidebar() {
                         <TooltipTrigger asChild>{NavLink}</TooltipTrigger>
                         <TooltipContent side="right" className="font-medium">
                           {item.label}
-                          {badge && <span className="ml-2 text-amber-500">({badge})</span>}
                         </TooltipContent>
                       </Tooltip>
                     );
