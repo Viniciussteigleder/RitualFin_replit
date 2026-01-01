@@ -106,7 +106,7 @@ app.use((req, res, next) => {
     {
       port,
       host,
-      reusePort: true,
+      ...(process.env.REUSE_PORT === "true" ? { reusePort: true } : {}),
     },
     () => {
       log(`serving on port ${port}`);
