@@ -82,6 +82,138 @@ function buildCsv(headers: string[], rows: Record<string, string>[]) {
   return `\uFEFF${lines.join("\n")}`;
 }
 
+const CLASSIFICATION_COLUMN_ALIASES = {
+  appClass: ["App classificação", "App classificacao"],
+  level1: ["Nível_1_PT", "Nivel_1_PT"],
+  level2: ["Nível_2_PT", "Nivel_2_PT"],
+  level3: ["Nível_3_PT", "Nivel_3_PT"],
+  keyWords: ["Key_words"],
+  keyWordsNegative: ["Key_words_negative"],
+  receitaDespesa: ["Receita/Despesa"],
+  fixoVariavel: ["Fixo/Variável", "Fixo/Variavel"],
+  recorrente: ["Recorrente"]
+};
+
+const getRowValue = (row: Record<string, string>, keys: string[]) => {
+  for (const key of keys) {
+    if (key in row) {
+      return row[key];
+    }
+  }
+  return "";
+};
+
+const getMissingColumns = (columns: string[]) => {
+  const missing: string[] = [];
+  const check = (label: string, keys: string[]) => {
+    if (!keys.some((key) => columns.includes(key))) {
+      missing.push(label);
+    }
+  };
+  check("App classificação", CLASSIFICATION_COLUMN_ALIASES.appClass);
+  check("Nível_1_PT", CLASSIFICATION_COLUMN_ALIASES.level1);
+  check("Nível_2_PT", CLASSIFICATION_COLUMN_ALIASES.level2);
+  check("Nível_3_PT", CLASSIFICATION_COLUMN_ALIASES.level3);
+  check("Key_words", CLASSIFICATION_COLUMN_ALIASES.keyWords);
+  check("Key_words_negative", CLASSIFICATION_COLUMN_ALIASES.keyWordsNegative);
+  check("Receita/Despesa", CLASSIFICATION_COLUMN_ALIASES.receitaDespesa);
+  check("Fixo/Variável", CLASSIFICATION_COLUMN_ALIASES.fixoVariavel);
+  check("Recorrente", CLASSIFICATION_COLUMN_ALIASES.recorrente);
+  return missing;
+};
+
+const buildLeafKey = (level1: string, level2: string, level3: string) =>
+  [level1, level2, level3].filter(Boolean).join(" › ");
+
+async function buildClassificationDiff(userId: string, rows: Record<string, string>[]) {
+  const [levels1, levels2, leaves, rules] = await Promise.all([
+    storage.getTaxonomyLevel1(userId),
+    storage.getTaxonomyLevel2(userId),
+    storage.getTaxonomyLeaf(userId),
+    storage.getRules(userId)
+  ]);
+
+  const level1ById = new Map(levels1.map((level) => [level.level1Id, level.nivel1Pt || ""]));
+  const level2ById = new Map(levels2.map((level) => [level.level2Id, level]));
+
+  const existingLeafKeyById = new Map<string, string>();
+  leaves.forEach((leaf) => {
+    const level2 = level2ById.get(leaf.level2Id);
+    const level1Name = level2 ? level1ById.get(level2.level1Id) || "" : "";
+    const level2Name = level2?.nivel2Pt || "";
+    const level3Name = leaf.nivel3Pt || "";
+    existingLeafKeyById.set(leaf.leafId, buildLeafKey(level1Name, level2Name, level3Name));
+  });
+
+  const existingLeafKeys = new Set(Array.from(existingLeafKeyById.values()));
+  const existingRuleByLeafKey = new Map<string, { keyWords: string; keyWordsNegative: string }>();
+  for (const rule of rules) {
+    if (!rule.leafId) continue;
+    const leafKey = existingLeafKeyById.get(rule.leafId);
+    if (!leafKey || existingRuleByLeafKey.has(leafKey)) continue;
+    existingRuleByLeafKey.set(leafKey, {
+      keyWords: rule.keyWords || "",
+      keyWordsNegative: rule.keyWordsNegative || ""
+    });
+  }
+
+  const incomingLeafKeys = new Set<string>();
+  const incomingRules = new Map<string, { keyWords: string; keyWordsNegative: string }>();
+  for (const row of rows) {
+    const level1 = String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.level1) || "").trim();
+    const level2 = String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.level2) || "").trim();
+    const level3 = String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.level3) || "").trim();
+    if (!level1 || !level2 || !level3) continue;
+    const leafKey = buildLeafKey(level1, level2, level3);
+    incomingLeafKeys.add(leafKey);
+    incomingRules.set(leafKey, {
+      keyWords: String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.keyWords) || "").trim(),
+      keyWordsNegative: String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.keyWordsNegative) || "").trim()
+    });
+  }
+
+  const newLeaves = Array.from(incomingLeafKeys).filter((key) => !existingLeafKeys.has(key));
+  const removedLeaves = Array.from(existingLeafKeys).filter((key) => !incomingLeafKeys.has(key));
+  const updatedRules = Array.from(incomingLeafKeys).filter((key) => {
+    if (!existingLeafKeys.has(key)) return false;
+    const existingRule = existingRuleByLeafKey.get(key);
+    const incomingRule = incomingRules.get(key);
+    if (!incomingRule) return false;
+    if (!existingRule) {
+      return incomingRule.keyWords.length > 0 || incomingRule.keyWordsNegative.length > 0;
+    }
+    return (
+      existingRule.keyWords !== incomingRule.keyWords ||
+      existingRule.keyWordsNegative !== incomingRule.keyWordsNegative
+    );
+  });
+
+  return {
+    newLeaves,
+    removedLeaves,
+    updatedRules
+  };
+}
+
+const ALIAS_COLUMN_ALIASES = {
+  aliasDesc: ["Alias_Desc", "alias_desc"],
+  keyWordsAlias: ["Key_words_alias", "key_words_alias"],
+  urlLogoInternet: ["URL_icon_internet", "url_logo_internet"]
+};
+
+const getAliasMissingColumns = (columns: string[]) => {
+  const missing: string[] = [];
+  const check = (label: string, keys: string[]) => {
+    if (!keys.some((key) => columns.includes(key))) {
+      missing.push(label);
+    }
+  };
+  check("Alias_Desc", ALIAS_COLUMN_ALIASES.aliasDesc);
+  check("Key_words_alias", ALIAS_COLUMN_ALIASES.keyWordsAlias);
+  check("URL_icon_internet", ALIAS_COLUMN_ALIASES.urlLogoInternet);
+  return missing;
+};
+
 async function readSeedFile(filename: string) {
   const baseCandidates = [
     path.resolve(process.cwd(), "dist/seed-data"),
@@ -1051,32 +1183,37 @@ export async function registerRoutes(
       if (!user) return res.status(401).json({ error: "User not found" });
 
       const { fileBase64 } = req.body;
-      if (!fileBase64) return res.status(400).json({ error: "Arquivo Excel obrigatorio" });
+      if (!fileBase64) return res.status(400).json({ error: "Arquivo Excel obrigatório" });
 
       const workbook = readWorkbookFromBase64(fileBase64);
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const rows = sheetToRows(sheet);
 
-      const requiredColumns = [
-        "App classificação", "Nivel_1_PT", "Nivel_2_PT", "Nivel_3_PT",
-        "Key_words", "Key_words_negative", "Receita/Despesa", "Fixo/Variável", "Recorrente"
-      ];
       const columns = rows.length > 0 ? Object.keys(rows[0]) : [];
-      const missingColumns = requiredColumns.filter(c => !columns.includes(c));
+      const missingColumns = getMissingColumns(columns);
       if (missingColumns.length > 0) {
         return res.status(400).json({ error: `Colunas faltando: ${missingColumns.join(", ")}` });
       }
 
-      const incomingAppCats = Array.from(new Set(rows.map(r => String(r["App classificação"] || "").trim()).filter(Boolean)));
+      const incomingAppCats = Array.from(new Set(rows.map(r => String(getRowValue(r, CLASSIFICATION_COLUMN_ALIASES.appClass) || "").trim()).filter(Boolean)));
       const existingAppCats = (await storage.getAppCategories(user.id)).map(c => c.name);
 
       const requiresRemap = incomingAppCats.sort().join("|") !== existingAppCats.sort().join("|");
+      const diff = await buildClassificationDiff(user.id, rows);
 
       res.json({
         rows: rows.length,
         appCategories: incomingAppCats.length,
-        rules: rows.filter(r => String(r["Key_words"] || "").trim().length > 0).length,
-        requiresRemap
+        rules: rows.filter(r => String(getRowValue(r, CLASSIFICATION_COLUMN_ALIASES.keyWords) || "").trim().length > 0).length,
+        requiresRemap,
+        diff: {
+          newLeavesCount: diff.newLeaves.length,
+          removedLeavesCount: diff.removedLeaves.length,
+          updatedRulesCount: diff.updatedRules.length,
+          newLeavesSample: diff.newLeaves.slice(0, 5),
+          removedLeavesSample: diff.removedLeaves.slice(0, 5),
+          updatedRulesSample: diff.updatedRules.slice(0, 5)
+        }
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -1089,18 +1226,26 @@ export async function registerRoutes(
       if (!user) return res.status(401).json({ error: "User not found" });
 
       const { fileBase64, confirmRemap } = req.body;
-      if (!fileBase64) return res.status(400).json({ error: "Arquivo Excel obrigatorio" });
+      if (!fileBase64) return res.status(400).json({ error: "Arquivo Excel obrigatório" });
 
       const workbook = readWorkbookFromBase64(fileBase64);
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const rows = sheetToRows(sheet);
 
-      const incomingAppCats = Array.from(new Set(rows.map(r => String(r["App classificação"] || "").trim()).filter(Boolean)));
+      const columns = rows.length > 0 ? Object.keys(rows[0]) : [];
+      const missingColumns = getMissingColumns(columns);
+      if (missingColumns.length > 0) {
+        return res.status(400).json({ error: `Colunas faltando: ${missingColumns.join(", ")}` });
+      }
+
+      const incomingAppCats = Array.from(new Set(rows.map(r => String(getRowValue(r, CLASSIFICATION_COLUMN_ALIASES.appClass) || "").trim()).filter(Boolean)));
       const existingAppCats = (await storage.getAppCategories(user.id)).map(c => c.name);
       const requiresRemap = incomingAppCats.sort().join("|") !== existingAppCats.sort().join("|");
       if (requiresRemap && !confirmRemap) {
-        return res.status(400).json({ error: "Mudanca de categorias requer confirmacao", requiresRemap: true });
+        return res.status(400).json({ error: "Mudança de categorias requer confirmação", requiresRemap: true });
       }
+
+      const diff = await buildClassificationDiff(user.id, rows);
 
       await storage.deleteTaxonomyForUser(user.id);
 
@@ -1121,10 +1266,10 @@ export async function registerRoutes(
       const leafMap = new Map<string, string>();
 
       for (const row of rows) {
-        const nivel1 = String(row["Nivel_1_PT"] || "").trim();
-        const nivel2 = String(row["Nivel_2_PT"] || "").trim();
-        const nivel3 = String(row["Nivel_3_PT"] || "").trim();
-        const appCat = String(row["App classificação"] || "").trim();
+        const nivel1 = String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.level1) || "").trim();
+        const nivel2 = String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.level2) || "").trim();
+        const nivel3 = String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.level3) || "").trim();
+        const appCat = String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.appClass) || "").trim();
         if (!nivel1 || !nivel2 || !nivel3) continue;
 
         if (!level1Map.has(nivel1)) {
@@ -1142,9 +1287,9 @@ export async function registerRoutes(
             userId: user.id,
             level1Id,
             nivel2Pt: nivel2,
-            recorrenteDefault: String(row["Recorrente"] || "").trim() || null,
-            fixoVariavelDefault: String(row["Fixo/Variável"] || "").trim() || null,
-            receitaDespesaDefault: String(row["Receita/Despesa"] || "").trim() || null
+            recorrenteDefault: String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.recorrente) || "").trim() || null,
+            fixoVariavelDefault: String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.fixoVariavel) || "").trim() || null,
+            receitaDespesaDefault: String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.receitaDespesa) || "").trim() || null
           });
           level2Map.set(level2Key, created.level2Id);
         }
@@ -1156,16 +1301,16 @@ export async function registerRoutes(
             userId: user.id,
             level2Id,
             nivel3Pt: nivel3,
-            recorrenteDefault: String(row["Recorrente"] || "").trim() || null,
-            fixoVariavelDefault: String(row["Fixo/Variável"] || "").trim() || null,
-            receitaDespesaDefault: String(row["Receita/Despesa"] || "").trim() || null
+            recorrenteDefault: String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.recorrente) || "").trim() || null,
+            fixoVariavelDefault: String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.fixoVariavel) || "").trim() || null,
+            receitaDespesaDefault: String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.receitaDespesa) || "").trim() || null
           });
           leafMap.set(leafKey, created.leafId);
         }
 
         const leafId = leafMap.get(leafKey)!;
-        const keyWords = String(row["Key_words"] || "").trim();
-        const keyWordsNegative = String(row["Key_words_negative"] || "").trim();
+        const keyWords = String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.keyWords) || "").trim();
+        const keyWordsNegative = String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.keyWordsNegative) || "").trim();
         if (keyWords.length > 0) {
           await storage.createRule({
             userId: user.id,
@@ -1185,7 +1330,15 @@ export async function registerRoutes(
         }
       }
 
-      res.json({ success: true, rows: rows.length });
+      res.json({
+        success: true,
+        rows: rows.length,
+        diff: {
+          newLeavesCount: diff.newLeaves.length,
+          removedLeavesCount: diff.removedLeaves.length,
+          updatedRulesCount: diff.updatedRules.length
+        }
+      });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
@@ -1197,7 +1350,7 @@ export async function registerRoutes(
       if (!user) return res.status(401).json({ error: "User not found" });
 
       const { keyDesc } = req.body;
-      if (!keyDesc) return res.status(400).json({ error: "key_desc obrigatorio" });
+      if (!keyDesc) return res.status(400).json({ error: "key_desc obrigatório" });
 
       const rules = await storage.getRules(user.id);
       const match = classifyByKeyDesc(keyDesc, rules);
@@ -1213,8 +1366,26 @@ export async function registerRoutes(
       const user = await storage.getUserByUsername("demo");
       if (!user) return res.status(401).json({ error: "User not found" });
 
-      const leaves = await storage.getTaxonomyLeaf(user.id);
-      res.json(leaves);
+      const [leaves, levels2, levels1] = await Promise.all([
+        storage.getTaxonomyLeaf(user.id),
+        storage.getTaxonomyLevel2(user.id),
+        storage.getTaxonomyLevel1(user.id)
+      ]);
+
+      const level1ById = new Map(levels1.map(level => [level.level1Id, level.nivel1Pt || ""]));
+      const level2ById = new Map(levels2.map(level => [level.level2Id, level]));
+
+      const enriched = leaves.map((leaf) => {
+        const level2 = level2ById.get(leaf.level2Id);
+        const level1Name = level2 ? level1ById.get(level2.level1Id) || "" : "";
+        return {
+          ...leaf,
+          nivel1Pt: level1Name,
+          nivel2Pt: level2?.nivel2Pt || ""
+        };
+      });
+
+      res.json(enriched);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
@@ -1227,6 +1398,51 @@ export async function registerRoutes(
 
       const rules = await storage.getRules(user.id);
       res.json(rules);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/classification/rules/append", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const schema = z.object({
+        leafId: z.string(),
+        expressions: z.string()
+      });
+      const data = schema.parse(req.body);
+
+      const incoming = data.expressions
+        .split(";")
+        .map((value) => value.trim())
+        .filter(Boolean);
+      if (incoming.length === 0) {
+        return res.status(400).json({ error: "Nenhuma expressão válida" });
+      }
+
+      const rules = await storage.getRules(user.id);
+      const existingRule = rules.find(rule => rule.leafId === data.leafId);
+
+      if (existingRule) {
+        const existingList = existingRule.keyWords
+          ? existingRule.keyWords.split(";").map((value) => value.trim()).filter(Boolean)
+          : [];
+        const normalizedExisting = new Set(existingList.map(value => value.toLowerCase()));
+        const toAdd = incoming.filter(value => !normalizedExisting.has(value.toLowerCase()));
+        const merged = [...existingList, ...toAdd].filter(Boolean);
+        const updated = await storage.updateRule(existingRule.id, { keyWords: merged.join(";") });
+        return res.json({ success: true, ruleId: existingRule.id, keyWords: updated?.keyWords || merged.join(";") });
+      }
+
+      const created = await storage.createRule({
+        userId: user.id,
+        leafId: data.leafId,
+        keyWords: incoming.join(";"),
+        active: true
+      });
+      res.json({ success: true, ruleId: created.id, keyWords: created.keyWords });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
@@ -1308,10 +1524,10 @@ export async function registerRoutes(
       );
       const wsAlias = XLSX.utils.json_to_sheet(
         aliasRows.map(row => ({
-          alias_desc: row.aliasDesc,
-          key_words_alias: row.keyWordsAlias,
-          url_logo_internet: row.urlLogoInternet || "",
-          logo_local_path: row.logoLocalPath || ""
+          Alias_Desc: row.aliasDesc,
+          Key_words_alias: row.keyWordsAlias,
+          URL_icon_internet: row.urlLogoInternet || "",
+          Logo_local_path: row.logoLocalPath || ""
         }))
       );
 
@@ -1328,19 +1544,54 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/aliases/logos/template", async (_req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const aliasRows = await storage.getAliasAssets(user.id);
+      const wsLogos = XLSX.utils.json_to_sheet(
+        aliasRows.map(row => ({
+          Alias_Desc: row.aliasDesc,
+          Key_words_alias: row.keyWordsAlias,
+          URL_icon_internet: row.urlLogoInternet || "",
+          Logo_local_path: row.logoLocalPath || ""
+        }))
+      );
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, wsLogos, "logos");
+      const buffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.setHeader("Content-Disposition", "attachment; filename=ritualfin_logos.xlsx");
+      res.send(buffer);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.post("/api/aliases/import/preview", async (req: Request, res: Response) => {
     try {
       const user = await storage.getUserByUsername("demo");
       if (!user) return res.status(401).json({ error: "User not found" });
 
       const { fileBase64 } = req.body;
-      if (!fileBase64) return res.status(400).json({ error: "Arquivo Excel obrigatorio" });
+      if (!fileBase64) return res.status(400).json({ error: "Arquivo Excel obrigatório" });
 
       const workbook = readWorkbookFromBase64(fileBase64);
-      const sheetKeyDesc = workbook.Sheets[workbook.SheetNames[0]];
-      const sheetAlias = workbook.Sheets[workbook.SheetNames[1]];
+      const sheetNames = workbook.SheetNames;
+      const hasAliasOnly = sheetNames.length === 1;
+      const sheetKeyDesc = hasAliasOnly ? undefined : workbook.Sheets[sheetNames[0]];
+      const sheetAlias = hasAliasOnly ? workbook.Sheets[sheetNames[0]] : workbook.Sheets[sheetNames[1]];
       const keyDescRows = sheetToRows(sheetKeyDesc || {});
       const aliasRows = sheetToRows(sheetAlias || {});
+
+      const aliasColumns = aliasRows.length > 0 ? Object.keys(aliasRows[0]) : [];
+      const missingColumns = getAliasMissingColumns(aliasColumns);
+      if (missingColumns.length > 0) {
+        return res.status(400).json({ error: `Colunas faltando: ${missingColumns.join(", ")}` });
+      }
 
       res.json({
         keyDescRows: keyDescRows.length,
@@ -1357,13 +1608,21 @@ export async function registerRoutes(
       if (!user) return res.status(401).json({ error: "User not found" });
 
       const { fileBase64 } = req.body;
-      if (!fileBase64) return res.status(400).json({ error: "Arquivo Excel obrigatorio" });
+      if (!fileBase64) return res.status(400).json({ error: "Arquivo Excel obrigatório" });
 
       const workbook = readWorkbookFromBase64(fileBase64);
-      const sheetKeyDesc = workbook.Sheets[workbook.SheetNames[0]];
-      const sheetAlias = workbook.Sheets[workbook.SheetNames[1]];
+      const sheetNames = workbook.SheetNames;
+      const hasAliasOnly = sheetNames.length === 1;
+      const sheetKeyDesc = hasAliasOnly ? undefined : workbook.Sheets[sheetNames[0]];
+      const sheetAlias = hasAliasOnly ? workbook.Sheets[sheetNames[0]] : workbook.Sheets[sheetNames[1]];
       const keyDescRows = sheetToRows(sheetKeyDesc || {});
       const aliasRows = sheetToRows(sheetAlias || {});
+
+      const aliasColumns = aliasRows.length > 0 ? Object.keys(aliasRows[0]) : [];
+      const missingColumns = getAliasMissingColumns(aliasColumns);
+      if (missingColumns.length > 0) {
+        return res.status(400).json({ error: `Colunas faltando: ${missingColumns.join(", ")}` });
+      }
 
       for (const row of keyDescRows) {
         const keyDesc = String(row["key_desc"] || row["keyDesc"] || row["key_desc "] || "").trim();
@@ -1382,10 +1641,64 @@ export async function registerRoutes(
         }
       }
 
+      const existingAliases = await storage.getAliasAssets(user.id);
+      const existingByAlias = new Map(existingAliases.map(alias => [alias.aliasDesc, alias]));
+      let newAliases = 0;
+      let updatedAliases = 0;
+
       for (const row of aliasRows) {
-        const aliasDesc = String(row["alias_desc"] || row["Alias_Desc"] || "").trim();
-        const keyWordsAlias = String(row["key_words_alias"] || row["Key_words_alias"] || "").trim();
-        const urlLogoInternet = String(row["url_logo_internet"] || row["URL_icon_internet"] || "").trim();
+        const aliasDesc = String(getRowValue(row, ALIAS_COLUMN_ALIASES.aliasDesc) || "").trim();
+        const keyWordsAlias = String(getRowValue(row, ALIAS_COLUMN_ALIASES.keyWordsAlias) || "").trim();
+        const urlLogoInternet = String(getRowValue(row, ALIAS_COLUMN_ALIASES.urlLogoInternet) || "").trim();
+        if (!aliasDesc) continue;
+
+        const exists = existingByAlias.has(aliasDesc);
+        await storage.upsertAliasAsset({
+          userId: user.id,
+          aliasDesc,
+          keyWordsAlias: keyWordsAlias || "",
+          urlLogoInternet: urlLogoInternet || null
+        });
+        if (exists) {
+          updatedAliases += 1;
+        } else {
+          newAliases += 1;
+        }
+      }
+
+      res.json({
+        success: true,
+        newAliases,
+        updatedAliases
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/aliases/logos/import", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const { fileBase64 } = req.body;
+      if (!fileBase64) return res.status(400).json({ error: "Arquivo Excel ou CSV obrigatório" });
+
+      const workbook = readWorkbookFromBase64(fileBase64);
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = sheetToRows(sheet || {});
+
+      const columns = rows.length > 0 ? Object.keys(rows[0]) : [];
+      const missingColumns = getAliasMissingColumns(columns);
+      if (missingColumns.length > 0) {
+        return res.status(400).json({ error: `Colunas faltando: ${missingColumns.join(", ")}` });
+      }
+
+      const results: Array<{ aliasDesc: string; status: string; logoLocalPath?: string; error?: string }> = [];
+      for (const row of rows) {
+        const aliasDesc = String(getRowValue(row, ALIAS_COLUMN_ALIASES.aliasDesc) || "").trim();
+        const keyWordsAlias = String(getRowValue(row, ALIAS_COLUMN_ALIASES.keyWordsAlias) || "").trim();
+        const urlLogoInternet = String(getRowValue(row, ALIAS_COLUMN_ALIASES.urlLogoInternet) || "").trim();
         if (!aliasDesc) continue;
 
         await storage.upsertAliasAsset({
@@ -1394,9 +1707,36 @@ export async function registerRoutes(
           keyWordsAlias: keyWordsAlias || "",
           urlLogoInternet: urlLogoInternet || null
         });
+
+        if (!urlLogoInternet) {
+          results.push({ aliasDesc, status: "error", error: "URL_icon_internet vazio" });
+          continue;
+        }
+
+        try {
+          const stored = await downloadLogoForAlias({
+            userId: user.id,
+            aliasDesc,
+            url: urlLogoInternet
+          });
+
+          await storage.updateAliasAsset(user.id, aliasDesc, {
+            logoLocalPath: stored.logoLocalPath,
+            logoMimeType: stored.logoMimeType,
+            logoUpdatedAt: new Date()
+          });
+
+          results.push({ aliasDesc, status: "ok", logoLocalPath: stored.logoLocalPath });
+        } catch (err: any) {
+          results.push({ aliasDesc, status: "error", error: err.message });
+        }
       }
 
-      res.json({ success: true });
+      res.json({
+        success: true,
+        processed: results.length,
+        results
+      });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
@@ -1408,7 +1748,7 @@ export async function registerRoutes(
       if (!user) return res.status(401).json({ error: "User not found" });
 
       const { keyDesc } = req.body;
-      if (!keyDesc) return res.status(400).json({ error: "key_desc obrigatorio" });
+      if (!keyDesc) return res.status(400).json({ error: "key_desc obrigatório" });
 
       const aliases = await storage.getAliasAssets(user.id);
       for (const alias of aliases) {
@@ -1531,10 +1871,10 @@ export async function registerRoutes(
       const leafMap = new Map<string, string>();
 
       for (const row of catRows) {
-        const nivel1 = String(row["Nivel_1_PT"] || "").trim();
-        const nivel2 = String(row["Nivel_2_PT"] || "").trim();
-        const nivel3 = String(row["Nivel_3_PT"] || "").trim();
-        const appCat = String(row["App classificação"] || "").trim();
+        const nivel1 = String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.level1) || "").trim();
+        const nivel2 = String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.level2) || "").trim();
+        const nivel3 = String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.level3) || "").trim();
+        const appCat = String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.appClass) || "").trim();
         if (!nivel1 || !nivel2 || !nivel3) continue;
 
         if (!level1Map.has(nivel1)) {
@@ -1549,9 +1889,9 @@ export async function registerRoutes(
             userId: user.id,
             level1Id,
             nivel2Pt: nivel2,
-            recorrenteDefault: String(row["Recorrente"] || "").trim() || null,
-            fixoVariavelDefault: String(row["Fixo/Variável"] || "").trim() || null,
-            receitaDespesaDefault: String(row["Receita/Despesa"] || "").trim() || null
+            recorrenteDefault: String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.recorrente) || "").trim() || null,
+            fixoVariavelDefault: String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.fixoVariavel) || "").trim() || null,
+            receitaDespesaDefault: String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.receitaDespesa) || "").trim() || null
           });
           level2Map.set(level2Key, created.level2Id);
         }
@@ -1563,16 +1903,16 @@ export async function registerRoutes(
             userId: user.id,
             level2Id,
             nivel3Pt: nivel3,
-            recorrenteDefault: String(row["Recorrente"] || "").trim() || null,
-            fixoVariavelDefault: String(row["Fixo/Variável"] || "").trim() || null,
-            receitaDespesaDefault: String(row["Receita/Despesa"] || "").trim() || null
+            recorrenteDefault: String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.recorrente) || "").trim() || null,
+            fixoVariavelDefault: String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.fixoVariavel) || "").trim() || null,
+            receitaDespesaDefault: String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.receitaDespesa) || "").trim() || null
           });
           leafMap.set(leafKey, created.leafId);
         }
 
         const leafId = leafMap.get(leafKey)!;
-        const keyWords = String(row["Key_words"] || "").trim();
-        const keyWordsNegative = String(row["Key_words_negative"] || "").trim();
+        const keyWords = String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.keyWords) || "").trim();
+        const keyWordsNegative = String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.keyWordsNegative) || "").trim();
         if (keyWords.length > 0) {
           await storage.createRule({
             userId: user.id,
@@ -1606,6 +1946,57 @@ export async function registerRoutes(
       }
 
       res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/settings/delete-data", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const schema = z.object({
+        deleteTransactions: z.boolean().optional(),
+        deleteCategories: z.boolean().optional(),
+        deleteAliases: z.boolean().optional(),
+        deleteAll: z.boolean().optional()
+      });
+      const data = schema.parse(req.body || {});
+
+      const deleteTransactions = Boolean(data.deleteAll || data.deleteTransactions);
+      const deleteCategories = Boolean(data.deleteAll || data.deleteCategories);
+      const deleteAliases = Boolean(data.deleteAll || data.deleteAliases);
+
+      if (!deleteTransactions && !deleteCategories && !deleteAliases) {
+        return res.status(400).json({ error: "Selecione ao menos um tipo de dado" });
+      }
+
+      if (deleteTransactions) {
+        await db.delete(transactions).where(eq(transactions.userId, user.id));
+
+        const uploadIds = await db.select({ id: uploads.id }).from(uploads).where(eq(uploads.userId, user.id));
+        if (uploadIds.length > 0) {
+          await db.delete(uploadErrors).where(inArray(uploadErrors.uploadId, uploadIds.map((row: { id: string }) => row.id)));
+        }
+        await db.delete(uploads).where(eq(uploads.userId, user.id));
+      }
+
+      if (deleteCategories) {
+        await storage.deleteTaxonomyForUser(user.id);
+      }
+
+      if (deleteAliases) {
+        await db.delete(keyDescMap).where(eq(keyDescMap.userId, user.id));
+        await db.delete(aliasAssets).where(eq(aliasAssets.userId, user.id));
+        try {
+          await fs.rm(path.join(process.cwd(), "public", "logos", user.id), { recursive: true, force: true });
+        } catch {
+          // best-effort cleanup
+        }
+      }
+
+      res.json({ success: true, deletedAt: new Date().toISOString() });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

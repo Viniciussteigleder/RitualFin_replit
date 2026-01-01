@@ -403,7 +403,7 @@ function parseMilesAndMore(lines: string[], meta: ParseMeta, fallbackDate: Date)
     return {
       success: false,
       transactions: [],
-      errors: [`Colunas obrigatorias nao encontradas: ${MM_REQUIRED_COLUMNS.join(", ")}`],
+      errors: [`Colunas obrigatórias não encontradas: ${MM_REQUIRED_COLUMNS.join(", ")}`],
       rowsTotal: lines.length,
       rowsImported: 0,
       monthAffected: "",
@@ -418,11 +418,11 @@ function parseMilesAndMore(lines: string[], meta: ParseMeta, fallbackDate: Date)
   
   if (missingColumns.length > 0) {
     meta.missingColumns = missingColumns;
-    meta.warnings.push(`Colunas obrigatorias faltando: ${missingColumns.join(", ")}`);
+    meta.warnings.push(`Colunas obrigatórias faltando: ${missingColumns.join(", ")}`);
     return {
       success: false,
       transactions: [],
-      errors: [`Colunas obrigatorias faltando: ${missingColumns.join(", ")}`],
+      errors: [`Colunas obrigatórias faltando: ${missingColumns.join(", ")}`],
       rowsTotal: lines.length - headerIndex - 1,
       rowsImported: 0,
       monthAffected: "",
@@ -568,7 +568,7 @@ function parseAmex(lines: string[], meta: ParseMeta, fallbackDate: Date): ParseR
     return {
       success: false,
       transactions: [],
-      errors: [`Colunas obrigatorias Amex nao encontradas: ${AMEX_REQUIRED_COLUMNS.join(", ")}`],
+      errors: [`Colunas obrigatórias Amex não encontradas: ${AMEX_REQUIRED_COLUMNS.join(", ")}`],
       rowsTotal: lines.length,
       rowsImported: 0,
       monthAffected: "",
@@ -755,7 +755,7 @@ function parseSparkasse(lines: string[], meta: ParseMeta): ParseResult {
       missing: missingColumns
     });
     meta.missingColumns = missingColumns;
-    meta.warnings.push(`Sparkasse: colunas obrigatorias faltando: ${missingColumns.join(", ")}`);
+    meta.warnings.push(`Sparkasse: colunas obrigatórias faltando: ${missingColumns.join(", ")}`);
     return {
       success: false,
       transactions: [],
@@ -1021,9 +1021,9 @@ export function parseCSV(
       success: false,
       transactions: [],
       errors: [
-        "Formato de CSV nao reconhecido",
+        "Formato de CSV não reconhecido",
         "Formatos suportados: Miles & More, American Express (Amex), Sparkasse",
-        "Verifique se o arquivo contem os cabecalhos corretos"
+        "Verifique se o arquivo contém os cabeçalhos corretos"
       ],
       rowsTotal: lines.length,
       rowsImported: 0,

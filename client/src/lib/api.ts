@@ -156,6 +156,7 @@ export const uploadsApi = {
 // Classification & Aliases
 export const classificationApi = {
   exportExcel: () => fetchBlob("/classification/export"),
+  exportCsv: () => fetchBlob("/classification/export-csv"),
   previewImport: (fileBase64: string) =>
     fetchApi<any>("/classification/import/preview", {
       method: "POST",
@@ -173,6 +174,11 @@ export const classificationApi = {
     }),
   listLeaves: () => fetchApi<any[]>("/classification/leaves"),
   listRules: () => fetchApi<any[]>("/classification/rules"),
+  appendRuleKeywords: (data: { leafId: string; expressions: string }) =>
+    fetchApi<any>("/classification/rules/append", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
   reviewQueue: () => fetchApi<any[]>("/classification/review-queue"),
   assignReview: (data: { transactionId: string; leafId: string; ruleId?: string; newExpression?: string; createRule?: boolean }) =>
     fetchApi<any>("/classification/review/assign", {
@@ -183,6 +189,7 @@ export const classificationApi = {
 
 export const aliasApi = {
   exportExcel: () => fetchBlob("/aliases/export"),
+  exportLogosTemplate: () => fetchBlob("/aliases/logos/template"),
   previewImport: (fileBase64: string) =>
     fetchApi<any>("/aliases/import/preview", {
       method: "POST",
@@ -190,6 +197,11 @@ export const aliasApi = {
     }),
   applyImport: (fileBase64: string) =>
     fetchApi<any>("/aliases/import/apply", {
+      method: "POST",
+      body: JSON.stringify({ fileBase64 }),
+    }),
+  importLogos: (fileBase64: string) =>
+    fetchApi<any>("/aliases/logos/import", {
       method: "POST",
       body: JSON.stringify({ fileBase64 }),
     }),
@@ -207,6 +219,11 @@ export const aliasApi = {
 
 export const resetApi = {
   resetData: () => fetchApi<any>("/settings/reset", { method: "POST" }),
+  deleteData: (data: { deleteTransactions?: boolean; deleteCategories?: boolean; deleteAliases?: boolean; deleteAll?: boolean }) =>
+    fetchApi<any>("/settings/delete-data", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 };
 
 // Transactions

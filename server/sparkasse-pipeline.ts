@@ -264,6 +264,7 @@ const getHeaderIndex = (headerMap: Record<string, number>, headerName: string) =
 export function runSparkasseParsePipeline(input: SparkassePipelineInput): SparkassePipelineResult {
   const now = new Date();
   const sizeBytes = input.sizeBytes ?? input.buffer?.length ?? input.csvContent?.length ?? 0;
+  const fallbackDate = input.importDate || now;
 
   const diagnostics: SparkasseDiagnostics = {
     uploadAttemptId: input.uploadAttemptId,
@@ -309,7 +310,7 @@ export function runSparkasseParsePipeline(input: SparkassePipelineInput): Sparka
   if (decoded.failed) {
     const error: SparkasseError = {
       code: "ENCODING_DETECT_FAILED",
-      message: "Nao foi possivel detectar a codificacao do CSV",
+      message: "Não foi possível detectar a codificação do CSV",
       hint: "Tente exportar o arquivo novamente ou envie em UTF-8.",
       details: { encodingHint: input.encodingHint }
     };
@@ -361,7 +362,7 @@ export function runSparkasseParsePipeline(input: SparkassePipelineInput): Sparka
   if (records.length > 0 && singleColumnRows / records.length >= DELIMITER_MISMATCH_THRESHOLD) {
     const error: SparkasseError = {
       code: "DELIMITER_MISMATCH",
-      message: "Delimitador invalido para CSV do Sparkasse",
+      message: "Delimitador inválido para CSV do Sparkasse",
       hint: "O arquivo deve usar ponto e virgula (;).",
       details: { columnCountsSample: columnCounts.slice(0, 10) }
     };
@@ -389,7 +390,7 @@ export function runSparkasseParsePipeline(input: SparkassePipelineInput): Sparka
   if (missingRequired.length > 0) {
     const error: SparkasseError = {
       code: "HEADER_MISSING_REQUIRED",
-      message: "Faltam colunas obrigatorias do Sparkasse",
+      message: "Faltam colunas obrigatórias do Sparkasse",
       hint: "Confirme se o CSV foi exportado no formato completo do Sparkasse.",
       details: { missingRequired }
     };
@@ -413,6 +414,7 @@ export function runSparkasseParsePipeline(input: SparkassePipelineInput): Sparka
   const errors: string[] = [];
   const months = new Set<string>();
   const rowErrors: SparkasseRowError[] = [];
+  let fallbackDateCount = 0;
 
   const rows = records.slice(1);
   diagnostics.rowsTotal = rows.length;
@@ -437,16 +439,10 @@ export function runSparkasseParsePipeline(input: SparkassePipelineInput): Sparka
     const sammlerreferenz = getValue("Sammlerreferenz");
     const glaeubigerId = getValue("Glaeubiger ID");
 
-    const paymentDate = parseDateSparkasse(buchungstag);
+    let paymentDate = parseDateSparkasse(buchungstag);
     if (!paymentDate) {
-      rowErrors.push({
-        rowNumber,
-        field: "Buchungstag",
-        value: buchungstag,
-        code: "DATE_PARSE_FAILED",
-        message: "Data invalida"
-      });
-      return;
+      paymentDate = fallbackDate;
+      fallbackDateCount += 1;
     }
 
     const amount = parseAmountSparkasse(betragStr);
@@ -456,7 +452,7 @@ export function runSparkasseParsePipeline(input: SparkassePipelineInput): Sparka
         field: "Betrag",
         value: betragStr,
         code: "AMOUNT_PARSE_FAILED",
-        message: "Valor invalido"
+        message: "Valor inválido"
       });
       return;
     }
@@ -505,6 +501,10 @@ export function runSparkasseParsePipeline(input: SparkassePipelineInput): Sparka
   });
 
   diagnostics.rowErrors = rowErrors;
+  diagnostics.dateFallbackCount = fallbackDateCount;
+  if (fallbackDateCount > 0) {
+    diagnostics.warnings?.push("Algumas linhas sem data válida usaram a data de importação.");
+  }
   diagnostics.rowsPreview = transactions.slice(0, 20).map((tx) => ({
     bookingDate: formatDateIso(tx.bookingDate),
     amount: tx.amount.toString(),
