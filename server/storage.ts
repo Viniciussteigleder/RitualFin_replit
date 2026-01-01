@@ -850,7 +850,11 @@ export class DatabaseStorage implements IStorage {
       .where(and(
         eq(transactions.userId, userId),
         eq(transactions.needsReview, true),
-        or(isNull(transactions.category1), eq(transactions.category1, "Outros"))
+        or(
+          isNull(transactions.leafId),
+          isNull(transactions.category1),
+          eq(transactions.category1, "Outros")
+        )
       ))
       .orderBy(desc(transactions.paymentDate));
   }

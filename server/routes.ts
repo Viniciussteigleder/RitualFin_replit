@@ -32,7 +32,7 @@ import { z } from "zod";
 import * as XLSX from "xlsx";
 import { parseCSV, previewCSV } from "./csv-parser";
 import { categorizeTransaction, suggestKeyword, AI_SEED_RULES, classifyByKeyDesc } from "./rules-engine";
-import { evaluateAliasMatch } from "./classification-utils";
+import { evaluateAliasMatch, normalizeForMatch } from "./classification-utils";
 import { downloadLogoForAlias } from "./logo-downloader";
 import { updateRecurringGroups } from "./recurrence";
 import OpenAI from "openai";
@@ -57,7 +57,22 @@ const buildInfo = {
 
 function readWorkbookFromBase64(base64: string) {
   const buffer = Buffer.from(base64, "base64");
-  return XLSX.read(buffer, { type: "buffer" });
+  try {
+    const workbook = XLSX.read(buffer, { type: "buffer" });
+    if (workbook.SheetNames.length > 0) {
+      return workbook;
+    }
+  } catch {
+    // fall through to text parsing
+  }
+
+  let text = "";
+  try {
+    text = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+  } catch {
+    text = new TextDecoder("latin1").decode(buffer);
+  }
+  return XLSX.read(text, { type: "string" });
 }
 
 function sheetToRows(sheet?: XLSX.Sheet) {
@@ -3633,6 +3648,38 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
         return res.status(503).json({ error: "OpenAI não configurado" });
       }
 
+      const [leaves, levels2, levels1] = await Promise.all([
+        storage.getTaxonomyLeaf(user.id),
+        storage.getTaxonomyLevel2(user.id),
+        storage.getTaxonomyLevel1(user.id)
+      ]);
+
+      if (leaves.length === 0) {
+        return res.status(400).json({ error: "Taxonomia não configurada. Importe as categorias antes de usar a análise." });
+      }
+
+      const level1ById = new Map(levels1.map(level => [level.level1Id, level.nivel1Pt || ""]));
+      const level2ById = new Map(levels2.map(level => [level.level2Id, level]));
+      const normalizeKey = (value: string) => normalizeForMatch(value || "");
+      const leafLookup = new Map<string, { leafId: string; nivel1Pt: string; nivel2Pt: string; nivel3Pt: string }>();
+
+      const leafOptions = leaves.map((leaf) => {
+        const level2 = level2ById.get(leaf.level2Id);
+        const nivel1Pt = level2 ? level1ById.get(level2.level1Id) || "" : "";
+        const entry = {
+          leafId: leaf.leafId,
+          nivel1Pt,
+          nivel2Pt: level2?.nivel2Pt || "",
+          nivel3Pt: leaf.nivel3Pt || ""
+        };
+        const lookupKey = `${normalizeKey(entry.nivel1Pt)}||${normalizeKey(entry.nivel2Pt)}||${normalizeKey(entry.nivel3Pt)}`;
+        leafLookup.set(lookupKey, entry);
+        return entry;
+      });
+
+      const fallbackLeaf = leafOptions.find((leaf) => normalizeKey(leaf.nivel1Pt) === normalizeKey("Revisão & Não Classificado"))
+        || leafOptions.find((leaf) => normalizeKey(leaf.nivel1Pt) === normalizeKey("Outros"));
+
       // Get all uncategorized transactions
       const uncategorized = await storage.getUncategorizedTransactions(user.id);
       
@@ -3664,27 +3711,33 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
           samples: data.samples
         }));
 
-      const categories = ["Moradia", "Mercado", "Compras Online", "Transporte", "Saúde", "Lazer", "Receitas", "Interno", "Outros"];
+      const level1Options = Array.from(new Set(leafOptions.map((leaf) => leaf.nivel1Pt))).filter(Boolean);
+      const taxonomyReference = leafOptions
+        .map((leaf) => `- ${leaf.nivel1Pt} > ${leaf.nivel2Pt} > ${leaf.nivel3Pt}`)
+        .join("\n");
 
       const systemPrompt = `Você é um assistente financeiro especializado em categorização de transações bancárias.
 Analise a lista de palavras-chave e exemplos de transações e sugira a categoria mais adequada para cada uma.
 
-Categorias disponíveis (Nível 1): ${categories.join(", ")}
+Categorias disponíveis (Nível 1): ${level1Options.join(", ")}
+
+Taxonomia disponível (Nível 1 > Nível 2 > Nível 3):
+${taxonomyReference}
 
 Para cada palavra-chave, retorne um JSON com categorização em 3 níveis:
 - keyword: a palavra-chave
 - suggestedCategory: a categoria principal (Nível 1) - obrigatório, deve ser uma das categorias listadas acima
-- suggestedCategory2: subcategoria (Nível 2) - opcional, texto livre (ex: "Supermercado", "Restaurante", "Combustível")
-- suggestedCategory3: especificação (Nível 3) - opcional, texto livre (ex: "LIDL", "McDonald's", "Shell")
+- suggestedCategory2: subcategoria (Nível 2) - obrigatório, deve existir na taxonomia
+- suggestedCategory3: especificação (Nível 3) - obrigatório, deve existir na taxonomia
 - suggestedType: "Despesa" ou "Receita"
 - suggestedFixVar: "Fixo" ou "Variável"
 - confidence: número de 0 a 100 indicando sua confiança
 - reason: explicação breve em português
 
 Exemplos de categorização em 3 níveis:
-- "LIDL" → Nível 1: "Mercado", Nível 2: "Supermercado", Nível 3: "LIDL"
+- "LIDL" → Nível 1: "Alimentação", Nível 2: "Supermercado e Mercearia", Nível 3: "Supermercado – REWE/Lidl/Edeka/Netto/Aldi"
 - "STADTWERK" → Nível 1: "Moradia", Nível 2: "Utilidades", Nível 3: "Água/Gás"
-- "SHELL" → Nível 1: "Transporte", Nível 2: "Combustível", Nível 3: "Shell"
+- "SHELL" → Nível 1: "Mobilidade", Nível 2: "Carro", Nível 3: "Carro – Combustível/Posto"
 
 Retorne APENAS um array JSON válido, sem markdown ou texto adicional.`;
 
@@ -3715,9 +3768,9 @@ Retorne APENAS um array JSON válido, sem markdown ou texto adicional.`;
         console.error("Failed to parse AI response:", content);
         suggestions = keywordList.map(k => ({
           keyword: k.keyword,
-          suggestedCategory: "Outros",
-          suggestedCategory2: null,
-          suggestedCategory3: null,
+          suggestedCategory: fallbackLeaf?.nivel1Pt || "Outros",
+          suggestedCategory2: fallbackLeaf?.nivel2Pt || "Geral",
+          suggestedCategory3: fallbackLeaf?.nivel3Pt || "Geral",
           suggestedType: "Despesa",
           suggestedFixVar: "Variável",
           confidence: 50,
@@ -3728,8 +3781,14 @@ Retorne APENAS um array JSON válido, sem markdown ou texto adicional.`;
       // Merge with transaction counts
       const enriched = suggestions.map((s: any) => {
         const data = grouped[s.keyword];
+        const lookupKey = `${normalizeKey(s.suggestedCategory)}||${normalizeKey(s.suggestedCategory2)}||${normalizeKey(s.suggestedCategory3)}`;
+        const resolvedLeaf = leafLookup.get(lookupKey) || fallbackLeaf;
         return {
           ...s,
+          leafId: resolvedLeaf?.leafId,
+          suggestedCategory: resolvedLeaf?.nivel1Pt || s.suggestedCategory || "Outros",
+          suggestedCategory2: resolvedLeaf?.nivel2Pt || s.suggestedCategory2 || "",
+          suggestedCategory3: resolvedLeaf?.nivel3Pt || s.suggestedCategory3 || "",
           count: data?.count || 0,
           total: data?.total || 0,
           samples: data?.samples || []
@@ -3750,6 +3809,32 @@ Retorne APENAS um array JSON válido, sem markdown ou texto adicional.`;
       if (!user) {
         return res.status(401).json({ error: "Usuário não encontrado" });
       }
+
+      const [leaves, levels2, levels1] = await Promise.all([
+        storage.getTaxonomyLeaf(user.id),
+        storage.getTaxonomyLevel2(user.id),
+        storage.getTaxonomyLevel1(user.id)
+      ]);
+
+      const level1ById = new Map(levels1.map(level => [level.level1Id, level.nivel1Pt || ""]));
+      const level2ById = new Map(levels2.map(level => [level.level2Id, level]));
+      const normalizeKey = (value: string) => normalizeForMatch(value || "");
+      const leafById = new Map(leaves.map((leaf) => [leaf.leafId, leaf]));
+      const leafLookup = new Map<string, { leafId: string; nivel1Pt: string; nivel2Pt: string; nivel3Pt: string }>();
+
+      const leafOptions = leaves.map((leaf) => {
+        const level2 = level2ById.get(leaf.level2Id);
+        const nivel1Pt = level2 ? level1ById.get(level2.level1Id) || "" : "";
+        const entry = {
+          leafId: leaf.leafId,
+          nivel1Pt,
+          nivel2Pt: level2?.nivel2Pt || "",
+          nivel3Pt: leaf.nivel3Pt || ""
+        };
+        const lookupKey = `${normalizeKey(entry.nivel1Pt)}||${normalizeKey(entry.nivel2Pt)}||${normalizeKey(entry.nivel3Pt)}`;
+        leafLookup.set(lookupKey, entry);
+        return entry;
+      });
 
       const { suggestions } = req.body;
       if (!suggestions || !Array.isArray(suggestions)) {
