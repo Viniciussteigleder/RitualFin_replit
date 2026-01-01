@@ -3,6 +3,8 @@
 **Last Updated**: 2025-12-28
 **Architecture**: Split deployment (Frontend on Vercel, Backend on Render, Database on Supabase)
 
+See also: `docs/FULL_DEPLOY_PROTOCOL.md` for the ongoing deployment protocol (Commit/Sync vs Full Deploy).
+
 ---
 
 ## Prerequisites

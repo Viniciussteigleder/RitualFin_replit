@@ -17,9 +17,46 @@
   - Backend: `GET /api/version` returns `{ gitSha, buildTime, env }`
   - Frontend: `/version.json` returns `{ gitSha, buildTime }`
 
-## 3) Full Deploy Steps (End-to-End)
+## 3) Choose a protocol
 
-### 3.1 Pre-flight checks
+- Commit/Sync: use for routine doc-only or low-risk changes.
+- Full Deploy: use for backend changes, migrations, or anything that touches imports, rules, or deployment wiring.
+
+## 4) Commit/Sync Protocol (Fast Path)
+
+### 4.1 Pre-flight
+
+1) Ensure working tree is clean and branch is `main`.
+2) Run quick QA locally:
+   - `npm run check`
+   - `npm run build`
+3) Confirm `VITE_API_URL` format (no trailing slash, no `/api`).
+
+### 4.2 Commit & Sync
+
+1) Commit changes to `main`.
+2) `git push origin main`.
+3) Wait for Render and Vercel auto-deploys.
+
+### 4.3 Verify (Minimum)
+
+1) Render health:
+   - `curl https://<render-url>/api/health`
+2) Render version:
+   - `curl https://<render-url>/api/version`
+3) Vercel version:
+   - `curl https://<vercel-url>/version.json`
+4) Smoke flow (5 minutes):
+   - Open frontend, login (demo), visit dashboard, visit uploads.
+
+### 4.4 Record Evidence
+
+- Save the three version JSON outputs and a brief note in:
+  - `docs/DEPLOYMENT_REPORTS/<YYYY-MM-DD_HHMM>_commit_sync.md`
+
+## 5) Full Deploy Steps (End-to-End)
+
+### 5.1 Pre-flight checks
 
 1) Ensure working tree is clean and branch is `main`.
 2) Run QA locally:
@@ -28,23 +65,23 @@
 3) Run preflight script:
    - `scripts/deploy/full_deploy_preflight.sh`
 
-### 3.2 Commit/Sync rules
+### 5.2 Commit/Sync rules
 
 - The commit intended for production must be on `main` and pushed to GitHub.
 - Local `HEAD` must match `origin/main` before starting verification.
 
-### 3.3 Render deploy (preferred auto-deploy)
+### 5.3 Render deploy (preferred auto-deploy)
 
 - Preferred: push to `main` and allow Render auto-deploy.
 - Fallback (manual): trigger a deploy in Render dashboard for the `main` branch.
 
-### 3.4 Vercel deploy (preferred Git integration)
+### 5.4 Vercel deploy (preferred Git integration)
 
 - Preferred: push to `main` and allow Vercel Git integration.
 - Fallback (CLI):
   - `scripts/deploy/vercel_prod_deploy.sh`
 
-## 4) Verification (Mandatory)
+## 6) Verification (Mandatory)
 
 Record all versions and confirm services are live.
 
@@ -68,7 +105,14 @@ Record all versions and confirm services are live.
 Use:
 - `scripts/deploy/verify_live_versions.sh`
 
-## 5) Troubleshooting Playbook
+## 7) Post-deploy monitoring (15 minutes)
+
+- Render logs: check for 5xx or database errors.
+- Vercel logs: confirm no failed builds or missing assets.
+- Frontend smoke: upload sample CSV and verify rowsImported > 0.
+- Alerts: watch for CORS errors or /api calls to Vercel origin.
+
+## 8) Troubleshooting Playbook
 
 - Git integration broken (Vercel): use `scripts/deploy/vercel_prod_deploy.sh`.
 - Render not deploying latest commit:
@@ -83,7 +127,7 @@ Use:
 - API base URL wrong:
   - `VITE_API_URL` must be Render base URL only (no `/api`, no trailing slash).
 
-## 6) Acceptance Criteria Checklist
+## 9) Acceptance Criteria Checklist
 
 - [ ] Local QA passes: `npm run check`, `npm run build`.
 - [ ] GitHub main matches intended commit SHA.
@@ -92,7 +136,7 @@ Use:
 - [ ] Frontend calls backend Render base URL.
 - [ ] Smoke flow completed without errors.
 
-## 7) One-Command Full Deploy
+## 10) One-Command Full Deploy
 
 Run:
 - `scripts/deploy/run_full_deploy.sh`
