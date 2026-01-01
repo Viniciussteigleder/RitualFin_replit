@@ -49,6 +49,12 @@ const openai = process.env.OPENAI_API_KEY
     })
   : null;
 
+const buildInfo = {
+  gitSha: process.env.GIT_SHA || "unknown",
+  buildTime: process.env.BUILD_TIME || "unknown",
+  env: process.env.NODE_ENV || "unknown",
+};
+
 function readWorkbookFromBase64(base64: string) {
   const buffer = Buffer.from(base64, "base64");
   return XLSX.read(buffer, { type: "buffer" });
@@ -112,6 +118,15 @@ export async function registerRoutes(
         error: "Database connection failed",
       });
     }
+  });
+
+  app.get("/api/version", (_req: Request, res: Response) => {
+    res.json({
+      service: "ritualfin-api",
+      gitSha: buildInfo.gitSha,
+      buildTime: buildInfo.buildTime,
+      env: buildInfo.env,
+    });
   });
 
   // ===== AUTH / USER =====

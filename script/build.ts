@@ -1,6 +1,7 @@
 import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
-import { rm, readFile, cp } from "fs/promises";
+import { rm, readFile, cp, writeFile } from "fs/promises";
+import { execSync } from "node:child_process";
 
 // server deps to bundle to reduce openat(2) syscalls
 // which helps cold start times
@@ -35,8 +36,29 @@ const allowlist = [
 async function buildAll() {
   await rm("dist", { recursive: true, force: true });
 
+  const buildTime = new Date().toISOString();
+  const gitSha =
+    process.env.GIT_SHA ||
+    process.env.VERCEL_GIT_COMMIT_SHA ||
+    process.env.RENDER_GIT_COMMIT ||
+    process.env.RENDER_GIT_COMMIT_SHA ||
+    process.env.GITHUB_SHA ||
+    (() => {
+      try {
+        return execSync("git rev-parse --short=12 HEAD").toString().trim();
+      } catch {
+        return "unknown";
+      }
+    })();
+
   console.log("building client...");
   await viteBuild();
+
+  await writeFile(
+    "dist/public/version.json",
+    JSON.stringify({ gitSha, buildTime }, null, 2),
+    "utf-8",
+  );
 
   console.log("building server...");
   const pkg = JSON.parse(await readFile("package.json", "utf-8"));
@@ -54,6 +76,8 @@ async function buildAll() {
     outfile: "dist/index.cjs",
     define: {
       "process.env.NODE_ENV": '"production"',
+      "process.env.GIT_SHA": JSON.stringify(gitSha),
+      "process.env.BUILD_TIME": JSON.stringify(buildTime),
     },
     minify: true,
     external: externals,
