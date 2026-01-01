@@ -375,3 +375,14 @@
   - Added HOST override for server listen to support local binding.
 - Observations & risks:
   - Full UI flow cannot be executed in this environment (socket bind unsupported; DATABASE_URL missing).
+
+## 2026-01-01T19:40:00Z (UTC)
+- Session goal: Redeploy latest main to Vercel.
+- Commands executed (MUTATING):
+  - vercel --prod (timed out after upload; deploy queued)
+  - cat >> docs/_codex/QA_NOTES.md
+  - cat >> docs/_codex/CODEX_ACTIVITY_LOG.md
+- Summary of changes:
+  - Triggered new production deployment.
+- Observations & risks:
+  - Verify deployment completion in Vercel dashboard.

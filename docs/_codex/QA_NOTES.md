@@ -87,3 +87,7 @@
 - Result: FAILED (ENOTSUP: operation not supported on socket)
 - Command: curl http://127.0.0.1:5001/api/health
 - Result: FAILED (connection refused)
+
+## 2026-01-01
+- Command: vercel --prod
+- Result: Upload completed; deployment queued/building (CLI timed out at 10s). Inspect URL provided by CLI.
