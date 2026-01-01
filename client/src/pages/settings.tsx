@@ -118,7 +118,8 @@ export default function SettingsPage() {
     try {
       const { text, encoding } = await readCsvWithEncoding(importFile);
       setImportEncoding(encoding);
-      const preview = await uploadsApi.preview(importFile.name, text, encoding);
+      const fileBase64 = await readFileBase64(importFile);
+      const preview = await uploadsApi.preview(importFile.name, text, encoding, fileBase64, importFile.type);
       setImportPreview(preview);
     } catch (err: any) {
       toast({ title: "Erro na pré-visualização", description: err.message, variant: "destructive" });
@@ -130,7 +131,8 @@ export default function SettingsPage() {
     try {
       const { text, encoding } = await readCsvWithEncoding(importFile);
       setImportEncoding(encoding);
-      const result = await uploadsApi.process(importFile.name, text, encoding);
+      const fileBase64 = await readFileBase64(importFile);
+      const result = await uploadsApi.process(importFile.name, text, encoding, fileBase64, importFile.type);
       toast({
         title: "Importação concluída",
         description: `Inseridas: ${result.rowsImported}, duplicadas: ${result.duplicates}, auto: ${result.autoClassified || 0}, abertas: ${result.openCount || 0}`

@@ -14,6 +14,7 @@ import { Link } from "wouter";
 import { BankBadge } from "@/components/bank-badge";
 import { detectBankProvider } from "@/lib/bank-logos";
 import { UploadHistorySkeleton } from "@/components/skeletons/upload-history-skeleton";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export default function UploadsPage() {
   const queryClient = useQueryClient();
@@ -21,6 +22,9 @@ export default function UploadsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [lastDiagnostics, setLastDiagnostics] = useState<any | null>(null);
+  const [lastError, setLastError] = useState<any | null>(null);
+  const [lastSummary, setLastSummary] = useState<{ rowsImported: number; duplicates: number } | null>(null);
 
   const { data: uploads = [], isLoading } = useQuery({
     queryKey: ["uploads"],
@@ -44,7 +48,8 @@ export default function UploadsPage() {
           encoding = "iso-8859-1";
           content = new TextDecoder("iso-8859-1").decode(buffer);
         }
-        const result = await uploadsApi.process(file.name, content, encoding);
+        const fileBase64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+        const result = await uploadsApi.process(file.name, content, encoding, fileBase64, file.type);
         clearInterval(interval);
         setUploadProgress(100);
         return result;
@@ -59,8 +64,11 @@ export default function UploadsPage() {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["confirm-queue"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      
+
       setTimeout(() => setUploadProgress(0), 1000);
+      setLastDiagnostics(result.diagnostics || null);
+      setLastError(result.error || null);
+      setLastSummary({ rowsImported: result.rowsImported, duplicates: result.duplicates });
       
       if (result.rowsImported > 0) {
         toast({
@@ -77,6 +85,9 @@ export default function UploadsPage() {
     },
     onError: (error: any) => {
       setUploadProgress(0);
+      setLastDiagnostics(error?.details?.diagnostics || null);
+      setLastError(error?.details?.error || { message: error.message, code: "UNKNOWN" });
+      setLastSummary(null);
       toast({
         title: "Erro na importação",
         description: error.message || "Falha ao processar o arquivo",
@@ -238,6 +249,94 @@ export default function UploadsPage() {
             )}
           </CardContent>
         </Card>
+
+        {lastDiagnostics && (
+          <Card className="bg-white border border-gray-200 shadow-sm">
+            <CardContent className="p-5 space-y-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-semibold">Import diagnostics</p>
+                  <p className="text-xs text-muted-foreground">
+                    {lastError
+                      ? `Falha: ${lastError.code || "UNKNOWN"}`
+                      : `Sucesso: ${lastDiagnostics.rowsTotal} linhas`}
+                  </p>
+                </div>
+                {lastError ? (
+                  <Badge variant="destructive">Falhou</Badge>
+                ) : (
+                  <Badge className="bg-emerald-100 text-emerald-700">OK</Badge>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                <div className="rounded-md border border-gray-100 bg-gray-50 p-3">
+                  <p className="text-muted-foreground">Encoding</p>
+                  <p className="font-medium">{lastDiagnostics.encodingUsed || "n/a"}</p>
+                </div>
+                <div className="rounded-md border border-gray-100 bg-gray-50 p-3">
+                  <p className="text-muted-foreground">Delimiter</p>
+                  <p className="font-medium">{lastDiagnostics.delimiterUsed || ";"}</p>
+                </div>
+                <div className="rounded-md border border-gray-100 bg-gray-50 p-3">
+                  <p className="text-muted-foreground">Rows</p>
+                  <p className="font-medium">{lastDiagnostics.rowsTotal}</p>
+                </div>
+              </div>
+
+              {lastSummary && !lastError && (
+                <div className="rounded-md border border-emerald-100 bg-emerald-50 p-3 text-xs text-emerald-700">
+                  <p className="font-semibold">Resumo da importacao</p>
+                  <p>Inseridas: {lastSummary.rowsImported}</p>
+                  <p>Duplicadas: {lastSummary.duplicates}</p>
+                </div>
+              )}
+
+              {lastError && (
+                <div className="rounded-md border border-red-100 bg-red-50 p-3 text-xs text-red-700">
+                  <p className="font-semibold">{lastError.message || "Falha ao importar"}</p>
+                  {lastError.hint && <p>{lastError.hint}</p>}
+                </div>
+              )}
+
+              <Accordion type="single" collapsible>
+                <AccordionItem value="details">
+                  <AccordionTrigger className="text-xs">Show details</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-2 text-xs">
+                      {lastDiagnostics.requiredMissing?.length > 0 && (
+                        <div>
+                          <p className="font-semibold">Missing required columns</p>
+                          <p className="text-muted-foreground">{lastDiagnostics.requiredMissing.join(", ")}</p>
+                        </div>
+                      )}
+                      {lastDiagnostics.rowErrors?.length > 0 && (
+                        <div>
+                          <p className="font-semibold">Row errors (first 3)</p>
+                          <div className="space-y-1 text-muted-foreground">
+                            {lastDiagnostics.rowErrors.slice(0, 3).map((row: any) => (
+                              <p key={`${row.rowNumber}-${row.field}`}>
+                                Linha {row.rowNumber}: {row.field} = {row.value}
+                              </p>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {lastDiagnostics.rowsPreview?.length > 0 && (
+                        <div>
+                          <p className="font-semibold">Preview (first 20)</p>
+                          <pre className="whitespace-pre-wrap rounded-md bg-gray-50 p-2 text-[11px] text-gray-700">
+                            {JSON.stringify(lastDiagnostics.rowsPreview, null, 2)}
+                          </pre>
+                        </div>
+                      )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="space-y-4">
           <div className="flex items-center justify-between">
