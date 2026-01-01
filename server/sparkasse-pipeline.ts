@@ -415,6 +415,8 @@ export function runSparkasseParsePipeline(input: SparkassePipelineInput): Sparka
   const months = new Set<string>();
   const rowErrors: SparkasseRowError[] = [];
   let fallbackDateCount = 0;
+  let truncatedRowCount = 0;
+  let extraColumnRowCount = 0;
 
   const rows = records.slice(1);
   diagnostics.rowsTotal = rows.length;
@@ -425,6 +427,12 @@ export function runSparkasseParsePipeline(input: SparkassePipelineInput): Sparka
       const idx = getHeaderIndex(headerMap, name);
       return idx === undefined ? "" : (row[idx] ?? "");
     };
+
+    if (row.length < header.length) {
+      truncatedRowCount += 1;
+    } else if (row.length > header.length) {
+      extraColumnRowCount += 1;
+    }
 
     const auftragskonto = getValue("Auftragskonto");
     const buchungstag = getValue("Buchungstag");
@@ -504,6 +512,16 @@ export function runSparkasseParsePipeline(input: SparkassePipelineInput): Sparka
   diagnostics.dateFallbackCount = fallbackDateCount;
   if (fallbackDateCount > 0) {
     diagnostics.warnings?.push("Algumas linhas sem data válida usaram a data de importação.");
+  }
+  if (truncatedRowCount > 0 || extraColumnRowCount > 0) {
+    diagnostics.warnings?.push(
+      `Sparkasse: ${truncatedRowCount} linhas com colunas faltando e ${extraColumnRowCount} com colunas extras.`
+    );
+    diagnostics.errorDetails = {
+      ...(diagnostics.errorDetails || {}),
+      columnTruncatedCount: truncatedRowCount,
+      columnExtraCount: extraColumnRowCount
+    };
   }
   diagnostics.rowsPreview = transactions.slice(0, 20).map((tx) => ({
     bookingDate: formatDateIso(tx.bookingDate),

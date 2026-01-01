@@ -172,7 +172,9 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
 - **Microcopy (PT/DE/EN)**:
   - Primary action: “Entrar” / “Anmelden” / “Sign in”
   - Helper text: “Use seu e-mail ou Google.” / “Mit E-Mail oder Google.” / “Use email or Google.”
+  - Empty state: “Nenhuma conta encontrada.” / “Kein Konto gefunden.” / “No account found.”
   - Validation error: “E-mail inválido.” / “Ungültige E-Mail.” / “Invalid email.”
+  - Confirmation/destructive: “Login realizado.” / “Anmeldung erfolgreich.” / “Signed in.”
 
 ### Onboarding Modal (First-time Setup)
 - **Route + Nav**: modal on `/dashboard`.
@@ -186,6 +188,8 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
 - **Microcopy (PT/DE/EN)**:
   - Primary action: “Começar” / “Starten” / “Get started”
   - Helper text: “Importe um CSV para iniciar.” / “Importiere eine CSV zum Start.” / “Import a CSV to begin.”
+  - Empty state: “Nenhuma etapa disponível.” / “Keine Schritte verfügbar.” / “No steps available.”
+  - Validation error: “Etapa inválida.” / “Ungültiger Schritt.” / “Invalid step.”
   - Confirmation: “Pronto! Vamos importar.” / “Fertig! Jetzt importieren.” / “Ready! Let’s import.”
 
 ### Dashboard
@@ -202,6 +206,8 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
   - Primary action: “Importar CSV” / “CSV importieren” / “Import CSV”
   - Empty state: “Nenhuma transação ainda.” / “Noch keine Transaktionen.” / “No transactions yet.”
   - Helper text: “Selecione o mês.” / “Monat wählen.” / “Select a month.”
+  - Validation error: “Mês inválido.” / “Ungültiger Monat.” / “Invalid month.”
+  - Confirmation: “Mês atualizado.” / “Monat aktualisiert.” / “Month updated.”
 
 ### Transactions List
 - **Route + Nav**: `/transactions` (Transactions).
@@ -216,8 +222,10 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
 - **Audit trail events**: `transactions.viewed`, `transaction.updated`, `transaction.filtered`.
 - **Microcopy (PT/DE/EN)**:
   - Primary action: “Exportar CSV” / “CSV exportieren” / “Export CSV”
+  - Helper text: “Filtre por conta ou categoria.” / “Nach Konto oder Kategorie filtern.” / “Filter by account or category.”
   - Empty state: “Sem transações neste mês.” / “Keine Transaktionen in diesem Monat.” / “No transactions this month.”
   - Validation error: “Categoria obrigatória.” / “Kategorie erforderlich.” / “Category required.”
+  - Confirmation: “Exportação concluída.” / “Export abgeschlossen.” / “Export completed.”
 
 ### Transaction Detail Modal / Drawer
 - **Route + Nav**: modal on `/transactions`.
@@ -232,6 +240,8 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
 - **Microcopy (PT/DE/EN)**:
   - Primary action: “Salvar alterações” / “Änderungen speichern” / “Save changes”
   - Helper text: “Escolha um nível 3.” / “Wähle Level 3.” / “Pick a level 3.”
+  - Empty state: “Sem detalhes adicionais.” / “Keine weiteren Details.” / “No additional details.”
+  - Validation error: “Categoria obrigatória.” / “Kategorie erforderlich.” / “Category required.”
   - Confirmation: “Transação atualizada.” / “Transaktion aktualisiert.” / “Transaction updated.”
 
 ### Export (CSV/Excel)
@@ -246,6 +256,9 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
 - **Microcopy (PT/DE/EN)**:
   - Primary action: “Baixar Excel” / “Excel herunterladen” / “Download Excel”
   - Helper text: “Inclui categorias e regras.” / “Enthält Kategorien und Regeln.” / “Includes categories and rules.”
+  - Empty state: “Nenhum dado para exportar.” / “Keine Daten zum Export.” / “No data to export.”
+  - Validation error: “Formato inválido.” / “Ungültiges Format.” / “Invalid format.”
+  - Confirmation: “Download iniciado.” / “Download gestartet.” / “Download started.”
 
 ### Import Wizard (New)
 - **Route + Nav**: `/imports/new` (Imports).
@@ -261,7 +274,9 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
 - **Microcopy (PT/DE/EN)**:
   - Primary action: “Pré-visualizar” / “Vorschau” / “Preview”
   - Helper text: “Detectamos o banco automaticamente.” / “Bank automatisch erkannt.” / “Auto-detected bank.”
+  - Empty state: “Nenhum arquivo selecionado.” / “Keine Datei ausgewählt.” / “No file selected.”
   - Validation error: “Selecione um CSV.” / “Bitte CSV auswählen.” / “Select a CSV.”
+  - Confirmation: “Pré-visualização pronta.” / “Vorschau bereit.” / “Preview ready.”
 
 ### Import Preview Grid
 - **Route + Nav**: `/imports/preview/:id` (step 2).
@@ -276,7 +291,9 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
 - **Microcopy (PT/DE/EN)**:
   - Primary action: “Continuar” / “Weiter” / “Continue”
   - Helper text: “Amostra de 20 linhas.” / “20 Zeilen Vorschau.” / “20-row preview.”
-  - Error: “Cabeçalhos ausentes.” / “Fehlende Header.” / “Missing headers.”
+  - Empty state: “Sem linhas para exibir.” / “Keine Zeilen verfügbar.” / “No rows to display.”
+  - Validation error: “Cabeçalhos ausentes.” / “Fehlende Header.” / “Missing headers.”
+  - Confirmation: “Pré-visualização aprovada.” / “Vorschau bestätigt.” / “Preview confirmed.”
 
 ### Parsing Report (New)
 - **Route + Nav**: `/imports/report/:id`.
@@ -291,6 +308,8 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
 - **Microcopy (PT/DE/EN)**:
   - Primary action: “Confirmar importação” / “Import bestätigen” / “Confirm import”
   - Helper text: “Veja erros por linha.” / “Zeilenfehler anzeigen.” / “See row errors.”
+  - Empty state: “Nenhum erro encontrado.” / “Keine Fehler gefunden.” / “No errors found.”
+  - Validation error: “Nenhuma linha válida.” / “Keine gültige Zeile.” / “No valid rows.”
   - Confirmation: “Importação iniciada.” / “Import gestartet.” / “Import started.”
 
 ### Import History (New)
@@ -304,7 +323,10 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
 - **Audit trail events**: `import.history_viewed`.
 - **Microcopy (PT/DE/EN)**:
   - Primary action: “Ver relatório” / “Bericht ansehen” / “View report”
+  - Helper text: “Clique para ver detalhes.” / “Zum Anzeigen klicken.” / “Click to view details.”
   - Empty state: “Nenhum upload ainda.” / “Noch kein Upload.” / “No uploads yet.”
+  - Validation error: “Filtro inválido.” / “Ungültiger Filter.” / “Invalid filter.”
+  - Confirmation: “Relatório aberto.” / “Bericht geöffnet.” / “Report opened.”
 
 ### Conflict Resolution (Duplicates/Overlaps)
 - **Route + Nav**: `/imports/conflicts/:id`.
@@ -318,6 +340,8 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
 - **Microcopy (PT/DE/EN)**:
   - Primary action: “Aplicar decisões” / “Entscheidungen anwenden” / “Apply decisions”
   - Helper text: “Compare valores e datas.” / “Werte und Daten vergleichen.” / “Compare amounts and dates.”
+  - Empty state: “Nenhum conflito detectado.” / “Keine Konflikte gefunden.” / “No conflicts found.”
+  - Validation error: “Selecione uma decisão.” / “Entscheidung erforderlich.” / “Decision required.”
   - Confirmation: “Conflitos resolvidos.” / “Konflikte gelöst.” / “Conflicts resolved.”
 
 ### Review Queue (Classification)
@@ -334,6 +358,8 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
   - Primary action: “Confirmar seleção” / “Auswahl bestätigen” / “Confirm selection”
   - Helper text: “Selecione Nível 3.” / “Level 3 auswählen.” / “Pick Level 3.”
   - Empty state: “Fila vazia.” / “Warteschlange leer.” / “Queue is empty.”
+  - Validation error: “Categoria obrigatória.” / “Kategorie erforderlich.” / “Category required.”
+  - Confirmation: “Classificação aplicada.” / “Klassifizierung angewendet.” / “Classification applied.”
 
 ### Rules Manager
 - **Route + Nav**: `/classification/rules`.
@@ -348,7 +374,9 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
 - **Microcopy (PT/DE/EN)**:
   - Primary action: “Salvar regra” / “Regel speichern” / “Save rule”
   - Helper text: “Separe expressões com ';'.” / “Ausdrücke mit ';' trennen.” / “Separate expressions with ';'.”
+  - Empty state: “Nenhuma regra.” / “Keine Regeln.” / “No rules.”
   - Validation error: “Expressão inválida.” / “Ungültiger Ausdruck.” / “Invalid expression.”
+  - Confirmation: “Regra salva.” / “Regel gespeichert.” / “Rule saved.”
 
 ### Categories (Taxonomy)
 - **Route + Nav**: `/classification/categories` (Settings → Categorias).
@@ -362,6 +390,9 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
 - **Microcopy (PT/DE/EN)**:
   - Primary action: “Aplicar importação” / “Import anwenden” / “Apply import”
   - Helper text: “Mudanças exigem confirmação.” / “Änderungen erfordern Bestätigung.” / “Changes require confirmation.”
+  - Empty state: “Nenhuma categoria.” / “Keine Kategorien.” / “No categories.”
+  - Validation error: “Colunas obrigatórias ausentes.” / “Pflichtspalten fehlen.” / “Missing required columns.”
+  - Confirmation: “Categorias atualizadas.” / “Kategorien aktualisiert.” / “Categories updated.”
 
 ### AI Keywords (Batch Suggestions)
 - **Route + Nav**: `/classification/ai-keywords`.
