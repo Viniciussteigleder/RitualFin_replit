@@ -157,6 +157,7 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
  - System: AI Assistant Chat, Not Found
 
 ## 8. Screen Contracts (one subsection per screen)
+All error taxonomy entries must surface a user-facing reason + next action and include a technical payload (at minimum: `request_id`, `user_id`, `entity_id` when applicable) rendered in the on-screen Status component.
 
 ### Login / Auth
 - **Route + Nav**: `/login` (public), no nav.
