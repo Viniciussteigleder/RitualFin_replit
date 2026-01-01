@@ -65,6 +65,23 @@ function sheetToRows(sheet?: XLSX.Sheet) {
   return XLSX.utils.sheet_to_json<Record<string, string>>(sheet, { defval: "" });
 }
 
+function buildCsv(headers: string[], rows: Record<string, string>[]) {
+  const escapeValue = (value: string) => {
+    const stringValue = String(value ?? "");
+    if (/[",\n]/.test(stringValue)) {
+      return `"${stringValue.replace(/"/g, "\"\"")}"`;
+    }
+    return stringValue;
+  };
+
+  const lines = [
+    headers.map(escapeValue).join(","),
+    ...rows.map((row) => headers.map((header) => escapeValue(row[header] || "")).join(","))
+  ];
+
+  return `\uFEFF${lines.join("\n")}`;
+}
+
 async function readSeedFile(filename: string) {
   const baseCandidates = [
     path.resolve(process.cwd(), "dist/seed-data"),
@@ -459,10 +476,13 @@ export async function registerRoutes(
   // Process CSV upload
   app.post("/api/imports/preview", async (req: Request, res: Response) => {
     try {
-      const { filename, csvContent, encoding } = req.body;
+      const { filename, csvContent, encoding, fileBase64, fileType } = req.body;
       if (!csvContent) {
         return res.status(400).json({ error: "CSV content is required" });
       }
+
+      const fileBuffer = fileBase64 ? Buffer.from(fileBase64, "base64") : undefined;
+      const sizeBytes = fileBuffer?.length ?? csvContent?.length ?? 0;
 
       logger.info("import_preview_start", {
         filename: filename || "upload.csv",
@@ -470,7 +490,16 @@ export async function registerRoutes(
         encoding
       });
 
-      const preview = previewCSV(csvContent, { encoding });
+      const preview = previewCSV(csvContent, {
+        encoding,
+        filename,
+        userId: "preview",
+        uploadAttemptId: `preview-${Date.now()}`,
+        fileBuffer,
+        sizeBytes,
+        importDate: new Date(),
+        mimeType: fileType
+      });
       res.json(preview);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -486,7 +515,7 @@ export async function registerRoutes(
         user = await storage.createUser({ username: "demo", password: "demo" });
       }
 
-      const { filename, csvContent, encoding } = req.body;
+      const { filename, csvContent, encoding, fileBase64, fileType } = req.body;
 
       logger.info("upload_start", {
         userId: user.id,
@@ -508,8 +537,28 @@ export async function registerRoutes(
         rowsImported: 0,
       });
 
+      const fileBuffer = fileBase64 ? Buffer.from(fileBase64, "base64") : undefined;
+      const sizeBytes = fileBuffer?.length ?? csvContent?.length ?? 0;
+
       // Parse CSV
-      const parseResult = parseCSV(csvContent, { encoding });
+      const parseResult = parseCSV(csvContent, {
+        encoding,
+        filename,
+        userId: user.id,
+        uploadAttemptId: upload.id,
+        fileBuffer,
+        sizeBytes,
+        importDate: new Date(),
+        mimeType: fileType
+      });
+
+      if (parseResult.meta?.missingColumns?.length) {
+        logger.warn("upload_missing_columns", {
+          uploadId: upload.id,
+          filename,
+          missingColumns: parseResult.meta.missingColumns
+        });
+      }
       
       if (!parseResult.success) {
         logger.error("upload_parse_failed", {
@@ -527,6 +576,33 @@ export async function registerRoutes(
           rowsTotal: parseResult.rowsTotal,
           rowsImported: 0
         });
+
+        if (parseResult.sparkasseDiagnostics) {
+          const diag = parseResult.sparkasseDiagnostics;
+          await storage.createUploadDiagnostics({
+            uploadAttemptId: upload.id,
+            uploadId: upload.id,
+            userId: user.id,
+            source: diag.source,
+            filename: diag.filename,
+            mimeType: diag.mimeType || fileType || null,
+            sizeBytes: diag.sizeBytes,
+            encodingUsed: diag.encodingUsed || null,
+            delimiterUsed: diag.delimiterUsed || null,
+            headerFound: diag.headerFound,
+            requiredMissing: diag.requiredMissing,
+            rowsTotal: diag.rowsTotal,
+            rowsPreview: diag.rowsPreview,
+            stage: diag.stage,
+            errorCode: diag.errorCode || parseResult.sparkasseError?.code || null,
+            errorMessage: diag.errorMessage || parseResult.sparkasseError?.message || null,
+            errorDetails: {
+              ...(diag.errorDetails || {}),
+              rowErrors: diag.rowErrors.slice(0, 10)
+            },
+            stacktrace: diag.stacktrace || null
+          });
+        }
 
         // Save parse errors to database
         for (const errorStr of parseResult.errors) {
@@ -554,7 +630,9 @@ export async function registerRoutes(
         return res.status(400).json({
           success: false,
           uploadId: upload.id,
-          errors: parseResult.errors
+          errors: parseResult.errors,
+          diagnostics: parseResult.sparkasseDiagnostics,
+          error: parseResult.sparkasseError
         });
       }
 
@@ -764,6 +842,32 @@ export async function registerRoutes(
         errorMessage: errors.length > 0 ? errors.join("; ") : undefined
       });
 
+      if (parseResult.sparkasseDiagnostics) {
+        const diag = parseResult.sparkasseDiagnostics;
+        await storage.createUploadDiagnostics({
+          uploadAttemptId: upload.id,
+          uploadId: upload.id,
+          userId: user.id,
+          source: diag.source,
+          filename: diag.filename,
+          mimeType: diag.mimeType || fileType || null,
+          sizeBytes: diag.sizeBytes,
+          encodingUsed: diag.encodingUsed || null,
+          delimiterUsed: diag.delimiterUsed || null,
+          headerFound: diag.headerFound,
+          requiredMissing: diag.requiredMissing,
+          rowsTotal: diag.rowsTotal,
+          rowsPreview: diag.rowsPreview,
+          stage: diag.stage,
+          errorCode: diag.errorCode || null,
+          errorMessage: diag.errorMessage || null,
+          errorDetails: {
+            ...(diag.errorDetails || {}),
+            rowErrors: diag.rowErrors.slice(0, 10)
+          },
+          stacktrace: diag.stacktrace || null
+        });
+      }
       const duration = Date.now() - startTime;
 
       if (importedKeyDescs.size > 0) {
@@ -794,6 +898,7 @@ export async function registerRoutes(
         autoClassified: autoClassifiedCount,
         openCount,
         meta: parseResult.meta,
+        diagnostics: parseResult.sparkasseDiagnostics,
         errors: errors.length > 0 ? errors : undefined
       });
     } catch (error: any) {
@@ -858,9 +963,9 @@ export async function registerRoutes(
         const rule = ruleByLeaf.get(leaf.leafId);
         return {
           "App classificação": appCatByLeaf.get(leaf.leafId) || "",
-          "Nivel_1_PT": level1?.nivel1Pt || "",
-          "Nivel_2_PT": level2?.nivel2Pt || "",
-          "Nivel_3_PT": leaf.nivel3Pt || "",
+          "Nível_1_PT": level1?.nivel1Pt || "",
+          "Nível_2_PT": level2?.nivel2Pt || "",
+          "Nível_3_PT": leaf.nivel3Pt || "",
           "Key_words": rule?.keyWords || "",
           "Key_words_negative": rule?.keyWordsNegative || "",
           "Receita/Despesa": leaf.receitaDespesaDefault || level2?.receitaDespesaDefault || "",
@@ -877,6 +982,64 @@ export async function registerRoutes(
       res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
       res.setHeader("Content-Disposition", "attachment; filename=ritualfin_categorias.xlsx");
       res.send(buffer);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/classification/export-csv", async (_req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const [levels1, levels2, leaves, appCats, appLeafs, rules] = await Promise.all([
+        storage.getTaxonomyLevel1(user.id),
+        storage.getTaxonomyLevel2(user.id),
+        storage.getTaxonomyLeaf(user.id),
+        storage.getAppCategories(user.id),
+        storage.getAppCategoryLeaf(user.id),
+        storage.getRules(user.id)
+      ]);
+
+      const level1ById = new Map(levels1.map(l => [l.level1Id, l]));
+      const level2ById = new Map(levels2.map(l => [l.level2Id, l]));
+      const appCatById = new Map(appCats.map(c => [c.appCatId, c]));
+      const appCatByLeaf = new Map(appLeafs.map(l => [l.leafId, appCatById.get(l.appCatId)?.name || ""]));
+      const ruleByLeaf = new Map(rules.filter(r => r.leafId).map(r => [r.leafId as string, r]));
+
+      const rows = leaves.map(leaf => {
+        const level2 = level2ById.get(leaf.level2Id);
+        const level1 = level2 ? level1ById.get(level2.level1Id) : undefined;
+        const rule = ruleByLeaf.get(leaf.leafId);
+        return {
+          "App classificação": appCatByLeaf.get(leaf.leafId) || "",
+          "Nível_1_PT": level1?.nivel1Pt || "",
+          "Nível_2_PT": level2?.nivel2Pt || "",
+          "Nível_3_PT": leaf.nivel3Pt || "",
+          "Key_words": rule?.keyWords || "",
+          "Key_words_negative": rule?.keyWordsNegative || "",
+          "Receita/Despesa": leaf.receitaDespesaDefault || level2?.receitaDespesaDefault || "",
+          "Fixo/Variável": leaf.fixoVariavelDefault || level2?.fixoVariavelDefault || "",
+          "Recorrente": leaf.recorrenteDefault || level2?.recorrenteDefault || ""
+        };
+      });
+
+      const headers = [
+        "App classificação",
+        "Nível_1_PT",
+        "Nível_2_PT",
+        "Nível_3_PT",
+        "Key_words",
+        "Key_words_negative",
+        "Receita/Despesa",
+        "Fixo/Variável",
+        "Recorrente"
+      ];
+      const csvContent = buildCsv(headers, rows);
+
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", "attachment; filename=\"categorias.csv\"");
+      res.send(csvContent);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

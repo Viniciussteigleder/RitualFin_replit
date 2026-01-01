@@ -7213,3 +7213,22 @@ VITE_API_URL=https://ritualfin-api.onrender.com
   - Option B: Add new classification layer alongside legacy fields
   - **Chosen**: Option B to avoid breaking existing dashboard/confirm flows.
   - **Revisit**: When dashboard is fully migrated to app_category.
+
+---
+
+## Sparkasse Import Diagnostics + Robust Parser (2026-01-01)
+
+**Summary**:
+- Added Sparkasse parse pipeline with encoding fallback (UTF-8 → Latin-1), delimiter mismatch detection, header validation, and row normalization/partial import policy.
+- Persisted structured upload diagnostics for Sparkasse (encoding, delimiter, headers, preview, row errors).
+- Added dev scripts for Sparkasse parsing preview and pipeline tests.
+- Added minimal UI diagnostics panel on uploads screen (success + failure details).
+
+**Files touched**:
+- `server/sparkasse-pipeline.ts`, `server/csv-parser.ts`, `server/routes.ts`, `server/storage.ts`
+- `shared/schema.ts`, `migrations/005_upload_diagnostics.sql`
+- `client/src/pages/uploads.tsx`, `client/src/pages/settings.tsx`, `client/src/lib/api.ts`
+- `script/sparkasse-pipeline-debug.ts`, `script/sparkasse-pipeline.test.ts`
+
+**Notes**:
+- Diagnostics stored in `upload_diagnostics` with preview rows and row-level errors (no raw file contents).

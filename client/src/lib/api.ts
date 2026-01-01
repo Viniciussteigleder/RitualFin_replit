@@ -112,13 +112,31 @@ export const accountsApi = {
 // Uploads
 export const uploadsApi = {
   list: () => fetchApi<any[]>("/uploads"),
-  preview: (filename: string, csvContent: string, encoding?: string) =>
-    fetchApi<any>("/imports/preview", {
+  preview: async (filename: string, csvContent: string, encoding?: string, fileBase64?: string, fileType?: string) => {
+    const res = await fetch(`${API_BASE}/imports/preview`, {
       method: "POST",
-      body: JSON.stringify({ filename, csvContent, encoding }),
-    }),
-  process: (filename: string, csvContent: string, encoding?: string) =>
-    fetchApi<{
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filename, csvContent, encoding, fileBase64, fileType }),
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: "Request failed" }));
+      throw new Error(error.message || error.error || "Request failed");
+    }
+    return res.json();
+  },
+  process: async (filename: string, csvContent: string, encoding?: string, fileBase64?: string, fileType?: string) => {
+    const res = await fetch(`${API_BASE}/uploads/process`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filename, csvContent, encoding, fileBase64, fileType }),
+    });
+    const payload = await res.json().catch(() => ({ message: "Request failed" }));
+    if (!res.ok) {
+      const error: any = new Error(payload.message || payload.error || "Request failed");
+      error.details = payload;
+      throw error;
+    }
+    return payload as {
       success: boolean;
       uploadId: string;
       rowsTotal: number;
@@ -129,10 +147,10 @@ export const uploadsApi = {
       openCount?: number;
       errors?: string[];
       meta?: any;
-    }>("/uploads/process", {
-      method: "POST",
-      body: JSON.stringify({ filename, csvContent, encoding }),
-    }),
+      diagnostics?: any;
+      error?: any;
+    };
+  },
 };
 
 // Classification & Aliases

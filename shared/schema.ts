@@ -1,5 +1,5 @@
 import { sql, relations } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, real, timestamp, pgEnum, date } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, real, timestamp, pgEnum, date, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -159,6 +159,38 @@ export const uploadErrorsRelations = relations(uploadErrors, ({ one }) => ({
 export const insertUploadErrorSchema = createInsertSchema(uploadErrors).omit({ id: true, createdAt: true });
 export type InsertUploadError = z.infer<typeof insertUploadErrorSchema>;
 export type UploadError = typeof uploadErrors.$inferSelect;
+
+// Upload Diagnostics (Sparkasse import debug trail)
+export const uploadDiagnostics = pgTable("upload_diagnostics", {
+  uploadAttemptId: varchar("upload_attempt_id").primaryKey().default(sql`gen_random_uuid()`),
+  uploadId: varchar("upload_id").references(() => uploads.id, { onDelete: "set null" }),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  source: text("source").notNull(),
+  filename: text("filename").notNull(),
+  mimeType: text("mime_type"),
+  sizeBytes: integer("size_bytes").notNull(),
+  encodingUsed: text("encoding_used"),
+  delimiterUsed: text("delimiter_used"),
+  headerFound: jsonb("header_found").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  requiredMissing: jsonb("required_missing").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  rowsTotal: integer("rows_total").notNull().default(0),
+  rowsPreview: jsonb("rows_preview").$type<Record<string, string>[]>().notNull().default(sql`'[]'::jsonb`),
+  stage: text("stage"),
+  errorCode: text("error_code"),
+  errorMessage: text("error_message"),
+  errorDetails: jsonb("error_details"),
+  stacktrace: text("stacktrace"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const uploadDiagnosticsRelations = relations(uploadDiagnostics, ({ one }) => ({
+  user: one(users, { fields: [uploadDiagnostics.userId], references: [users.id] }),
+  upload: one(uploads, { fields: [uploadDiagnostics.uploadId], references: [uploads.id] }),
+}));
+
+export const insertUploadDiagnosticsSchema = createInsertSchema(uploadDiagnostics).omit({ createdAt: true });
+export type InsertUploadDiagnostics = z.infer<typeof insertUploadDiagnosticsSchema>;
+export type UploadDiagnostics = typeof uploadDiagnostics.$inferSelect;
 
 // Merchant Metadata table (icon/color/name for merchants)
 export const merchantMetadata = pgTable("merchant_metadata", {

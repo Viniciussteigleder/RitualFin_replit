@@ -1,6 +1,7 @@
 // Multi-format CSV Parser (Miles & More + Amex + Sparkasse)
 
 import { logger } from "./logger";
+import { runSparkasseParsePipeline, type SparkasseDiagnostics, type SparkasseError } from "./sparkasse-pipeline";
 import type { TransactionSource } from "../shared/schema";
 
 export interface MilesAndMoreRow {
@@ -59,6 +60,8 @@ export interface ParseResult {
   monthAffected: string;
   format?: "miles_and_more" | "amex" | "sparkasse" | "unknown";
   meta?: ParseMeta;
+  sparkasseDiagnostics?: SparkasseDiagnostics;
+  sparkasseError?: SparkasseError;
 }
 
 type CsvFormat = "miles_and_more" | "amex" | "sparkasse" | "unknown";
@@ -222,6 +225,18 @@ function detectCsvFormat(lines: string[]): { format: CsvFormat; separator: strin
       });
       return { format: "sparkasse", separator: ";" };
     }
+
+    if (commaCols.some(c => c.toLowerCase() === "auftragskonto") &&
+        commaCols.some(c => c.toLowerCase() === "buchungstag") &&
+        commaCols.some(c => c.toLowerCase() === "verwendungszweck")) {
+      logger.info("csv_format_detected", {
+        format: "sparkasse",
+        line: i,
+        headers: commaCols,
+        note: "sparkasse_headers_with_comma"
+      });
+      return { format: "sparkasse", separator: ";" };
+    }
   }
 
   logger.warn("csv_format_unknown", {
@@ -381,7 +396,7 @@ function buildSimpleDescSparkasse(beguenstigter: string, verwendungszweck: strin
   return beguenstigter;
 }
 
-function parseMilesAndMore(lines: string[], meta: ParseMeta): ParseResult {
+function parseMilesAndMore(lines: string[], meta: ParseMeta, fallbackDate: Date): ParseResult {
   const { headerIndex, headers, cardInfo } = findMMHeaderLine(lines);
   
   if (headerIndex === -1) {
@@ -430,6 +445,7 @@ function parseMilesAndMore(lines: string[], meta: ParseMeta): ParseResult {
     ? cardInfo.split(";")[0].trim() || "Miles & More Gold Credit Card"
     : "Miles & More Gold Credit Card";
   
+  let fallbackDateCount = 0;
   for (let i = headerIndex + 1; i < lines.length; i++) {
     const line = lines[i];
     if (line.trim() === "") continue;
@@ -472,11 +488,10 @@ function parseMilesAndMore(lines: string[], meta: ParseMeta): ParseResult {
         exchangeRate: exchangeRateStr ? parseAmountGerman(exchangeRateStr) : undefined
       };
       
-      const paymentDate = parseDateMM(row.authorisedOn) || parseDateMM(row.processedOn);
-      
+      let paymentDate = parseDateMM(row.authorisedOn) || parseDateMM(row.processedOn);
       if (!paymentDate) {
-        errors.push(`Linha ${i + 1}: Data invalida`);
-        continue;
+        paymentDate = fallbackDate;
+        fallbackDateCount += 1;
       }
       
       if (!row.description) {
@@ -530,6 +545,10 @@ function parseMilesAndMore(lines: string[], meta: ParseMeta): ParseResult {
   const monthsArray = Array.from(months).sort();
   const monthAffected = monthsArray.length > 0 ? monthsArray[monthsArray.length - 1] : "";
   
+  if (fallbackDateCount > 0) {
+    meta.warnings.push("Algumas linhas sem data válida usaram a data de importação.");
+  }
+
   return {
     success: transactions.length > 0,
     transactions,
@@ -542,7 +561,7 @@ function parseMilesAndMore(lines: string[], meta: ParseMeta): ParseResult {
   };
 }
 
-function parseAmex(lines: string[], meta: ParseMeta): ParseResult {
+function parseAmex(lines: string[], meta: ParseMeta, fallbackDate: Date): ParseResult {
   const { headerIndex, headers } = findAmexHeaderLine(lines);
   
   if (headerIndex === -1) {
@@ -567,6 +586,7 @@ function parseAmex(lines: string[], meta: ParseMeta): ParseResult {
   const errors: string[] = [];
   const months = new Set<string>();
   
+  let fallbackDateCount = 0;
   for (let i = headerIndex + 1; i < lines.length; i++) {
     const line = lines[i];
     if (line.trim() === "") continue;
@@ -602,11 +622,10 @@ function parseAmex(lines: string[], meta: ParseMeta): ParseResult {
         betreff
       };
       
-      const paymentDate = parseDateAmex(row.datum);
-      
+      let paymentDate = parseDateAmex(row.datum);
       if (!paymentDate) {
-        errors.push(`Linha ${i + 1}: Data invalida (${row.datum})`);
-        continue;
+        paymentDate = fallbackDate;
+        fallbackDateCount += 1;
       }
       
       if (!row.beschreibung) {
@@ -687,6 +706,10 @@ function parseAmex(lines: string[], meta: ParseMeta): ParseResult {
   const monthsArray = Array.from(months).sort();
   const monthAffected = monthsArray.length > 0 ? monthsArray[monthsArray.length - 1] : "";
   
+  if (fallbackDateCount > 0) {
+    meta.warnings.push("Algumas linhas sem data válida usaram a data de importação.");
+  }
+
   return {
     success: transactions.length > 0,
     transactions,
@@ -892,7 +915,19 @@ function splitCSVLines(csvContent: string): { lines: string[]; hasMultiline: boo
   return { lines, hasMultiline };
 }
 
-export function parseCSV(csvContent: string, options: { encoding?: string } = {}): ParseResult {
+export function parseCSV(
+  csvContent: string,
+  options: {
+    encoding?: string;
+    filename?: string;
+    userId?: string;
+    uploadAttemptId?: string;
+    fileBuffer?: Buffer;
+    sizeBytes?: number;
+    importDate?: Date;
+    mimeType?: string;
+  } = {}
+): ParseResult {
   // Remove UTF-8 BOM (Byte Order Mark) if present
   // BOM is \uFEFF character often added by German banking CSV exports
   const cleanedContent = csvContent.charCodeAt(0) === 0xFEFF
@@ -941,14 +976,45 @@ export function parseCSV(csvContent: string, options: { encoding?: string } = {}
     totalLines: lines.length
   });
 
+  const fallbackDate = options.importDate || new Date();
   let result: ParseResult;
 
   if (format === "amex") {
-    result = parseAmex(lines, meta);
+    result = parseAmex(lines, meta, fallbackDate);
   } else if (format === "miles_and_more") {
-    result = parseMilesAndMore(lines, meta);
+    result = parseMilesAndMore(lines, meta, fallbackDate);
   } else if (format === "sparkasse") {
-    result = parseSparkasse(lines, meta);
+    const sparkasseResult = runSparkasseParsePipeline({
+      uploadAttemptId: options.uploadAttemptId || "unknown",
+      userId: options.userId || "unknown",
+      filename: options.filename || "upload.csv",
+      buffer: options.fileBuffer,
+      csvContent,
+      encodingHint: options.encoding,
+      sizeBytes: options.sizeBytes,
+      importDate: options.importDate,
+      mimeType: options.mimeType
+    });
+    meta.encoding = sparkasseResult.diagnostics.encodingUsed || meta.encoding;
+    meta.delimiter = sparkasseResult.diagnostics.delimiterUsed || meta.delimiter;
+    if (sparkasseResult.diagnostics.requiredMissing.length > 0) {
+      meta.missingColumns = sparkasseResult.diagnostics.requiredMissing;
+    }
+    if (sparkasseResult.diagnostics.warnings?.length) {
+      meta.warnings.push(...sparkasseResult.diagnostics.warnings);
+    }
+    result = {
+      success: sparkasseResult.success,
+      transactions: sparkasseResult.transactions,
+      errors: sparkasseResult.errors,
+      rowsTotal: sparkasseResult.rowsTotal,
+      rowsImported: sparkasseResult.rowsImported,
+      monthAffected: sparkasseResult.monthAffected,
+      format: "sparkasse",
+      meta,
+      sparkasseDiagnostics: sparkasseResult.diagnostics,
+      sparkasseError: sparkasseResult.error
+    };
   } else {
     logger.warn("csv_format_unknown", { totalLines: lines.length });
     result = {
@@ -995,6 +1061,7 @@ export interface PreviewResult {
   success: boolean;
   format?: CsvFormat;
   meta?: ParseMeta;
+  diagnostics?: SparkasseDiagnostics;
   rows: Array<{
     source: TransactionSource;
     bookingDate: string;
@@ -1008,7 +1075,19 @@ export interface PreviewResult {
   errors: string[];
 }
 
-export function previewCSV(csvContent: string, options: { encoding?: string } = {}): PreviewResult {
+export function previewCSV(
+  csvContent: string,
+  options: {
+    encoding?: string;
+    filename?: string;
+    userId?: string;
+    uploadAttemptId?: string;
+    fileBuffer?: Buffer;
+    sizeBytes?: number;
+    importDate?: Date;
+    mimeType?: string;
+  } = {}
+): PreviewResult {
   const result = parseCSV(csvContent, options);
   const rows = result.transactions.slice(0, 20).map((tx) => ({
     source: tx.source,
@@ -1025,6 +1104,7 @@ export function previewCSV(csvContent: string, options: { encoding?: string } = 
     success: result.success,
     format: result.format,
     meta: result.meta,
+    diagnostics: result.sparkasseDiagnostics,
     rows,
     errors: result.errors
   };
