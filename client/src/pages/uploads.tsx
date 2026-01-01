@@ -48,7 +48,12 @@ export default function UploadsPage() {
           encoding = "iso-8859-1";
           content = new TextDecoder("iso-8859-1").decode(buffer);
         }
-        const fileBase64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+        const bytes = new Uint8Array(buffer);
+        let binary = "";
+        for (let i = 0; i < bytes.length; i += 1) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        const fileBase64 = btoa(binary);
         const result = await uploadsApi.process(file.name, content, encoding, fileBase64, file.type);
         clearInterval(interval);
         setUploadProgress(100);
