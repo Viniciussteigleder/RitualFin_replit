@@ -1,11 +1,12 @@
 import {
-  users, accounts, uploads, uploadErrors, merchantMetadata, transactions, rules, budgets, calendarEvents, eventOccurrences, goals, categoryGoals, rituals, settings,
+  users, accounts, uploads, uploadErrors, uploadDiagnostics, merchantMetadata, transactions, rules, budgets, calendarEvents, eventOccurrences, goals, categoryGoals, rituals, settings,
   aiUsageLogs, notifications, merchantDescriptions, merchantIcons,
   taxonomyLevel1, taxonomyLevel2, taxonomyLeaf, appCategory, appCategoryLeaf, keyDescMap, aliasAssets,
   type User, type InsertUser,
   type Account, type InsertAccount,
   type Upload, type InsertUpload,
   type UploadError, type InsertUploadError,
+  type UploadDiagnostics, type InsertUploadDiagnostics,
   type MerchantMetadata, type InsertMerchantMetadata,
   type Transaction, type InsertTransaction,
   type Rule, type InsertRule,
@@ -69,6 +70,9 @@ export interface IStorage {
   // Upload Errors
   createUploadError(error: InsertUploadError): Promise<UploadError>;
   getUploadErrors(uploadId: string): Promise<UploadError[]>;
+
+  // Upload Diagnostics
+  createUploadDiagnostics(row: InsertUploadDiagnostics): Promise<UploadDiagnostics>;
 
   // Merchant Metadata
   getMerchantMetadata(userId: string): Promise<MerchantMetadata[]>;
@@ -393,6 +397,12 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(uploadErrors)
       .where(eq(uploadErrors.uploadId, uploadId))
       .orderBy(uploadErrors.rowNumber);
+  }
+
+  // Upload Diagnostics
+  async createUploadDiagnostics(row: InsertUploadDiagnostics): Promise<UploadDiagnostics> {
+    const [created] = await db.insert(uploadDiagnostics).values(row).returning();
+    return created;
   }
 
   // Merchant Metadata
