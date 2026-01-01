@@ -75,3 +75,7 @@
 - Results:
   - TypeScript check: PASS
   - Import parsing script: PASS (Sparkasse/Amex/M&M)
+
+## 2026-01-01
+- Command: vercel --prod
+- Result: Upload completed; deployment queued (command timed out at 10s). Inspect URL provided by CLI.

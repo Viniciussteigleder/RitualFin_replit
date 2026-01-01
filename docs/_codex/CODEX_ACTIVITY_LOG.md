@@ -337,3 +337,22 @@
   - Tests executed: tsc + import parser script.
 - Observations & risks:
   - E2E UI validation still pending a running app instance.
+
+## 2026-01-01T19:25:00Z (UTC)
+- Session goal: Commit, merge to main, push, and deploy to Vercel.
+- Commands executed (READ-ONLY):
+  - sed -n '1,120p' VERCEL_CLI_DEPLOY.md
+  - git status -sb
+- Commands executed (MUTATING):
+  - git add .
+  - git commit -m "feat: classification taxonomy aliases logos"
+  - git checkout main
+  - git merge feature/classification-alias-logos-excel
+  - git push origin main
+  - vercel --prod (timed out after upload; deploy queued)
+  - cat >> docs/_codex/QA_NOTES.md
+  - cat >> docs/_codex/CODEX_ACTIVITY_LOG.md
+- Summary of changes:
+  - Code merged to main and pushed; production deploy triggered via Vercel CLI.
+- Observations & risks:
+  - Vercel CLI timed out after upload; deployment status should be verified in Vercel dashboard.
