@@ -115,3 +115,12 @@
 - Modified: docs/_codex/CODEX_ACTIVITY_LOG.md, docs/_codex/DECISION_LOG.md, docs/_codex/ISSUES_REGISTER.md
   - Change: Logged session constraints, decisions, and missing docs.
   - Reason: Codex governance.
+
+## 2026-01-01
+- Added: `README.md`, `server/classification-utils.ts`, `server/logo-downloader.ts`, `server/recurrence.ts`, `client/src/components/alias-logo.tsx`, `script/test-imports.ts`, `migrations/004_classification_alias_logos.sql`, `server/seed-data/categorias.csv`, `server/seed-data/alias_desc.csv`
+- Modified: `shared/schema.ts`, `server/csv-parser.ts`, `server/routes.ts`, `server/storage.ts`, `server/rules-engine.ts`, `client/src/lib/api.ts`, `client/src/pages/settings.tsx`, `client/src/pages/transactions.tsx`, `client/src/pages/confirm.tsx`, `client/src/pages/uploads.tsx`, `client/src/pages/dashboard.tsx`, `client/src/components/calendar/detail-panel.tsx`, `client/src/components/transaction-detail-modal.tsx`, `docs/ARCHITECTURE_AND_AI_LOGIC.md`, `docs/IMPLEMENTATION_LOG.md`
+- Notes: Added settings UI for classification/imports/aliases, new taxonomy + alias tables, logo downloader, recurrence inference, and CSV preview support.
+
+## 2026-01-01 (Follow-up)
+- Fixed TS issues in `server/csv-parser.ts`, `server/routes.ts`, `server/rules-engine.ts`, `server/storage.ts`.
+- Dashboard aggregations now use app_category mapping in `server/storage.ts`.

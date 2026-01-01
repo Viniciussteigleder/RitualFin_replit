@@ -16,7 +16,8 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { getMerchantIcon, getCategoryIcon } from "@/lib/merchant-icons";
+import { getCategoryIcon } from "@/lib/merchant-icons";
+import { AliasLogo } from "@/components/alias-logo";
 import { AccountBadge } from "@/components/account-badge";
 import {
   Calendar,
@@ -50,14 +51,12 @@ export function TransactionDetailModal({
 }: TransactionDetailModalProps) {
   if (!transaction) return null;
 
-  // Get merchant icon or fallback to category icon
-  const merchantInfo = getMerchantIcon(transaction.descRaw);
-  const MerchantIcon = merchantInfo?.icon || getCategoryIcon(transaction.category1);
-  const iconColor = merchantInfo?.color || "#6b7280";
+  const CategoryIcon = getCategoryIcon(transaction.category1);
 
   // Split description parts (if formatted as "Main -- Additional")
   const [mainDesc, ...additionalParts] = (transaction.descRaw || "").split(" -- ");
   const additionalDesc = additionalParts.join(" -- ");
+  const displayDesc = transaction.aliasDesc || transaction.simpleDesc || mainDesc;
 
   const CATEGORY_COLORS: Record<string, string> = {
     "Mercado": "#22c55e",
@@ -82,23 +81,30 @@ export function TransactionDetailModal({
 
         {/* Header with Merchant Icon */}
         <div className="flex items-start gap-4 pb-4">
-          <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0"
-            style={{ backgroundColor: `${iconColor}15` }}
-          >
-            <MerchantIcon className="w-8 h-8" style={{ color: iconColor }} />
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 bg-white border border-muted">
+            {transaction.logoLocalPath ? (
+              <img
+                src={transaction.logoLocalPath}
+                alt={displayDesc}
+                className="w-10 h-10 object-contain"
+              />
+            ) : (
+              <CategoryIcon className="w-8 h-8 text-slate-500" />
+            )}
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-2xl font-bold truncate">{mainDesc}</h2>
+            <h2 className="text-2xl font-bold truncate">{displayDesc}</h2>
             {additionalDesc && (
               <p className="text-sm text-muted-foreground mt-1">{additionalDesc}</p>
             )}
             <div className="flex items-center gap-2 mt-2">
-              {merchantInfo?.merchantName && (
-                <Badge variant="outline" className="text-xs capitalize">
-                  {merchantInfo.merchantName.replace(/_/g, " ")}
-                </Badge>
-              )}
+              <AliasLogo
+                aliasDesc={transaction.aliasDesc}
+                fallbackDesc={transaction.simpleDesc || mainDesc}
+                logoUrl={transaction.logoLocalPath}
+                size={18}
+                showText={false}
+              />
               {transaction.manualOverride && (
                 <Badge variant="outline" className="text-xs border-amber-300 text-amber-700">
                   Manual Override

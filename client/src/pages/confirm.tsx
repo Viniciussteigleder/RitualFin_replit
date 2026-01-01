@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { AccountBadge } from "@/components/account-badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getMerchantIcon } from "@/lib/merchant-icons";
+import { AliasLogo } from "@/components/alias-logo";
 
 interface TransactionForm {
   type: string;
@@ -302,7 +302,7 @@ export default function ConfirmPage() {
                     const confidence = t.confidence || 0;
                     const hasSuggestion = !!t.category1;
                     const categoryColor = CATEGORY_COLORS[form.category1] || "#6b7280";
-                    const merchantInfo = getMerchantIcon(t.descRaw);
+                    const fallbackDesc = t.simpleDesc || t.descRaw?.split(" -- ")[0];
 
                     return (
                       <tr 
@@ -328,15 +328,16 @@ export default function ConfirmPage() {
                         </td>
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-2">
-                            {merchantInfo && (
-                              <div
-                                className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                                style={{ backgroundColor: `${merchantInfo.color}15` }}
-                              >
-                                <merchantInfo.icon className="w-4 h-4" style={{ color: merchantInfo.color }} />
-                              </div>
-                            )}
-                            <p className="font-medium truncate max-w-[220px]">{t.merchantAlias || t.descRaw?.split(" -- ")[0]}</p>
+                            <AliasLogo
+                              aliasDesc={t.aliasDesc}
+                              fallbackDesc={fallbackDesc}
+                              logoUrl={t.logoLocalPath}
+                              size={22}
+                              showText={false}
+                            />
+                            <p className="font-medium truncate max-w-[220px]">
+                              {t.aliasDesc || fallbackDesc}
+                            </p>
                           </div>
                         </td>
                         <td className="px-5 py-4 text-right font-semibold whitespace-nowrap">

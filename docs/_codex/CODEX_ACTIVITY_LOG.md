@@ -242,3 +242,98 @@
   - Fixed TypeScript AbortError typing in batch utils.
 - Observations & risks:
   - Dev server cannot start without DATABASE_URL; endpoint smoke test skipped.
+
+## 2026-01-01T16:59:01Z (UTC)
+- Session goal: Plan Classification + Alias + Logos + Excel roundtrip implementation and request approval.
+- Commands executed (READ-ONLY):
+  - ls
+  - rg --files -g AGENTS.md
+  - rg -n "AGENTS|codex|CLAUDE|instruction" -S .
+  - cat CLAUDE.md
+  - cat docs/_codex/codex_instructions.md
+  - cat docs/ARCHITECTURE_AND_AI_LOGIC.md
+  - sed -n '1,200p' docs/IMPLEMENTATION_LOG.md
+  - rg -n "Settings" client/src/pages client/src/components client/src
+  - sed -n '1,200p' shared/schema.ts
+  - sed -n '1,240p' server/csv-parser.ts
+  - sed -n '240,520p' server/csv-parser.ts
+  - sed -n '520,960p' server/csv-parser.ts
+  - sed -n '1,240p' server/key-desc-generator.ts
+  - sed -n '1,220p' server/rules-engine.ts
+  - tail -n 60 docs/_codex/PLAN_LOG.md
+  - tail -n 40 docs/_codex/CODEX_ACTIVITY_LOG.md
+  - date -u +%Y-%m-%dT%H:%M:%SZ
+- Commands executed (MUTATING):
+  - cat >> docs/_codex/PLAN_LOG.md << 'EOF' ... EOF
+  - cat >> docs/_codex/CODEX_ACTIVITY_LOG.md << 'EOF' ... EOF
+- Summary of changes:
+  - Added a pending-approval plan entry for the new classification/alias/logos/excel capability.
+- Observations & risks:
+  - Approval required before any code changes per docs/_codex/codex_instructions.md.
+- Approval gate status: Pending user approval (no code changes executed).
+
+## 2026-01-01T17:03:30Z (UTC)
+- Session goal: Approval received and begin implementation.
+- Commands executed (MUTATING):
+  - cat >> docs/_codex/PLAN_LOG.md << 'EOF' ... EOF
+  - cat >> docs/_codex/CODEX_ACTIVITY_LOG.md << 'EOF' ... EOF
+- Summary of changes:
+  - Recorded approval to proceed with implementation.
+- Observations & risks:
+  - None.
+- Approval gate status: Approved by user ("implemente o projeto").
+
+## 2026-01-01T17:55:00Z (UTC)
+- Session goal: Implement classification + alias + logos + Excel roundtrip end-to-end.
+- Commands executed (READ-ONLY):
+  - rg -n "merchant" server
+  - rg -n "transactions" shared/schema.ts
+  - sed -n '1,220p' client/src/pages/uploads.tsx
+  - sed -n '1,40p' client/src/pages/dashboard.tsx
+  - sed -n '520,620p' client/src/pages/dashboard.tsx
+  - sed -n '1,40p' client/src/components/calendar/detail-panel.tsx
+  - sed -n '120,190p' client/src/components/calendar/detail-panel.tsx
+  - sed -n '1,140p' client/src/components/transaction-detail-modal.tsx
+  - sed -n '340,410p' client/src/pages/transactions.tsx
+  - sed -n '280,360p' client/src/pages/confirm.tsx
+  - sed -n '1,220p' client/src/lib/api.ts
+- Commands executed (MUTATING):
+  - apply_patch (shared/schema.ts, server/csv-parser.ts, server/routes.ts, server/storage.ts, server/rules-engine.ts, client/src/pages/settings.tsx, client/src/pages/transactions.tsx, client/src/pages/confirm.tsx, client/src/pages/uploads.tsx, client/src/pages/dashboard.tsx, client/src/components/*, client/src/lib/api.ts, migrations/*, README.md, script/*)
+  - python3 (download Google Sheets CSV to server/seed-data/*)
+  - cat >> docs/ARCHITECTURE_AND_AI_LOGIC.md
+  - cat >> docs/IMPLEMENTATION_LOG.md
+  - cat >> docs/_codex/DECISION_LOG.md
+  - cat >> docs/_codex/DIFF_SUMMARY.md
+  - cat >> docs/_codex/QA_NOTES.md
+  - cat >> docs/_codex/ISSUES_REGISTER.md
+- Summary of changes:
+  - Implemented new taxonomy/alias schema and import pipeline with preview, strict key_desc/key rules, alias matching, and recurrence inference.
+  - Added Settings UI for imports, categories Excel roundtrip, aliases/logos, review queue, and reset.
+  - Added logo downloader, recurring detection, and seed data import from Google Sheets.
+- Observations & risks:
+  - Dashboard still reads legacy category fields; see ISSUES_REGISTER.
+- Approval gate status: Approved and executed.
+
+## 2026-01-01T19:20:00Z (UTC)
+- Session goal: Fix TypeScript errors, run tests, and migrate dashboard analytics to app_category.
+- Commands executed (READ-ONLY):
+  - sed -n '380,460p' server/csv-parser.ts
+  - sed -n '600,700p' server/routes.ts
+  - sed -n '1660,1720p' server/routes.ts
+  - sed -n '1,120p' server/rules-engine.ts
+  - rg -n "getDashboardData|spentByCategory" server/storage.ts
+  - sed -n '720,800p' server/storage.ts
+  - rg -n "getTransactionsWithMerchantAlias" server/storage.ts
+- Commands executed (MUTATING):
+  - apply_patch (server/csv-parser.ts, server/routes.ts, server/rules-engine.ts, server/storage.ts)
+  - npm run check
+  - npx tsx script/test-imports.ts
+  - cat >> docs/_codex/ISSUES_REGISTER.md
+  - cat >> docs/_codex/QA_NOTES.md
+  - cat >> docs/_codex/CODEX_ACTIVITY_LOG.md
+- Summary of changes:
+  - Fixed TypeScript nullability issues and CSV parser duplication.
+  - Dashboard aggregations now use app_category via leaf mapping.
+  - Tests executed: tsc + import parser script.
+- Observations & risks:
+  - E2E UI validation still pending a running app instance.

@@ -7,20 +7,23 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
-import { User, Shield, Settings, Bell, Eye, Check, Globe, Palette, Database, Trash2, Download, Key, CreditCard, Mail, Moon, Sun, Sparkles, BookOpen, ArrowRight } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { User, Shield, Settings, Bell, Eye, Check, Globe, Palette, Database, Trash2, Download, Key, CreditCard, Mail, Moon, Sun, Sparkles, BookOpen, ArrowRight, Upload, RefreshCw } from "lucide-react";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { AliasLogo } from "@/components/alias-logo";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { settingsApi } from "@/lib/api";
+import { settingsApi, uploadsApi, classificationApi, aliasApi, resetApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 const TABS = [
   { id: "conta", label: "Conta", icon: User, description: "Perfil e informações pessoais" },
   { id: "preferencias", label: "Preferências", icon: Settings, description: "Aparência e comportamento" },
+  { id: "classificacao", label: "Classificação & Dados", icon: Database, description: "Importações, categorias e aliases" },
   { id: "dicionarios", label: "Dicionários", icon: Database, description: "Comerciantes e categorias" },
   { id: "integracoes", label: "Integrações", icon: Database, description: "Conexões com outros serviços" },
   { id: "seguranca", label: "Segurança", icon: Shield, description: "Senha e autenticação" },
@@ -32,6 +35,21 @@ export default function SettingsPage() {
   const [darkMode, setDarkMode] = useState(false);
   const [monthlyReports, setMonthlyReports] = useState(true);
   const [lazyMode, setLazyMode] = useState(true);
+  const [importPreview, setImportPreview] = useState<any | null>(null);
+  const [importEncoding, setImportEncoding] = useState<string | undefined>();
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importSource, setImportSource] = useState("auto");
+  const [classificationPreview, setClassificationPreview] = useState<any | null>(null);
+  const [classificationFileBase64, setClassificationFileBase64] = useState<string | null>(null);
+  const [confirmRemap, setConfirmRemap] = useState(false);
+  const [aliasPreview, setAliasPreview] = useState<any | null>(null);
+  const [aliasFileBase64, setAliasFileBase64] = useState<string | null>(null);
+  const [ruleTestKeyDesc, setRuleTestKeyDesc] = useState("");
+  const [ruleTestResult, setRuleTestResult] = useState<any | null>(null);
+  const [aliasTestKeyDesc, setAliasTestKeyDesc] = useState("");
+  const [aliasTestResult, setAliasTestResult] = useState<any | null>(null);
+  const [reviewSelections, setReviewSelections] = useState<Record<string, string>>({});
+  const [reviewExpressions, setReviewExpressions] = useState<Record<string, string>>({});
   const { toast } = useToast();
 
   // Fetch settings from API
@@ -39,6 +57,17 @@ export default function SettingsPage() {
     queryKey: ["settings"],
     queryFn: settingsApi.get,
   });
+
+  const { data: reviewQueue = [] } = useQuery({
+    queryKey: ["classification-review-queue"],
+    queryFn: classificationApi.reviewQueue,
+  });
+
+  const { data: taxonomyLeaves = [] } = useQuery({
+    queryKey: ["classification-leaves"],
+    queryFn: classificationApi.listLeaves,
+  });
+
 
   // Mutation for updating settings
   const updateSettingsMutation = useMutation({
@@ -58,6 +87,168 @@ export default function SettingsPage() {
       });
     },
   });
+
+  const readCsvWithEncoding = async (file: File) => {
+    const buffer = await file.arrayBuffer();
+    let encoding = "utf-8";
+    let text = "";
+    try {
+      text = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+    } catch {
+      encoding = "iso-8859-1";
+      text = new TextDecoder("iso-8859-1").decode(buffer);
+    }
+    return { text, encoding };
+  };
+
+  const readFileBase64 = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        const base64 = result.split(",")[1] || "";
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const handlePreviewImport = async () => {
+    if (!importFile) return;
+    try {
+      const { text, encoding } = await readCsvWithEncoding(importFile);
+      setImportEncoding(encoding);
+      const preview = await uploadsApi.preview(importFile.name, text, encoding);
+      setImportPreview(preview);
+    } catch (err: any) {
+      toast({ title: "Erro na pré-visualização", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleProcessImport = async () => {
+    if (!importFile) return;
+    try {
+      const { text, encoding } = await readCsvWithEncoding(importFile);
+      setImportEncoding(encoding);
+      const result = await uploadsApi.process(importFile.name, text, encoding);
+      toast({
+        title: "Importação concluída",
+        description: `Inseridas: ${result.rowsImported}, duplicadas: ${result.duplicates}, auto: ${result.autoClassified || 0}, abertas: ${result.openCount || 0}`
+      });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["uploads"] });
+      queryClient.invalidateQueries({ queryKey: ["classification-review-queue"] });
+    } catch (err: any) {
+      toast({ title: "Erro na importação", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleClassificationPreview = async (file: File) => {
+    const base64 = await readFileBase64(file);
+    setClassificationFileBase64(base64);
+    const preview = await classificationApi.previewImport(base64);
+    setClassificationPreview(preview);
+  };
+
+  const handleClassificationApply = async () => {
+    if (!classificationFileBase64) return;
+    try {
+      const result = await classificationApi.applyImport(classificationFileBase64, confirmRemap);
+      toast({ title: "Categorias atualizadas", description: `Linhas aplicadas: ${result.rows}` });
+      queryClient.invalidateQueries({ queryKey: ["classification-leaves"] });
+      queryClient.invalidateQueries({ queryKey: ["classification-rules"] });
+    } catch (err: any) {
+      toast({ title: "Erro ao aplicar categorias", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleAliasPreview = async (file: File) => {
+    const base64 = await readFileBase64(file);
+    setAliasFileBase64(base64);
+    const preview = await aliasApi.previewImport(base64);
+    setAliasPreview(preview);
+  };
+
+  const handleAliasApply = async () => {
+    if (!aliasFileBase64) return;
+    try {
+      await aliasApi.applyImport(aliasFileBase64);
+      toast({ title: "Aliases atualizados", description: "Planilha aplicada com sucesso." });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+    } catch (err: any) {
+      toast({ title: "Erro ao aplicar aliases", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleRuleTest = async () => {
+    if (!ruleTestKeyDesc.trim()) return;
+    const result = await classificationApi.ruleTest(ruleTestKeyDesc);
+    setRuleTestResult(result);
+  };
+
+  const handleAliasTest = async () => {
+    if (!aliasTestKeyDesc.trim()) return;
+    const result = await aliasApi.test(aliasTestKeyDesc);
+    setAliasTestResult(result);
+  };
+
+  const handleDownloadClassification = async () => {
+    const blob = await classificationApi.exportExcel();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "ritualfin_categorias.xlsx";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadAliases = async () => {
+    const blob = await aliasApi.exportExcel();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "ritualfin_aliases.xlsx";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleRefreshLogos = async () => {
+    const result = await aliasApi.refreshLogos();
+    toast({ title: "Logos atualizados", description: `Total: ${result.total}` });
+    queryClient.invalidateQueries({ queryKey: ["transactions"] });
+  };
+
+  const handleResetData = async () => {
+    await resetApi.resetData();
+    toast({ title: "Dados resetados", description: "Seu ambiente foi reinicializado." });
+    queryClient.invalidateQueries({ queryKey: ["transactions"] });
+    queryClient.invalidateQueries({ queryKey: ["classification-review-queue"] });
+    queryClient.invalidateQueries({ queryKey: ["classification-leaves"] });
+    queryClient.invalidateQueries({ queryKey: ["classification-rules"] });
+  };
+
+  const handleReviewAssign = async (transactionId: string) => {
+    const leafId = reviewSelections[transactionId];
+    if (!leafId) {
+      toast({ title: "Selecione uma categoria", variant: "destructive" });
+      return;
+    }
+    const newExpression = reviewExpressions[transactionId]?.trim();
+    await classificationApi.assignReview({
+      transactionId,
+      leafId,
+      newExpression: newExpression || undefined,
+      createRule: Boolean(newExpression)
+    });
+    toast({ title: "Classificação atualizada" });
+    queryClient.invalidateQueries({ queryKey: ["classification-review-queue"] });
+  };
+
+  const sourceMismatch = importPreview && importSource !== "auto" && (
+    (importSource === "sparkasse" && importPreview.format !== "sparkasse") ||
+    (importSource === "amex" && importPreview.format !== "amex") ||
+    (importSource === "mm" && importPreview.format !== "miles_and_more")
+  );
 
   return (
     <AppLayout>
@@ -291,6 +482,303 @@ export default function SettingsPage() {
                   </CardContent>
                 </Card>
               </>
+            )}
+
+            {activeTab === "classificacao" && (
+              <Card className="bg-white border-0 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Database className="h-4 w-4 text-primary" />
+                    Classificação & Dados
+                  </CardTitle>
+                  <CardDescription>
+                    Importações, categorias, aliases e revisão de pendências.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Tabs defaultValue="imports">
+                    <TabsList className="grid grid-cols-5 w-full">
+                      <TabsTrigger value="imports">Importações</TabsTrigger>
+                      <TabsTrigger value="categorias">Categorias</TabsTrigger>
+                      <TabsTrigger value="aliases">Aliases & Logos</TabsTrigger>
+                      <TabsTrigger value="revisao">Fila de Revisão</TabsTrigger>
+                      <TabsTrigger value="reset">Danger Zone</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="imports" className="mt-6 space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-muted-foreground text-xs uppercase tracking-wide">Fonte</Label>
+                          <Select value={importSource} onValueChange={setImportSource}>
+                            <SelectTrigger className="bg-muted/30 border-0">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="auto">Auto-detectar</SelectItem>
+                              <SelectItem value="sparkasse">Sparkasse</SelectItem>
+                              <SelectItem value="amex">Amex</SelectItem>
+                              <SelectItem value="mm">M&M</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-muted-foreground text-xs uppercase tracking-wide">Arquivo CSV</Label>
+                          <Input type="file" accept=".csv" onChange={(e) => setImportFile(e.target.files?.[0] || null)} />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-3">
+                        <Button variant="outline" className="gap-2" onClick={handlePreviewImport} disabled={!importFile}>
+                          <Upload className="h-4 w-4" />
+                          Pré-visualizar
+                        </Button>
+                        <Button className="gap-2" onClick={handleProcessImport} disabled={!importFile}>
+                          <Upload className="h-4 w-4" />
+                          Importar
+                        </Button>
+                      </div>
+
+                      {importPreview && (
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <Card className="bg-muted/20 border-0">
+                              <CardContent className="p-3">
+                                <p className="text-xs text-muted-foreground">Formato</p>
+                                <p className="text-sm font-semibold">{importPreview.format || "-"}</p>
+                              </CardContent>
+                            </Card>
+                            <Card className="bg-muted/20 border-0">
+                              <CardContent className="p-3">
+                                <p className="text-xs text-muted-foreground">Delimiter</p>
+                                <p className="text-sm font-semibold">{importPreview.meta?.delimiter || "-"}</p>
+                              </CardContent>
+                            </Card>
+                            <Card className="bg-muted/20 border-0">
+                              <CardContent className="p-3">
+                                <p className="text-xs text-muted-foreground">Encoding</p>
+                                <p className="text-sm font-semibold">{importEncoding || "-"}</p>
+                              </CardContent>
+                            </Card>
+                            <Card className="bg-muted/20 border-0">
+                              <CardContent className="p-3">
+                                <p className="text-xs text-muted-foreground">Data</p>
+                                <p className="text-sm font-semibold">{importPreview.meta?.dateFormat || "-"}</p>
+                              </CardContent>
+                            </Card>
+                          </div>
+
+                          {sourceMismatch ? (
+                            <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+                              A fonte selecionada nao corresponde ao formato detectado.
+                            </div>
+                          ) : null}
+                          {importPreview.meta?.warnings?.length ? (
+                            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                              {importPreview.meta.warnings.join(" | ")}
+                            </div>
+                          ) : null}
+
+                          <div className="overflow-x-auto rounded-lg border">
+                            <table className="min-w-full text-sm">
+                              <thead className="bg-muted/30">
+                                <tr>
+                                  <th className="px-3 py-2 text-left">Fonte</th>
+                                  <th className="px-3 py-2 text-left">Data</th>
+                                  <th className="px-3 py-2 text-left">Valor</th>
+                                  <th className="px-3 py-2 text-left">Descrição</th>
+                                  <th className="px-3 py-2 text-left">Key Desc</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {importPreview.rows?.map((row: any, idx: number) => (
+                                  <tr key={idx} className="border-t">
+                                    <td className="px-3 py-2">{row.source}</td>
+                                    <td className="px-3 py-2">{row.bookingDate}</td>
+                                    <td className="px-3 py-2">{row.amount}</td>
+                                    <td className="px-3 py-2">{row.simpleDesc}</td>
+                                    <td className="px-3 py-2">{row.keyDesc}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="categorias" className="mt-6 space-y-4">
+                      <div className="flex flex-wrap gap-3">
+                        <Button variant="outline" className="gap-2" onClick={handleDownloadClassification}>
+                          <Download className="h-4 w-4" />
+                          Baixar Excel
+                        </Button>
+                        <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
+                          <Input
+                            type="file"
+                            accept=".xlsx"
+                            className="hidden"
+                            onChange={(e) => e.target.files?.[0] && handleClassificationPreview(e.target.files[0])}
+                          />
+                          <Button variant="outline" className="gap-2">
+                            <Upload className="h-4 w-4" />
+                            Pré-visualizar upload
+                          </Button>
+                        </label>
+                      </div>
+
+                      {classificationPreview && (
+                        <div className="space-y-2">
+                          <p className="text-sm text-muted-foreground">
+                            Linhas: {classificationPreview.rows} | Categorias: {classificationPreview.appCategories} | Regras: {classificationPreview.rules}
+                          </p>
+                          {classificationPreview.requiresRemap && (
+                            <div className="flex items-center gap-2">
+                              <Switch checked={confirmRemap} onCheckedChange={setConfirmRemap} />
+                              <span className="text-sm">Confirmo remapeamento de categorias UI</span>
+                            </div>
+                          )}
+                          <Button className="gap-2" onClick={handleClassificationApply}>
+                            Aplicar planilha
+                          </Button>
+                        </div>
+                      )}
+
+                      <Separator />
+
+                      <div className="space-y-2">
+                        <Label>Teste de regra (key_desc)</Label>
+                        <div className="flex gap-2">
+                          <Input value={ruleTestKeyDesc} onChange={(e) => setRuleTestKeyDesc(e.target.value)} />
+                          <Button variant="outline" onClick={handleRuleTest}>Testar</Button>
+                        </div>
+                        {ruleTestResult && (
+                          <p className="text-sm text-muted-foreground">
+                            Leaf: {ruleTestResult.leafId || "nenhuma"} | Regra: {ruleTestResult.ruleId || "-"}
+                          </p>
+                        )}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="aliases" className="mt-6 space-y-4">
+                      <div className="flex flex-wrap gap-3">
+                        <Button variant="outline" className="gap-2" onClick={handleDownloadAliases}>
+                          <Download className="h-4 w-4" />
+                          Baixar Excel
+                        </Button>
+                        <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
+                          <Input
+                            type="file"
+                            accept=".xlsx"
+                            className="hidden"
+                            onChange={(e) => e.target.files?.[0] && handleAliasPreview(e.target.files[0])}
+                          />
+                          <Button variant="outline" className="gap-2">
+                            <Upload className="h-4 w-4" />
+                            Pré-visualizar upload
+                          </Button>
+                        </label>
+                        <Button variant="outline" className="gap-2" onClick={handleRefreshLogos}>
+                          <RefreshCw className="h-4 w-4" />
+                          Atualizar logos
+                        </Button>
+                      </div>
+
+                      {aliasPreview && (
+                        <div className="space-y-2">
+                          <p className="text-sm text-muted-foreground">
+                            key_desc_map: {aliasPreview.keyDescRows} | alias_assets: {aliasPreview.aliasRows}
+                          </p>
+                          <Button className="gap-2" onClick={handleAliasApply}>
+                            Aplicar planilha
+                          </Button>
+                        </div>
+                      )}
+
+                      <Separator />
+
+                      <div className="space-y-2">
+                        <Label>Teste de alias (key_desc)</Label>
+                        <div className="flex gap-2">
+                          <Input value={aliasTestKeyDesc} onChange={(e) => setAliasTestKeyDesc(e.target.value)} />
+                          <Button variant="outline" onClick={handleAliasTest}>Testar</Button>
+                        </div>
+                        {aliasTestResult && (
+                          <p className="text-sm text-muted-foreground">
+                            Alias: {aliasTestResult.aliasDesc || "nenhum"}
+                          </p>
+                        )}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="revisao" className="mt-6 space-y-3">
+                      {reviewQueue.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">Nenhuma transação em aberto.</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {reviewQueue.map((tx: any) => (
+                            <Card key={tx.id} className="border border-muted">
+                              <CardContent className="p-4 space-y-3">
+                                <div className="flex items-center gap-3">
+                                  <AliasLogo
+                                    aliasDesc={tx.aliasDesc}
+                                    fallbackDesc={tx.simpleDesc || tx.descRaw}
+                                    logoUrl={tx.logoLocalPath}
+                                    size={22}
+                                    showText={false}
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-medium truncate">{tx.aliasDesc || tx.simpleDesc || tx.descRaw}</p>
+                                    <p className="text-xs text-muted-foreground">{tx.keyDesc}</p>
+                                  </div>
+                                  <span className="text-sm font-semibold">{tx.amount?.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}</span>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                  <Select
+                                    value={reviewSelections[tx.id] || ""}
+                                    onValueChange={(value) => setReviewSelections(prev => ({ ...prev, [tx.id]: value }))}
+                                  >
+                                    <SelectTrigger className="bg-muted/30 border-0">
+                                      <SelectValue placeholder="Selecione a categoria" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {taxonomyLeaves.map((leaf: any) => (
+                                        <SelectItem key={leaf.leafId} value={leaf.leafId}>
+                                          {leaf.nivel3Pt}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <Input
+                                    placeholder="Nova expressão (opcional)"
+                                    value={reviewExpressions[tx.id] || ""}
+                                    onChange={(e) => setReviewExpressions(prev => ({ ...prev, [tx.id]: e.target.value }))}
+                                  />
+                                  <Button onClick={() => handleReviewAssign(tx.id)}>Aplicar</Button>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="reset" className="mt-6 space-y-4">
+                      <Card className="border border-rose-200 bg-rose-50">
+                        <CardContent className="p-4 space-y-3">
+                          <h3 className="font-semibold text-rose-800">Reset total de dados</h3>
+                          <p className="text-sm text-rose-700">
+                            Apaga transações, categorias, regras, aliases e logos. Em seguida, re-semeia a planilha base.
+                          </p>
+                          <Button variant="destructive" className="gap-2" onClick={handleResetData}>
+                            <Trash2 className="h-4 w-4" />
+                            Resetar dados
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
             )}
 
             {activeTab === "dicionarios" && (

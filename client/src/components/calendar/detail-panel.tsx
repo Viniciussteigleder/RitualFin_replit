@@ -17,7 +17,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { format, isSameDay, startOfWeek, endOfWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar, TrendingUp, TrendingDown } from "lucide-react";
-import { getMerchantIcon } from "@/lib/merchant-icons";
+import { AliasLogo } from "@/components/alias-logo";
 import { getAccountIcon, IconBadge, TRANSACTION_ICONS } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
@@ -27,11 +27,15 @@ interface Transaction {
   amount: number;
   type: string;
   descRaw: string;
+  simpleDesc?: string;
+  aliasDesc?: string;
+  logoLocalPath?: string;
   category1?: string;
   category2?: string;
   category3?: string;
   fixVar?: string;
   recurring?: boolean;
+  recurringFlag?: boolean;
   isRefund?: boolean;
   internalTransfer?: boolean;
   accountSource?: string;
@@ -134,7 +138,7 @@ export function DetailPanel({ mode, selectedDate, transactions }: DetailPanelPro
             </p>
           ) : (
             filteredTransactions.map((t) => {
-              const merchantInfo = getMerchantIcon(t.descRaw);
+              const fallbackDesc = t.simpleDesc || t.descRaw?.split(" -- ")[0]?.replace(/\s+\d{4,}/g, "");
               const accountInfo = getAccountIcon(t.accountSource);
 
               return (
@@ -144,31 +148,27 @@ export function DetailPanel({ mode, selectedDate, transactions }: DetailPanelPro
                 >
                   <div className="flex items-start gap-3">
                     {/* Merchant Icon */}
-                    {merchantInfo && (
-                      <div
-                        className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                        style={{ backgroundColor: `${merchantInfo.color}15` }}
-                      >
-                        <merchantInfo.icon
-                          className="w-5 h-5"
-                          style={{ color: merchantInfo.color }}
-                        />
-                      </div>
-                    )}
+                    <AliasLogo
+                      aliasDesc={t.aliasDesc}
+                      fallbackDesc={fallbackDesc}
+                      logoUrl={t.logoLocalPath}
+                      size={24}
+                      showText={false}
+                    />
 
                     {/* Transaction Details */}
                     <div className="flex-1 min-w-0">
                       {/* Merchant + Badges */}
                       <div className="flex items-center gap-1.5 mb-0.5">
                         <p className="font-medium text-sm truncate">
-                          {t.descRaw?.split(" -- ")[0]?.replace(/\s+\d{4,}/g, "")}
+                          {t.aliasDesc || fallbackDesc}
                         </p>
                         {/* Icon badges */}
                         <div className="flex items-center gap-0.5 flex-shrink-0">
                           {t.fixVar === "Fixo" && (
                             <IconBadge {...TRANSACTION_ICONS.fixed} size="xs" />
                           )}
-                          {t.recurring && (
+                          {(t.recurringFlag || t.recurring) && (
                             <IconBadge {...TRANSACTION_ICONS.recurring} size="xs" />
                           )}
                           {t.isRefund && (

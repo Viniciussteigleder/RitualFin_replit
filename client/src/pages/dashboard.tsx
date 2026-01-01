@@ -44,7 +44,7 @@ import { format, subMonths, startOfMonth, endOfMonth, differenceInDays } from "d
 import { ptBR } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
 import { dashboardApi, transactionsApi, accountsApi } from "@/lib/api";
-import { getAccountIcon, getMerchantIcon } from "@/lib/icons";
+import { getAccountIcon } from "@/lib/icons";
 import { Link } from "wouter";
 import { useMonth } from "@/lib/month-context";
 import { Badge } from "@/components/ui/badge";
@@ -567,11 +567,11 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   recentTransactions.map((t: any) => {
-                    const merchantInfo = getMerchantIcon(t.descRaw);
-                    const Icon = merchantInfo?.icon || (CATEGORY_ICONS[t.category1] || CreditCard);
-                    const color = merchantInfo?.color || (CATEGORY_COLORS[t.category1] || "#6b7280");
+                    const Icon = CATEGORY_ICONS[t.category1] || CreditCard;
+                    const color = CATEGORY_COLORS[t.category1] || "#6b7280";
                     const isIncome = t.amount > 0;
-                    const merchantName = t.descRaw?.split(" -- ")[0]?.replace(/\s+\d{4,}/g, '').trim() || t.descRaw;
+                    const fallbackDesc = t.simpleDesc || t.descRaw?.split(" -- ")[0]?.replace(/\s+\d{4,}/g, '').trim() || t.descRaw;
+                    const merchantName = t.aliasDesc || fallbackDesc;
 
                     return (
                       <div
@@ -579,11 +579,12 @@ export default function DashboardPage() {
                         className="px-5 py-3 hover:bg-muted/30 transition-colors flex items-center gap-3"
                         data-testid={`row-transaction-${t.id}`}
                       >
-                        <div
-                          className="w-10 h-10 rounded-xl flex items-center justify-center"
-                          style={{ backgroundColor: `${color}15` }}
-                        >
-                          <Icon className="h-4 w-4" style={{ color }} />
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center border border-muted bg-white">
+                          {t.logoLocalPath ? (
+                            <img src={t.logoLocalPath} alt={merchantName} className="h-5 w-5 object-contain" />
+                          ) : (
+                            <Icon className="h-4 w-4" style={{ color }} />
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">

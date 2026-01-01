@@ -1,7 +1,7 @@
-// Multi-format CSV Parser (Miles & More + Amex)
+// Multi-format CSV Parser (Miles & More + Amex + Sparkasse)
 
 import { logger } from "./logger";
-import { generateMerchantDescription } from "./key-desc-generator";
+import type { TransactionSource } from "../shared/schema";
 
 export interface MilesAndMoreRow {
   authorisedOn: string;
@@ -33,7 +33,9 @@ export interface AmexRow {
 }
 
 export interface ParsedTransaction {
+  source: TransactionSource;
   paymentDate: Date;
+  bookingDate: Date;
   descRaw: string;
   descNorm: string;
   amount: number;
@@ -43,10 +45,9 @@ export interface ParsedTransaction {
   exchangeRate?: number;
   key: string;
   accountSource: string;
-  // Merchant dictionary fields
-  merchantSource: "Sparkasse" | "Amex" | "M&M";
-  merchantKeyDesc: string;
-  merchantAliasDesc: string;
+  keyDesc: string;
+  simpleDesc: string;
+  rawDescription?: string;
 }
 
 export interface ParseResult {
@@ -57,9 +58,20 @@ export interface ParseResult {
   rowsImported: number;
   monthAffected: string;
   format?: "miles_and_more" | "amex" | "sparkasse" | "unknown";
+  meta?: ParseMeta;
 }
 
 type CsvFormat = "miles_and_more" | "amex" | "sparkasse" | "unknown";
+
+export interface ParseMeta {
+  delimiter: string;
+  encoding?: string;
+  dateFormat?: string;
+  amountFormat?: string;
+  warnings: string[];
+  hasMultiline: boolean;
+  missingColumns?: string[];
+}
 
 const MM_REQUIRED_COLUMNS = [
   "Authorised on",
@@ -91,6 +103,32 @@ function normalizeText(text: string): string {
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function formatAmountNormalized(amount: number): string {
+  const rounded = Math.round(amount * 100) / 100;
+  return rounded.toFixed(2).replace(/-0\\.00$/, "0.00");
+}
+
+function formatDateIso(date: Date): string {
+  return date.toISOString().split("T")[0];
+}
+
+function buildKey(base: {
+  keyDesc: string;
+  amount: number;
+  bookingDate: Date;
+  reference?: string;
+}): string {
+  const parts = [
+    base.keyDesc,
+    formatAmountNormalized(base.amount),
+    formatDateIso(base.bookingDate),
+  ];
+  if (base.reference) {
+    parts.push(base.reference);
+  }
+  return parts.join(" -- ");
 }
 
 function parseDateMM(dateStr: string): Date | null {
@@ -156,7 +194,7 @@ function detectCsvFormat(lines: string[]): { format: CsvFormat; separator: strin
   for (let i = 0; i < Math.min(5, lines.length); i++) {
     const line = lines[i];
 
-    const commaCols = line.split(",").map(c => c.trim().replace(/^"|"$/g, ""));
+    const commaCols = parseCSVLine(line, ",").map(c => c.trim().replace(/^"|"$/g, ""));
     if (commaCols.some(c => c.toLowerCase() === "datum") &&
         commaCols.some(c => c.toLowerCase() === "beschreibung") &&
         commaCols.some(c => c.toLowerCase() === "karteninhaber")) {
@@ -164,7 +202,7 @@ function detectCsvFormat(lines: string[]): { format: CsvFormat; separator: strin
       return { format: "amex", separator: "," };
     }
 
-    const semiCols = line.split(";").map(c => c.trim().replace(/^"|"$/g, ""));
+    const semiCols = parseCSVLine(line, ";").map(c => c.trim().replace(/^"|"$/g, ""));
 
     if (semiCols.some(c => c.toLowerCase() === "authorised on")) {
       logger.info("csv_format_detected", { format: "miles_and_more", line: i, headers: semiCols });
@@ -227,7 +265,7 @@ function findMMHeaderLine(lines: string[]): { headerIndex: number; headers: stri
   
   for (let i = 0; i < Math.min(5, lines.length); i++) {
     const line = lines[i];
-    const cols = line.split(";").map(c => c.trim());
+    const cols = parseCSVLine(line, ";").map(c => c.trim());
     
     if (cols.some(c => c.toLowerCase() === "authorised on")) {
       return { headerIndex: i, headers: cols, cardInfo };
@@ -254,31 +292,96 @@ function findAmexHeaderLine(lines: string[]): { headerIndex: number; headers: st
   return { headerIndex: -1, headers: [] };
 }
 
-function buildDescRawMM(row: MilesAndMoreRow): string {
-  let desc = `${row.description} -- ${row.paymentType} -- ${row.status} -- M&M`;
-  
-  if (row.foreignAmount && row.foreignCurrency) {
-    desc += ` [compra internacional em ${row.foreignCurrency}]`;
+function buildKeyDescSparkasse(fields: {
+  beguenstigter: string;
+  verwendungszweck: string;
+  buchungstext: string;
+  kontonummerIban: string;
+}): string {
+  const parts = [
+    fields.beguenstigter,
+    fields.verwendungszweck,
+    fields.buchungstext,
+    fields.kontonummerIban,
+    `Sparkasse - ${fields.beguenstigter}`
+  ];
+  let keyDesc = parts.join(" -- ");
+
+  if (fields.beguenstigter.toLowerCase().includes("american express")) {
+    keyDesc += " -- pagamento Amex";
   }
-  
-  return desc;
+  if (fields.beguenstigter.toLowerCase().includes("deutsche kreditbank")) {
+    keyDesc += " -- pagamento M&M";
+  }
+
+  return keyDesc;
 }
 
-function buildDescRawAmex(row: AmexRow): string {
-  let desc = `${row.beschreibung} -- Amex`;
-  
-  if (row.karteninhaber) {
-    desc += ` [${row.karteninhaber}]`;
+function buildKeyDescAmex(fields: {
+  beschreibung: string;
+  konto: string;
+  karteninhaber: string;
+  amount: number;
+}): string {
+  const parts = [
+    fields.beschreibung,
+    fields.konto,
+    fields.karteninhaber,
+    `Amex - ${fields.beschreibung}`
+  ];
+  let keyDesc = parts.join(" -- ");
+
+  const normalized = fields.beschreibung.toLowerCase();
+  if (normalized.includes("erhalten besten dank")) {
+    keyDesc += " -- pagamento Amex";
+  } else if (fields.amount < 0) {
+    keyDesc += " -- reembolso";
   }
-  
-  if (row.stadt && row.land) {
-    desc += ` @ ${row.stadt}, ${row.land}`;
-  }
-  
-  return desc;
+
+  return keyDesc;
 }
 
-function parseMilesAndMore(lines: string[]): ParseResult {
+function buildKeyDescMM(fields: {
+  description: string;
+  paymentType: string;
+  status: string;
+  amount: number;
+  foreignCurrency?: string;
+  foreignAmount?: number;
+}): string {
+  const parts = [
+    fields.description,
+    fields.paymentType,
+    fields.status,
+    `M&M - ${fields.description}`
+  ];
+  const foreignInfo = fields.foreignAmount && fields.foreignCurrency
+    ? `compra internacional em ${fields.foreignCurrency}`
+    : "";
+  if (foreignInfo) {
+    parts.push(foreignInfo);
+  }
+
+  let keyDesc = parts.join(" -- ");
+
+  if (fields.description.toLowerCase().includes("lastschrift")) {
+    keyDesc += " -- pagamento M&M";
+  }
+  if (fields.amount > 0) {
+    keyDesc += " -- reembolso";
+  }
+
+  return keyDesc;
+}
+
+function buildSimpleDescSparkasse(beguenstigter: string, verwendungszweck: string): string {
+  if (verwendungszweck && verwendungszweck.trim().length > 0) {
+    return `${beguenstigter} -- ${verwendungszweck}`;
+  }
+  return beguenstigter;
+}
+
+function parseMilesAndMore(lines: string[], meta: ParseMeta): ParseResult {
   const { headerIndex, headers, cardInfo } = findMMHeaderLine(lines);
   
   if (headerIndex === -1) {
@@ -289,7 +392,8 @@ function parseMilesAndMore(lines: string[]): ParseResult {
       rowsTotal: lines.length,
       rowsImported: 0,
       monthAffected: "",
-      format: "miles_and_more"
+      format: "miles_and_more",
+      meta
     };
   }
   
@@ -298,6 +402,8 @@ function parseMilesAndMore(lines: string[]): ParseResult {
   );
   
   if (missingColumns.length > 0) {
+    meta.missingColumns = missingColumns;
+    meta.warnings.push(`Colunas obrigatorias faltando: ${missingColumns.join(", ")}`);
     return {
       success: false,
       transactions: [],
@@ -305,7 +411,8 @@ function parseMilesAndMore(lines: string[]): ParseResult {
       rowsTotal: lines.length - headerIndex - 1,
       rowsImported: 0,
       monthAffected: "",
-      format: "miles_and_more"
+      format: "miles_and_more",
+      meta
     };
   }
   
@@ -313,6 +420,7 @@ function parseMilesAndMore(lines: string[]): ParseResult {
   headers.forEach((h, i) => {
     colIndex[h.toLowerCase()] = i;
   });
+
   
   const transactions: ParsedTransaction[] = [];
   const errors: string[] = [];
@@ -326,7 +434,7 @@ function parseMilesAndMore(lines: string[]): ParseResult {
     const line = lines[i];
     if (line.trim() === "") continue;
     
-    const cols = line.split(";");
+    const cols = parseCSVLine(line, ";");
     
     try {
       const authorisedOn = cols[colIndex["authorised on"]] || "";
@@ -350,10 +458,11 @@ function parseMilesAndMore(lines: string[]): ParseResult {
       const exchangeRateIdx = headers.findIndex(h => h.toLowerCase() === "exchange rate");
       const exchangeRateStr = exchangeRateIdx >= 0 ? cols[exchangeRateIdx] || "" : "";
       
+      let amount = parseAmountGerman(amountStr);
       const row: MilesAndMoreRow = {
         authorisedOn,
         processedOn,
-        amount: parseAmountGerman(amountStr),
+        amount,
         currency,
         description,
         paymentType,
@@ -375,31 +484,43 @@ function parseMilesAndMore(lines: string[]): ParseResult {
         continue;
       }
       
-      const descRaw = buildDescRawMM(row);
-      const descNorm = normalizeText(descRaw);
-      const dateIso = paymentDate.toISOString().split("T")[0];
-      const key = `${descNorm} -- ${row.amount} -- ${dateIso}`;
+      const keyDesc = buildKeyDescMM({
+        description: row.description,
+        paymentType: row.paymentType,
+        status: row.status,
+        amount,
+        foreignAmount: row.foreignAmount,
+        foreignCurrency: row.foreignCurrency
+      });
+      const simpleDesc = row.description;
+      const descRaw = simpleDesc;
+      const descNorm = normalizeText(keyDesc);
+      const key = buildKey({
+        keyDesc,
+        amount,
+        bookingDate: paymentDate,
+        reference: row.processedOn || undefined
+      });
       
       const monthStr = `${paymentDate.getFullYear()}-${String(paymentDate.getMonth() + 1).padStart(2, "0")}`;
       months.add(monthStr);
 
-      // Generate merchant description fields
-      const merchantDesc = generateMerchantDescription(descRaw, accountSource);
-
       transactions.push({
+        source: "M&M",
         paymentDate,
+        bookingDate: paymentDate,
         descRaw,
         descNorm,
-        amount: row.amount,
+        amount,
         currency: row.currency,
         foreignAmount: row.foreignAmount,
         foreignCurrency: row.foreignCurrency,
         exchangeRate: row.exchangeRate,
         key,
         accountSource,
-        merchantSource: merchantDesc.source,
-        merchantKeyDesc: merchantDesc.keyDesc,
-        merchantAliasDesc: merchantDesc.aliasDesc
+        keyDesc,
+        simpleDesc,
+        rawDescription: descRaw
       });
     } catch (err) {
       errors.push(`Linha ${i + 1}: Erro ao processar`);
@@ -416,11 +537,12 @@ function parseMilesAndMore(lines: string[]): ParseResult {
     rowsTotal: lines.length - headerIndex - 1,
     rowsImported: transactions.length,
     monthAffected,
-    format: "miles_and_more"
+    format: "miles_and_more",
+    meta
   };
 }
 
-function parseAmex(lines: string[]): ParseResult {
+function parseAmex(lines: string[], meta: ParseMeta): ParseResult {
   const { headerIndex, headers } = findAmexHeaderLine(lines);
   
   if (headerIndex === -1) {
@@ -431,7 +553,8 @@ function parseAmex(lines: string[]): ParseResult {
       rowsTotal: lines.length,
       rowsImported: 0,
       monthAffected: "",
-      format: "amex"
+      format: "amex",
+      meta
     };
   }
   
@@ -491,15 +614,27 @@ function parseAmex(lines: string[]): ParseResult {
         continue;
       }
       
-      let amount = row.betrag;
+      const rawAmount = row.betrag;
+      let amount = rawAmount;
       if (amount > 0) {
         amount = -amount;
       }
       
-      const descRaw = buildDescRawAmex(row);
-      const descNorm = normalizeText(descRaw);
-      const dateIso = paymentDate.toISOString().split("T")[0];
-      const key = `${descNorm} -- ${amount} -- ${dateIso}`;
+      const keyDesc = buildKeyDescAmex({
+        beschreibung: row.beschreibung,
+        konto: row.konto,
+        karteninhaber: row.karteninhaber,
+        amount: rawAmount
+      });
+      const simpleDesc = row.beschreibung;
+      const descRaw = simpleDesc;
+      const descNorm = normalizeText(keyDesc);
+      const key = buildKey({
+        keyDesc,
+        amount,
+        bookingDate: paymentDate,
+        reference: row.betreff || undefined
+      });
       
       const monthStr = `${paymentDate.getFullYear()}-${String(paymentDate.getMonth() + 1).padStart(2, "0")}`;
       months.add(monthStr);
@@ -527,11 +662,10 @@ function parseAmex(lines: string[]): ParseResult {
       const accountLast4 = row.konto.replace(/[^0-9]/g, "").slice(-4);
       const accountSource = `Amex - ${capitalizedFirstName} (${accountLast4})`;
 
-      // Generate merchant description fields
-      const merchantDesc = generateMerchantDescription(descRaw, accountSource);
-
       transactions.push({
+        source: "Amex",
         paymentDate,
+        bookingDate: paymentDate,
         descRaw,
         descNorm,
         amount,
@@ -541,9 +675,9 @@ function parseAmex(lines: string[]): ParseResult {
         exchangeRate,
         key,
         accountSource,
-        merchantSource: merchantDesc.source,
-        merchantKeyDesc: merchantDesc.keyDesc,
-        merchantAliasDesc: merchantDesc.aliasDesc
+        keyDesc,
+        simpleDesc,
+        rawDescription: descRaw
       });
     } catch (err) {
       errors.push(`Linha ${i + 1}: Erro ao processar`);
@@ -560,11 +694,12 @@ function parseAmex(lines: string[]): ParseResult {
     rowsTotal: lines.length - headerIndex - 1,
     rowsImported: transactions.length,
     monthAffected,
-    format: "amex"
+    format: "amex",
+    meta
   };
 }
 
-function parseSparkasse(lines: string[]): ParseResult {
+function parseSparkasse(lines: string[], meta: ParseMeta): ParseResult {
   const transactions: ParsedTransaction[] = [];
   const errors: string[] = [];
   const months = new Set<string>();
@@ -596,6 +731,8 @@ function parseSparkasse(lines: string[]): ParseResult {
       found: headers,
       missing: missingColumns
     });
+    meta.missingColumns = missingColumns;
+    meta.warnings.push(`Sparkasse: colunas obrigatorias faltando: ${missingColumns.join(", ")}`);
     return {
       success: false,
       transactions: [],
@@ -603,7 +740,8 @@ function parseSparkasse(lines: string[]): ParseResult {
       rowsTotal: lines.length - 1,
       rowsImported: 0,
       monthAffected: "",
-      format: "sparkasse"
+      format: "sparkasse",
+      meta
     };
   }
 
@@ -615,6 +753,7 @@ function parseSparkasse(lines: string[]): ParseResult {
       const auftragskonto = cols[colIndex["auftragskonto"]] || "";
       const buchungstag = cols[colIndex["buchungstag"]] || "";
       const verwendungszweck = cols[colIndex["verwendungszweck"]] || "";
+      const buchungstext = cols[colIndex["buchungstext"]] || "";
 
       // Try different variations of beneficiary column name
       const beguenstigter = cols[colIndex["beguenstigter/zahlungspflichtiger"]]
@@ -623,6 +762,11 @@ function parseSparkasse(lines: string[]): ParseResult {
         || cols[colIndex["begünstigter"]]
         || "";
 
+      const kontonummerIban = cols[colIndex["kontonummer/iban"]] || "";
+      const kundenreferenz = cols[colIndex["kundenreferenz (end-to-end)"]] || cols[colIndex["kundenreferenz"]] || "";
+      const mandatsreferenz = cols[colIndex["mandatsreferenz"]] || "";
+      const sammlerreferenz = cols[colIndex["sammlerreferenz"]] || "";
+      const glaeubigerId = cols[colIndex["glaeubiger-id"]] || cols[colIndex["gläubiger-id"]] || "";
       const betragStr = cols[colIndex["betrag"]] || "";
 
       // Parse date (DD.MM.YY format)
@@ -639,22 +783,31 @@ function parseSparkasse(lines: string[]): ParseResult {
       // Parse amount (German format with quotes: "-609,58")
       const amount = parseAmountGerman(betragStr);
 
-      // Build description
-      const descRaw = `${verwendungszweck.slice(0, 100)} -- ${beguenstigter.slice(0, 50)} -- Sparkasse`;
-      const descNorm = normalizeText(descRaw);
-
-      // Build unique key for deduplication
-      const key = `${descNorm} -- ${amount} -- ${paymentDate.toISOString().split("T")[0]}`;
+      const keyDesc = buildKeyDescSparkasse({
+        beguenstigter,
+        verwendungszweck,
+        buchungstext,
+        kontonummerIban: kontonummerIban || auftragskonto
+      });
+      const simpleDesc = buildSimpleDescSparkasse(beguenstigter, verwendungszweck);
+      const descRaw = simpleDesc;
+      const descNorm = normalizeText(keyDesc);
+      const reference = kundenreferenz || mandatsreferenz || sammlerreferenz || glaeubigerId || undefined;
+      const key = buildKey({
+        keyDesc,
+        amount,
+        bookingDate: paymentDate,
+        reference
+      });
 
       // Extract account source (last 4 digits of IBAN)
       const ibanLast4 = auftragskonto.slice(-4);
       const accountSource = `Sparkasse - ${ibanLast4}`;
 
-      // Generate merchant description fields
-      const merchantDesc = generateMerchantDescription(descRaw, accountSource);
-
       transactions.push({
+        source: "Sparkasse",
         paymentDate,
+        bookingDate: paymentDate,
         descRaw,
         descNorm,
         amount,
@@ -664,9 +817,9 @@ function parseSparkasse(lines: string[]): ParseResult {
         exchangeRate: undefined,
         key,
         accountSource,
-        merchantSource: merchantDesc.source,
-        merchantKeyDesc: merchantDesc.keyDesc,
-        merchantAliasDesc: merchantDesc.aliasDesc
+        keyDesc,
+        simpleDesc,
+        rawDescription: descRaw
       });
     } catch (err) {
       errors.push(`Linha ${i + 1}: Erro ao processar`);
@@ -683,7 +836,8 @@ function parseSparkasse(lines: string[]): ParseResult {
     rowsTotal: lines.length - headerIndex - 1,
     rowsImported: transactions.length,
     monthAffected,
-    format: "sparkasse"
+    format: "sparkasse",
+    meta
   };
 }
 
@@ -691,11 +845,12 @@ function parseSparkasse(lines: string[]): ParseResult {
  * Split CSV content into lines, respecting quoted fields that may contain newlines.
  * This is critical for Amex CSVs which have multi-line address fields.
  */
-function splitCSVLines(csvContent: string): string[] {
+function splitCSVLines(csvContent: string): { lines: string[]; hasMultiline: boolean } {
   const lines: string[] = [];
   let currentLine = "";
   let inQuotes = false;
   let i = 0;
+  let hasMultiline = false;
 
   while (i < csvContent.length) {
     const char = csvContent[i];
@@ -720,6 +875,9 @@ function splitCSVLines(csvContent: string): string[] {
       // Skip \r\n together
       i += (char === '\r' && nextChar === '\n') ? 2 : 1;
       continue;
+    } else if ((char === '\n' || (char === '\r' && nextChar === '\n')) && inQuotes) {
+      hasMultiline = true;
+      currentLine += char;
     } else {
       currentLine += char;
     }
@@ -731,17 +889,17 @@ function splitCSVLines(csvContent: string): string[] {
     lines.push(currentLine);
   }
 
-  return lines;
+  return { lines, hasMultiline };
 }
 
-export function parseCSV(csvContent: string): ParseResult {
+export function parseCSV(csvContent: string, options: { encoding?: string } = {}): ParseResult {
   // Remove UTF-8 BOM (Byte Order Mark) if present
   // BOM is \uFEFF character often added by German banking CSV exports
   const cleanedContent = csvContent.charCodeAt(0) === 0xFEFF
     ? csvContent.slice(1)
     : csvContent;
 
-  const allLines = splitCSVLines(cleanedContent);
+  const { lines: allLines, hasMultiline } = splitCSVLines(cleanedContent);
   const lines = allLines.filter(line => line.trim() !== "");
 
   if (lines.length === 0) {
@@ -753,11 +911,30 @@ export function parseCSV(csvContent: string): ParseResult {
       rowsTotal: 0,
       rowsImported: 0,
       monthAffected: "",
-      format: "unknown"
+      format: "unknown",
+      meta: {
+        delimiter: ";",
+        encoding: options.encoding,
+        dateFormat: undefined,
+        amountFormat: "comma-decimal",
+        warnings: ["Arquivo CSV vazio"],
+        hasMultiline
+      }
     };
   }
 
-  const { format } = detectCsvFormat(lines);
+  const { format, separator } = detectCsvFormat(lines);
+  const meta: ParseMeta = {
+    delimiter: separator,
+    encoding: options.encoding,
+    dateFormat: format === "amex" ? "dd/mm/yyyy" : "dd.mm.yyyy",
+    amountFormat: "comma-decimal",
+    warnings: [],
+    hasMultiline
+  };
+  if (hasMultiline) {
+    meta.warnings.push("Campos com múltiplas linhas detectados");
+  }
 
   logger.info("csv_format_detected", {
     format,
@@ -767,11 +944,11 @@ export function parseCSV(csvContent: string): ParseResult {
   let result: ParseResult;
 
   if (format === "amex") {
-    result = parseAmex(lines);
+    result = parseAmex(lines, meta);
   } else if (format === "miles_and_more") {
-    result = parseMilesAndMore(lines);
+    result = parseMilesAndMore(lines, meta);
   } else if (format === "sparkasse") {
-    result = parseSparkasse(lines);
+    result = parseSparkasse(lines, meta);
   } else {
     logger.warn("csv_format_unknown", { totalLines: lines.length });
     result = {
@@ -785,7 +962,8 @@ export function parseCSV(csvContent: string): ParseResult {
       rowsTotal: lines.length,
       rowsImported: 0,
       monthAffected: "",
-      format: "unknown"
+      format: "unknown",
+      meta
     };
   }
 
@@ -811,4 +989,43 @@ export function parseCSV(csvContent: string): ParseResult {
   }
 
   return result;
+}
+
+export interface PreviewResult {
+  success: boolean;
+  format?: CsvFormat;
+  meta?: ParseMeta;
+  rows: Array<{
+    source: TransactionSource;
+    bookingDate: string;
+    amount: number;
+    currency: string;
+    keyDesc: string;
+    simpleDesc: string;
+    accountSource: string;
+    key: string;
+  }>;
+  errors: string[];
+}
+
+export function previewCSV(csvContent: string, options: { encoding?: string } = {}): PreviewResult {
+  const result = parseCSV(csvContent, options);
+  const rows = result.transactions.slice(0, 20).map((tx) => ({
+    source: tx.source,
+    bookingDate: formatDateIso(tx.bookingDate),
+    amount: tx.amount,
+    currency: tx.currency,
+    keyDesc: tx.keyDesc,
+    simpleDesc: tx.simpleDesc,
+    accountSource: tx.accountSource,
+    key: tx.key
+  }));
+
+  return {
+    success: result.success,
+    format: result.format,
+    meta: result.meta,
+    rows,
+    errors: result.errors
+  };
 }

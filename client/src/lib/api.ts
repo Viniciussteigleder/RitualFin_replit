@@ -49,6 +49,19 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
   return res.json();
 }
 
+async function fetchBlob(endpoint: string, options?: RequestInit): Promise<Blob> {
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    ...options,
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: "Request failed" }));
+    throw new Error(error.message || error.error || "Request failed");
+  }
+
+  return res.blob();
+}
+
 // Auth
 export const authApi = {
   login: (username: string, password: string) =>
@@ -99,7 +112,12 @@ export const accountsApi = {
 // Uploads
 export const uploadsApi = {
   list: () => fetchApi<any[]>("/uploads"),
-  process: (filename: string, csvContent: string) =>
+  preview: (filename: string, csvContent: string, encoding?: string) =>
+    fetchApi<any>("/imports/preview", {
+      method: "POST",
+      body: JSON.stringify({ filename, csvContent, encoding }),
+    }),
+  process: (filename: string, csvContent: string, encoding?: string) =>
     fetchApi<{
       success: boolean;
       uploadId: string;
@@ -107,11 +125,70 @@ export const uploadsApi = {
       rowsImported: number;
       duplicates: number;
       monthAffected: string;
+      autoClassified?: number;
+      openCount?: number;
       errors?: string[];
+      meta?: any;
     }>("/uploads/process", {
       method: "POST",
-      body: JSON.stringify({ filename, csvContent }),
+      body: JSON.stringify({ filename, csvContent, encoding }),
     }),
+};
+
+// Classification & Aliases
+export const classificationApi = {
+  exportExcel: () => fetchBlob("/classification/export"),
+  previewImport: (fileBase64: string) =>
+    fetchApi<any>("/classification/import/preview", {
+      method: "POST",
+      body: JSON.stringify({ fileBase64 }),
+    }),
+  applyImport: (fileBase64: string, confirmRemap?: boolean) =>
+    fetchApi<any>("/classification/import/apply", {
+      method: "POST",
+      body: JSON.stringify({ fileBase64, confirmRemap }),
+    }),
+  ruleTest: (keyDesc: string) =>
+    fetchApi<any>("/classification/rule-test", {
+      method: "POST",
+      body: JSON.stringify({ keyDesc }),
+    }),
+  listLeaves: () => fetchApi<any[]>("/classification/leaves"),
+  listRules: () => fetchApi<any[]>("/classification/rules"),
+  reviewQueue: () => fetchApi<any[]>("/classification/review-queue"),
+  assignReview: (data: { transactionId: string; leafId: string; ruleId?: string; newExpression?: string; createRule?: boolean }) =>
+    fetchApi<any>("/classification/review/assign", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+};
+
+export const aliasApi = {
+  exportExcel: () => fetchBlob("/aliases/export"),
+  previewImport: (fileBase64: string) =>
+    fetchApi<any>("/aliases/import/preview", {
+      method: "POST",
+      body: JSON.stringify({ fileBase64 }),
+    }),
+  applyImport: (fileBase64: string) =>
+    fetchApi<any>("/aliases/import/apply", {
+      method: "POST",
+      body: JSON.stringify({ fileBase64 }),
+    }),
+  test: (keyDesc: string) =>
+    fetchApi<any>("/aliases/test", {
+      method: "POST",
+      body: JSON.stringify({ keyDesc }),
+    }),
+  refreshLogos: (force?: boolean) =>
+    fetchApi<any>("/aliases/refresh-logos", {
+      method: "POST",
+      body: JSON.stringify({ force }),
+    }),
+};
+
+export const resetApi = {
+  resetData: () => fetchApi<any>("/settings/reset", { method: "POST" }),
 };
 
 // Transactions

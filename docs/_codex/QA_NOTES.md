@@ -64,3 +64,14 @@
   - No secrets printed in test output.
 - Failures: Missing `DATABASE_URL` prevents dev server start.
 - Repro steps: Set `DATABASE_URL`, rerun `npm run dev`, then `curl http://localhost:5000/api/health`.
+
+## 2026-01-01
+- Tests not run (not requested). Suggested: `npm run check`, `tsx script/test-imports.ts`.
+
+## 2026-01-01
+- Commands executed:
+  - npm run check
+  - npx tsx script/test-imports.ts
+- Results:
+  - TypeScript check: PASS
+  - Import parsing script: PASS (Sparkasse/Amex/M&M)

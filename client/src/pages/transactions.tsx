@@ -19,7 +19,7 @@ import { AccountBadge } from "@/components/account-badge";
 import { useMonth } from "@/lib/month-context";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TransactionDetailModal } from "@/components/transaction-detail-modal";
-import { getMerchantIcon } from "@/lib/merchant-icons";
+import { AliasLogo } from "@/components/alias-logo";
 import { TransactionListSkeleton } from "@/components/skeletons/transaction-list-skeleton";
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -141,7 +141,8 @@ export default function TransactionsPage() {
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((t: any) => {
-      if (search && !t.descRaw?.toLowerCase().includes(search.toLowerCase())) {
+      const haystack = `${t.aliasDesc || ""} ${t.simpleDesc || ""} ${t.descRaw || ""}`.toLowerCase();
+      if (search && !haystack.includes(search.toLowerCase())) {
         return false;
       }
       if (accountFilter !== "all" && t.accountId !== accountFilter) {
@@ -357,7 +358,7 @@ export default function TransactionsPage() {
                   <tbody className="divide-y divide-border/50">
                     {filteredTransactions.map((t: any) => {
                       const categoryColor = CATEGORY_COLORS[t.category1] || "#6b7280";
-                      const merchantInfo = getMerchantIcon(t.descRaw);
+                      const fallbackDesc = t.simpleDesc || t.descRaw?.split(" -- ")[0]?.replace(/\s+\d{4,}/g, '');
                       return (
                         <tr
                           key={t.id}
@@ -372,25 +373,24 @@ export default function TransactionsPage() {
                           </td>
                           <td className="px-5 py-4 max-w-[300px]">
                             <div className="flex items-center gap-2">
-                              {merchantInfo && (
-                                <div
-                                  className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                                  style={{ backgroundColor: `${merchantInfo.color}15` }}
-                                >
-                                  <merchantInfo.icon className="w-4 h-4" style={{ color: merchantInfo.color }} />
-                                </div>
-                              )}
+                              <AliasLogo
+                                aliasDesc={t.aliasDesc}
+                                fallbackDesc={fallbackDesc}
+                                logoUrl={t.logoLocalPath}
+                                size={24}
+                                showText={false}
+                              />
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5">
                                   <p className="font-medium truncate">
-                                    {t.merchantAlias || t.descRaw?.split(" -- ")[0]?.replace(/\s+\d{4,}/g, '')}
+                                    {t.aliasDesc || fallbackDesc}
                                   </p>
                                   {/* Icon badges for transaction attributes */}
                                   <div className="flex items-center gap-1 flex-shrink-0">
                                     {t.fixVar === "Fixo" && (
                                       <IconBadge {...TRANSACTION_ICONS.fixed} size="xs" />
                                     )}
-                                    {t.recurring && (
+                                    {(t.recurringFlag || t.recurring) && (
                                       <IconBadge {...TRANSACTION_ICONS.recurring} size="xs" />
                                     )}
                                     {t.isRefund && (
@@ -423,7 +423,7 @@ export default function TransactionsPage() {
                               {t.fixVar === "Variável" && (
                                 <IconBadge {...TRANSACTION_ICONS.variable} size="xs" />
                               )}
-                              {t.recurring && (
+                              {(t.recurringFlag || t.recurring) && (
                                 <IconBadge {...TRANSACTION_ICONS.recurring} size="xs" />
                               )}
                               {t.isRefund && (

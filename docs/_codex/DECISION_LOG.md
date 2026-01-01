@@ -71,3 +71,12 @@
 - Rationale: Avoid misleading cost data for models without confirmed pricing.
 - Risks: Some usage rows will have null cost estimates until pricing is added.
 - Follow-ups: Add pricing entries when model rates are confirmed.
+
+## 2026-01-01
+- Decision: Keep legacy category fields and rules while introducing new taxonomy/app-category layer.
+- Alternatives: (A) Full migration removing legacy fields; (B) Add new layer and keep legacy intact.
+- Why: Avoid breaking dashboard/confirm flows and allow phased migration.
+
+- Decision: Store downloaded logos in local `public/logos` with Supabase bucket parity.
+- Alternatives: (A) Only Supabase Storage integration; (B) Local storage with Supabase path parity.
+- Why: Local dev compatibility while preserving deploy path structure.

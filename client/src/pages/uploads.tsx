@@ -35,8 +35,16 @@ export default function UploadsPage() {
       }, 100);
       
       try {
-        const content = await file.text();
-        const result = await uploadsApi.process(file.name, content);
+        const buffer = await file.arrayBuffer();
+        let encoding = "utf-8";
+        let content = "";
+        try {
+          content = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+        } catch {
+          encoding = "iso-8859-1";
+          content = new TextDecoder("iso-8859-1").decode(buffer);
+        }
+        const result = await uploadsApi.process(file.name, content, encoding);
         clearInterval(interval);
         setUploadProgress(100);
         return result;

@@ -1,21 +1,36 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertRuleSchema, insertGoalSchema, insertCategoryGoalSchema, insertRitualSchema, type MerchantMetadata, type UpdateNotification } from "@shared/schema";
+import { insertRuleSchema, insertGoalSchema, insertCategoryGoalSchema, insertRitualSchema, type MerchantMetadata, type UpdateNotification, keyDescMap, aliasAssets, transactions } from "@shared/schema";
 import { z } from "zod";
-import { parseCSV, type ParsedTransaction } from "./csv-parser";
-import { categorizeTransaction, suggestKeyword, AI_SEED_RULES } from "./rules-engine";
+import * as XLSX from "xlsx";
+import { parseCSV, previewCSV } from "./csv-parser";
+import { categorizeTransaction, suggestKeyword, AI_SEED_RULES, classifyByKeyDesc } from "./rules-engine";
+import { evaluateAliasMatch } from "./classification-utils";
+import { downloadLogoForAlias } from "./logo-downloader";
+import { updateRecurringGroups } from "./recurrence";
 import OpenAI from "openai";
 import { logger } from "./logger";
 import { withOpenAIUsage } from "./ai-usage";
-import { sql } from "drizzle-orm";
+import { sql, eq } from "drizzle-orm";
 import { db, isDatabaseConfigured } from "./db";
+import fs from "node:fs/promises";
 
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     })
   : null;
+
+function readWorkbookFromBase64(base64: string) {
+  const buffer = Buffer.from(base64, "base64");
+  return XLSX.read(buffer, { type: "buffer" });
+}
+
+function sheetToRows(sheet?: XLSX.Sheet) {
+  if (!sheet) return [];
+  return XLSX.utils.sheet_to_json<Record<string, string>>(sheet, { defval: "" });
+}
 
 export async function registerRoutes(
   httpServer: Server,
@@ -382,6 +397,27 @@ export async function registerRoutes(
   });
 
   // Process CSV upload
+  app.post("/api/imports/preview", async (req: Request, res: Response) => {
+    try {
+      const { filename, csvContent, encoding } = req.body;
+      if (!csvContent) {
+        return res.status(400).json({ error: "CSV content is required" });
+      }
+
+      logger.info("import_preview_start", {
+        filename: filename || "upload.csv",
+        contentLength: csvContent?.length || 0,
+        encoding
+      });
+
+      const preview = previewCSV(csvContent, { encoding });
+      res.json(preview);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Process CSV upload
   app.post("/api/uploads/process", async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
@@ -390,7 +426,7 @@ export async function registerRoutes(
         user = await storage.createUser({ username: "demo", password: "demo" });
       }
 
-      const { filename, csvContent } = req.body;
+      const { filename, csvContent, encoding } = req.body;
 
       logger.info("upload_start", {
         userId: user.id,
@@ -413,7 +449,7 @@ export async function registerRoutes(
       });
 
       // Parse CSV
-      const parseResult = parseCSV(csvContent);
+      const parseResult = parseCSV(csvContent, { encoding });
       
       if (!parseResult.success) {
         logger.error("upload_parse_failed", {
@@ -464,6 +500,7 @@ export async function registerRoutes(
 
       // Get rules and settings for categorization
       const rules = await storage.getRules(user.id);
+      const aliasAssets = await storage.getAliasAssets(user.id);
       let userSettings = await storage.getSettings(user.id);
 
       // Create default settings if they don't exist
@@ -546,62 +583,88 @@ export async function registerRoutes(
       // Process each transaction
       let importedCount = 0;
       let duplicateCount = 0;
+      let autoClassifiedCount = 0;
+      let openCount = 0;
+      const importedKeyDescs = new Set<string>();
       const errors: string[] = [];
 
       for (const parsed of parseResult.transactions) {
         // Check for duplicates by key
-        const existing = await storage.getTransactionByKey(parsed.key);
+        const existing = await storage.getTransactionByKey(user.id, parsed.key);
         if (existing) {
           duplicateCount++;
           continue;
         }
+        const ruleMatch = classifyByKeyDesc(parsed.keyDesc, rules);
+        const needsReview = !ruleMatch.leafId;
+        const status = needsReview ? "OPEN" : "FINAL";
+        const classifiedBy = ruleMatch.leafId ? "AUTO_KEYWORDS" : undefined;
+        if (needsReview) {
+          openCount++;
+        } else {
+          autoClassifiedCount++;
+        }
 
-        // Categorize using rules with confidence level
-        const categorization = categorizeTransaction(parsed.descNorm, rules, {
-          autoConfirmHighConfidence: userSettings.autoConfirmHighConfidence,
-          confidenceThreshold: userSettings.confidenceThreshold
+        let aliasDesc: string | undefined;
+        const existingMapping = await storage.getKeyDescMapping(user.id, parsed.keyDesc);
+        if (existingMapping?.aliasDesc) {
+          aliasDesc = existingMapping.aliasDesc;
+        } else {
+          for (const alias of aliasAssets) {
+            const match = evaluateAliasMatch(parsed.keyDesc, alias);
+            if (match.isMatch) {
+              aliasDesc = alias.aliasDesc;
+              break;
+            }
+          }
+        }
+
+        await storage.upsertKeyDescMapping({
+          userId: user.id,
+          keyDesc: parsed.keyDesc,
+          simpleDesc: parsed.simpleDesc,
+          aliasDesc: aliasDesc ?? existingMapping?.aliasDesc ?? null
         });
-        const keyword = suggestKeyword(parsed.descNorm);
+
+        if (aliasDesc && (!existingMapping?.aliasDesc || existingMapping.aliasDesc !== aliasDesc)) {
+          await storage.updateTransactionsAliasByKeyDesc(user.id, parsed.keyDesc, aliasDesc);
+        }
+
+        const keyword = suggestKeyword(parsed.keyDesc);
 
         try {
           await storage.createTransaction({
             userId: user.id,
             paymentDate: parsed.paymentDate,
+            bookingDate: parsed.bookingDate.toISOString().split("T")[0],
             accountSource: parsed.accountSource,
             accountId: accountMap.get(parsed.accountSource),
             descRaw: parsed.descRaw,
             descNorm: parsed.descNorm,
+            rawDescription: parsed.rawDescription,
+            normalizedDescription: parsed.descNorm,
             amount: parsed.amount,
             currency: parsed.currency,
             foreignAmount: parsed.foreignAmount,
             foreignCurrency: parsed.foreignCurrency,
             exchangeRate: parsed.exchangeRate,
             key: parsed.key,
+            source: parsed.source,
+            keyDesc: parsed.keyDesc,
+            simpleDesc: parsed.simpleDesc,
+            aliasDesc: aliasDesc,
+            leafId: ruleMatch.leafId,
+            classifiedBy: classifiedBy as any,
+            status: status as any,
+            recurringFlag: false,
             uploadId: upload.id,
             suggestedKeyword: keyword,
-            ...categorization
+            needsReview,
+            ruleIdApplied: ruleMatch.ruleId
           });
 
-          // Auto-create/update merchant description entry
-          try {
-            await storage.upsertMerchantDescription(
-              user.id,
-              parsed.merchantSource,
-              parsed.merchantKeyDesc,
-              parsed.merchantAliasDesc,
-              false // isManual=false for auto-generated entries
-            );
-          } catch (merchantErr: any) {
-            // Log but don't fail the transaction import if merchant dict fails
-            logger.warn("merchant_upsert_failed", {
-              userId: user.id,
-              source: parsed.merchantSource,
-              keyDesc: parsed.merchantKeyDesc,
-              error: merchantErr.message
-            });
-          }
-
           importedCount++;
+          importedKeyDescs.add(parsed.keyDesc);
         } catch (err: any) {
           const errorMsg = `Failed to import: ${parsed.descRaw.slice(0, 50)}`;
           errors.push(errorMsg);
@@ -643,6 +706,10 @@ export async function registerRoutes(
 
       const duration = Date.now() - startTime;
 
+      if (importedKeyDescs.size > 0) {
+        await updateRecurringGroups(storage, user.id, Array.from(importedKeyDescs));
+      }
+
       logger.info("upload_complete", {
         userId: user.id,
         uploadId: upload.id,
@@ -664,6 +731,9 @@ export async function registerRoutes(
         rowsImported: importedCount,
         duplicates: duplicateCount,
         monthAffected: parseResult.monthAffected,
+        autoClassified: autoClassifiedCount,
+        openCount,
+        meta: parseResult.meta,
         errors: errors.length > 0 ? errors : undefined
       });
     } catch (error: any) {
@@ -698,6 +768,589 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("Error fetching upload errors:", error);
       res.status(500).json({ error: "Failed to retrieve errors" });
+    }
+  });
+
+  // ===== CLASSIFICATION & DATA =====
+  app.get("/api/classification/export", async (_req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const [levels1, levels2, leaves, appCats, appLeafs, rules] = await Promise.all([
+        storage.getTaxonomyLevel1(user.id),
+        storage.getTaxonomyLevel2(user.id),
+        storage.getTaxonomyLeaf(user.id),
+        storage.getAppCategories(user.id),
+        storage.getAppCategoryLeaf(user.id),
+        storage.getRules(user.id)
+      ]);
+
+      const level1ById = new Map(levels1.map(l => [l.level1Id, l]));
+      const level2ById = new Map(levels2.map(l => [l.level2Id, l]));
+      const appCatById = new Map(appCats.map(c => [c.appCatId, c]));
+      const appCatByLeaf = new Map(appLeafs.map(l => [l.leafId, appCatById.get(l.appCatId)?.name || ""]));
+      const ruleByLeaf = new Map(rules.filter(r => r.leafId).map(r => [r.leafId as string, r]));
+
+      const rows = leaves.map(leaf => {
+        const level2 = level2ById.get(leaf.level2Id);
+        const level1 = level2 ? level1ById.get(level2.level1Id) : undefined;
+        const rule = ruleByLeaf.get(leaf.leafId);
+        return {
+          "App classificação": appCatByLeaf.get(leaf.leafId) || "",
+          "Nivel_1_PT": level1?.nivel1Pt || "",
+          "Nivel_2_PT": level2?.nivel2Pt || "",
+          "Nivel_3_PT": leaf.nivel3Pt || "",
+          "Key_words": rule?.keyWords || "",
+          "Key_words_negative": rule?.keyWordsNegative || "",
+          "Receita/Despesa": leaf.receitaDespesaDefault || level2?.receitaDespesaDefault || "",
+          "Fixo/Variável": leaf.fixoVariavelDefault || level2?.fixoVariavelDefault || "",
+          "Recorrente": leaf.recorrenteDefault || level2?.recorrenteDefault || ""
+        };
+      });
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Categorias");
+      const buffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.setHeader("Content-Disposition", "attachment; filename=ritualfin_categorias.xlsx");
+      res.send(buffer);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/classification/import/preview", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const { fileBase64 } = req.body;
+      if (!fileBase64) return res.status(400).json({ error: "Arquivo Excel obrigatorio" });
+
+      const workbook = readWorkbookFromBase64(fileBase64);
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = sheetToRows(sheet);
+
+      const requiredColumns = [
+        "App classificação", "Nivel_1_PT", "Nivel_2_PT", "Nivel_3_PT",
+        "Key_words", "Key_words_negative", "Receita/Despesa", "Fixo/Variável", "Recorrente"
+      ];
+      const columns = rows.length > 0 ? Object.keys(rows[0]) : [];
+      const missingColumns = requiredColumns.filter(c => !columns.includes(c));
+      if (missingColumns.length > 0) {
+        return res.status(400).json({ error: `Colunas faltando: ${missingColumns.join(", ")}` });
+      }
+
+      const incomingAppCats = Array.from(new Set(rows.map(r => String(r["App classificação"] || "").trim()).filter(Boolean)));
+      const existingAppCats = (await storage.getAppCategories(user.id)).map(c => c.name);
+
+      const requiresRemap = incomingAppCats.sort().join("|") !== existingAppCats.sort().join("|");
+
+      res.json({
+        rows: rows.length,
+        appCategories: incomingAppCats.length,
+        rules: rows.filter(r => String(r["Key_words"] || "").trim().length > 0).length,
+        requiresRemap
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/classification/import/apply", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const { fileBase64, confirmRemap } = req.body;
+      if (!fileBase64) return res.status(400).json({ error: "Arquivo Excel obrigatorio" });
+
+      const workbook = readWorkbookFromBase64(fileBase64);
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = sheetToRows(sheet);
+
+      const incomingAppCats = Array.from(new Set(rows.map(r => String(r["App classificação"] || "").trim()).filter(Boolean)));
+      const existingAppCats = (await storage.getAppCategories(user.id)).map(c => c.name);
+      const requiresRemap = incomingAppCats.sort().join("|") !== existingAppCats.sort().join("|");
+      if (requiresRemap && !confirmRemap) {
+        return res.status(400).json({ error: "Mudanca de categorias requer confirmacao", requiresRemap: true });
+      }
+
+      await storage.deleteTaxonomyForUser(user.id);
+
+      const appCatMap = new Map<string, string>();
+      let orderIndex = 0;
+      for (const name of incomingAppCats) {
+        const created = await storage.createAppCategory({
+          userId: user.id,
+          name,
+          active: true,
+          orderIndex: orderIndex++
+        });
+        appCatMap.set(name, created.appCatId);
+      }
+
+      const level1Map = new Map<string, string>();
+      const level2Map = new Map<string, string>();
+      const leafMap = new Map<string, string>();
+
+      for (const row of rows) {
+        const nivel1 = String(row["Nivel_1_PT"] || "").trim();
+        const nivel2 = String(row["Nivel_2_PT"] || "").trim();
+        const nivel3 = String(row["Nivel_3_PT"] || "").trim();
+        const appCat = String(row["App classificação"] || "").trim();
+        if (!nivel1 || !nivel2 || !nivel3) continue;
+
+        if (!level1Map.has(nivel1)) {
+          const created = await storage.createTaxonomyLevel1({
+            userId: user.id,
+            nivel1Pt: nivel1
+          });
+          level1Map.set(nivel1, created.level1Id);
+        }
+
+        const level1Id = level1Map.get(nivel1)!;
+        const level2Key = `${nivel1}__${nivel2}`;
+        if (!level2Map.has(level2Key)) {
+          const created = await storage.createTaxonomyLevel2({
+            userId: user.id,
+            level1Id,
+            nivel2Pt: nivel2,
+            recorrenteDefault: String(row["Recorrente"] || "").trim() || null,
+            fixoVariavelDefault: String(row["Fixo/Variável"] || "").trim() || null,
+            receitaDespesaDefault: String(row["Receita/Despesa"] || "").trim() || null
+          });
+          level2Map.set(level2Key, created.level2Id);
+        }
+
+        const level2Id = level2Map.get(level2Key)!;
+        const leafKey = `${level2Key}__${nivel3}`;
+        if (!leafMap.has(leafKey)) {
+          const created = await storage.createTaxonomyLeaf({
+            userId: user.id,
+            level2Id,
+            nivel3Pt: nivel3,
+            recorrenteDefault: String(row["Recorrente"] || "").trim() || null,
+            fixoVariavelDefault: String(row["Fixo/Variável"] || "").trim() || null,
+            receitaDespesaDefault: String(row["Receita/Despesa"] || "").trim() || null
+          });
+          leafMap.set(leafKey, created.leafId);
+        }
+
+        const leafId = leafMap.get(leafKey)!;
+        const keyWords = String(row["Key_words"] || "").trim();
+        const keyWordsNegative = String(row["Key_words_negative"] || "").trim();
+        if (keyWords.length > 0) {
+          await storage.createRule({
+            userId: user.id,
+            leafId,
+            keyWords,
+            keyWordsNegative: keyWordsNegative || null,
+            active: true
+          });
+        }
+
+        if (appCat && appCatMap.has(appCat)) {
+          await storage.createAppCategoryLeaf({
+            userId: user.id,
+            appCatId: appCatMap.get(appCat)!,
+            leafId
+          });
+        }
+      }
+
+      res.json({ success: true, rows: rows.length });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/classification/rule-test", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const { keyDesc } = req.body;
+      if (!keyDesc) return res.status(400).json({ error: "key_desc obrigatorio" });
+
+      const rules = await storage.getRules(user.id);
+      const match = classifyByKeyDesc(keyDesc, rules);
+
+      res.json(match);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/classification/leaves", async (_req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const leaves = await storage.getTaxonomyLeaf(user.id);
+      res.json(leaves);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/classification/rules", async (_req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const rules = await storage.getRules(user.id);
+      res.json(rules);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/classification/review-queue", async (_req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const transactions = await storage.getTransactionsWithMerchantAlias(user.id);
+      const open = transactions.filter(tx => tx.status === "OPEN" || tx.needsReview);
+      res.json(open);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/classification/review/assign", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const schema = z.object({
+        transactionId: z.string(),
+        leafId: z.string(),
+        ruleId: z.string().optional(),
+        newExpression: z.string().optional(),
+        createRule: z.boolean().optional()
+      });
+      const data = schema.parse(req.body);
+
+      if (data.createRule && data.newExpression) {
+        await storage.createRule({
+          userId: user.id,
+          leafId: data.leafId,
+          keyWords: data.newExpression,
+          active: true
+        });
+      } else if (data.ruleId && data.newExpression) {
+        const rule = await storage.getRule(data.ruleId);
+        if (rule) {
+          const updatedKeywords = rule.keyWords
+            ? `${rule.keyWords};${data.newExpression}`
+            : data.newExpression;
+          await storage.updateRule(rule.id, { keyWords: updatedKeywords });
+        }
+      }
+
+      const updated = await storage.updateTransaction(data.transactionId, {
+        leafId: data.leafId,
+        classifiedBy: "MANUAL",
+        status: "FINAL",
+        needsReview: false
+      } as any);
+
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/aliases/export", async (_req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const [keyDescRows, aliasRows] = await Promise.all([
+        storage.getKeyDescMap(user.id),
+        storage.getAliasAssets(user.id)
+      ]);
+
+      const wsKeyDesc = XLSX.utils.json_to_sheet(
+        keyDescRows.map(row => ({
+          key_desc: row.keyDesc,
+          simple_desc: row.simpleDesc,
+          alias_desc: row.aliasDesc || ""
+        }))
+      );
+      const wsAlias = XLSX.utils.json_to_sheet(
+        aliasRows.map(row => ({
+          alias_desc: row.aliasDesc,
+          key_words_alias: row.keyWordsAlias,
+          url_logo_internet: row.urlLogoInternet || "",
+          logo_local_path: row.logoLocalPath || ""
+        }))
+      );
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, wsKeyDesc, "key_desc_map");
+      XLSX.utils.book_append_sheet(wb, wsAlias, "alias_assets");
+      const buffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.setHeader("Content-Disposition", "attachment; filename=ritualfin_aliases.xlsx");
+      res.send(buffer);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/aliases/import/preview", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const { fileBase64 } = req.body;
+      if (!fileBase64) return res.status(400).json({ error: "Arquivo Excel obrigatorio" });
+
+      const workbook = readWorkbookFromBase64(fileBase64);
+      const sheetKeyDesc = workbook.Sheets[workbook.SheetNames[0]];
+      const sheetAlias = workbook.Sheets[workbook.SheetNames[1]];
+      const keyDescRows = sheetToRows(sheetKeyDesc || {});
+      const aliasRows = sheetToRows(sheetAlias || {});
+
+      res.json({
+        keyDescRows: keyDescRows.length,
+        aliasRows: aliasRows.length
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/aliases/import/apply", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const { fileBase64 } = req.body;
+      if (!fileBase64) return res.status(400).json({ error: "Arquivo Excel obrigatorio" });
+
+      const workbook = readWorkbookFromBase64(fileBase64);
+      const sheetKeyDesc = workbook.Sheets[workbook.SheetNames[0]];
+      const sheetAlias = workbook.Sheets[workbook.SheetNames[1]];
+      const keyDescRows = sheetToRows(sheetKeyDesc || {});
+      const aliasRows = sheetToRows(sheetAlias || {});
+
+      for (const row of keyDescRows) {
+        const keyDesc = String(row["key_desc"] || row["keyDesc"] || row["key_desc "] || "").trim();
+        const simpleDesc = String(row["simple_desc"] || row["simpleDesc"] || "").trim();
+        const aliasDesc = String(row["alias_desc"] || row["aliasDesc"] || "").trim();
+        if (!keyDesc) continue;
+
+        await storage.upsertKeyDescMapping({
+          userId: user.id,
+          keyDesc,
+          simpleDesc: simpleDesc || keyDesc,
+          aliasDesc: aliasDesc || null
+        });
+        if (aliasDesc) {
+          await storage.updateTransactionsAliasByKeyDesc(user.id, keyDesc, aliasDesc);
+        }
+      }
+
+      for (const row of aliasRows) {
+        const aliasDesc = String(row["alias_desc"] || row["Alias_Desc"] || "").trim();
+        const keyWordsAlias = String(row["key_words_alias"] || row["Key_words_alias"] || "").trim();
+        const urlLogoInternet = String(row["url_logo_internet"] || row["URL_icon_internet"] || "").trim();
+        if (!aliasDesc) continue;
+
+        await storage.upsertAliasAsset({
+          userId: user.id,
+          aliasDesc,
+          keyWordsAlias: keyWordsAlias || "",
+          urlLogoInternet: urlLogoInternet || null
+        });
+      }
+
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/aliases/test", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const { keyDesc } = req.body;
+      if (!keyDesc) return res.status(400).json({ error: "key_desc obrigatorio" });
+
+      const aliases = await storage.getAliasAssets(user.id);
+      for (const alias of aliases) {
+        const match = evaluateAliasMatch(keyDesc, alias);
+        if (match.isMatch) {
+          return res.json({ aliasDesc: alias.aliasDesc, matched: match.matched });
+        }
+      }
+
+      res.json({ aliasDesc: null });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/aliases/refresh-logos", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const { force } = req.body || {};
+      const aliases = await storage.getAliasAssets(user.id);
+      const targets = aliases.filter(a => a.urlLogoInternet && (force || !a.logoLocalPath));
+
+      const results: Array<{ aliasDesc: string; status: string; error?: string }> = [];
+      for (const alias of targets) {
+        try {
+          const stored = await downloadLogoForAlias({
+            userId: user.id,
+            aliasDesc: alias.aliasDesc,
+            url: alias.urlLogoInternet as string
+          });
+
+          await storage.updateAliasAsset(user.id, alias.aliasDesc, {
+            logoLocalPath: stored.logoLocalPath,
+            logoMimeType: stored.logoMimeType,
+            logoUpdatedAt: new Date()
+          });
+
+          results.push({ aliasDesc: alias.aliasDesc, status: "ok" });
+        } catch (err: any) {
+          results.push({ aliasDesc: alias.aliasDesc, status: "error", error: err.message });
+        }
+      }
+
+      res.json({ total: targets.length, results });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/settings/reset", async (_req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      await db.delete(transactions).where(eq(transactions.userId, user.id));
+      await db.delete(keyDescMap).where(eq(keyDescMap.userId, user.id));
+      await db.delete(aliasAssets).where(eq(aliasAssets.userId, user.id));
+      await storage.deleteTaxonomyForUser(user.id);
+
+      const categoriasCsv = await fs.readFile("server/seed-data/categorias.csv");
+      const aliasCsv = await fs.readFile("server/seed-data/alias_desc.csv");
+
+      const catWb = XLSX.read(categoriasCsv, { type: "buffer" });
+      const aliasWb = XLSX.read(aliasCsv, { type: "buffer" });
+
+      const catRows = sheetToRows(catWb.Sheets[catWb.SheetNames[0]]);
+      const aliasRows = sheetToRows(aliasWb.Sheets[aliasWb.SheetNames[0]]);
+
+      const appCats = Array.from(new Set(catRows.map(r => String(r["App classificação"] || "").trim()).filter(Boolean)));
+      const appCatMap = new Map<string, string>();
+      let orderIndex = 0;
+      for (const name of appCats) {
+        const created = await storage.createAppCategory({
+          userId: user.id,
+          name,
+          active: true,
+          orderIndex: orderIndex++
+        });
+        appCatMap.set(name, created.appCatId);
+      }
+
+      const level1Map = new Map<string, string>();
+      const level2Map = new Map<string, string>();
+      const leafMap = new Map<string, string>();
+
+      for (const row of catRows) {
+        const nivel1 = String(row["Nivel_1_PT"] || "").trim();
+        const nivel2 = String(row["Nivel_2_PT"] || "").trim();
+        const nivel3 = String(row["Nivel_3_PT"] || "").trim();
+        const appCat = String(row["App classificação"] || "").trim();
+        if (!nivel1 || !nivel2 || !nivel3) continue;
+
+        if (!level1Map.has(nivel1)) {
+          const created = await storage.createTaxonomyLevel1({ userId: user.id, nivel1Pt: nivel1 });
+          level1Map.set(nivel1, created.level1Id);
+        }
+
+        const level1Id = level1Map.get(nivel1)!;
+        const level2Key = `${nivel1}__${nivel2}`;
+        if (!level2Map.has(level2Key)) {
+          const created = await storage.createTaxonomyLevel2({
+            userId: user.id,
+            level1Id,
+            nivel2Pt: nivel2,
+            recorrenteDefault: String(row["Recorrente"] || "").trim() || null,
+            fixoVariavelDefault: String(row["Fixo/Variável"] || "").trim() || null,
+            receitaDespesaDefault: String(row["Receita/Despesa"] || "").trim() || null
+          });
+          level2Map.set(level2Key, created.level2Id);
+        }
+
+        const level2Id = level2Map.get(level2Key)!;
+        const leafKey = `${level2Key}__${nivel3}`;
+        if (!leafMap.has(leafKey)) {
+          const created = await storage.createTaxonomyLeaf({
+            userId: user.id,
+            level2Id,
+            nivel3Pt: nivel3,
+            recorrenteDefault: String(row["Recorrente"] || "").trim() || null,
+            fixoVariavelDefault: String(row["Fixo/Variável"] || "").trim() || null,
+            receitaDespesaDefault: String(row["Receita/Despesa"] || "").trim() || null
+          });
+          leafMap.set(leafKey, created.leafId);
+        }
+
+        const leafId = leafMap.get(leafKey)!;
+        const keyWords = String(row["Key_words"] || "").trim();
+        const keyWordsNegative = String(row["Key_words_negative"] || "").trim();
+        if (keyWords.length > 0) {
+          await storage.createRule({
+            userId: user.id,
+            leafId,
+            keyWords,
+            keyWordsNegative: keyWordsNegative || null,
+            active: true
+          });
+        }
+
+        if (appCat && appCatMap.has(appCat)) {
+          await storage.createAppCategoryLeaf({
+            userId: user.id,
+            appCatId: appCatMap.get(appCat)!,
+            leafId
+          });
+        }
+      }
+
+      for (const row of aliasRows) {
+        const aliasDesc = String(row["Alias_Desc"] || row["alias_desc"] || "").trim();
+        const keyWordsAlias = String(row["Key_words_alias"] || row["key_words_alias"] || "").trim();
+        const urlLogoInternet = String(row["URL_icon_internet"] || row["url_logo_internet"] || "").trim();
+        if (!aliasDesc) continue;
+        await storage.upsertAliasAsset({
+          userId: user.id,
+          aliasDesc,
+          keyWordsAlias: keyWordsAlias || "",
+          urlLogoInternet: urlLogoInternet || null
+        });
+      }
+
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
     }
   });
 
@@ -825,10 +1478,11 @@ export async function registerRoutes(
       const user = await storage.getUserByUsername("demo");
       if (!user) return res.json([]);
       
-      const transactions = await storage.getTransactionsByNeedsReview(user.id);
+      const transactions = await storage.getTransactionsWithMerchantAlias(user.id);
+      const needsReview = transactions.filter(tx => tx.status === "OPEN" || tx.needsReview);
       
       // Add keyword suggestion for each
-      const withSuggestions = transactions.map(tx => ({
+      const withSuggestions = needsReview.map(tx => ({
         ...tx,
         suggestedKeyword: suggestKeyword(tx.descNorm)
       }));
@@ -1034,7 +1688,10 @@ export async function registerRoutes(
       // Get unreviewed transactions
       const transactions = await storage.getTransactionsByNeedsReview(user.id);
       
-      const keywords = rule.keywords.split(";").map(k => k.toLowerCase().trim());
+      if (!rule.keywords || !rule.type || !rule.fixVar || !rule.category1) {
+        return res.status(400).json({ error: "Regra incompleta para aplicar" });
+      }
+      const keywords = rule.keywords.split(";").map(k => k.toLowerCase().trim()).filter(Boolean);
       let appliedCount = 0;
 
       for (const tx of transactions) {

@@ -777,3 +777,23 @@ categoryGoals
 ---
 
 **End of Architecture Overview**
+
+---
+
+## Classification + Alias + Logos (2026-01-01)
+
+**New flow**:
+1. CSV import generates `key_desc` and `key` (source-specific strict concatenation)
+2. Rules engine matches `key_desc` against `key_words` expressions (semicolon-separated)
+3. If matched: `leaf_id` set, `status=FINAL`, `classified_by=AUTO_KEYWORDS`
+4. If not matched: `status=OPEN`, sent to review queue
+5. Alias resolution uses `key_desc_map` → `alias_assets` rules → fallback `simple_desc`
+6. Logos are downloaded to local storage (`public/logos`) and referenced by `alias_assets.logo_local_path`
+
+**New tables**:
+- taxonomy_level_1 / taxonomy_level_2 / taxonomy_leaf
+- app_category / app_category_leaf
+- key_desc_map / alias_assets
+
+**AI usage**:
+- No AI in this pipeline; rules are deterministic string matching.
