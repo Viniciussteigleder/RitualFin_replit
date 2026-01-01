@@ -356,3 +356,22 @@
   - Code merged to main and pushed; production deploy triggered via Vercel CLI.
 - Observations & risks:
   - Vercel CLI timed out after upload; deployment status should be verified in Vercel dashboard.
+
+## 2026-01-01T19:35:00Z (UTC)
+- Session goal: Follow next steps and attempt full UI flow.
+- Commands executed (READ-ONLY):
+  - sed -n '1,120p' server/index.ts
+  - tail -n 80 /tmp/ritualfin_dev.log
+- Commands executed (MUTATING):
+  - npm run db:push (failed: DATABASE_URL not set)
+  - npm run check
+  - npx tsx script/test-imports.ts
+  - apply_patch (server/index.ts)
+  - npm run dev (failed: ENOTSUP socket bind)
+  - curl http://127.0.0.1:5001/api/health (failed)
+  - cat >> docs/_codex/QA_NOTES.md
+  - cat >> docs/_codex/CODEX_ACTIVITY_LOG.md
+- Summary of changes:
+  - Added HOST override for server listen to support local binding.
+- Observations & risks:
+  - Full UI flow cannot be executed in this environment (socket bind unsupported; DATABASE_URL missing).
