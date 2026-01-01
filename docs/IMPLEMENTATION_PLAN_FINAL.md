@@ -1,5 +1,7 @@
 # Plano de Implementação Final - RitualFin
 
+**Nota**: O plano consolidado e ativo está em `docs/IMPLEMENTATION_MASTER_PLAN.md`. Este documento permanece como histórico de execução.
+
 ## Status Atual
 **Branch**: `claude/access-display-app-2bTSq`
 **Última atualização**: Implementação das fases 1 e 2 do Dicionário de Comerciantes concluída

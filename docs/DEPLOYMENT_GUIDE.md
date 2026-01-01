@@ -5,6 +5,8 @@
 
 See also: `docs/FULL_DEPLOY_PROTOCOL.md` for the ongoing deployment protocol (Commit/Sync vs Full Deploy).
 
+**Policy**: Full Deploy is required for all changes (backend and UI-only). Commit/Sync is deprecated.
+
 ---
 
 ## Prerequisites

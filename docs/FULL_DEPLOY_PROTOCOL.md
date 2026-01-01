@@ -5,6 +5,11 @@
 - Commit/Sync: A GitHub main branch update that triggers platform auto-deploys, without running the full verification workflow.
 - Full Deploy: A complete, end-to-end deployment cycle that confirms the intended commit is live on Render and Vercel, with explicit version verification and smoke checks.
 
+## 1.1) Policy Update (Enforced)
+
+- **Full Deploy is required for all changes** (backend, frontend, and UI-only updates).
+- Commit/Sync is **deprecated** and must not be used going forward.
+
 ## 2) Preconditions
 
 - GitHub main is the source of truth for production.
@@ -19,10 +24,12 @@
 
 ## 3) Choose a protocol
 
-- Commit/Sync: use for routine doc-only or low-risk changes.
-- Full Deploy: use for backend changes, migrations, or anything that touches imports, rules, or deployment wiring.
+- **Full Deploy (required)**: use for all changes, including UI-only updates.
+- Commit/Sync: deprecated, do not use.
 
 ## 4) Commit/Sync Protocol (Fast Path)
+
+**Deprecated**: Do not use this protocol. All changes must follow Full Deploy.
 
 ### 4.1 Pre-flight
 

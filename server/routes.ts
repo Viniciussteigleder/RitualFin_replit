@@ -1387,6 +1387,10 @@ export async function registerRoutes(
         storage.getTaxonomyLevel1(user.id)
       ]);
 
+      if (leaves.length === 0) {
+        return res.status(400).json({ error: "Taxonomia não configurada. Importe as categorias antes de aplicar sugestões." });
+      }
+
       const level1ById = new Map(levels1.map(level => [level.level1Id, level.nivel1Pt || ""]));
       const level2ById = new Map(levels2.map(level => [level.level2Id, level]));
 
@@ -3836,6 +3840,23 @@ Retorne APENAS um array JSON válido, sem markdown ou texto adicional.`;
         return entry;
       });
 
+      const mapLevel1ToLegacy = (nivel1Pt: string) => {
+        const key = normalizeKey(nivel1Pt);
+        if (key === normalizeKey("Moradia")) return "Moradia";
+        if (key === normalizeKey("Alimentação")) return "Alimentação";
+        if (key === normalizeKey("Compras & Estilo de Vida")) return "Compras Online";
+        if (key === normalizeKey("Mobilidade")) return "Transporte";
+        if (key === normalizeKey("Saúde & Seguros")) return "Saúde";
+        if (key === normalizeKey("Educação & Crianças")) return "Educação";
+        if (key === normalizeKey("Lazer & Viagens")) return "Lazer";
+        if (key === normalizeKey("Interna")) return "Interno";
+        if (key === normalizeKey("Finanças & Transferências")) return "Investimentos";
+        if (key === normalizeKey("Trabalho & Receitas")) return "Receitas";
+        if (key === normalizeKey("Doações & Outros")) return "Outros";
+        if (key === normalizeKey("Revisão & Não Classificado")) return "Outros";
+        return "Outros";
+      };
+
       const { suggestions } = req.body;
       if (!suggestions || !Array.isArray(suggestions)) {
         return res.status(400).json({ error: "Sugestões inválidas" });
@@ -3845,19 +3866,33 @@ Retorne APENAS um array JSON válido, sem markdown ou texto adicional.`;
       const updated = [];
 
       for (const s of suggestions) {
+        const lookupKey = `${normalizeKey(s.suggestedCategory)}||${normalizeKey(s.suggestedCategory2)}||${normalizeKey(s.suggestedCategory3)}`;
+        const resolvedLeaf = (s.leafId && leafById.get(s.leafId))
+          ? leafOptions.find((leaf) => leaf.leafId === s.leafId)
+          : leafLookup.get(lookupKey);
+
+        if (!resolvedLeaf) {
+          continue;
+        }
+
+        const legacyCategory1 = mapLevel1ToLegacy(resolvedLeaf.nivel1Pt);
+
         // Create rule
         const rule = await storage.createRule({
           userId: user.id,
           name: `AI: ${s.keyword}`,
           keywords: s.keyword.toLowerCase(),
+          keyWords: s.keyword.toLowerCase(),
           type: s.suggestedType || "Despesa",
           fixVar: s.suggestedFixVar || "Variável",
-          category1: s.suggestedCategory || "Outros",
-          category2: s.suggestedCategory2 || null,
-          category3: s.suggestedCategory3 || null,
+          category1: legacyCategory1,
+          category2: resolvedLeaf.nivel2Pt || null,
+          category3: resolvedLeaf.nivel3Pt || null,
           priority: 600,
           strict: false,
-          isSystem: false
+          isSystem: false,
+          leafId: resolvedLeaf.leafId,
+          active: true
         });
         created.push(rule);
 
@@ -3868,12 +3903,16 @@ Retorne APENAS um array JSON válido, sem markdown ou texto adicional.`;
             await storage.updateTransaction(tx.id, {
               type: s.suggestedType || "Despesa",
               fixVar: s.suggestedFixVar || "Variável",
-              category1: s.suggestedCategory || "Outros",
-              category2: s.suggestedCategory2 || null,
-              category3: s.suggestedCategory3 || null,
+              category1: legacyCategory1,
+              category2: resolvedLeaf.nivel2Pt || null,
+              category3: resolvedLeaf.nivel3Pt || null,
+              leafId: resolvedLeaf.leafId,
+              classifiedBy: "AI_SUGGESTION",
               needsReview: false,
               confidence: s.confidence || 80,
-              ruleIdApplied: rule.id
+              ruleIdApplied: rule.id,
+              internalTransfer: legacyCategory1 === "Interno",
+              excludeFromBudget: legacyCategory1 === "Interno"
             });
             updated.push(tx.id);
           }
