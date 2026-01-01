@@ -200,6 +200,9 @@ const parseDateSparkasse = (dateStr: string): Date | null => {
   }
   const date = new Date(year, month, day);
   if (isNaN(date.getTime())) return null;
+  if (date.getFullYear() !== year || date.getMonth() !== month || date.getDate() !== day) {
+    return null;
+  }
   return date;
 };
 
@@ -261,7 +264,6 @@ const getHeaderIndex = (headerMap: Record<string, number>, headerName: string) =
 export function runSparkasseParsePipeline(input: SparkassePipelineInput): SparkassePipelineResult {
   const now = new Date();
   const sizeBytes = input.sizeBytes ?? input.buffer?.length ?? input.csvContent?.length ?? 0;
-  const fallbackDate = input.importDate || now;
 
   const diagnostics: SparkasseDiagnostics = {
     uploadAttemptId: input.uploadAttemptId,
@@ -411,7 +413,6 @@ export function runSparkasseParsePipeline(input: SparkassePipelineInput): Sparka
   const errors: string[] = [];
   const months = new Set<string>();
   const rowErrors: SparkasseRowError[] = [];
-  let fallbackDateCount = 0;
 
   const rows = records.slice(1);
   diagnostics.rowsTotal = rows.length;
@@ -436,10 +437,16 @@ export function runSparkasseParsePipeline(input: SparkassePipelineInput): Sparka
     const sammlerreferenz = getValue("Sammlerreferenz");
     const glaeubigerId = getValue("Glaeubiger ID");
 
-    let paymentDate = parseDateSparkasse(buchungstag);
+    const paymentDate = parseDateSparkasse(buchungstag);
     if (!paymentDate) {
-      paymentDate = fallbackDate;
-      fallbackDateCount += 1;
+      rowErrors.push({
+        rowNumber,
+        field: "Buchungstag",
+        value: buchungstag,
+        code: "DATE_PARSE_FAILED",
+        message: "Data invalida"
+      });
+      return;
     }
 
     const amount = parseAmountSparkasse(betragStr);
@@ -498,10 +505,6 @@ export function runSparkasseParsePipeline(input: SparkassePipelineInput): Sparka
   });
 
   diagnostics.rowErrors = rowErrors;
-  diagnostics.dateFallbackCount = fallbackDateCount;
-  if (fallbackDateCount > 0) {
-    diagnostics.warnings?.push("Algumas linhas sem data válida usaram a data de importação.");
-  }
   diagnostics.rowsPreview = transactions.slice(0, 20).map((tx) => ({
     bookingDate: formatDateIso(tx.bookingDate),
     amount: tx.amount.toString(),
