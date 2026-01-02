@@ -2568,6 +2568,274 @@ export const budgetsCopy = {
   }
 };
 
+export const merchantDictionaryCopy = {
+  title: {
+    "pt-BR": "Dicionário de Comerciantes",
+    "de-DE": "Händlerverzeichnis",
+    "en-US": "Merchant dictionary"
+  },
+  subtitle: {
+    "pt-BR": "Edite aliases para melhorar a legibilidade das transações",
+    "de-DE": "Bearbeiten Sie Aliase, um Transaktionen besser lesbar zu machen",
+    "en-US": "Edit aliases to improve transaction readability"
+  },
+  searchPlaceholder: {
+    "pt-BR": "Buscar descrição...",
+    "de-DE": "Beschreibung suchen...",
+    "en-US": "Search description..."
+  },
+  filterSource: {
+    "pt-BR": "Fonte",
+    "de-DE": "Quelle",
+    "en-US": "Source"
+  },
+  filterManual: {
+    "pt-BR": "Manual",
+    "de-DE": "Manuell",
+    "en-US": "Manual"
+  },
+  filterAll: {
+    "pt-BR": "Todos",
+    "de-DE": "Alle",
+    "en-US": "All"
+  },
+  filterManualOnly: {
+    "pt-BR": "Somente manual",
+    "de-DE": "Nur manuell",
+    "en-US": "Manual only"
+  },
+  filterAutoOnly: {
+    "pt-BR": "Somente automático",
+    "de-DE": "Nur automatisch",
+    "en-US": "Auto only"
+  },
+  editTitle: {
+    "pt-BR": "Editar alias",
+    "de-DE": "Alias bearbeiten",
+    "en-US": "Edit alias"
+  },
+  aliasLabel: {
+    "pt-BR": "Alias",
+    "de-DE": "Alias",
+    "en-US": "Alias"
+  },
+  save: {
+    "pt-BR": "Salvar",
+    "de-DE": "Speichern",
+    "en-US": "Save"
+  },
+  cancel: {
+    "pt-BR": "Cancelar",
+    "de-DE": "Abbrechen",
+    "en-US": "Cancel"
+  },
+  confirmDelete: {
+    "pt-BR": "Remover este mapeamento?",
+    "de-DE": "Diese Zuordnung entfernen?",
+    "en-US": "Remove this mapping?"
+  },
+  toastAliasUpdated: {
+    "pt-BR": "Alias atualizado com sucesso",
+    "de-DE": "Alias erfolgreich aktualisiert",
+    "en-US": "Alias updated successfully"
+  },
+  toastUpdateError: {
+    "pt-BR": "Erro ao atualizar",
+    "de-DE": "Fehler beim Aktualisieren",
+    "en-US": "Failed to update"
+  },
+  toastRemoved: {
+    "pt-BR": "Mapeamento removido",
+    "de-DE": "Zuordnung entfernt",
+    "en-US": "Mapping removed"
+  },
+  toastSuggestError: {
+    "pt-BR": "Erro ao sugerir alias",
+    "de-DE": "Fehler beim Vorschlagen eines Alias",
+    "en-US": "Failed to suggest alias"
+  },
+  toastSuggestionReady: {
+    "pt-BR": "Sugestão recebida!",
+    "de-DE": "Vorschlag erhalten!",
+    "en-US": "Suggestion received!"
+  },
+  toastSuggestionBody: {
+    "pt-BR": "Revise e salve se aprovar",
+    "de-DE": "Bitte prüfen und speichern, wenn passend",
+    "en-US": "Review and save if approved"
+  },
+  toastAiError: {
+    "pt-BR": "Erro na sugestão AI",
+    "de-DE": "Fehler bei der KI-Empfehlung",
+    "en-US": "AI suggestion error"
+  },
+  exportEmpty: {
+    "pt-BR": "Nenhum dado para exportar",
+    "de-DE": "Keine Daten zum Exportieren",
+    "en-US": "No data to export"
+  },
+  exportCount: {
+    "pt-BR": "{count} registros exportados",
+    "de-DE": "{count} Einträge exportiert",
+    "en-US": "{count} records exported"
+  },
+  importEmpty: {
+    "pt-BR": "Arquivo vazio",
+    "de-DE": "Leere Datei",
+    "en-US": "Empty file"
+  },
+  importErrors: {
+    "pt-BR": "Erros encontrados no arquivo",
+    "de-DE": "Fehler in der Datei gefunden",
+    "en-US": "Errors found in file"
+  },
+  importNoneValid: {
+    "pt-BR": "Nenhum registro válido para importar",
+    "de-DE": "Keine gültigen Datensätze zum Importieren",
+    "en-US": "No valid records to import"
+  },
+  importSuccess: {
+    "pt-BR": "{count} registros importados com sucesso",
+    "de-DE": "{count} Einträge erfolgreich importiert",
+    "en-US": "{count} records imported successfully"
+  },
+  importPartialTitle: {
+    "pt-BR": "Importação concluída com erros",
+    "de-DE": "Import mit Fehlern abgeschlossen",
+    "en-US": "Import completed with errors"
+  },
+  importPartialBody: {
+    "pt-BR": "{success} importados, {fail} falharam",
+    "de-DE": "{success} importiert, {fail} fehlgeschlagen",
+    "en-US": "{success} imported, {fail} failed"
+  },
+  importProcessError: {
+    "pt-BR": "Erro ao processar arquivo",
+    "de-DE": "Fehler beim Verarbeiten der Datei",
+    "en-US": "Error processing file"
+  },
+  sourceLabel: {
+    "pt-BR": "Fonte",
+    "de-DE": "Quelle",
+    "en-US": "Source"
+  },
+  keyDescLabel: {
+    "pt-BR": "Descrição Chave",
+    "de-DE": "Schlüsselbeschreibung",
+    "en-US": "Key description"
+  },
+  manualLabel: {
+    "pt-BR": "Manual",
+    "de-DE": "Manuell",
+    "en-US": "Manual"
+  },
+  yes: {
+    "pt-BR": "Sim",
+    "de-DE": "Ja",
+    "en-US": "Yes"
+  },
+  no: {
+    "pt-BR": "Não",
+    "de-DE": "Nein",
+    "en-US": "No"
+  },
+  createdAt: {
+    "pt-BR": "Criado em",
+    "de-DE": "Erstellt am",
+    "en-US": "Created at"
+  },
+  updatedAt: {
+    "pt-BR": "Atualizado em",
+    "de-DE": "Aktualisiert am",
+    "en-US": "Updated at"
+  },
+  headerTitle: {
+    "pt-BR": "Dicionário de Comerciantes",
+    "de-DE": "Händlerverzeichnis",
+    "en-US": "Merchant dictionary"
+  },
+  headerSubtitle: {
+    "pt-BR": "Gerencie aliases padronizados para descrições de transações",
+    "de-DE": "Verwalten Sie standardisierte Aliase für Transaktionsbeschreibungen",
+    "en-US": "Manage standardized aliases for transaction descriptions"
+  },
+  exportLabel: {
+    "pt-BR": "Exportar",
+    "de-DE": "Exportieren",
+    "en-US": "Export"
+  },
+  importLabel: {
+    "pt-BR": "Importar",
+    "de-DE": "Importieren",
+    "en-US": "Import"
+  },
+  statTotal: {
+    "pt-BR": "Total",
+    "de-DE": "Gesamt",
+    "en-US": "Total"
+  },
+  statManual: {
+    "pt-BR": "Manual",
+    "de-DE": "Manuell",
+    "en-US": "Manual"
+  },
+  statAuto: {
+    "pt-BR": "Auto",
+    "de-DE": "Auto",
+    "en-US": "Auto"
+  },
+  statSources: {
+    "pt-BR": "Fontes",
+    "de-DE": "Quellen",
+    "en-US": "Sources"
+  },
+  filterType: {
+    "pt-BR": "Tipo",
+    "de-DE": "Typ",
+    "en-US": "Type"
+  },
+  filterAllSources: {
+    "pt-BR": "Todas as Fontes",
+    "de-DE": "Alle Quellen",
+    "en-US": "All sources"
+  },
+  emptyTitle: {
+    "pt-BR": "Nenhum alias encontrado",
+    "de-DE": "Kein Alias gefunden",
+    "en-US": "No aliases found"
+  },
+  emptyBody: {
+    "pt-BR": "Os aliases serão criados automaticamente ao importar transações.",
+    "de-DE": "Aliase werden beim Import von Transaktionen automatisch erstellt.",
+    "en-US": "Aliases will be created automatically when importing transactions."
+  },
+  manualBadge: {
+    "pt-BR": "Manual",
+    "de-DE": "Manuell",
+    "en-US": "Manual"
+  },
+  suggestAi: {
+    "pt-BR": "Sugerir com IA",
+    "de-DE": "Mit KI vorschlagen",
+    "en-US": "Suggest with AI"
+  },
+  importSourceError: {
+    "pt-BR": "Linha {row}: Fonte deve ser \"Sparkasse\", \"Amex\" ou \"M&M\"",
+    "de-DE": "Zeile {row}: Quelle muss \"Sparkasse\", \"Amex\" oder \"M&M\" sein",
+    "en-US": "Row {row}: Source must be \"Sparkasse\", \"Amex\", or \"M&M\""
+  },
+  importKeyError: {
+    "pt-BR": "Linha {row}: Descrição Chave é obrigatória",
+    "de-DE": "Zeile {row}: Schlüsselbeschreibung ist erforderlich",
+    "en-US": "Row {row}: Key description is required"
+  },
+  importAliasError: {
+    "pt-BR": "Linha {row}: Alias é obrigatório",
+    "de-DE": "Zeile {row}: Alias ist erforderlich",
+    "en-US": "Row {row}: Alias is required"
+  }
+};
+
 export const confirmCopy = {
   title: {
     "pt-BR": "Fila de Confirmação",
