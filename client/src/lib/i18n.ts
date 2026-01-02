@@ -862,6 +862,16 @@ export const transactionsCopy = {
     "de-DE": "Typ",
     "en-US": "Type"
   },
+  typeExpense: {
+    "pt-BR": "Despesa",
+    "de-DE": "Ausgabe",
+    "en-US": "Expense"
+  },
+  typeIncome: {
+    "pt-BR": "Receita",
+    "de-DE": "Einnahme",
+    "en-US": "Income"
+  },
   fixVarLabel: {
     "pt-BR": "Fixo/Variável",
     "de-DE": "Fix/Variabel",
@@ -2229,6 +2239,229 @@ export const goalsCopy = {
     "pt-BR": "Sugestões aplicadas (5% de redução)",
     "de-DE": "Vorschläge angewendet (5% Reduktion)",
     "en-US": "Suggestions applied (5% reduction)"
+  }
+};
+
+export const aiKeywordsCopy = {
+  title: {
+    "pt-BR": "Análise Inteligente de Keywords",
+    "de-DE": "Intelligente Keyword-Analyse",
+    "en-US": "Smart keyword analysis"
+  },
+  subtitle: {
+    "pt-BR": "A IA analisa suas transações pendentes e sugere categorias em lote",
+    "de-DE": "Die KI analysiert offene Transaktionen und schlägt Kategorien vor",
+    "en-US": "AI analyzes pending transactions and suggests categories in bulk"
+  },
+  analyzeAction: {
+    "pt-BR": "Analisar Transações",
+    "de-DE": "Transaktionen analysieren",
+    "en-US": "Analyze transactions"
+  },
+  analyzing: {
+    "pt-BR": "Analisando...",
+    "de-DE": "Analysiere...",
+    "en-US": "Analyzing..."
+  },
+  emptyTitle: {
+    "pt-BR": "Pronto para Categorizar em Lote?",
+    "de-DE": "Bereit für die Stapel-Kategorisierung?",
+    "en-US": "Ready to categorize in bulk?"
+  },
+  emptyBody: {
+    "pt-BR": "Clique em \"Analisar Transações\" para que a IA identifique padrões nas suas transações pendentes e sugira categorias para cada palavra-chave encontrada.",
+    "de-DE": "Klicken Sie auf \"Transaktionen analysieren\", damit die KI Muster in offenen Transaktionen erkennt und Kategorien vorschlägt.",
+    "en-US": "Click \"Analyze transactions\" so AI can find patterns and suggest categories for each keyword."
+  },
+  startAnalysis: {
+    "pt-BR": "Começar Análise",
+    "de-DE": "Analyse starten",
+    "en-US": "Start analysis"
+  },
+  analyzingTitle: {
+    "pt-BR": "Analisando suas transações...",
+    "de-DE": "Transaktionen werden analysiert...",
+    "en-US": "Analyzing your transactions..."
+  },
+  analyzingBody: {
+    "pt-BR": "A IA está identificando padrões e sugerindo categorias",
+    "de-DE": "Die KI identifiziert Muster und schlägt Kategorien vor",
+    "en-US": "AI is identifying patterns and suggesting categories"
+  },
+  totalAnalyzed: {
+    "pt-BR": "Total Analisado",
+    "de-DE": "Insgesamt analysiert",
+    "en-US": "Total analyzed"
+  },
+  transactionsLabel: {
+    "pt-BR": "transações",
+    "de-DE": "Transaktionen",
+    "en-US": "transactions"
+  },
+  confidenceHigh: {
+    "pt-BR": "Alta Confiança",
+    "de-DE": "Hohe Zuversicht",
+    "en-US": "High confidence"
+  },
+  confidenceMedium: {
+    "pt-BR": "Média Confiança",
+    "de-DE": "Mittlere Zuversicht",
+    "en-US": "Medium confidence"
+  },
+  confidenceLow: {
+    "pt-BR": "Baixa Confiança",
+    "de-DE": "Niedrige Zuversicht",
+    "en-US": "Low confidence"
+  },
+  selectedLabel: {
+    "pt-BR": "Selecionadas",
+    "de-DE": "Ausgewählt",
+    "en-US": "Selected"
+  },
+  selectedOf: {
+    "pt-BR": "de {total} keywords",
+    "de-DE": "von {total} Keywords",
+    "en-US": "of {total} keywords"
+  },
+  selectAll: {
+    "pt-BR": "Selecionar tudo",
+    "de-DE": "Alle auswählen",
+    "en-US": "Select all"
+  },
+  selectNone: {
+    "pt-BR": "Limpar seleção",
+    "de-DE": "Auswahl entfernen",
+    "en-US": "Clear selection"
+  },
+  suggestionsTitle: {
+    "pt-BR": "Sugestões da IA",
+    "de-DE": "KI-Vorschläge",
+    "en-US": "AI suggestions"
+  },
+  confidenceHighRange: {
+    "pt-BR": "≥80% confiança",
+    "de-DE": "≥80% Zuversicht",
+    "en-US": "≥80% confidence"
+  },
+  confidenceMediumRange: {
+    "pt-BR": "50-79% confiança",
+    "de-DE": "50–79% Zuversicht",
+    "en-US": "50–79% confidence"
+  },
+  confidenceBadge: {
+    "pt-BR": "{percent}% confiança",
+    "de-DE": "{percent}% Zuversicht",
+    "en-US": "{percent}% confidence"
+  },
+  transactionsCount: {
+    "pt-BR": "{count} transações",
+    "de-DE": "{count} Transaktionen",
+    "en-US": "{count} transactions"
+  },
+  samplesPrefix: {
+    "pt-BR": "Exemplos",
+    "de-DE": "Beispiele",
+    "en-US": "Samples"
+  },
+  applySelectedTitle: {
+    "pt-BR": "Aplicar Sugestões Selecionadas",
+    "de-DE": "Ausgewählte Vorschläge anwenden",
+    "en-US": "Apply selected suggestions"
+  },
+  applySelectedBody: {
+    "pt-BR": "Serão criadas {count} regras e atualizadas as transações correspondentes",
+    "de-DE": "Es werden {count} Regeln erstellt und entsprechende Transaktionen aktualisiert",
+    "en-US": "{count} rules will be created and related transactions updated"
+  },
+  viewRules: {
+    "pt-BR": "Ver Regras Existentes",
+    "de-DE": "Bestehende Regeln ansehen",
+    "en-US": "View existing rules"
+  },
+  applyCount: {
+    "pt-BR": "Aplicar {count} Sugestões",
+    "de-DE": "{count} Vorschläge anwenden",
+    "en-US": "Apply {count} suggestions"
+  },
+  allCategorizedTitle: {
+    "pt-BR": "Tudo Categorizado!",
+    "de-DE": "Alles kategorisiert!",
+    "en-US": "All categorized!"
+  },
+  allCategorizedBody: {
+    "pt-BR": "Não há transações pendentes de categorização. Todas as suas transações já possuem uma categoria definida.",
+    "de-DE": "Keine Transaktionen warten auf Kategorisierung. Alle Transaktionen sind kategorisiert.",
+    "en-US": "No transactions pending categorization. All transactions already have a category."
+  }
+  applySelected: {
+    "pt-BR": "Aplicar regras",
+    "de-DE": "Regeln anwenden",
+    "en-US": "Apply rules"
+  },
+  toastAnalyzeError: {
+    "pt-BR": "Erro ao analisar transações",
+    "de-DE": "Fehler bei der Transaktionsanalyse",
+    "en-US": "Failed to analyze transactions"
+  },
+  toastAppliedTitle: {
+    "pt-BR": "Regras criadas com sucesso!",
+    "de-DE": "Regeln erfolgreich erstellt!",
+    "en-US": "Rules created successfully!"
+  },
+  toastAppliedBody: {
+    "pt-BR": "{rules} regras criadas, {transactions} transações atualizadas",
+    "de-DE": "{rules} Regeln erstellt, {transactions} Transaktionen aktualisiert",
+    "en-US": "{rules} rules created, {transactions} transactions updated"
+  },
+  toastApplyError: {
+    "pt-BR": "Erro ao criar regras",
+    "de-DE": "Fehler beim Erstellen der Regeln",
+    "en-US": "Failed to create rules"
+  },
+  toastAnalyzed: {
+    "pt-BR": "{count} palavras-chave analisadas",
+    "de-DE": "{count} Schlüsselwörter analysiert",
+    "en-US": "{count} keywords analyzed"
+  },
+  categoryLabel: {
+    "pt-BR": "Categoria",
+    "de-DE": "Kategorie",
+    "en-US": "Category"
+  },
+  typeLabel: {
+    "pt-BR": "Tipo",
+    "de-DE": "Typ",
+    "en-US": "Type"
+  },
+  fixVarLabel: {
+    "pt-BR": "Fixo/Variável",
+    "de-DE": "Fix/Variabel",
+    "en-US": "Fixed/Variable"
+  },
+  confidenceLabel: {
+    "pt-BR": "Confiança",
+    "de-DE": "Zuversicht",
+    "en-US": "Confidence"
+  },
+  reasonLabel: {
+    "pt-BR": "Motivo",
+    "de-DE": "Grund",
+    "en-US": "Reason"
+  },
+  samplesLabel: {
+    "pt-BR": "Exemplos",
+    "de-DE": "Beispiele",
+    "en-US": "Samples"
+  },
+  pendingEmpty: {
+    "pt-BR": "Nenhuma sugestão disponível",
+    "de-DE": "Keine Vorschläge verfügbar",
+    "en-US": "No suggestions available"
+  },
+  backDashboard: {
+    "pt-BR": "Voltar ao Dashboard",
+    "de-DE": "Zurück zum Dashboard",
+    "en-US": "Back to dashboard"
   }
 };
 
