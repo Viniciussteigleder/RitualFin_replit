@@ -2193,7 +2193,7 @@ export default function SettingsPage() {
                       </Button>
                       {dangerLastDeletedAt ? (
                         <p className="text-xs text-rose-700">
-                          {t(locale, settingsCopy.dangerLastDeleted)}: {new Date(dangerLastDeletedAt).toLocaleString("pt-BR")}
+                          {t(locale, settingsCopy.dangerLastDeleted)}: {formatDateTime(locale, dangerLastDeletedAt)}
                         </p>
                       ) : null}
                     </div>
@@ -2203,7 +2203,7 @@ export default function SettingsPage() {
                 {dangerLastDeletedAt && (
                   <StatusPanel
                     title={t(locale, settingsCopy.dangerLastTitle)}
-                    description={`Concluída em ${new Date(dangerLastDeletedAt).toLocaleString("pt-BR")}.`}
+                    description={`Concluída em ${formatDateTime(locale, dangerLastDeletedAt)}.`}
                     variant="warning"
                     payload={dangerDeletedSummary.length ? { datasets: dangerDeletedSummary } : undefined}
                   />
@@ -2324,7 +2324,7 @@ export default function SettingsPage() {
                           <DialogTitle>{t(locale, settingsCopy.dangerDoneTitle)}</DialogTitle>
                           <DialogDescription>
                             {dangerLastDeletedAt
-                              ? `Concluído em ${new Date(dangerLastDeletedAt).toLocaleString("pt-BR")}.`
+                              ? `Concluído em ${formatDateTime(locale, dangerLastDeletedAt)}.`
                               : t(locale, settingsCopy.dangerDoneFallback)}
                           </DialogDescription>
                         </DialogHeader>
