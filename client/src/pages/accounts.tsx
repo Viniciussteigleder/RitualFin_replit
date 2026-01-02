@@ -69,9 +69,9 @@ export default function AccountsPage() {
   const dateFormatter = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "2-digit", year: "numeric" });
   const formatMessage = (template: string, vars: Record<string, string | number>) =>
     Object.entries(vars).reduce((result, [key, value]) => result.replace(`{${key}}`, String(value)), template);
-  const accountTypeLabels = accountsCopy.typeLabels[locale] || accountsCopy.typeLabels["pt-BR"];
-  const colorLabels = accountsCopy.colorLabels[locale] || accountsCopy.colorLabels["pt-BR"];
-  const iconLabels = accountsCopy.iconLabels[locale] || accountsCopy.iconLabels["pt-BR"];
+  const accountTypeLabels = translate(locale, accountsCopy.typeLabels) as Record<string, string>;
+  const colorLabels = translate(locale, accountsCopy.colorLabels) as Record<string, string>;
+  const iconLabels = translate(locale, accountsCopy.iconLabels) as Record<string, string>;
 
   const { data: accounts = [], isLoading } = useQuery({
     queryKey: ["accounts"],

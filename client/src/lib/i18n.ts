@@ -6,8 +6,14 @@ export type TranslationTriplet = {
   "en-US": string;
 };
 
-export function t(locale: Locale, triplet: TranslationTriplet) {
-  return triplet[locale] || triplet["pt-BR"];
+export type TranslationMap<T> = {
+  "pt-BR": T;
+  "de-DE": T;
+  "en-US": T;
+};
+
+export function t<T>(locale: Locale, map: TranslationMap<T>): T {
+  return map[locale] ?? map["pt-BR"];
 }
 
 export const accountBadgeCopy = {
@@ -1147,16 +1153,6 @@ export const transactionsCopy = {
     "pt-BR": "Tipo",
     "de-DE": "Typ",
     "en-US": "Type"
-  },
-  typeExpense: {
-    "pt-BR": "Despesa",
-    "de-DE": "Ausgabe",
-    "en-US": "Expense"
-  },
-  typeIncome: {
-    "pt-BR": "Receita",
-    "de-DE": "Einnahme",
-    "en-US": "Income"
   },
   fixVarLabel: {
     "pt-BR": "Fixo/Variável",
@@ -2623,6 +2619,16 @@ export const aiKeywordsCopy = {
     "pt-BR": "Sugestões da IA",
     "de-DE": "KI-Vorschläge",
     "en-US": "AI suggestions"
+  },
+  typeExpense: {
+    "pt-BR": "Despesa",
+    "de-DE": "Ausgabe",
+    "en-US": "Expense"
+  },
+  typeIncome: {
+    "pt-BR": "Receita",
+    "de-DE": "Einnahme",
+    "en-US": "Income"
   },
   confidenceHighRange: {
     "pt-BR": "≥80% confiança",
@@ -5587,7 +5593,7 @@ export const settingsCopy = {
     "pt-BR": "Concluído em {date}.",
     "de-DE": "Abgeschlossen am {date}.",
     "en-US": "Completed on {date}."
-  }
+  },
   toastDataReset: {
     "pt-BR": "Dados resetados",
     "de-DE": "Daten zurückgesetzt",

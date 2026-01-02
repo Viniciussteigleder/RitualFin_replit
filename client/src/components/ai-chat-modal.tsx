@@ -22,7 +22,9 @@ interface Message {
   timestamp: Date;
 }
 
-const QUICK_ACTIONS = [
+type AiChatKey = keyof typeof aiChatCopy;
+
+const QUICK_ACTIONS: Array<{ icon: typeof TrendingUp; labelKey: AiChatKey; promptKey: AiChatKey }> = [
   { icon: TrendingUp, labelKey: "quickActionMonthLabel", promptKey: "quickActionMonthPrompt" },
   { icon: Target, labelKey: "quickActionSaveLabel", promptKey: "quickActionSavePrompt" },
   { icon: FileText, labelKey: "quickActionDupesLabel", promptKey: "quickActionDupesPrompt" },

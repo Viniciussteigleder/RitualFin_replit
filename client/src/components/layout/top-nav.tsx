@@ -17,7 +17,7 @@ export function TopNav() {
   const [location] = useLocation();
   const { month, setMonth, formatMonth } = useMonth();
   const locale = useLocale();
-  const navLabels = useMemo(() => translate(locale, layoutCopy.nav), [locale]);
+  const navLabels = useMemo(() => translate(locale, layoutCopy.nav) as Record<string, string>, [locale]);
 
   const prevMonth = () => {
     const [year, m] = month.split("-").map(Number);

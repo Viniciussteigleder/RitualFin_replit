@@ -82,7 +82,10 @@ export default function SettingsPage() {
   const [auditFilter, setAuditFilter] = useState("all");
   const { toast } = useToast();
   const integrationProviders = useMemo(() => t(locale, settingsCopy.integrationProviders), [locale]);
-  const auditActionLabels = useMemo(() => t(locale, settingsCopy.auditActionLabels), [locale]);
+  const auditActionLabels = useMemo(
+    () => t(locale, settingsCopy.auditActionLabels) as Record<string, string>,
+    [locale]
+  );
   const formatMessage = (template: string, vars: Record<string, string | number>) =>
     Object.entries(vars).reduce((result, [key, value]) => result.replace(`{${key}}`, String(value)), template);
   const tabs = useMemo(() => ([

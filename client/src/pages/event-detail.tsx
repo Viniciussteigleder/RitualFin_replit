@@ -150,7 +150,7 @@ export default function EventDetailPage() {
   const Icon = CATEGORY_ICONS[event.category1] || CreditCard;
   const color = CATEGORY_COLORS[event.category1] || "#6b7280";
   const dueDate = new Date(event.nextDueDate);
-  const recurrenceLabels = eventDetailCopy.recurrenceLabels[locale] || eventDetailCopy.recurrenceLabels["pt-BR"];
+  const recurrenceLabels = translate(locale, eventDetailCopy.recurrenceLabels) as Record<string, string>;
 
   const totalPaid = occurrences.filter(o => o.status === "paid").reduce((sum, o) => sum + o.amount, 0);
   const avgAmount = occurrences.length > 0 
