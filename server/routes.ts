@@ -1136,6 +1136,41 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/imports/conflicts/resolve", async (req: Request, res: Response) => {
+    try {
+      let user = await storage.getUserByUsername("demo");
+      if (!user) {
+        user = await storage.createUser({ username: "demo", password: "demo" });
+      }
+      const { uploadId, action, duplicateCount } = req.body || {};
+      if (!uploadId || !action) {
+        return res.status(400).json({ error: "uploadId e action são obrigatórios" });
+      }
+
+      await writeAuditLog({
+        userId: user.id,
+        action: "import_conflict_resolution",
+        entityType: "upload",
+        entityId: uploadId,
+        status: "success",
+        message: `Conflicts resolved: ${action}`,
+        metadata: {
+          duplicateCount: duplicateCount || 0,
+          action
+        }
+      });
+
+      res.json({
+        success: true,
+        uploadId,
+        action,
+        duplicateCount: duplicateCount || 0
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.post("/api/data-imports/preview", async (req: Request, res: Response) => {
     try {
       const user = await storage.getUserByUsername("demo");
@@ -1531,6 +1566,26 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("Error fetching upload errors:", error);
       res.status(500).json({ error: "Failed to retrieve errors" });
+    }
+  });
+
+  // Get diagnostics for a specific upload
+  app.get("/api/uploads/:id/diagnostics", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      const upload = await storage.getUpload(req.params.id);
+      if (!upload || upload.userId !== user.id) {
+        return res.status(404).json({ error: "Upload not found" });
+      }
+
+      const diagnostics = await storage.getUploadDiagnostics(req.params.id);
+      res.json(diagnostics || null);
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to retrieve diagnostics" });
     }
   });
 

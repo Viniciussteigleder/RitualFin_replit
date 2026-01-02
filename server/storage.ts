@@ -79,6 +79,7 @@ export interface IStorage {
 
   // Upload Diagnostics
   createUploadDiagnostics(row: InsertUploadDiagnostics): Promise<UploadDiagnostics>;
+  getUploadDiagnostics(uploadId: string): Promise<UploadDiagnostics | undefined>;
 
   // Import Runs
   createImportRun(row: InsertImportRun): Promise<ImportRun>;
@@ -430,6 +431,11 @@ export class DatabaseStorage implements IStorage {
   async createUploadDiagnostics(row: InsertUploadDiagnostics): Promise<UploadDiagnostics> {
     const [created] = await db.insert(uploadDiagnostics).values(row).returning();
     return created;
+  }
+
+  async getUploadDiagnostics(uploadId: string): Promise<UploadDiagnostics | undefined> {
+    const [row] = await db.select().from(uploadDiagnostics).where(eq(uploadDiagnostics.uploadId, uploadId));
+    return row || undefined;
   }
 
   async createImportRun(row: InsertImportRun): Promise<ImportRun> {
