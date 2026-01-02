@@ -905,6 +905,11 @@ export const settingsCopy = {
     "de-DE": "Daten zurückgesetzt",
     "en-US": "Data reset"
   },
+  toastDataResetDesc: {
+    "pt-BR": "Seu ambiente foi reinicializado.",
+    "de-DE": "Ihre Umgebung wurde zurückgesetzt.",
+    "en-US": "Your environment was reset."
+  },
   toastSelectCategory: {
     "pt-BR": "Selecione uma categoria",
     "de-DE": "Kategorie auswählen",

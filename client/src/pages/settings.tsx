@@ -615,7 +615,7 @@ export default function SettingsPage() {
 
   const handleResetData = async () => {
     await resetApi.resetData();
-    toast({ title: t(locale, settingsCopy.toastDataReset), description: "Seu ambiente foi reinicializado." });
+    toast({ title: t(locale, settingsCopy.toastDataReset), description: t(locale, settingsCopy.toastDataResetDesc) });
     queryClient.invalidateQueries({ queryKey: ["transactions"] });
     queryClient.invalidateQueries({ queryKey: ["classification-review-queue"] });
     queryClient.invalidateQueries({ queryKey: ["classification-leaves"] });
