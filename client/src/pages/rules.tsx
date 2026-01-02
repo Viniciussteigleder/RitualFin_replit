@@ -96,7 +96,7 @@ export default function RulesPage() {
       toast({ title: t(locale, rulesCopy.toastRuleCreated) });
       setStatusInfo({
         variant: "success",
-        title: "Regra criada",
+        title: t(locale, rulesCopy.statusRuleCreated),
         description: "A nova regra foi adicionada com sucesso."
       });
     },
@@ -104,7 +104,7 @@ export default function RulesPage() {
       toast({ title: t(locale, rulesCopy.toastCreateError), description: error.message, variant: "destructive" });
       setStatusInfo({
         variant: "error",
-        title: "Falha ao criar regra",
+        title: t(locale, rulesCopy.statusRuleCreateFailed),
         description: error.message || "Não foi possível criar a regra.",
         payload: error?.details || null
       });
@@ -119,14 +119,14 @@ export default function RulesPage() {
       toast({ title: t(locale, rulesCopy.toastRuleUpdated) });
       setStatusInfo({
         variant: "success",
-        title: "Regra atualizada",
+        title: t(locale, rulesCopy.statusRuleUpdated),
         description: "As alterações foram salvas."
       });
     },
     onError: (error: any) => {
       setStatusInfo({
         variant: "error",
-        title: "Falha ao atualizar regra",
+        title: t(locale, rulesCopy.statusRuleUpdateFailed),
         description: error.message || "Não foi possível atualizar a regra.",
         payload: error?.details || null
       });
@@ -140,14 +140,14 @@ export default function RulesPage() {
       toast({ title: t(locale, rulesCopy.toastRuleRemoved) });
       setStatusInfo({
         variant: "success",
-        title: "Regra removida",
+        title: t(locale, rulesCopy.statusRuleRemoved),
         description: "A regra foi excluída com sucesso."
       });
     },
     onError: (error: any) => {
       setStatusInfo({
         variant: "error",
-        title: "Falha ao remover regra",
+        title: t(locale, rulesCopy.statusRuleRemoveFailed),
         description: error.message || "Não foi possível remover a regra.",
         payload: error?.details || null
       });
@@ -166,7 +166,7 @@ export default function RulesPage() {
       });
       setStatusInfo({
         variant: "success",
-        title: "Regras reaplicadas",
+        title: t(locale, rulesCopy.statusReapplyDone),
         description: `${result.categorized} categorizadas automaticamente, ${result.stillPending} pendentes`,
         payload: result
       });
@@ -174,7 +174,7 @@ export default function RulesPage() {
     onError: (error: any) => {
       setStatusInfo({
         variant: "error",
-        title: "Falha ao reaplicar regras",
+        title: t(locale, rulesCopy.statusReapplyFailed),
         description: error.message || "Não foi possível reaplicar as regras.",
         payload: error?.details || null
       });
@@ -188,7 +188,7 @@ export default function RulesPage() {
       toast({ title: `${result.count} regras IA adicionadas` });
       setStatusInfo({
         variant: "success",
-        title: "Regras IA adicionadas",
+        title: t(locale, rulesCopy.statusAiAdded),
         description: `${result.count} regras importadas pela IA.`,
         payload: result
       });
@@ -196,7 +196,7 @@ export default function RulesPage() {
     onError: (error: any) => {
       setStatusInfo({
         variant: "error",
-        title: "Falha ao gerar regras IA",
+        title: t(locale, rulesCopy.statusAiFailed),
         description: error.message || "Não foi possível gerar regras.",
         payload: error?.details || null
       });
@@ -331,7 +331,7 @@ export default function RulesPage() {
           toast({ title: t(locale, rulesCopy.toastFileEmpty), variant: "destructive" });
           setStatusInfo({
             variant: "error",
-            title: "Importação falhou",
+            title: t(locale, rulesCopy.statusImportFailed),
             description: "O arquivo está vazio."
           });
           return;
@@ -392,7 +392,7 @@ export default function RulesPage() {
           });
           setStatusInfo({
             variant: "error",
-            title: "Importação falhou",
+            title: t(locale, rulesCopy.statusImportFailed),
             description: errors.slice(0, 3).join('; '),
             payload: { errors: errors.slice(0, 10) }
           });
@@ -403,7 +403,7 @@ export default function RulesPage() {
           toast({ title: t(locale, rulesCopy.toastNoValidRules), variant: "destructive" });
           setStatusInfo({
             variant: "warning",
-            title: "Importação ignorada",
+            title: t(locale, rulesCopy.statusImportIgnored),
             description: "Nenhuma regra válida encontrada no arquivo."
           });
           return;
@@ -429,7 +429,7 @@ export default function RulesPage() {
           toast({ title: `${successCount} ${t(locale, rulesCopy.toastImportSuccess)}` });
           setStatusInfo({
             variant: "success",
-            title: "Importação concluída",
+            title: t(locale, rulesCopy.statusImportDone),
             description: `${successCount} regras importadas com sucesso.`
           });
         } else {
@@ -439,7 +439,7 @@ export default function RulesPage() {
           });
           setStatusInfo({
             variant: "warning",
-            title: "Importação concluída com erros",
+            title: t(locale, rulesCopy.statusImportDoneErrors),
             description: `${successCount} importadas, ${failCount} falharam`,
             payload: { successCount, failCount }
           });
@@ -453,7 +453,7 @@ export default function RulesPage() {
         });
         setStatusInfo({
           variant: "error",
-          title: "Erro ao processar arquivo",
+          title: t(locale, rulesCopy.statusFileProcessError),
           description: error.message || "Não foi possível processar o arquivo.",
           payload: error?.details || null
         });

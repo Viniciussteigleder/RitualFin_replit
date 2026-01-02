@@ -475,7 +475,7 @@ export const uploadsCopy = {
     "pt-BR": "Sucesso",
     "de-DE": "Erfolg",
     "en-US": "Success"
-  }
+  },
   importHistory: {
     "pt-BR": "Histórico de Importações",
     "de-DE": "Importverlauf",
@@ -756,6 +756,86 @@ export const rulesCopy = {
     "pt-BR": "Preencha nome e palavras-chave",
     "de-DE": "Name und Schlüsselwörter ausfüllen",
     "en-US": "Fill name and keywords"
+  },
+  statusRuleCreated: {
+    "pt-BR": "Regra criada",
+    "de-DE": "Regel erstellt",
+    "en-US": "Rule created"
+  },
+  statusRuleCreateFailed: {
+    "pt-BR": "Falha ao criar regra",
+    "de-DE": "Regel konnte nicht erstellt werden",
+    "en-US": "Failed to create rule"
+  },
+  statusRuleUpdated: {
+    "pt-BR": "Regra atualizada",
+    "de-DE": "Regel aktualisiert",
+    "en-US": "Rule updated"
+  },
+  statusRuleUpdateFailed: {
+    "pt-BR": "Falha ao atualizar regra",
+    "de-DE": "Regel konnte nicht aktualisiert werden",
+    "en-US": "Failed to update rule"
+  },
+  statusRuleRemoved: {
+    "pt-BR": "Regra removida",
+    "de-DE": "Regel entfernt",
+    "en-US": "Rule removed"
+  },
+  statusRuleRemoveFailed: {
+    "pt-BR": "Falha ao remover regra",
+    "de-DE": "Regel konnte nicht entfernt werden",
+    "en-US": "Failed to remove rule"
+  },
+  statusReapplyDone: {
+    "pt-BR": "Regras reaplicadas",
+    "de-DE": "Regeln erneut angewendet",
+    "en-US": "Rules reapplied"
+  },
+  statusReapplyFailed: {
+    "pt-BR": "Falha ao reaplicar regras",
+    "de-DE": "Regeln konnten nicht erneut angewendet werden",
+    "en-US": "Failed to reapply rules"
+  },
+  statusAiAdded: {
+    "pt-BR": "Regras IA adicionadas",
+    "de-DE": "KI-Regeln hinzugefügt",
+    "en-US": "AI rules added"
+  },
+  statusAiFailed: {
+    "pt-BR": "Falha ao gerar regras IA",
+    "de-DE": "KI-Regeln konnten nicht erstellt werden",
+    "en-US": "Failed to generate AI rules"
+  },
+  statusImportFailed: {
+    "pt-BR": "Importação falhou",
+    "de-DE": "Import fehlgeschlagen",
+    "en-US": "Import failed"
+  },
+  statusImportErrorsFound: {
+    "pt-BR": "Erros encontrados no arquivo",
+    "de-DE": "Fehler in der Datei gefunden",
+    "en-US": "Errors found in file"
+  },
+  statusImportIgnored: {
+    "pt-BR": "Importação ignorada",
+    "de-DE": "Import ignoriert",
+    "en-US": "Import ignored"
+  },
+  statusImportDone: {
+    "pt-BR": "Importação concluída",
+    "de-DE": "Import abgeschlossen",
+    "en-US": "Import completed"
+  },
+  statusImportDoneErrors: {
+    "pt-BR": "Importação concluída com erros",
+    "de-DE": "Import abgeschlossen mit Fehlern",
+    "en-US": "Import completed with errors"
+  },
+  statusFileProcessError: {
+    "pt-BR": "Erro ao processar arquivo",
+    "de-DE": "Fehler beim Verarbeiten der Datei",
+    "en-US": "Error processing file"
   }
 };
 
@@ -1064,7 +1144,6 @@ export const settingsCopy = {
     "pt-BR": "Fechar",
     "de-DE": "Schließen",
     "en-US": "Close"
-  }
   }
 };
 
