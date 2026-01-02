@@ -33,6 +33,8 @@ import { useMonth } from "@/lib/month-context";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { goalsApi, categoryGoalsApi } from "@/lib/api";
+import { goalsCopy, t as translate } from "@/lib/i18n";
+import { useLocale } from "@/hooks/use-locale";
 
 const CATEGORY_ICONS: Record<string, any> = {
   "Moradia": Home,
@@ -74,7 +76,12 @@ interface CategoryBudget {
 export default function GoalsPage() {
   const { month, formatMonth } = useMonth();
   const { toast } = useToast();
+  const locale = useLocale();
   const queryClient = useQueryClient();
+  const currencyFormatter = new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" });
+  const formatMessage = (template: string, vars: Record<string, string | number>) =>
+    Object.entries(vars).reduce((result, [key, value]) => result.replace(`{${key}}`, String(value)), template);
+  const categoryHints = goalsCopy.categoryHints[locale] || goalsCopy.categoryHints["pt-BR"];
 
   const [estimatedIncome, setEstimatedIncome] = useState("8500");
   const [categoryBudgets, setCategoryBudgets] = useState<Record<string, string>>({});
@@ -214,13 +221,13 @@ export default function GoalsPage() {
       queryClient.invalidateQueries({ queryKey: ["categoryGoals"] });
       queryClient.invalidateQueries({ queryKey: ["goalProgress"] });
       toast({
-        title: "Metas salvas com sucesso!",
-        description: "Suas metas financeiras foram atualizadas."
+        title: translate(locale, goalsCopy.toastSavedTitle),
+        description: translate(locale, goalsCopy.toastSavedBody)
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Erro ao salvar metas",
+        title: translate(locale, goalsCopy.toastSaveError),
         description: error.message,
         variant: "destructive",
       });
@@ -234,7 +241,7 @@ export default function GoalsPage() {
         newBudgets[cat.category] = cat.amount.toFixed(2);
       });
       setCategoryBudgets(newBudgets);
-      toast({ title: "Metas copiadas do mês anterior" });
+      toast({ title: translate(locale, goalsCopy.toastCopy) });
     }
   };
 
@@ -246,7 +253,7 @@ export default function GoalsPage() {
         newBudgets[cat.category] = suggested.toFixed(2);
       });
       setCategoryBudgets(newBudgets);
-      toast({ title: "Sugestões aplicadas (5% de redução)" });
+      toast({ title: translate(locale, goalsCopy.toastSuggestions) });
     }
   };
 
@@ -255,9 +262,9 @@ export default function GoalsPage() {
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">Metas Financeiras</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">{translate(locale, goalsCopy.title)}</h1>
             <p className="text-muted-foreground">
-              Planeje e acompanhe seus limites de gastos para {formatMonth(month)}
+              {formatMessage(translate(locale, goalsCopy.subtitle), { month: formatMonth(month) })}
             </p>
           </div>
           
@@ -269,7 +276,7 @@ export default function GoalsPage() {
               disabled={saveGoals.isPending}
             >
               <Copy className="h-4 w-4" />
-              Copiar anterior
+              {translate(locale, goalsCopy.copyPrevious)}
             </Button>
             <Button
               className="bg-primary hover:bg-primary/90 gap-2"
@@ -277,7 +284,7 @@ export default function GoalsPage() {
               disabled={saveGoals.isPending || goalsLoading}
             >
               <Save className="h-4 w-4" />
-              {saveGoals.isPending ? "Salvando..." : "Salvar Metas"}
+              {saveGoals.isPending ? translate(locale, goalsCopy.saving) : translate(locale, goalsCopy.saveGoals)}
             </Button>
           </div>
         </div>
@@ -290,10 +297,13 @@ export default function GoalsPage() {
                   <Sparkles className="h-6 w-6" />
                 </div>
                 <div className="max-w-2xl">
-                  <h3 className="font-bold text-lg text-foreground">Sugestão Inteligente da IA</h3>
+                  <h3 className="font-bold text-lg text-foreground">{translate(locale, goalsCopy.aiSuggestionTitle)}</h3>
                   <p className="text-muted-foreground text-sm mt-1">
-                    Analisamos o histórico dos últimos 3 meses. Notamos um aumento de <strong className="text-primary">15%</strong> em 'Alimentação', 
-                    mas uma economia em 'Lazer'. Sugerimos reequilibrar as metas para evitar estouros.
+                    {formatMessage(translate(locale, goalsCopy.aiSuggestionBody), {
+                      percent: 15,
+                      category: "Alimentação",
+                      savingCategory: "Lazer"
+                    })}
                   </p>
                 </div>
               </div>
@@ -301,7 +311,7 @@ export default function GoalsPage() {
                 className="bg-slate-900 hover:bg-slate-800 text-white gap-2"
                 onClick={applySuggestions}
               >
-                Aplicar Sugestões
+                {translate(locale, goalsCopy.applySuggestions)}
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -311,7 +321,7 @@ export default function GoalsPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="bg-white border-0 shadow-sm">
             <CardContent className="p-5">
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Receita Estimada</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{translate(locale, goalsCopy.incomeLabel)}</span>
               <div className="flex items-end gap-2 mt-1">
                 <div className="relative flex-1">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">€</span>
@@ -321,19 +331,21 @@ export default function GoalsPage() {
                     onChange={(e) => setEstimatedIncome(e.target.value)}
                   />
                 </div>
-                <Badge className="bg-green-100 text-green-700 mb-2">Confirmado</Badge>
+                <Badge className="bg-green-100 text-green-700 mb-2">{translate(locale, goalsCopy.incomeConfirmed)}</Badge>
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-white border-0 shadow-sm relative overflow-hidden">
             <CardContent className="p-5">
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Planejado</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{translate(locale, goalsCopy.plannedTotalLabel)}</span>
               <div className="flex items-end gap-2 mt-1">
                 <span className="text-2xl font-bold">
-                  {totalPlanned.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                  {currencyFormatter.format(totalPlanned)}
                 </span>
-                <span className="text-muted-foreground text-sm mb-1">/ {percentageOfIncome}% da receita</span>
+                <span className="text-muted-foreground text-sm mb-1">
+                  {formatMessage(translate(locale, goalsCopy.plannedPercent), { percent: percentageOfIncome })}
+                </span>
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden mt-3">
                 <div className="h-full bg-primary rounded-full" style={{ width: `${percentageOfIncome}%` }} />
@@ -343,22 +355,22 @@ export default function GoalsPage() {
 
           <Card className="bg-white border-0 shadow-sm">
             <CardContent className="p-5">
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Saldo Previsto</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{translate(locale, goalsCopy.projectedBalanceLabel)}</span>
               <div className="flex items-end gap-2 mt-1">
                 <span className={cn(
                   "text-2xl font-bold",
                   projectedSavings >= 0 ? "text-primary" : "text-rose-600"
                 )}>
-                  {projectedSavings >= 0 ? "+" : ""}{projectedSavings.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                  {projectedSavings >= 0 ? "+" : ""}{currencyFormatter.format(projectedSavings)}
                 </span>
-                <span className="text-muted-foreground text-xs mb-1">para investimentos</span>
+                <span className="text-muted-foreground text-xs mb-1">{translate(locale, goalsCopy.projectedHint)}</span>
               </div>
             </CardContent>
           </Card>
         </div>
 
         <div className="space-y-4">
-          <h2 className="text-xl font-bold text-foreground px-1">Detalhamento por Categoria</h2>
+          <h2 className="text-xl font-bold text-foreground px-1">{translate(locale, goalsCopy.categoryBreakdown)}</h2>
           
           {categoryData.map(cat => {
             const Icon = CATEGORY_ICONS[cat.category] || CreditCard;
@@ -381,30 +393,26 @@ export default function GoalsPage() {
                       <div>
                         <p className="font-bold text-lg text-foreground">{cat.category}</p>
                         <p className="text-xs text-muted-foreground">
-                          {cat.category === "Moradia" && "Aluguel, Condomínio, Energia"}
-                          {cat.category === "Mercado" && "Compras do mês, Feira"}
-                          {cat.category === "Transporte" && "Combustível, Estacionamento"}
-                          {cat.category === "Lazer" && "Streaming, Cinema, Passeios"}
-                          {cat.category === "Saúde" && "Farmácia, Consultas"}
+                          {categoryHints[cat.category as keyof typeof categoryHints]}
                         </p>
                       </div>
                     </div>
                     
                     <div className="col-span-1 md:col-span-4 flex flex-col border-l-0 md:border-l border-border pl-0 md:pl-6">
                       <div className="flex justify-between items-center mb-1">
-                        <span className="text-xs text-muted-foreground">Gasto Mês Anterior</span>
+                        <span className="text-xs text-muted-foreground">{translate(locale, goalsCopy.previousMonthLabel)}</span>
                         <span className={cn(
                           "text-sm font-semibold",
                           isAboveAverage ? "text-rose-600" : "text-foreground"
                         )}>
-                          {cat.previousMonthSpent.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
-                          {isAboveAverage && <span className="text-rose-600 ml-1">(Alto)</span>}
+                          {currencyFormatter.format(cat.previousMonthSpent)}
+                          {isAboveAverage && <span className="text-rose-600 ml-1">{translate(locale, goalsCopy.highLabel)}</span>}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-xs text-muted-foreground">Média 3 Meses</span>
+                        <span className="text-xs text-muted-foreground">{translate(locale, goalsCopy.averageLabel)}</span>
                         <span className="text-sm font-semibold text-foreground">
-                          {cat.averageSpent.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                          {currencyFormatter.format(cat.averageSpent)}
                         </span>
                       </div>
                     </div>
@@ -419,7 +427,7 @@ export default function GoalsPage() {
                           )}
                           value={categoryBudgets[cat.category] || ""}
                           onChange={(e) => setCategoryBudgets(prev => ({ ...prev, [cat.category]: e.target.value }))}
-                          placeholder="0,00"
+                          placeholder={translate(locale, goalsCopy.budgetPlaceholder)}
                         />
                         {isAboveAverage && (
                           <div className="absolute -right-1 -top-1 w-2 h-2 rounded-full bg-primary" />
@@ -434,12 +442,15 @@ export default function GoalsPage() {
                   {cat.targetAmount > 0 && (
                     <div className="mt-4 pt-4 border-t border-border/50">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs text-muted-foreground">Progresso atual</span>
+                        <span className="text-xs text-muted-foreground">{translate(locale, goalsCopy.currentProgress)}</span>
                         <span className={cn(
                           "text-xs font-medium",
                           isOverBudget ? "text-rose-600" : "text-muted-foreground"
                         )}>
-                          {cat.currentSpent.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })} de {cat.targetAmount.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                          {formatMessage(translate(locale, goalsCopy.progressAmount), {
+                            current: currencyFormatter.format(cat.currentSpent),
+                            target: currencyFormatter.format(cat.targetAmount)
+                          })}
                         </span>
                       </div>
                       <div className="h-3 bg-muted rounded-full overflow-hidden">
@@ -462,7 +473,7 @@ export default function GoalsPage() {
             <CardContent className="p-6 text-center">
               <Button variant="ghost" className="text-muted-foreground gap-2">
                 <Target className="h-5 w-5" />
-                Adicionar nova categoria de meta
+                {translate(locale, goalsCopy.addCategory)}
               </Button>
             </CardContent>
           </Card>

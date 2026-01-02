@@ -2071,6 +2071,167 @@ export const accountsCopy = {
   }
 };
 
+export const goalsCopy = {
+  title: {
+    "pt-BR": "Metas Financeiras",
+    "de-DE": "Finanzziele",
+    "en-US": "Financial goals"
+  },
+  subtitle: {
+    "pt-BR": "Planeje e acompanhe seus limites de gastos para {month}",
+    "de-DE": "Planen und verfolgen Sie Ihre Ausgabenlimits für {month}",
+    "en-US": "Plan and track your spending limits for {month}"
+  },
+  copyPrevious: {
+    "pt-BR": "Copiar anterior",
+    "de-DE": "Vorherigen kopieren",
+    "en-US": "Copy previous"
+  },
+  saving: {
+    "pt-BR": "Salvando...",
+    "de-DE": "Speichern...",
+    "en-US": "Saving..."
+  },
+  saveGoals: {
+    "pt-BR": "Salvar Metas",
+    "de-DE": "Ziele speichern",
+    "en-US": "Save goals"
+  },
+  aiSuggestionTitle: {
+    "pt-BR": "Sugestão Inteligente da IA",
+    "de-DE": "Intelligente KI-Empfehlung",
+    "en-US": "AI smart suggestion"
+  },
+  aiSuggestionBody: {
+    "pt-BR": "Analisamos o histórico dos últimos 3 meses. Notamos um aumento de {percent}% em '{category}', mas uma economia em '{savingCategory}'. Sugerimos reequilibrar as metas para evitar estouros.",
+    "de-DE": "Wir haben die letzten 3 Monate analysiert. Es gab einen Anstieg von {percent}% bei '{category}', aber Einsparungen bei '{savingCategory}'. Wir empfehlen eine Anpassung der Ziele.",
+    "en-US": "We analyzed the last 3 months. We saw a {percent}% increase in '{category}', but savings in '{savingCategory}'. We suggest rebalancing goals."
+  },
+  applySuggestions: {
+    "pt-BR": "Aplicar Sugestões",
+    "de-DE": "Vorschläge anwenden",
+    "en-US": "Apply suggestions"
+  },
+  incomeLabel: {
+    "pt-BR": "Receita Estimada",
+    "de-DE": "Geschätztes Einkommen",
+    "en-US": "Estimated income"
+  },
+  incomeConfirmed: {
+    "pt-BR": "Confirmado",
+    "de-DE": "Bestätigt",
+    "en-US": "Confirmed"
+  },
+  plannedTotalLabel: {
+    "pt-BR": "Total Planejado",
+    "de-DE": "Geplant gesamt",
+    "en-US": "Planned total"
+  },
+  plannedPercent: {
+    "pt-BR": "/ {percent}% da receita",
+    "de-DE": "/ {percent}% des Einkommens",
+    "en-US": "/ {percent}% of income"
+  },
+  projectedBalanceLabel: {
+    "pt-BR": "Saldo Previsto",
+    "de-DE": "Prognostizierter Saldo",
+    "en-US": "Projected balance"
+  },
+  projectedHint: {
+    "pt-BR": "para investimentos",
+    "de-DE": "für Investitionen",
+    "en-US": "for investments"
+  },
+  categoryBreakdown: {
+    "pt-BR": "Detalhamento por Categoria",
+    "de-DE": "Aufschlüsselung nach Kategorie",
+    "en-US": "Category breakdown"
+  },
+  categoryHints: {
+    "pt-BR": {
+      Moradia: "Aluguel, Condomínio, Energia",
+      Mercado: "Compras do mês, Feira",
+      Transporte: "Combustível, Estacionamento",
+      Lazer: "Streaming, Cinema, Passeios",
+      "Saúde": "Farmácia, Consultas"
+    },
+    "de-DE": {
+      Moradia: "Miete, Nebenkosten, Energie",
+      Mercado: "Einkäufe, Markt",
+      Transporte: "Kraftstoff, Parken",
+      Lazer: "Streaming, Kino, Ausflüge",
+      "Saúde": "Apotheke, Termine"
+    },
+    "en-US": {
+      Moradia: "Rent, utilities, energy",
+      Mercado: "Groceries, market",
+      Transporte: "Fuel, parking",
+      Lazer: "Streaming, cinema, outings",
+      "Saúde": "Pharmacy, appointments"
+    }
+  },
+  previousMonthLabel: {
+    "pt-BR": "Gasto Mês Anterior",
+    "de-DE": "Ausgaben im Vormonat",
+    "en-US": "Previous month spend"
+  },
+  highLabel: {
+    "pt-BR": "(Alto)",
+    "de-DE": "(Hoch)",
+    "en-US": "(High)"
+  },
+  averageLabel: {
+    "pt-BR": "Média 3 Meses",
+    "de-DE": "3-Monats-Schnitt",
+    "en-US": "3-month average"
+  },
+  budgetPlaceholder: {
+    "pt-BR": "0,00",
+    "de-DE": "0,00",
+    "en-US": "0.00"
+  },
+  currentProgress: {
+    "pt-BR": "Progresso atual",
+    "de-DE": "Aktueller Fortschritt",
+    "en-US": "Current progress"
+  },
+  progressAmount: {
+    "pt-BR": "{current} de {target}",
+    "de-DE": "{current} von {target}",
+    "en-US": "{current} of {target}"
+  },
+  addCategory: {
+    "pt-BR": "Adicionar nova categoria de meta",
+    "de-DE": "Neue Zielkategorie hinzufügen",
+    "en-US": "Add new goal category"
+  },
+  toastSavedTitle: {
+    "pt-BR": "Metas salvas com sucesso!",
+    "de-DE": "Ziele erfolgreich gespeichert!",
+    "en-US": "Goals saved successfully!"
+  },
+  toastSavedBody: {
+    "pt-BR": "Suas metas financeiras foram atualizadas.",
+    "de-DE": "Ihre Finanzziele wurden aktualisiert.",
+    "en-US": "Your financial goals were updated."
+  },
+  toastSaveError: {
+    "pt-BR": "Erro ao salvar metas",
+    "de-DE": "Fehler beim Speichern der Ziele",
+    "en-US": "Failed to save goals"
+  },
+  toastCopy: {
+    "pt-BR": "Metas copiadas do mês anterior",
+    "de-DE": "Ziele aus dem Vormonat kopiert",
+    "en-US": "Goals copied from previous month"
+  },
+  toastSuggestions: {
+    "pt-BR": "Sugestões aplicadas (5% de redução)",
+    "de-DE": "Vorschläge angewendet (5% Reduktion)",
+    "en-US": "Suggestions applied (5% reduction)"
+  }
+};
+
 export const confirmCopy = {
   title: {
     "pt-BR": "Fila de Confirmação",
