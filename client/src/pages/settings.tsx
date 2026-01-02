@@ -83,6 +83,8 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const integrationProviders = useMemo(() => t(locale, settingsCopy.integrationProviders), [locale]);
   const auditActionLabels = useMemo(() => t(locale, settingsCopy.auditActionLabels), [locale]);
+  const formatMessage = (template: string, vars: Record<string, string | number>) =>
+    Object.entries(vars).reduce((result, [key, value]) => result.replace(`{${key}}`, String(value)), template);
   const tabs = useMemo(() => ([
     { id: "conta", label: t(locale, settingsCopy.tabAccount), icon: User, description: t(locale, settingsCopy.tabAccountDesc) },
     { id: "preferencias-regionais", label: t(locale, settingsCopy.tabRegional), icon: Globe, description: t(locale, settingsCopy.tabRegionalDesc) },
@@ -147,14 +149,14 @@ export default function SettingsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["settings"] });
       toast({
-        title: "Configurações salvas",
-        description: "Suas preferências foram atualizadas com sucesso.",
+        title: t(locale, settingsCopy.toastSettingsSaved),
+        description: t(locale, settingsCopy.toastSettingsSavedBody),
       });
     },
     onError: () => {
       toast({
-        title: "Erro ao salvar",
-        description: "Não foi possível salvar as configurações.",
+        title: t(locale, settingsCopy.toastSettingsErrorTitle),
+        description: t(locale, settingsCopy.toastSettingsErrorBody),
         variant: "destructive",
       });
     },
@@ -195,27 +197,27 @@ export default function SettingsPage() {
       setClassificationPreview(preview);
       setClassificationImportId(preview.importId || null);
       if (!preview.success) {
-        setClassificationPreviewError(preview.message || "Falha na validação do arquivo.");
+        setClassificationPreviewError(preview.message || t(locale, settingsCopy.previewValidationFailed));
         setDataImportStatus({
           variant: "error",
-          title: "Pré-visualização falhou",
-          description: preview.message || "Falha na validação do arquivo.",
+          title: t(locale, settingsCopy.previewFailedTitle),
+          description: preview.message || t(locale, settingsCopy.previewValidationFailed),
           payload: preview
         });
       } else {
         setDataImportStatus({
           variant: "success",
-          title: "Pré-visualização concluída",
-          description: "Revisão pronta para confirmação.",
+          title: t(locale, settingsCopy.previewDoneTitle),
+          description: t(locale, settingsCopy.previewDoneBody),
           payload: { importId: preview.importId, rowsTotal: preview.rowsTotal, rowsValid: preview.rowsValid }
         });
       }
     } catch (err: any) {
-      setClassificationPreviewError("Falha na validação do arquivo.");
+      setClassificationPreviewError(t(locale, settingsCopy.previewValidationFailed));
       setDataImportStatus({
         variant: "error",
-        title: "Erro na pré-visualização",
-        description: err.message || "Falha na validação do arquivo.",
+        title: t(locale, settingsCopy.previewErrorTitle),
+        description: err.message || t(locale, settingsCopy.previewValidationFailed),
         payload: err?.details || null
       });
       toast({ title: t(locale, settingsCopy.toastPreviewError), description: err.message, variant: "destructive" });
@@ -228,24 +230,30 @@ export default function SettingsPage() {
       const result = await dataImportsApi.confirm({ importId: classificationImportId, confirmRemap });
       setClassificationStatus({
         type: "success",
-        message: `Importação concluída: ${result.rows} linhas aplicadas.`
+        message: formatMessage(t(locale, settingsCopy.importAppliedBody), { count: result.rows })
       });
       setDataImportStatus({
         variant: "success",
-        title: "Importação aplicada",
-        description: `${result.rows} linhas aplicadas.`,
+        title: t(locale, settingsCopy.importAppliedTitle),
+        description: formatMessage(t(locale, settingsCopy.importAppliedBody), { count: result.rows }),
         payload: result
       });
-      toast({ title: t(locale, settingsCopy.toastCategoriesUpdated), description: `Linhas aplicadas: ${result.rows}` });
+      toast({
+        title: t(locale, settingsCopy.toastCategoriesUpdated),
+        description: formatMessage(t(locale, settingsCopy.importAppliedRows), { count: result.rows })
+      });
       queryClient.invalidateQueries({ queryKey: ["classification-leaves"] });
       queryClient.invalidateQueries({ queryKey: ["classification-rules"] });
       queryClient.invalidateQueries({ queryKey: ["data-imports-last", "classification"] });
     } catch (err: any) {
-      setClassificationStatus({ type: "error", message: `Falha ao aplicar: ${err.message}` });
+      setClassificationStatus({
+        type: "error",
+        message: formatMessage(t(locale, settingsCopy.applyFailedMessage), { error: err.message })
+      });
       setDataImportStatus({
         variant: "error",
-        title: "Falha ao aplicar importação",
-        description: err.message || "Não foi possível aplicar a importação.",
+        title: t(locale, settingsCopy.importApplyFailedTitle),
+        description: err.message || t(locale, settingsCopy.importApplyFailedBody),
         payload: err?.details || null
       });
       toast({ title: t(locale, settingsCopy.toastApplyCategoriesError), description: err.message, variant: "destructive" });
@@ -267,27 +275,27 @@ export default function SettingsPage() {
       setAliasPreview(preview);
       setAliasImportId(preview.importId || null);
       if (!preview.success) {
-        setAliasPreviewError(preview.message || "Falha na validação do arquivo.");
+        setAliasPreviewError(preview.message || t(locale, settingsCopy.previewValidationFailed));
         setDataImportStatus({
           variant: "error",
-          title: "Pré-visualização falhou",
-          description: preview.message || "Falha na validação do arquivo.",
+          title: t(locale, settingsCopy.previewFailedTitle),
+          description: preview.message || t(locale, settingsCopy.previewValidationFailed),
           payload: preview
         });
       } else {
         setDataImportStatus({
           variant: "success",
-          title: "Pré-visualização concluída",
-          description: "Revisão pronta para confirmação.",
+          title: t(locale, settingsCopy.previewDoneTitle),
+          description: t(locale, settingsCopy.previewDoneBody),
           payload: { importId: preview.importId, rowsTotal: preview.rowsTotal, rowsValid: preview.rowsValid }
         });
       }
     } catch (err: any) {
-      setAliasPreviewError("Falha na validação do arquivo.");
+      setAliasPreviewError(t(locale, settingsCopy.previewValidationFailed));
       setDataImportStatus({
         variant: "error",
-        title: "Erro na pré-visualização",
-        description: err.message || "Falha na validação do arquivo.",
+        title: t(locale, settingsCopy.previewErrorTitle),
+        description: err.message || t(locale, settingsCopy.previewValidationFailed),
         payload: err?.details || null
       });
       toast({ title: t(locale, settingsCopy.toastPreviewError), description: err.message, variant: "destructive" });
@@ -300,23 +308,29 @@ export default function SettingsPage() {
       const result = await dataImportsApi.confirm({ importId: aliasImportId });
       setAliasStatus({
         type: "success",
-        message: `Importação concluída: ${result.rows} linhas aplicadas.`
+        message: formatMessage(t(locale, settingsCopy.importAppliedBody), { count: result.rows })
       });
       setDataImportStatus({
         variant: "success",
-        title: "Aliases aplicados",
-        description: `${result.rows} linhas aplicadas.`,
+        title: t(locale, settingsCopy.aliasesAppliedTitle),
+        description: formatMessage(t(locale, settingsCopy.importAppliedBody), { count: result.rows }),
         payload: result
       });
-      toast({ title: t(locale, settingsCopy.toastAliasesUpdated), description: `Linhas aplicadas: ${result.rows}` });
+      toast({
+        title: t(locale, settingsCopy.toastAliasesUpdated),
+        description: formatMessage(t(locale, settingsCopy.importAppliedRows), { count: result.rows })
+      });
       queryClient.invalidateQueries({ queryKey: ["classification-review-queue"] });
       queryClient.invalidateQueries({ queryKey: ["data-imports-last", "aliases_key_desc"] });
     } catch (err: any) {
-      setAliasStatus({ type: "error", message: `Falha ao aplicar: ${err.message}` });
+      setAliasStatus({
+        type: "error",
+        message: formatMessage(t(locale, settingsCopy.applyFailedMessage), { error: err.message })
+      });
       setDataImportStatus({
         variant: "error",
-        title: "Falha ao aplicar aliases",
-        description: err.message || "Não foi possível aplicar os aliases.",
+        title: t(locale, settingsCopy.toastApplyAliasesError),
+        description: err.message || t(locale, settingsCopy.aliasesApplyFailedBody),
         payload: err?.details || null
       });
       toast({ title: t(locale, settingsCopy.toastApplyAliasesError), description: err.message, variant: "destructive" });
@@ -416,14 +430,14 @@ export default function SettingsPage() {
       URL.revokeObjectURL(url);
       setAuditStatus({
         variant: "success",
-        title: "Exportação concluída",
-        description: "O arquivo CSV do log foi gerado com sucesso."
+        title: t(locale, settingsCopy.exportAuditTitle),
+        description: t(locale, settingsCopy.exportAuditBody)
       });
     } catch (err: any) {
       setAuditStatus({
         variant: "error",
-        title: "Falha ao exportar log",
-        description: err.message || "Não foi possível exportar o log de auditoria.",
+        title: t(locale, settingsCopy.exportAuditErrorTitle),
+        description: err.message || t(locale, settingsCopy.exportAuditErrorBody),
         payload: err?.details || null
       });
     }
@@ -445,27 +459,27 @@ export default function SettingsPage() {
       setLogosPreview(preview);
       setLogosImportId(preview.importId || null);
       if (!preview.success) {
-        setLogosPreviewError(preview.message || "Falha na validação do arquivo.");
+        setLogosPreviewError(preview.message || t(locale, settingsCopy.previewValidationFailed));
         setDataImportStatus({
           variant: "error",
-          title: "Pré-visualização falhou",
-          description: preview.message || "Falha na validação do arquivo.",
+          title: t(locale, settingsCopy.previewFailedTitle),
+          description: preview.message || t(locale, settingsCopy.previewValidationFailed),
           payload: preview
         });
       } else {
         setDataImportStatus({
           variant: "success",
-          title: "Pré-visualização concluída",
-          description: "Revisão pronta para confirmação.",
+          title: t(locale, settingsCopy.previewDoneTitle),
+          description: t(locale, settingsCopy.previewDoneBody),
           payload: { importId: preview.importId, rowsTotal: preview.rowsTotal, rowsValid: preview.rowsValid }
         });
       }
     } catch (err: any) {
-      setLogosPreviewError("Falha na validação do arquivo.");
+      setLogosPreviewError(t(locale, settingsCopy.previewValidationFailed));
       setDataImportStatus({
         variant: "error",
-        title: "Erro na pré-visualização",
-        description: err.message || "Falha na validação do arquivo.",
+        title: t(locale, settingsCopy.previewErrorTitle),
+        description: err.message || t(locale, settingsCopy.previewValidationFailed),
         payload: err?.details || null
       });
       toast({ title: t(locale, settingsCopy.toastPreviewError), description: err.message, variant: "destructive" });
@@ -478,23 +492,29 @@ export default function SettingsPage() {
       const result = await dataImportsApi.confirm({ importId: logosImportId });
       setLogosStatus({
         type: "success",
-        message: `Importação concluída: ${result.processed} linhas processadas.`
+        message: formatMessage(t(locale, settingsCopy.importAppliedBody), { count: result.processed })
       });
       setLogosImportResults(result.results || []);
       setDataImportStatus({
         variant: "success",
-        title: "Logos importados",
-        description: `Processados: ${result.processed}`,
+        title: t(locale, settingsCopy.toastLogosImported),
+        description: formatMessage(t(locale, settingsCopy.logosProcessedLabel), { count: result.processed }),
         payload: result
       });
-      toast({ title: t(locale, settingsCopy.toastLogosImported), description: `Processados: ${result.processed}` });
+      toast({
+        title: t(locale, settingsCopy.toastLogosImported),
+        description: formatMessage(t(locale, settingsCopy.logosProcessedLabel), { count: result.processed })
+      });
       queryClient.invalidateQueries({ queryKey: ["data-imports-last", "aliases_assets"] });
     } catch (err: any) {
-      setLogosStatus({ type: "error", message: `Falha ao aplicar: ${err.message}` });
+      setLogosStatus({
+        type: "error",
+        message: formatMessage(t(locale, settingsCopy.applyFailedMessage), { error: err.message })
+      });
       setDataImportStatus({
         variant: "error",
-        title: "Falha ao importar logos",
-        description: err.message || "Não foi possível aplicar os logos.",
+        title: t(locale, settingsCopy.toastLogosError),
+        description: err.message || t(locale, settingsCopy.logosApplyFailedBody),
         payload: err?.details || null
       });
       toast({ title: t(locale, settingsCopy.toastLogosError), description: err.message, variant: "destructive" });
@@ -503,7 +523,10 @@ export default function SettingsPage() {
 
   const handleRefreshLogos = async () => {
     const result = await aliasApi.refreshLogos();
-    toast({ title: t(locale, settingsCopy.toastLogosUpdated), description: `Total: ${result.total}` });
+    toast({
+      title: t(locale, settingsCopy.toastLogosUpdated),
+      description: formatMessage(t(locale, settingsCopy.refreshLogosTotal), { count: result.total })
+    });
     queryClient.invalidateQueries({ queryKey: ["transactions"] });
   };
 
@@ -600,11 +623,11 @@ export default function SettingsPage() {
       });
       const summary: string[] = [];
       if (dangerSelections.all) {
-        summary.push("Tudo (reset total)");
+        summary.push(t(locale, settingsCopy.dangerOptionAll));
       } else {
-        if (dangerSelections.transactions) summary.push("Transações");
-        if (dangerSelections.categories) summary.push("Categorias e Regras");
-        if (dangerSelections.aliases) summary.push("Aliases e Logos");
+        if (dangerSelections.transactions) summary.push(t(locale, settingsCopy.dangerSummaryTransactions));
+        if (dangerSelections.categories) summary.push(t(locale, settingsCopy.dangerSummaryCategories));
+        if (dangerSelections.aliases) summary.push(t(locale, settingsCopy.dangerSummaryAliases));
       }
       setDangerLastDeletedAt(result.deletedAt);
       setDangerDeletedSummary(summary);
@@ -728,7 +751,7 @@ export default function SettingsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label className="text-muted-foreground text-xs uppercase tracking-wide">{t(locale, settingsCopy.labelName)}</Label>
-                        <Input defaultValue="Usuário" className="bg-muted/30 border-0" />
+                        <Input defaultValue={t(locale, settingsCopy.profileNameDefault)} className="bg-muted/30 border-0" />
                       </div>
                       <div className="space-y-2">
                         <Label className="text-muted-foreground text-xs uppercase tracking-wide">{t(locale, settingsCopy.labelEmail)}</Label>
@@ -830,7 +853,7 @@ export default function SettingsPage() {
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Exportações CSV usam UTF-8 com BOM para preservar acentos.
+                    {t(locale, settingsCopy.csvExportAccents)}
                   </p>
                 </CardContent>
               </Card>
@@ -890,39 +913,43 @@ export default function SettingsPage() {
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
                     <Database className="h-4 w-4 text-primary" />
-                    Classificação & Dados
+                    {t(locale, settingsCopy.classificationSectionTitle)}
                   </CardTitle>
                   <CardDescription>
-                    Importações, categorias, aliases e revisão de pendências.
+                    {t(locale, settingsCopy.classificationSectionBody)}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Tabs defaultValue="categorias">
                     <TabsList className="grid grid-cols-3 w-full">
-                      <TabsTrigger value="categorias">Categorias</TabsTrigger>
-                      <TabsTrigger value="regras">Regras KeyWords</TabsTrigger>
-                      <TabsTrigger value="revisao">Fila de Revisão</TabsTrigger>
+                      <TabsTrigger value="categorias">{t(locale, settingsCopy.classificationTabCategories)}</TabsTrigger>
+                      <TabsTrigger value="regras">{t(locale, settingsCopy.classificationTabRules)}</TabsTrigger>
+                      <TabsTrigger value="revisao">{t(locale, settingsCopy.classificationTabReview)}</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="categorias" className="mt-6 space-y-4">
                       <div className="rounded-lg border border-muted bg-muted/10 p-3 text-sm">
                         <p className="font-medium">{t(locale, settingsCopy.transactionsImports)}</p>
                         <p className="text-muted-foreground">
-                          Os arquivos de extrato ficam em <Link href="/uploads" className="text-primary underline">Operações → Upload</Link>.
+                          {t(locale, settingsCopy.reviewQueueFilesHintPrefix)}{" "}
+                          <Link href="/uploads" className="text-primary underline">
+                            {t(locale, settingsCopy.reviewQueueFilesHintLink)}
+                          </Link>
+                          .
                         </p>
                       </div>
                       <div className="flex flex-wrap gap-3">
                         <Button variant="outline" className="gap-2" onClick={handleDownloadClassificationTemplateCsv}>
                           <Download className="h-4 w-4" />
-                          Baixar template CSV
+                          {t(locale, settingsCopy.downloadTemplateCsv)}
                         </Button>
                         <Button variant="outline" className="gap-2" onClick={handleDownloadClassificationCsv}>
                           <Download className="h-4 w-4" />
-                          Baixar dados CSV
+                          {t(locale, settingsCopy.downloadDataCsv)}
                         </Button>
                         <Button variant="outline" className="gap-2" onClick={handleDownloadClassification}>
                           <Download className="h-4 w-4" />
-                          Baixar Excel
+                          {t(locale, settingsCopy.downloadExcel)}
                         </Button>
                         <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
                           <Input
@@ -941,19 +968,22 @@ export default function SettingsPage() {
                         </label>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Downloads em CSV são gerados em UTF-8 com BOM para preservar acentos.
+                        {t(locale, settingsCopy.csvDownloadsAccents)}
                       </p>
 
                       <div className="rounded-lg border border-muted bg-muted/10 p-3 text-sm">
-                        <p className="font-medium">Última importação</p>
+                        <p className="font-medium">{t(locale, settingsCopy.lastImportTitle)}</p>
                         {classificationLastImport ? (
                           <p className="text-muted-foreground">
                             {format(new Date(classificationLastImport.createdAt), "dd/MM/yyyy HH:mm")} ·{" "}
                             {formatImportStatus(classificationLastImport.status)} ·{" "}
-                            {classificationLastImport.rowsValid || 0}/{classificationLastImport.rowsTotal || 0} linhas válidas
+                            {formatMessage(t(locale, settingsCopy.lastImportRows), {
+                              valid: classificationLastImport.rowsValid || 0,
+                              total: classificationLastImport.rowsTotal || 0
+                            })}
                           </p>
                         ) : (
-                          <p className="text-muted-foreground">Sem importações anteriores.</p>
+                          <p className="text-muted-foreground">{t(locale, settingsCopy.lastImportEmpty)}</p>
                         )}
                       </div>
 
@@ -995,7 +1025,11 @@ export default function SettingsPage() {
                             </div>
                           ) : null}
                           {classificationPreview?.reasonCodes?.length ? (
-                            <p className="text-xs">Código: {classificationPreview.reasonCodes.join(", ")}</p>
+                            <p className="text-xs">
+                              {formatMessage(t(locale, settingsCopy.previewReasonCodeLabel), {
+                                codes: classificationPreview.reasonCodes.join(", ")
+                              })}
+                            </p>
                           ) : null}
                         </div>
                       ) : null}
@@ -1005,32 +1039,32 @@ export default function SettingsPage() {
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                             <Card className="bg-muted/20 border-0">
                               <CardContent className="p-3">
-                                <p className="text-xs text-muted-foreground">Encoding</p>
+                                <p className="text-xs text-muted-foreground">{t(locale, settingsCopy.previewEncodingLabel)}</p>
                                 <p className="text-sm font-semibold">{classificationPreview.detectedEncoding || "-"}</p>
                               </CardContent>
                             </Card>
                             <Card className="bg-muted/20 border-0">
                               <CardContent className="p-3">
-                                <p className="text-xs text-muted-foreground">Delimiter</p>
+                                <p className="text-xs text-muted-foreground">{t(locale, settingsCopy.previewDelimiterLabel)}</p>
                                 <p className="text-sm font-semibold">{classificationPreview.detectedDelimiter || "-"}</p>
                               </CardContent>
                             </Card>
                             <Card className="bg-muted/20 border-0">
                               <CardContent className="p-3">
-                                <p className="text-xs text-muted-foreground">Linhas</p>
+                                <p className="text-xs text-muted-foreground">{t(locale, settingsCopy.previewRowsLabel)}</p>
                                 <p className="text-sm font-semibold">{classificationPreview.rowsTotal || 0}</p>
                               </CardContent>
                             </Card>
                             <Card className="bg-muted/20 border-0">
                               <CardContent className="p-3">
-                                <p className="text-xs text-muted-foreground">Colunas</p>
+                                <p className="text-xs text-muted-foreground">{t(locale, settingsCopy.previewColumnsLabel)}</p>
                                 <p className="text-sm font-semibold">{classificationPreview.headerFound?.length || 0}</p>
                               </CardContent>
                             </Card>
                           </div>
 
                           <div className="rounded-lg border border-muted bg-muted/20 p-3 text-sm">
-                            <p className="font-medium">Colunas detectadas</p>
+                            <p className="font-medium">{t(locale, settingsCopy.previewColumnsDetectedTitle)}</p>
                             <p className="text-xs text-muted-foreground">
                               {classificationPreview.headerFound?.join(" · ") || "-"}
                             </p>
@@ -1038,24 +1072,24 @@ export default function SettingsPage() {
 
                           {classificationPreview.diff && (
                             <div className="rounded-lg border border-muted bg-muted/20 p-3 text-sm space-y-2">
-                              <p className="font-medium">Prévia de alterações</p>
+                              <p className="font-medium">{t(locale, settingsCopy.changePreviewTitle)}</p>
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                 <div>
-                                  <p className="text-xs text-muted-foreground">Novas categorias</p>
+                                  <p className="text-xs text-muted-foreground">{t(locale, settingsCopy.previewNewCategories)}</p>
                                   <p className="font-semibold">{classificationPreview.diff.newLeavesCount}</p>
                                 </div>
                                 <div>
-                                  <p className="text-xs text-muted-foreground">Removidas</p>
+                                  <p className="text-xs text-muted-foreground">{t(locale, settingsCopy.previewRemoved)}</p>
                                   <p className="font-semibold">{classificationPreview.diff.removedLeavesCount}</p>
                                 </div>
                                 <div>
-                                  <p className="text-xs text-muted-foreground">Regras atualizadas</p>
+                                  <p className="text-xs text-muted-foreground">{t(locale, settingsCopy.previewUpdatedRules)}</p>
                                   <p className="font-semibold">{classificationPreview.diff.updatedRulesCount}</p>
                                 </div>
                               </div>
                               {classificationPreview.diff.updatedRulesSample?.length ? (
                                 <div className="text-xs text-muted-foreground">
-                                  Ex.: {classificationPreview.diff.updatedRulesSample.join(" | ")}
+                                  {t(locale, settingsCopy.previewSamplePrefix)} {classificationPreview.diff.updatedRulesSample.join(" | ")}
                                 </div>
                               ) : null}
                             </div>
@@ -1064,7 +1098,7 @@ export default function SettingsPage() {
                           {classificationPreview.requiresRemap && (
                             <div className="flex items-center gap-2">
                               <Switch checked={confirmRemap} onCheckedChange={setConfirmRemap} />
-                              <span className="text-sm">Confirmo o remapeamento de categorias da UI</span>
+                              <span className="text-sm">{t(locale, settingsCopy.confirmRemapLabel)}</span>
                             </div>
                           )}
 
@@ -1106,14 +1140,14 @@ export default function SettingsPage() {
                       <Dialog open={showClassificationConfirm} onOpenChange={setShowClassificationConfirm}>
                         <DialogContent>
                           <DialogHeader>
-                            <DialogTitle>Deseja aplicar as alterações?</DialogTitle>
+                            <DialogTitle>{t(locale, settingsCopy.confirmChangesTitle)}</DialogTitle>
                             <DialogDescription>
-                              Isso atualizará regras existentes. Revise a pré-visualização antes de continuar.
+                              {t(locale, settingsCopy.confirmChangesBody)}
                             </DialogDescription>
                           </DialogHeader>
                           <DialogFooter>
                             <Button variant="outline" onClick={() => setShowClassificationConfirm(false)}>
-                              Cancelar
+                              {t(locale, settingsCopy.dialogCancel)}
                             </Button>
                             <Button
                               onClick={() => {
@@ -1133,23 +1167,23 @@ export default function SettingsPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Card className="bg-muted/20 border-0">
                           <CardContent className="p-4 space-y-2">
-                            <p className="text-sm font-semibold">Editor de Regras</p>
+                            <p className="text-sm font-semibold">{t(locale, settingsCopy.rulesEditorTitle)}</p>
                             <p className="text-xs text-muted-foreground">
-                              Gerencie regras de classificação baseadas em KeyWords.
+                              {t(locale, settingsCopy.rulesEditorBody)}
                             </p>
                             <Link href="/rules">
-                              <Button variant="outline" size="sm">Abrir Regras</Button>
+                              <Button variant="outline" size="sm">{t(locale, settingsCopy.rulesEditorAction)}</Button>
                             </Link>
                           </CardContent>
                         </Card>
                         <Card className="bg-muted/20 border-0">
                           <CardContent className="p-4 space-y-2">
-                            <p className="text-sm font-semibold">AI Keywords</p>
+                            <p className="text-sm font-semibold">{t(locale, settingsCopy.aiKeywordsTitle)}</p>
                             <p className="text-xs text-muted-foreground">
-                              Revisão de sugestões automáticas de palavras-chave.
+                              {t(locale, settingsCopy.aiKeywordsBody)}
                             </p>
                             <Link href="/ai-keywords">
-                              <Button variant="outline" size="sm">Ver sugestões</Button>
+                              <Button variant="outline" size="sm">{t(locale, settingsCopy.aiKeywordsAction)}</Button>
                             </Link>
                           </CardContent>
                         </Card>
@@ -1159,18 +1193,18 @@ export default function SettingsPage() {
                         <CardHeader>
                           <CardTitle className="text-base flex items-center gap-2">
                             <Settings className="h-4 w-4 text-primary" />
-                            Assistência de Classificação
+                            {t(locale, settingsCopy.classificationAssistTitle)}
                           </CardTitle>
                           <CardDescription>
-                            Ajuste o nível de confiança para auto-confirmação.
+                            {t(locale, settingsCopy.classificationAssistBody)}
                           </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                           <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
                             <div>
-                              <p className="font-medium">Auto-confirmar Alta Confiança</p>
+                              <p className="font-medium">{t(locale, settingsCopy.autoConfirmTitle)}</p>
                               <p className="text-sm text-muted-foreground">
-                                Aceitar automaticamente sugestões acima do limite.
+                                {t(locale, settingsCopy.autoConfirmBody)}
                               </p>
                             </div>
                             <Switch
@@ -1184,7 +1218,7 @@ export default function SettingsPage() {
                           {settings?.autoConfirmHighConfidence && (
                             <div className="p-4 bg-muted/30 rounded-xl space-y-3">
                               <div className="flex items-center justify-between">
-                                <Label className="text-sm font-medium">Limite de Confiança</Label>
+                                <Label className="text-sm font-medium">{t(locale, settingsCopy.confidenceLimitLabel)}</Label>
                                 <span className="text-sm font-bold text-primary">{settings?.confidenceThreshold || 80}%</span>
                               </div>
                               <Slider
@@ -1199,7 +1233,7 @@ export default function SettingsPage() {
                                 className="w-full"
                               />
                               <p className="text-xs text-muted-foreground">
-                                Transações acima desse limite serão confirmadas automaticamente.
+                                {t(locale, settingsCopy.confidenceLimitHint)}
                               </p>
                             </div>
                           )}
@@ -1210,24 +1244,27 @@ export default function SettingsPage() {
                         <CardHeader>
                           <CardTitle className="text-base flex items-center gap-2">
                             <Check className="h-4 w-4 text-primary" />
-                            Teste de Regra (key_desc)
+                            {t(locale, settingsCopy.ruleTestTitle)}
                           </CardTitle>
                           <CardDescription>
-                            Valide o comportamento de regras e expressões.
+                            {t(locale, settingsCopy.rulesValidationTitle)}
                           </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-3">
                           <div className="flex gap-2">
                             <Input value={ruleTestKeyDesc} onChange={(e) => setRuleTestKeyDesc(e.target.value)} />
-                            <Button variant="outline" onClick={handleRuleTest}>Testar</Button>
+                            <Button variant="outline" onClick={handleRuleTest}>{t(locale, settingsCopy.ruleTestAction)}</Button>
                           </div>
                           {ruleTestResult && (
                             <p className="text-sm text-muted-foreground">
-                              Leaf: {ruleTestResult.leafId || "nenhuma"} | Regra: {ruleTestResult.ruleId || "-"}
+                              {formatMessage(t(locale, settingsCopy.ruleTestResult), {
+                                leaf: ruleTestResult.leafId || t(locale, settingsCopy.ruleTestNone),
+                                rule: ruleTestResult.ruleId || "-"
+                              })}
                             </p>
                           )}
                           <p className="text-xs text-muted-foreground">
-                            Expressões são separadas apenas por “;”. Espaços dentro da expressão não são divididos.
+                            {t(locale, settingsCopy.expressionsHint)}
                           </p>
                         </CardContent>
                       </Card>
@@ -1281,7 +1318,7 @@ export default function SettingsPage() {
                                       <p className="text-xs text-muted-foreground leading-snug break-words">{tx.keyDesc}</p>
                                     </div>
                                     <span className="text-sm font-semibold">
-                                      {tx.amount?.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                                      {tx.amount?.toLocaleString(locale, { style: "currency", currency: settings?.currency || "EUR" })}
                                     </span>
                                   </div>
                                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -1296,7 +1333,7 @@ export default function SettingsPage() {
                                       }}
                                     >
                                       <SelectTrigger className="bg-muted/30">
-                                        <SelectValue placeholder="Nível 1" />
+                                        <SelectValue placeholder={t(locale, settingsCopy.levelPlaceholder1)} />
                                       </SelectTrigger>
                                       <SelectContent>
                                         {taxonomyLevels.level1Options.map((level1) => (
@@ -1318,7 +1355,7 @@ export default function SettingsPage() {
                                       disabled={!selection.level1}
                                     >
                                       <SelectTrigger className="bg-muted/30">
-                                        <SelectValue placeholder="Nível 2" />
+                                        <SelectValue placeholder={t(locale, settingsCopy.levelPlaceholder2)} />
                                       </SelectTrigger>
                                       <SelectContent>
                                         {level2Options.map((level2) => (
@@ -1345,7 +1382,7 @@ export default function SettingsPage() {
                                       disabled={!selection.level1 || !selection.level2}
                                     >
                                       <SelectTrigger className="bg-muted/30">
-                                        <SelectValue placeholder="Nível 3 (folha)" />
+                                        <SelectValue placeholder={t(locale, settingsCopy.levelPlaceholder3)} />
                                       </SelectTrigger>
                                       <SelectContent>
                                         {level3Options.map((level3) => (
@@ -1359,19 +1396,19 @@ export default function SettingsPage() {
 
                                   <div className="flex flex-col md:flex-row md:items-center gap-3">
                                     <Input
-                                      placeholder="Nova expressão (opcional, uma por vez)"
+                                      placeholder={t(locale, settingsCopy.newExpressionPlaceholder)}
                                       value={reviewExpressions[tx.id] || ""}
                                       onChange={(e) => setReviewExpressions(prev => ({ ...prev, [tx.id]: e.target.value }))}
                                       className="flex-1"
                                     />
                                     <Button className="shrink-0" onClick={() => handleReviewAssign(tx.id)}>
-                                      Aplicar
+                                      {t(locale, settingsCopy.reviewApplyAction)}
                                     </Button>
                                   </div>
 
                                   <div className="rounded-lg border border-muted bg-muted/20 p-3 text-xs space-y-2">
                                     <div>
-                                      <p className="text-muted-foreground">Key words atuais</p>
+                                      <p className="text-muted-foreground">{t(locale, settingsCopy.reviewKeywordsCurrent)}</p>
                                       {existingKeywords.length ? (
                                         <div className="flex flex-wrap gap-2 mt-1">
                                           {existingKeywords.map((keyword) => (
@@ -1381,11 +1418,11 @@ export default function SettingsPage() {
                                           ))}
                                         </div>
                                       ) : (
-                                        <p className="text-muted-foreground mt-1">Nenhuma palavra-chave cadastrada.</p>
+                                        <p className="text-muted-foreground mt-1">{t(locale, settingsCopy.reviewKeywordsEmpty)}</p>
                                       )}
                                     </div>
                                     <div>
-                                      <p className="text-muted-foreground">Key words negativos</p>
+                                      <p className="text-muted-foreground">{t(locale, settingsCopy.reviewKeywordsNegative)}</p>
                                       {existingNegative.length ? (
                                         <div className="flex flex-wrap gap-2 mt-1">
                                           {existingNegative.map((keyword) => (
@@ -1395,39 +1432,39 @@ export default function SettingsPage() {
                                           ))}
                                         </div>
                                       ) : (
-                                        <p className="text-muted-foreground mt-1">Nenhuma negativa cadastrada.</p>
+                                        <p className="text-muted-foreground mt-1">{t(locale, settingsCopy.reviewKeywordsNegativeEmpty)}</p>
                                       )}
                                     </div>
                                   </div>
 
                                   <div className="space-y-2">
                                     <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-                                      Adicionar novas expressões
+                                      {t(locale, settingsCopy.addExpressionsTitle)}
                                     </Label>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                       <div className="flex flex-col md:flex-row gap-2">
                                         <Input
-                                          placeholder="Palavras-chave (use ';' entre expressões)"
+                                          placeholder={t(locale, settingsCopy.keywordsPlaceholder)}
                                           value={reviewKeywordDrafts[tx.id] || ""}
                                           onChange={(e) => setReviewKeywordDrafts(prev => ({ ...prev, [tx.id]: e.target.value }))}
                                         />
                                         <Button variant="outline" className="shrink-0" onClick={() => handleAppendKeywords(tx.id)}>
-                                          Salvar +
+                                          {t(locale, settingsCopy.saveKeywordsAdd)}
                                         </Button>
                                       </div>
                                       <div className="flex flex-col md:flex-row gap-2">
                                         <Input
-                                          placeholder="Palavras-chave negativas (use ';')"
+                                          placeholder={t(locale, settingsCopy.keywordsNegativePlaceholder)}
                                           value={reviewNegativeDrafts[tx.id] || ""}
                                           onChange={(e) => setReviewNegativeDrafts(prev => ({ ...prev, [tx.id]: e.target.value }))}
                                         />
                                         <Button variant="outline" className="shrink-0" onClick={() => handleAppendNegativeKeywords(tx.id)}>
-                                          Salvar -
+                                          {t(locale, settingsCopy.saveKeywordsRemove)}
                                         </Button>
                                       </div>
                                     </div>
                                     <p className="text-xs text-muted-foreground">
-                                      Cada expressão deve ser separada por ponto e vírgula (;). Ex: 'Farmácia Müller; Apotheke'.
+                                      {t(locale, settingsCopy.expressionsHelp)}
                                     </p>
                                   </div>
                                 </CardContent>
@@ -1449,10 +1486,10 @@ export default function SettingsPage() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <BookOpen className="h-5 w-5 text-primary" />
-                      Dicionário de Comerciantes
+                      {t(locale, settingsCopy.dictionaryTitle)}
                     </CardTitle>
                     <CardDescription>
-                      Gerencie aliases padronizados para descrições de transações
+                      {t(locale, settingsCopy.dictionarySubtitle)}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -1462,14 +1499,14 @@ export default function SettingsPage() {
                           <BookOpen className="h-6 w-6 text-primary" />
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-semibold text-lg mb-1">Centralize suas descrições</h3>
+                          <h3 className="font-semibold text-lg mb-1">{t(locale, settingsCopy.dictionaryCardTitle)}</h3>
                           <p className="text-muted-foreground text-sm mb-4">
-                            Crie aliases personalizados para comerciantes e transações recorrentes.
-                            Mantenha suas finanças organizadas com descrições consistentes e fáceis de entender.
+                            {t(locale, settingsCopy.dictionaryCardBody)}{" "}
+                            {t(locale, settingsCopy.dictionaryCardBody2)}
                           </p>
                           <Link href="/merchant-dictionary">
                             <Button className="bg-primary hover:bg-primary/90 gap-2">
-                              Acessar Dicionário Completo
+                              {t(locale, settingsCopy.dictionaryAction)}
                               <ArrowRight className="h-4 w-4" />
                             </Button>
                           </Link>
@@ -1490,21 +1527,21 @@ export default function SettingsPage() {
                       <CardHeader>
                         <CardTitle className="text-base flex items-center gap-2">
                           <BookOpen className="h-4 w-4 text-primary" />
-                          Aliases (CSV UTF-8 com BOM)
+                          {t(locale, settingsCopy.aliasesSectionTitle)}
                         </CardTitle>
                         <CardDescription>
-                          Importe e exporte aliases com acentos preservados.
+                          {t(locale, settingsCopy.aliasesSectionDesc)}
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <div className="flex flex-wrap gap-3">
                           <Button variant="outline" className="gap-2" onClick={handleDownloadAliasesTemplateCsv}>
                             <Download className="h-4 w-4" />
-                            Baixar template CSV
+                            {t(locale, settingsCopy.downloadTemplateCsv)}
                           </Button>
                           <Button variant="outline" className="gap-2" onClick={handleDownloadAliasesCsv}>
                             <Download className="h-4 w-4" />
-                            Baixar dados CSV
+                            {t(locale, settingsCopy.downloadDataCsv)}
                           </Button>
                           <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
                             <Input
@@ -1524,15 +1561,18 @@ export default function SettingsPage() {
                         </div>
 
                         <div className="rounded-lg border border-muted bg-muted/10 p-3 text-sm">
-                          <p className="font-medium">Última importação</p>
+                          <p className="font-medium">{t(locale, settingsCopy.lastImportTitle)}</p>
                           {aliasesLastImport ? (
                             <p className="text-muted-foreground">
                               {format(new Date(aliasesLastImport.createdAt), "dd/MM/yyyy HH:mm")} ·{" "}
                               {formatImportStatus(aliasesLastImport.status)} ·{" "}
-                              {aliasesLastImport.rowsValid || 0}/{aliasesLastImport.rowsTotal || 0} linhas válidas
+                              {formatMessage(t(locale, settingsCopy.lastImportRows), {
+                                valid: aliasesLastImport.rowsValid || 0,
+                                total: aliasesLastImport.rowsTotal || 0
+                              })}
                             </p>
                           ) : (
-                            <p className="text-muted-foreground">Sem importações anteriores.</p>
+                            <p className="text-muted-foreground">{t(locale, settingsCopy.lastImportEmpty)}</p>
                           )}
                         </div>
 
@@ -1564,9 +1604,13 @@ export default function SettingsPage() {
                                 ))}
                               </div>
                             ) : null}
-                            {aliasPreview?.reasonCodes?.length ? (
-                              <p className="text-xs">Código: {aliasPreview.reasonCodes.join(", ")}</p>
-                            ) : null}
+                          {aliasPreview?.reasonCodes?.length ? (
+                            <p className="text-xs">
+                              {formatMessage(t(locale, settingsCopy.previewReasonCodeLabel), {
+                                codes: aliasPreview.reasonCodes.join(", ")
+                              })}
+                            </p>
+                          ) : null}
                           </div>
                         ) : null}
 
@@ -1592,19 +1636,19 @@ export default function SettingsPage() {
                                 </CardContent>
                               </Card>
                               <Card className="bg-muted/20 border-0">
-                                <CardContent className="p-3">
-                                  <p className="text-xs text-muted-foreground">Colunas</p>
-                                  <p className="text-sm font-semibold">{aliasPreview.headerFound?.length || 0}</p>
-                                </CardContent>
-                              </Card>
-                            </div>
+                              <CardContent className="p-3">
+                                <p className="text-xs text-muted-foreground">{t(locale, settingsCopy.previewColumnsLabel)}</p>
+                                <p className="text-sm font-semibold">{aliasPreview.headerFound?.length || 0}</p>
+                              </CardContent>
+                            </Card>
+                          </div>
 
-                            <div className="rounded-lg border border-muted bg-muted/20 p-3 text-sm">
-                              <p className="font-medium">Colunas detectadas</p>
-                              <p className="text-xs text-muted-foreground">
-                                {aliasPreview.headerFound?.join(" · ") || "-"}
-                              </p>
-                            </div>
+                          <div className="rounded-lg border border-muted bg-muted/20 p-3 text-sm">
+                            <p className="font-medium">{t(locale, settingsCopy.previewColumnsDetectedTitle)}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {aliasPreview.headerFound?.join(" · ") || "-"}
+                            </p>
+                          </div>
 
                             <div className="overflow-x-auto rounded-lg border">
                               <table className="min-w-full text-sm">
@@ -1640,14 +1684,16 @@ export default function SettingsPage() {
                         <Separator />
 
                         <div className="space-y-2">
-                          <Label>Teste de alias (key_desc)</Label>
+                          <Label>{t(locale, settingsCopy.aliasTestTitle)}</Label>
                           <div className="flex gap-2">
                             <Input value={aliasTestKeyDesc} onChange={(e) => setAliasTestKeyDesc(e.target.value)} />
-                            <Button variant="outline" onClick={handleAliasTest}>Testar</Button>
+                            <Button variant="outline" onClick={handleAliasTest}>{t(locale, settingsCopy.aliasTestAction)}</Button>
                           </div>
                           {aliasTestResult && (
                             <p className="text-sm text-muted-foreground">
-                              Alias: {aliasTestResult.aliasDesc || "nenhum"}
+                              {formatMessage(t(locale, settingsCopy.aliasTestResult), {
+                                alias: aliasTestResult.aliasDesc || t(locale, settingsCopy.aliasTestNone)
+                              })}
                             </p>
                           )}
                         </div>
@@ -1658,21 +1704,21 @@ export default function SettingsPage() {
                       <CardHeader>
                         <CardTitle className="text-base flex items-center gap-2">
                           <Image className="h-4 w-4 text-primary" />
-                          Logos (download + upload)
+                          {t(locale, settingsCopy.logosSectionTitle)}
                         </CardTitle>
                         <CardDescription>
-                          Colunas obrigatórias: Alias_Desc · Key_words_alias · URL_icon_internet
+                          {t(locale, settingsCopy.requiredColumnsLabel)}
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <div className="flex flex-wrap gap-3">
                           <Button variant="outline" className="gap-2" onClick={handleDownloadAssetsTemplateCsv}>
                             <Download className="h-4 w-4" />
-                            Baixar template CSV
+                            {t(locale, settingsCopy.downloadTemplateCsv)}
                           </Button>
                           <Button variant="outline" className="gap-2" onClick={handleDownloadAssetsCsv}>
                             <Download className="h-4 w-4" />
-                            Baixar dados CSV
+                            {t(locale, settingsCopy.downloadDataCsv)}
                           </Button>
                           <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
                             <Input
@@ -1692,20 +1738,23 @@ export default function SettingsPage() {
                           </label>
                           <Button variant="outline" className="gap-2" onClick={handleRefreshLogos}>
                             <RefreshCw className="h-4 w-4" />
-                            Atualizar logos
+                            {t(locale, settingsCopy.refreshLogosAction)}
                           </Button>
                         </div>
 
                         <div className="rounded-lg border border-muted bg-muted/10 p-3 text-sm">
-                          <p className="font-medium">Última importação</p>
+                          <p className="font-medium">{t(locale, settingsCopy.lastImportTitle)}</p>
                           {logosLastImport ? (
                             <p className="text-muted-foreground">
                               {format(new Date(logosLastImport.createdAt), "dd/MM/yyyy HH:mm")} ·{" "}
                               {formatImportStatus(logosLastImport.status)} ·{" "}
-                              {logosLastImport.rowsValid || 0}/{logosLastImport.rowsTotal || 0} linhas válidas
+                              {formatMessage(t(locale, settingsCopy.lastImportRows), {
+                                valid: logosLastImport.rowsValid || 0,
+                                total: logosLastImport.rowsTotal || 0
+                              })}
                             </p>
                           ) : (
-                            <p className="text-muted-foreground">Sem importações anteriores.</p>
+                            <p className="text-muted-foreground">{t(locale, settingsCopy.lastImportEmpty)}</p>
                           )}
                         </div>
 
@@ -1738,7 +1787,11 @@ export default function SettingsPage() {
                               </div>
                             ) : null}
                             {logosPreview?.reasonCodes?.length ? (
-                              <p className="text-xs">Código: {logosPreview.reasonCodes.join(", ")}</p>
+                              <p className="text-xs">
+                                {formatMessage(t(locale, settingsCopy.previewReasonCodeLabel), {
+                                  codes: logosPreview.reasonCodes.join(", ")
+                                })}
+                              </p>
                             ) : null}
                           </div>
                         ) : null}
@@ -1748,32 +1801,32 @@ export default function SettingsPage() {
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                               <Card className="bg-muted/20 border-0">
                                 <CardContent className="p-3">
-                                  <p className="text-xs text-muted-foreground">Encoding</p>
+                                  <p className="text-xs text-muted-foreground">{t(locale, settingsCopy.previewEncodingLabel)}</p>
                                   <p className="text-sm font-semibold">{logosPreview.detectedEncoding || "-"}</p>
                                 </CardContent>
                               </Card>
                               <Card className="bg-muted/20 border-0">
                                 <CardContent className="p-3">
-                                  <p className="text-xs text-muted-foreground">Delimiter</p>
+                                  <p className="text-xs text-muted-foreground">{t(locale, settingsCopy.previewDelimiterLabel)}</p>
                                   <p className="text-sm font-semibold">{logosPreview.detectedDelimiter || "-"}</p>
                                 </CardContent>
                               </Card>
                               <Card className="bg-muted/20 border-0">
                                 <CardContent className="p-3">
-                                  <p className="text-xs text-muted-foreground">Linhas</p>
+                                  <p className="text-xs text-muted-foreground">{t(locale, settingsCopy.previewRowsLabel)}</p>
                                   <p className="text-sm font-semibold">{logosPreview.rowsTotal || 0}</p>
                                 </CardContent>
                               </Card>
                               <Card className="bg-muted/20 border-0">
                                 <CardContent className="p-3">
-                                  <p className="text-xs text-muted-foreground">Colunas</p>
+                                  <p className="text-xs text-muted-foreground">{t(locale, settingsCopy.previewColumnsLabel)}</p>
                                   <p className="text-sm font-semibold">{logosPreview.headerFound?.length || 0}</p>
                                 </CardContent>
                               </Card>
                             </div>
 
                             <div className="rounded-lg border border-muted bg-muted/20 p-3 text-sm">
-                              <p className="font-medium">Colunas detectadas</p>
+                              <p className="font-medium">{t(locale, settingsCopy.previewColumnsDetectedTitle)}</p>
                               <p className="text-xs text-muted-foreground">
                                 {logosPreview.headerFound?.join(" · ") || "-"}
                               </p>
@@ -1813,15 +1866,17 @@ export default function SettingsPage() {
                         {logosImportResults && (
                           <div className="space-y-2">
                             <p className="text-sm text-muted-foreground">
-                              Processados: {logosImportResults.length}
+                              {formatMessage(t(locale, settingsCopy.logosProcessedLabel), {
+                                count: logosImportResults.length
+                              })}
                             </p>
                             <div className="overflow-x-auto rounded-lg border">
                               <table className="min-w-full text-sm">
                                 <thead className="bg-muted/30">
                                   <tr>
-                                    <th className="px-3 py-2 text-left">Alias</th>
-                                    <th className="px-3 py-2 text-left">Status</th>
-                                    <th className="px-3 py-2 text-left">Pré-visualizar</th>
+                                    <th className="px-3 py-2 text-left">{t(locale, settingsCopy.logosTableAlias)}</th>
+                                    <th className="px-3 py-2 text-left">{t(locale, settingsCopy.logosTableStatus)}</th>
+                                    <th className="px-3 py-2 text-left">{t(locale, settingsCopy.previewHeader)}</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -1877,10 +1932,10 @@ export default function SettingsPage() {
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
                     <CreditCard className="h-4 w-4 text-primary" />
-                    Fontes de Dados
+                    {t(locale, settingsCopy.integrationsTitle)}
                   </CardTitle>
                   <CardDescription>
-                    Conecte suas contas bancárias e cartões via importação CSV.
+                    {t(locale, settingsCopy.integrationsIntro)}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -1898,70 +1953,74 @@ export default function SettingsPage() {
                             </div>
                             <div>
                               <p className="font-medium">{provider.name}</p>
-                              <p className="text-sm text-muted-foreground">Integração via CSV</p>
+                              <p className="text-sm text-muted-foreground">{t(locale, settingsCopy.integrationsCsvLabel)}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
                             <Badge className="bg-primary/10 text-primary border-0">{provider.status}</Badge>
                             <Button variant="outline" size="sm" onClick={() => setMappingProvider(provider.id)}>
-                              Ver mapeamento CSV
+                              {t(locale, settingsCopy.integrationsMappingAction)}
                             </Button>
                           </div>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Em breve: importação de capturas/fotos de extrato (documentado, não implementado).
+                          {t(locale, settingsCopy.integrationsSoon)}
                         </p>
                       </div>
                     ))}
                   </div>
                   <div className="p-4 bg-muted/20 rounded-xl border-2 border-dashed">
                     <p className="text-sm text-muted-foreground">
-                      <strong>Próximas integrações:</strong> Nubank, Revolut, N26, Wise
+                      <strong>{t(locale, settingsCopy.integrationsNext)}</strong>
                     </p>
                   </div>
 
                   <Dialog open={Boolean(activeMapping)} onOpenChange={(open) => !open && setMappingProvider(null)}>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>Mapeamento CSV · {activeMapping?.name}</DialogTitle>
+                        <DialogTitle>
+                          {formatMessage(t(locale, settingsCopy.integrationsMappingTitle), {
+                            name: activeMapping?.name || ""
+                          })}
+                        </DialogTitle>
                         <DialogDescription>
-                          Regras de importação e contratos esperados.
+                          {t(locale, settingsCopy.integrationsRulesTitle)}
                         </DialogDescription>
                       </DialogHeader>
                       {activeMapping && (
                         <div className="space-y-3 text-sm">
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <div className="rounded-md border border-muted bg-muted/20 p-3">
-                              <p className="text-xs text-muted-foreground">Delimiter</p>
+                              <p className="text-xs text-muted-foreground">{t(locale, settingsCopy.previewDelimiterLabel)}</p>
                               <p className="font-semibold">{activeMapping.csv.delimiter}</p>
                             </div>
                             <div className="rounded-md border border-muted bg-muted/20 p-3">
-                              <p className="text-xs text-muted-foreground">Codificação</p>
+                              <p className="text-xs text-muted-foreground">{t(locale, settingsCopy.integrationsEncodingLabel)}</p>
                               <p className="font-semibold">{activeMapping.csv.encoding}</p>
                             </div>
                             <div className="rounded-md border border-muted bg-muted/20 p-3">
-                              <p className="text-xs text-muted-foreground">Formato de Data</p>
+                              <p className="text-xs text-muted-foreground">{t(locale, settingsCopy.integrationsDateFormatLabel)}</p>
                               <p className="font-semibold">{activeMapping.csv.dateFormat}</p>
                             </div>
                           </div>
                           <div>
-                            <p className="font-semibold">Cabeçalhos obrigatórios</p>
+                            <p className="font-semibold">{t(locale, settingsCopy.integrationsHeadersLabel)}</p>
                             <p className="text-muted-foreground">
                               {activeMapping.csv.requiredHeaders.join(" · ")}
                             </p>
                           </div>
                           <div>
-                            <p className="font-semibold">Colunas do preview</p>
+                            <p className="font-semibold">{t(locale, settingsCopy.integrationsPreviewColumnsLabel)}</p>
                             <p className="text-muted-foreground">
                               {activeMapping.csv.previewColumns.join(" · ")}
                             </p>
                           </div>
                           <div>
-                            <p className="font-semibold">Campos-chave usados pelo pipeline</p>
+                            <p className="font-semibold">{t(locale, settingsCopy.integrationsKeyFieldsLabel)}</p>
                             <p className="text-muted-foreground">{activeMapping.csv.keyFields}</p>
                           </div>
                           <div>
-                            <p className="font-semibold">Falhas comuns (com ações)</p>
+                            <p className="font-semibold">{t(locale, settingsCopy.integrationsFailuresLabel)}</p>
                             <ul className="list-disc pl-5 text-muted-foreground">
                               {activeMapping.csv.failureReasons.map((reason) => (
                                 <li key={reason}>{reason}</li>
@@ -1969,7 +2028,7 @@ export default function SettingsPage() {
                             </ul>
                           </div>
                           <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
-                            Em breve: importação de fotos/prints de extrato diretamente pelo app.
+                            {t(locale, settingsCopy.integrationsPhotosSoon)}
                           </div>
                         </div>
                       )}
@@ -1987,7 +2046,7 @@ export default function SettingsPage() {
                     {t(locale, settingsCopy.auditTitle)}
                   </CardTitle>
                   <CardDescription>
-                    Registro de importações, alterações e exclusões críticas.
+                    {t(locale, settingsCopy.auditSectionIntro)}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -2097,7 +2156,9 @@ export default function SettingsPage() {
                 {dangerLastDeletedAt && (
                   <StatusPanel
                     title={t(locale, settingsCopy.dangerLastTitle)}
-                    description={`Concluída em ${formatDateTime(locale, dangerLastDeletedAt)}.`}
+                    description={formatMessage(t(locale, settingsCopy.dangerCompletedAt), {
+                      date: formatDateTime(locale, dangerLastDeletedAt)
+                    })}
                     variant="warning"
                     payload={dangerDeletedSummary.length ? { datasets: dangerDeletedSummary } : undefined}
                   />
@@ -2218,7 +2279,9 @@ export default function SettingsPage() {
                           <DialogTitle>{t(locale, settingsCopy.dangerDoneTitle)}</DialogTitle>
                           <DialogDescription>
                             {dangerLastDeletedAt
-                              ? `Concluído em ${formatDateTime(locale, dangerLastDeletedAt)}.`
+                              ? formatMessage(t(locale, settingsCopy.dangerCompletedAtShort), {
+                                date: formatDateTime(locale, dangerLastDeletedAt)
+                              })
                               : t(locale, settingsCopy.dangerDoneFallback)}
                           </DialogDescription>
                         </DialogHeader>

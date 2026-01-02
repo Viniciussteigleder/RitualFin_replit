@@ -4662,6 +4662,676 @@ export const settingsCopy = {
     "de-DE": "Logos aktualisiert",
     "en-US": "Logos updated"
   },
+  toastSettingsSaved: {
+    "pt-BR": "Configurações salvas",
+    "de-DE": "Einstellungen gespeichert",
+    "en-US": "Settings saved"
+  },
+  toastSettingsSavedBody: {
+    "pt-BR": "Suas preferências foram atualizadas com sucesso.",
+    "de-DE": "Ihre Einstellungen wurden erfolgreich aktualisiert.",
+    "en-US": "Your preferences were updated successfully."
+  },
+  toastSettingsErrorTitle: {
+    "pt-BR": "Erro ao salvar",
+    "de-DE": "Fehler beim Speichern",
+    "en-US": "Save error"
+  },
+  toastSettingsErrorBody: {
+    "pt-BR": "Não foi possível salvar as configurações.",
+    "de-DE": "Die Einstellungen konnten nicht gespeichert werden.",
+    "en-US": "Could not save settings."
+  },
+  previewValidationFailed: {
+    "pt-BR": "Falha na validação do arquivo.",
+    "de-DE": "Dateivalidierung fehlgeschlagen.",
+    "en-US": "File validation failed."
+  },
+  previewFailedTitle: {
+    "pt-BR": "Pré-visualização falhou",
+    "de-DE": "Vorschau fehlgeschlagen",
+    "en-US": "Preview failed"
+  },
+  previewDoneTitle: {
+    "pt-BR": "Pré-visualização concluída",
+    "de-DE": "Vorschau abgeschlossen",
+    "en-US": "Preview completed"
+  },
+  previewDoneBody: {
+    "pt-BR": "Revisão pronta para confirmação.",
+    "de-DE": "Überprüfung bereit zur Bestätigung.",
+    "en-US": "Review ready for confirmation."
+  },
+  previewErrorTitle: {
+    "pt-BR": "Erro na pré-visualização",
+    "de-DE": "Fehler bei der Vorschau",
+    "en-US": "Preview error"
+  },
+  importAppliedTitle: {
+    "pt-BR": "Importação aplicada",
+    "de-DE": "Import angewendet",
+    "en-US": "Import applied"
+  },
+  importAppliedBody: {
+    "pt-BR": "Importação concluída: {count} linhas aplicadas.",
+    "de-DE": "Import abgeschlossen: {count} Zeilen angewendet.",
+    "en-US": "Import completed: {count} rows applied."
+  },
+  importAppliedRows: {
+    "pt-BR": "Linhas aplicadas: {count}",
+    "de-DE": "Angewendete Zeilen: {count}",
+    "en-US": "Rows applied: {count}"
+  },
+  applyFailedMessage: {
+    "pt-BR": "Falha ao aplicar: {error}",
+    "de-DE": "Anwenden fehlgeschlagen: {error}",
+    "en-US": "Failed to apply: {error}"
+  },
+  aliasesAppliedTitle: {
+    "pt-BR": "Aliases aplicados",
+    "de-DE": "Aliases angewendet",
+    "en-US": "Aliases applied"
+  },
+  importApplyFailedTitle: {
+    "pt-BR": "Falha ao aplicar importação",
+    "de-DE": "Import konnte nicht angewendet werden",
+    "en-US": "Failed to apply import"
+  },
+  importApplyFailedBody: {
+    "pt-BR": "Não foi possível aplicar a importação.",
+    "de-DE": "Import konnte nicht angewendet werden.",
+    "en-US": "Could not apply the import."
+  },
+  aliasesApplyFailedBody: {
+    "pt-BR": "Não foi possível aplicar os aliases.",
+    "de-DE": "Die Aliase konnten nicht angewendet werden.",
+    "en-US": "Could not apply aliases."
+  },
+  logosApplyFailedBody: {
+    "pt-BR": "Não foi possível aplicar os logos.",
+    "de-DE": "Die Logos konnten nicht angewendet werden.",
+    "en-US": "Could not apply logos."
+  },
+  exportAuditTitle: {
+    "pt-BR": "Exportação concluída",
+    "de-DE": "Export abgeschlossen",
+    "en-US": "Export completed"
+  },
+  exportAuditBody: {
+    "pt-BR": "O arquivo CSV do log foi gerado com sucesso.",
+    "de-DE": "Die CSV-Datei des Logs wurde erfolgreich erstellt.",
+    "en-US": "The audit log CSV was generated successfully."
+  },
+  exportAuditErrorTitle: {
+    "pt-BR": "Falha ao exportar log",
+    "de-DE": "Log-Export fehlgeschlagen",
+    "en-US": "Failed to export log"
+  },
+  exportAuditErrorBody: {
+    "pt-BR": "Não foi possível exportar o log de auditoria.",
+    "de-DE": "Audit-Log konnte nicht exportiert werden.",
+    "en-US": "Could not export audit log."
+  },
+  logosProcessedLabel: {
+    "pt-BR": "Processados: {count}",
+    "de-DE": "Verarbeitet: {count}",
+    "en-US": "Processed: {count}"
+  },
+  refreshLogosTotal: {
+    "pt-BR": "Total: {count}",
+    "de-DE": "Gesamt: {count}",
+    "en-US": "Total: {count}"
+  },
+  dangerSummaryTransactions: {
+    "pt-BR": "Transações",
+    "de-DE": "Transaktionen",
+    "en-US": "Transactions"
+  },
+  dangerSummaryCategories: {
+    "pt-BR": "Categorias e Regras",
+    "de-DE": "Kategorien und Regeln",
+    "en-US": "Categories and Rules"
+  },
+  dangerSummaryAliases: {
+    "pt-BR": "Aliases e Logos",
+    "de-DE": "Aliases und Logos",
+    "en-US": "Aliases and Logos"
+  },
+  dangerSummaryAll: {
+    "pt-BR": "Tudo",
+    "de-DE": "Alles",
+    "en-US": "Everything"
+  },
+  profileNameDefault: {
+    "pt-BR": "Usuário",
+    "de-DE": "Benutzer",
+    "en-US": "User"
+  },
+  csvExportAccents: {
+    "pt-BR": "Exportações CSV usam UTF-8 com BOM para preservar acentos.",
+    "de-DE": "CSV-Exporte verwenden UTF-8 mit BOM, um Akzente zu erhalten.",
+    "en-US": "CSV exports use UTF-8 with BOM to preserve accents."
+  },
+  csvDownloadsAccents: {
+    "pt-BR": "Downloads em CSV são gerados em UTF-8 com BOM para preservar acentos.",
+    "de-DE": "CSV-Downloads werden in UTF-8 mit BOM erzeugt, um Akzente zu erhalten.",
+    "en-US": "CSV downloads are generated in UTF-8 with BOM to preserve accents."
+  },
+  classificationSectionTitle: {
+    "pt-BR": "Classificação & Dados",
+    "de-DE": "Klassifikation & Daten",
+    "en-US": "Classification & Data"
+  },
+  classificationSectionBody: {
+    "pt-BR": "Importações, categorias, aliases e revisão de pendências.",
+    "de-DE": "Importe, Kategorien, Aliase und Review offener Punkte.",
+    "en-US": "Imports, categories, aliases, and pending reviews."
+  },
+  classificationTabCategories: {
+    "pt-BR": "Categorias",
+    "de-DE": "Kategorien",
+    "en-US": "Categories"
+  },
+  classificationTabRules: {
+    "pt-BR": "Regras KeyWords",
+    "de-DE": "Keyword-Regeln",
+    "en-US": "Keyword rules"
+  },
+  classificationTabReview: {
+    "pt-BR": "Fila de Revisão",
+    "de-DE": "Review-Queue",
+    "en-US": "Review queue"
+  },
+  downloadTemplateCsv: {
+    "pt-BR": "Baixar template CSV",
+    "de-DE": "CSV-Template herunterladen",
+    "en-US": "Download CSV template"
+  },
+  downloadDataCsv: {
+    "pt-BR": "Baixar dados CSV",
+    "de-DE": "CSV-Daten herunterladen",
+    "en-US": "Download CSV data"
+  },
+  downloadExcel: {
+    "pt-BR": "Baixar Excel",
+    "de-DE": "Excel herunterladen",
+    "en-US": "Download Excel"
+  },
+  reviewQueueTab: {
+    "pt-BR": "Fila de Revisão",
+    "de-DE": "Review-Queue",
+    "en-US": "Review queue"
+  },
+  reviewQueueFilesHint: {
+    "pt-BR": "Os arquivos de extrato ficam em Operações → Upload.",
+    "de-DE": "Auszugsdateien finden Sie unter Operationen → Upload.",
+    "en-US": "Statement files are under Operations → Upload."
+  },
+  reviewQueueFilesHintPrefix: {
+    "pt-BR": "Os arquivos de extrato ficam em",
+    "de-DE": "Auszugsdateien finden Sie unter",
+    "en-US": "Statement files are under"
+  },
+  reviewQueueFilesHintLink: {
+    "pt-BR": "Operações → Upload",
+    "de-DE": "Operationen → Upload",
+    "en-US": "Operations → Upload"
+  },
+  lastImportTitle: {
+    "pt-BR": "Última importação",
+    "de-DE": "Letzter Import",
+    "en-US": "Last import"
+  },
+  lastImportRows: {
+    "pt-BR": "{valid}/{total} linhas válidas",
+    "de-DE": "{valid}/{total} gültige Zeilen",
+    "en-US": "{valid}/{total} valid rows"
+  },
+  lastImportEmpty: {
+    "pt-BR": "Sem importações anteriores.",
+    "de-DE": "Keine vorherigen Importe.",
+    "en-US": "No previous imports."
+  },
+  previewReasonCodeLabel: {
+    "pt-BR": "Código: {codes}",
+    "de-DE": "Code: {codes}",
+    "en-US": "Code: {codes}"
+  },
+  changePreviewTitle: {
+    "pt-BR": "Prévia de alterações",
+    "de-DE": "Vorschau der Änderungen",
+    "en-US": "Change preview"
+  },
+  previewEncodingLabel: {
+    "pt-BR": "Codificação",
+    "de-DE": "Kodierung",
+    "en-US": "Encoding"
+  },
+  previewDelimiterLabel: {
+    "pt-BR": "Delimitador",
+    "de-DE": "Trennzeichen",
+    "en-US": "Delimiter"
+  },
+  previewRowsLabel: {
+    "pt-BR": "Linhas",
+    "de-DE": "Zeilen",
+    "en-US": "Rows"
+  },
+  previewColumnsLabel: {
+    "pt-BR": "Colunas",
+    "de-DE": "Spalten",
+    "en-US": "Columns"
+  },
+  previewColumnsDetectedTitle: {
+    "pt-BR": "Colunas detectadas",
+    "de-DE": "Erkannte Spalten",
+    "en-US": "Detected columns"
+  },
+  previewNewCategories: {
+    "pt-BR": "Novas categorias",
+    "de-DE": "Neue Kategorien",
+    "en-US": "New categories"
+  },
+  previewRemoved: {
+    "pt-BR": "Removidas",
+    "de-DE": "Entfernt",
+    "en-US": "Removed"
+  },
+  previewUpdatedRules: {
+    "pt-BR": "Regras atualizadas",
+    "de-DE": "Regeln aktualisiert",
+    "en-US": "Rules updated"
+  },
+  previewSamplePrefix: {
+    "pt-BR": "Ex.:",
+    "de-DE": "Bsp.:",
+    "en-US": "E.g.:"
+  },
+  confirmRemapLabel: {
+    "pt-BR": "Confirmo o remapeamento de categorias da UI",
+    "de-DE": "Ich bestätige die UI-Kategorien-Zuordnung",
+    "en-US": "I confirm the UI category remapping"
+  },
+  dialogCancel: {
+    "pt-BR": "Cancelar",
+    "de-DE": "Abbrechen",
+    "en-US": "Cancel"
+  },
+  rulesEditorTitle: {
+    "pt-BR": "Editor de Regras",
+    "de-DE": "Regel-Editor",
+    "en-US": "Rules editor"
+  },
+  rulesEditorBody: {
+    "pt-BR": "Gerencie regras de classificação baseadas em KeyWords.",
+    "de-DE": "Verwalten Sie Klassifizierungsregeln auf Keyword-Basis.",
+    "en-US": "Manage classification rules based on keywords."
+  },
+  rulesEditorAction: {
+    "pt-BR": "Abrir Regras",
+    "de-DE": "Regeln öffnen",
+    "en-US": "Open rules"
+  },
+  aiKeywordsTitle: {
+    "pt-BR": "AI Keywords",
+    "de-DE": "KI-Keywords",
+    "en-US": "AI Keywords"
+  },
+  aiKeywordsBody: {
+    "pt-BR": "Revisão de sugestões automáticas de palavras-chave.",
+    "de-DE": "Überprüfung automatischer Keyword-Vorschläge.",
+    "en-US": "Review automatic keyword suggestions."
+  },
+  aiKeywordsAction: {
+    "pt-BR": "Ver sugestões",
+    "de-DE": "Vorschläge ansehen",
+    "en-US": "View suggestions"
+  },
+  aliasTestTitle: {
+    "pt-BR": "Teste de alias (key_desc)",
+    "de-DE": "Alias-Test (key_desc)",
+    "en-US": "Alias test (key_desc)"
+  },
+  aliasTestAction: {
+    "pt-BR": "Testar",
+    "de-DE": "Testen",
+    "en-US": "Test"
+  },
+  aliasTestResult: {
+    "pt-BR": "Alias: {alias}",
+    "de-DE": "Alias: {alias}",
+    "en-US": "Alias: {alias}"
+  },
+  aliasTestNone: {
+    "pt-BR": "nenhum",
+    "de-DE": "keiner",
+    "en-US": "none"
+  },
+  refreshLogosAction: {
+    "pt-BR": "Atualizar logos",
+    "de-DE": "Logos aktualisieren",
+    "en-US": "Refresh logos"
+  },
+  confirmChangesTitle: {
+    "pt-BR": "Deseja aplicar as alterações?",
+    "de-DE": "Änderungen anwenden?",
+    "en-US": "Apply changes?"
+  },
+  confirmChangesBody: {
+    "pt-BR": "Isso atualizará regras existentes. Revise a pré-visualização antes de continuar.",
+    "de-DE": "Dies aktualisiert bestehende Regeln. Bitte Vorschau prüfen.",
+    "en-US": "This will update existing rules. Review the preview before continuing."
+  },
+  classificationRulesTitle: {
+    "pt-BR": "Gerencie regras de classificação baseadas em KeyWords.",
+    "de-DE": "Verwalten Sie klassifizierende Regeln basierend auf Keywords.",
+    "en-US": "Manage classification rules based on keywords."
+  },
+  classificationSuggestionsTitle: {
+    "pt-BR": "Revisão de sugestões automáticas de palavras-chave.",
+    "de-DE": "Überprüfung automatischer Keyword-Vorschläge.",
+    "en-US": "Review automatic keyword suggestions."
+  },
+  classificationSuggestionsAction: {
+    "pt-BR": "Ver sugestões",
+    "de-DE": "Vorschläge ansehen",
+    "en-US": "View suggestions"
+  },
+  classificationAssistTitle: {
+    "pt-BR": "Assistência de Classificação",
+    "de-DE": "Klassifizierungsassistenz",
+    "en-US": "Classification assistance"
+  },
+  classificationAssistBody: {
+    "pt-BR": "Ajuste o nível de confiança para auto-confirmação.",
+    "de-DE": "Passen Sie die Vertrauensschwelle für Auto-Bestätigung an.",
+    "en-US": "Adjust confidence threshold for auto-confirmation."
+  },
+  autoConfirmTitle: {
+    "pt-BR": "Auto-confirmar Alta Confiança",
+    "de-DE": "Hohe Zuversicht automatisch bestätigen",
+    "en-US": "Auto-confirm high confidence"
+  },
+  autoConfirmBody: {
+    "pt-BR": "Aceitar automaticamente sugestões acima do limite.",
+    "de-DE": "Vorschläge oberhalb des Grenzwerts automatisch akzeptieren.",
+    "en-US": "Automatically accept suggestions above the threshold."
+  },
+  confidenceLimitLabel: {
+    "pt-BR": "Limite de Confiança",
+    "de-DE": "Vertrauensschwelle",
+    "en-US": "Confidence threshold"
+  },
+  confidenceLimitHint: {
+    "pt-BR": "Transações acima desse limite serão confirmadas automaticamente.",
+    "de-DE": "Transaktionen über diesem Wert werden automatisch bestätigt.",
+    "en-US": "Transactions above this threshold will be auto-confirmed."
+  },
+  rulesValidationTitle: {
+    "pt-BR": "Valide o comportamento de regras e expressões.",
+    "de-DE": "Validieren Sie das Verhalten von Regeln und Ausdrücken.",
+    "en-US": "Validate rule and expression behavior."
+  },
+  ruleTestTitle: {
+    "pt-BR": "Teste de Regra (key_desc)",
+    "de-DE": "Regeltest (key_desc)",
+    "en-US": "Rule test (key_desc)"
+  },
+  ruleTestAction: {
+    "pt-BR": "Testar",
+    "de-DE": "Testen",
+    "en-US": "Test"
+  },
+  ruleTestResult: {
+    "pt-BR": "Leaf: {leaf} | Regra: {rule}",
+    "de-DE": "Leaf: {leaf} | Regel: {rule}",
+    "en-US": "Leaf: {leaf} | Rule: {rule}"
+  },
+  ruleTestNone: {
+    "pt-BR": "nenhuma",
+    "de-DE": "keine",
+    "en-US": "none"
+  },
+  expressionsHint: {
+    "pt-BR": "Expressões são separadas apenas por “;”. Espaços dentro da expressão não são divididos.",
+    "de-DE": "Ausdrücke werden nur durch “;” getrennt. Leerzeichen innerhalb des Ausdrucks bleiben erhalten.",
+    "en-US": "Expressions are separated only by “;”. Spaces inside an expression are not split."
+  },
+  levelPlaceholder1: {
+    "pt-BR": "Nível 1",
+    "de-DE": "Ebene 1",
+    "en-US": "Level 1"
+  },
+  levelPlaceholder2: {
+    "pt-BR": "Nível 2",
+    "de-DE": "Ebene 2",
+    "en-US": "Level 2"
+  },
+  levelPlaceholder3: {
+    "pt-BR": "Nível 3 (folha)",
+    "de-DE": "Ebene 3 (Blatt)",
+    "en-US": "Level 3 (leaf)"
+  },
+  newExpressionPlaceholder: {
+    "pt-BR": "Nova expressão (opcional, uma por vez)",
+    "de-DE": "Neuer Ausdruck (optional, einzeln)",
+    "en-US": "New expression (optional, one at a time)"
+  },
+  reviewApplyAction: {
+    "pt-BR": "Aplicar",
+    "de-DE": "Anwenden",
+    "en-US": "Apply"
+  },
+  reviewKeywordsCurrent: {
+    "pt-BR": "Key words atuais",
+    "de-DE": "Aktuelle Keywords",
+    "en-US": "Current keywords"
+  },
+  reviewKeywordsEmpty: {
+    "pt-BR": "Nenhuma palavra-chave cadastrada.",
+    "de-DE": "Keine Keywords vorhanden.",
+    "en-US": "No keywords saved."
+  },
+  reviewKeywordsNegative: {
+    "pt-BR": "Key words negativos",
+    "de-DE": "Negative Keywords",
+    "en-US": "Negative keywords"
+  },
+  reviewKeywordsNegativeEmpty: {
+    "pt-BR": "Nenhuma negativa cadastrada.",
+    "de-DE": "Keine negativen Keywords vorhanden.",
+    "en-US": "No negative keywords saved."
+  },
+  addExpressionsTitle: {
+    "pt-BR": "Adicionar novas expressões",
+    "de-DE": "Neue Ausdrücke hinzufügen",
+    "en-US": "Add new expressions"
+  },
+  keywordsPlaceholder: {
+    "pt-BR": "Palavras-chave (use ';' entre expressões)",
+    "de-DE": "Schlüsselwörter (mit ';' trennen)",
+    "en-US": "Keywords (use ';' between expressions)"
+  },
+  keywordsNegativePlaceholder: {
+    "pt-BR": "Palavras-chave negativas (use ';')",
+    "de-DE": "Negative Schlüsselwörter (mit ';')",
+    "en-US": "Negative keywords (use ';')"
+  },
+  saveKeywordsAdd: {
+    "pt-BR": "Salvar +",
+    "de-DE": "Speichern +",
+    "en-US": "Save +"
+  },
+  saveKeywordsRemove: {
+    "pt-BR": "Salvar -",
+    "de-DE": "Speichern -",
+    "en-US": "Save -"
+  },
+  expressionsHelp: {
+    "pt-BR": "Cada expressão deve ser separada por ponto e vírgula (;). Ex: 'Farmácia Müller; Apotheke'.",
+    "de-DE": "Jeder Ausdruck muss durch Semikolon (;) getrennt sein. Z. B. 'Farmácia Müller; Apotheke'.",
+    "en-US": "Each expression must be separated by a semicolon (;). E.g. 'Farmácia Müller; Apotheke'."
+  },
+  dictionaryTitle: {
+    "pt-BR": "Dicionário de Comerciantes",
+    "de-DE": "Händlerverzeichnis",
+    "en-US": "Merchant dictionary"
+  },
+  dictionarySubtitle: {
+    "pt-BR": "Gerencie aliases padronizados para descrições de transações",
+    "de-DE": "Standardisierte Aliase für Transaktionsbeschreibungen verwalten",
+    "en-US": "Manage standardized aliases for transaction descriptions"
+  },
+  dictionaryCardTitle: {
+    "pt-BR": "Centralize suas descrições",
+    "de-DE": "Beschreibungen zentralisieren",
+    "en-US": "Centralize your descriptions"
+  },
+  dictionaryCardBody: {
+    "pt-BR": "Crie aliases personalizados para comerciantes e transações recorrentes.",
+    "de-DE": "Erstellen Sie Aliase für Händler und wiederkehrende Transaktionen.",
+    "en-US": "Create custom aliases for merchants and recurring transactions."
+  },
+  dictionaryCardBody2: {
+    "pt-BR": "Mantenha suas finanças organizadas com descrições consistentes e fáceis de entender.",
+    "de-DE": "Halten Sie Ihre Finanzen mit konsistenten, leicht verständlichen Beschreibungen organisiert.",
+    "en-US": "Keep your finances organized with consistent, easy-to-understand descriptions."
+  },
+  dictionaryAction: {
+    "pt-BR": "Acessar Dicionário Completo",
+    "de-DE": "Vollständiges Verzeichnis öffnen",
+    "en-US": "Open full dictionary"
+  },
+  aliasesSectionTitle: {
+    "pt-BR": "Aliases (CSV UTF-8 com BOM)",
+    "de-DE": "Aliases (CSV UTF-8 mit BOM)",
+    "en-US": "Aliases (CSV UTF-8 with BOM)"
+  },
+  aliasesSectionDesc: {
+    "pt-BR": "Importe e exporte aliases com acentos preservados.",
+    "de-DE": "Aliases importieren/exportieren mit erhaltenen Akzenten.",
+    "en-US": "Import and export aliases with accents preserved."
+  },
+  logosSectionTitle: {
+    "pt-BR": "Logos (CSV UTF-8 com BOM)",
+    "de-DE": "Logos (CSV UTF-8 mit BOM)",
+    "en-US": "Logos (CSV UTF-8 with BOM)"
+  },
+  logosSectionDesc: {
+    "pt-BR": "Importe logos e refresque imagens armazenadas.",
+    "de-DE": "Logos importieren und gespeicherte Bilder aktualisieren.",
+    "en-US": "Import logos and refresh stored images."
+  },
+  requiredColumnsLabel: {
+    "pt-BR": "Colunas obrigatórias: Alias_Desc · Key_words_alias · URL_icon_internet",
+    "de-DE": "Pflichtspalten: Alias_Desc · Key_words_alias · URL_icon_internet",
+    "en-US": "Required columns: Alias_Desc · Key_words_alias · URL_icon_internet"
+  },
+  previewHeader: {
+    "pt-BR": "Pré-visualizar",
+    "de-DE": "Vorschau",
+    "en-US": "Preview"
+  },
+  logosTableAlias: {
+    "pt-BR": "Alias",
+    "de-DE": "Alias",
+    "en-US": "Alias"
+  },
+  logosTableStatus: {
+    "pt-BR": "Status",
+    "de-DE": "Status",
+    "en-US": "Status"
+  },
+  integrationsIntro: {
+    "pt-BR": "Conecte suas contas bancárias e cartões via importação CSV.",
+    "de-DE": "Verbinden Sie Ihre Bankkonten und Karten per CSV-Import.",
+    "en-US": "Connect your bank accounts and cards via CSV import."
+  },
+  integrationsTitle: {
+    "pt-BR": "Fontes de Dados",
+    "de-DE": "Datenquellen",
+    "en-US": "Data sources"
+  },
+  integrationsCsvLabel: {
+    "pt-BR": "Integração via CSV",
+    "de-DE": "CSV-Integration",
+    "en-US": "CSV integration"
+  },
+  integrationsMappingAction: {
+    "pt-BR": "Ver mapeamento CSV",
+    "de-DE": "CSV-Mapping ansehen",
+    "en-US": "View CSV mapping"
+  },
+  integrationsMappingTitle: {
+    "pt-BR": "Mapeamento CSV · {name}",
+    "de-DE": "CSV-Mapping · {name}",
+    "en-US": "CSV mapping · {name}"
+  },
+  integrationsSoon: {
+    "pt-BR": "Em breve: importação de capturas/fotos de extrato (documentado, não implementado).",
+    "de-DE": "Demnächst: Import von Kontoauszug-Fotos (dokumentiert, nicht implementiert).",
+    "en-US": "Coming soon: import statement captures/photos (documented, not implemented)."
+  },
+  integrationsNext: {
+    "pt-BR": "Próximas integrações: Nubank, Revolut, N26, Wise",
+    "de-DE": "Nächste Integrationen: Nubank, Revolut, N26, Wise",
+    "en-US": "Next integrations: Nubank, Revolut, N26, Wise"
+  },
+  integrationsRulesTitle: {
+    "pt-BR": "Regras de importação e contratos esperados.",
+    "de-DE": "Importregeln und erwartete Verträge.",
+    "en-US": "Import rules and expected contracts."
+  },
+  integrationsEncodingLabel: {
+    "pt-BR": "Codificação",
+    "de-DE": "Kodierung",
+    "en-US": "Encoding"
+  },
+  integrationsDateFormatLabel: {
+    "pt-BR": "Formato de Data",
+    "de-DE": "Datumsformat",
+    "en-US": "Date format"
+  },
+  integrationsHeadersLabel: {
+    "pt-BR": "Cabeçalhos obrigatórios",
+    "de-DE": "Pflicht-Header",
+    "en-US": "Required headers"
+  },
+  integrationsPreviewColumnsLabel: {
+    "pt-BR": "Colunas do preview",
+    "de-DE": "Vorschau-Spalten",
+    "en-US": "Preview columns"
+  },
+  integrationsKeyFieldsLabel: {
+    "pt-BR": "Campos-chave usados pelo pipeline",
+    "de-DE": "Schlüsselfelder im Pipeline",
+    "en-US": "Key fields used by the pipeline"
+  },
+  integrationsFailuresLabel: {
+    "pt-BR": "Falhas comuns (com ações)",
+    "de-DE": "Häufige Fehler (mit Aktionen)",
+    "en-US": "Common failures (with actions)"
+  },
+  integrationsPhotosSoon: {
+    "pt-BR": "Em breve: importação de fotos/prints de extrato diretamente pelo app.",
+    "de-DE": "Demnächst: Import von Auszugsfotos direkt in der App.",
+    "en-US": "Coming soon: import statement photos directly in the app."
+  },
+  auditSectionIntro: {
+    "pt-BR": "Registro de importações, alterações e exclusões críticas.",
+    "de-DE": "Protokoll von Importen, Änderungen und kritischen Löschungen.",
+    "en-US": "Log of imports, changes, and critical deletions."
+  },
+  dangerCompletedAt: {
+    "pt-BR": "Concluída em {date}.",
+    "de-DE": "Abgeschlossen am {date}.",
+    "en-US": "Completed on {date}."
+  },
+  dangerCompletedAtShort: {
+    "pt-BR": "Concluído em {date}.",
+    "de-DE": "Abgeschlossen am {date}.",
+    "en-US": "Completed on {date}."
+  }
   toastDataReset: {
     "pt-BR": "Dados resetados",
     "de-DE": "Daten zurückgesetzt",
