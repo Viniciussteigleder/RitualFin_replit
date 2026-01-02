@@ -160,7 +160,7 @@ Date: 2026-01-02
 
 ## Merge Log
 
-- `origin/codex/next-10-workpackages` merged into `release/integration-branch-cleanup` (merge commit: `0f842f7`), then merged into `origin/main` (merge commit: `TBD`).
+- `origin/codex/next-10-workpackages` merged into `release/integration-branch-cleanup` (merge commit: `0f842f7`), then merged into `origin/main` (merge commit: `24fd342`).
 
 ## Limitations
 
