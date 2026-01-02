@@ -35,7 +35,7 @@ import { useMonth } from "@/lib/month-context";
 import { Link, useLocation } from "wouter";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { ritualsApi } from "@/lib/api";
+import { ritualsApi, dashboardApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { ritualsCopy, translateCategory, t as translate } from "@/lib/i18n";
 import { useLocale } from "@/hooks/use-locale";
@@ -118,26 +118,23 @@ export default function RitualsPage() {
 
   const { data: dashboard } = useQuery({
     queryKey: ["dashboard", month],
-    queryFn: async () => {
-      const res = await fetch(`/api/dashboard?month=${month}`);
-      if (!res.ok) return null;
-      return res.json();
-    }
+    queryFn: () => dashboardApi.get(month),
   });
 
   const { data: previousMonth } = useQuery({
     queryKey: ["dashboard-previous", getPreviousMonth(month)],
-    queryFn: async () => {
-      const res = await fetch(`/api/dashboard?month=${getPreviousMonth(month)}`);
-      if (!res.ok) return null;
-      return res.json();
-    }
+    queryFn: () => dashboardApi.get(getPreviousMonth(month)),
   });
 
   // Fetch existing rituals for current period
   const { data: ritualsData } = useQuery({
     queryKey: ["rituals", ritualType, currentPeriod],
     queryFn: () => ritualsApi.list(ritualType, currentPeriod),
+  });
+
+  const { data: ritualsHistory } = useQuery({
+    queryKey: ["rituals-history", ritualType],
+    queryFn: () => ritualsApi.list(ritualType),
   });
 
   const currentRitual = ritualsData?.rituals?.[0];
@@ -219,6 +216,10 @@ export default function RitualsPage() {
   const changeFromPrevious = previousMonth?.totalSpent 
     ? Math.round(((totalCurrentSpent - previousMonth.totalSpent) / previousMonth.totalSpent) * 100)
     : 0;
+
+  const historyItems = (ritualsHistory?.rituals || [])
+    .filter((r: any) => r.completedAt && r.period !== currentPeriod)
+    .slice(0, 5);
 
   const copyPreviousGoals = () => {
     toast({
@@ -647,6 +648,49 @@ export default function RitualsPage() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        <Card className="bg-white border-0 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <CalendarCheck className="h-5 w-5 text-primary" />
+                Histórico de rituais
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Acompanhe acordos e decisões anteriores
+              </p>
+            </div>
+            <Badge variant="secondary">{historyItems.length} itens</Badge>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {historyItems.length === 0 ? (
+              <div className="text-sm text-muted-foreground">
+                Nenhum ritual concluído anteriormente.
+              </div>
+            ) : (
+              historyItems.map((item: any) => (
+                <div key={item.id} className="border rounded-lg p-3 flex items-start justify-between gap-4">
+                  <div>
+                    <p className="font-medium">
+                      {item.type === "weekly" ? "Ritual Semanal" : "Ritual Mensal"} • {item.period}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Concluído em {new Date(item.completedAt).toLocaleDateString("pt-BR")}
+                    </p>
+                    {item.notes && (
+                      <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                        {item.notes}
+                      </p>
+                    )}
+                  </div>
+                  <Badge variant="outline" className="text-[10px]">
+                    Concluído
+                  </Badge>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
       </div>
     </AppLayout>
   );
