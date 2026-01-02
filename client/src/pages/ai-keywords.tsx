@@ -30,7 +30,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
-import { aiKeywordsCopy, t as translate } from "@/lib/i18n";
+import { aiKeywordsCopy, translateCategory, t as translate } from "@/lib/i18n";
 import { useLocale } from "@/hooks/use-locale";
 
 const CATEGORY_ICONS: Record<string, any> = {
@@ -377,7 +377,9 @@ export default function AIKeywordsPage() {
                               </SelectTrigger>
                               <SelectContent>
                                 {CATEGORIES.map(cat => (
-                                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                  <SelectItem key={cat} value={cat}>
+                                    {translateCategory(locale, cat)}
+                                  </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>

@@ -48,7 +48,7 @@ import { useMonth } from "@/lib/month-context";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
-import { dashboardCopy, t } from "@/lib/i18n";
+import { dashboardCopy, translateCategory, t } from "@/lib/i18n";
 import { useLocale } from "@/hooks/use-locale";
 
 const CATEGORY_ICONS: Record<string, any> = {
@@ -210,14 +210,15 @@ export default function DashboardPage() {
         if (prevCat && prevCat.amount > 0) {
           const change = ((cat.amount - prevCat.amount) / prevCat.amount) * 100;
           if (isFinite(change)) {
+            const categoryLabel = translateCategory(locale, cat.category);
             if (change < -10) {
               insights.push({
                 id: `save-${cat.category}`,
                 type: "positive",
-                title: formatMessage(t(locale, dashboardCopy.insightSaveTitle), { category: cat.category }),
+                title: formatMessage(t(locale, dashboardCopy.insightSaveTitle), { category: categoryLabel }),
                 description: formatMessage(t(locale, dashboardCopy.insightSaveDescription), {
                   percent: Math.abs(change).toFixed(0),
-                  category: cat.category
+                  category: categoryLabel
                 }),
                 category: cat.category,
                 percentage: Math.abs(change)
@@ -226,10 +227,10 @@ export default function DashboardPage() {
               insights.push({
                 id: `warn-${cat.category}`,
                 type: "warning",
-                title: formatMessage(t(locale, dashboardCopy.insightWarnTitle), { category: cat.category }),
+                title: formatMessage(t(locale, dashboardCopy.insightWarnTitle), { category: categoryLabel }),
                 description: formatMessage(t(locale, dashboardCopy.insightWarnDescription), {
                   percent: change.toFixed(0),
-                  category: cat.category
+                  category: categoryLabel
                 }),
                 category: cat.category,
                 percentage: change
@@ -323,7 +324,7 @@ export default function DashboardPage() {
           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {['sparkasse', 'amex', 'miles-more'].map((accountType) => {
               const upload = lastUploads.find((u: any) => u.accountType === accountType);
-              const accountInfo = getAccountIcon(accountType);
+              const accountInfo = getAccountIcon(accountType, locale);
 
               return (
                 <div key={accountType} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
@@ -509,7 +510,9 @@ export default function DashboardPage() {
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center justify-between mb-1.5">
-                            <span className="font-semibold text-sm">{cat.category}</span>
+                            <span className="font-semibold text-sm">
+                              {translateCategory(locale, cat.category)}
+                            </span>
                             <span className="text-sm font-bold" style={{ color }}>{percentage}%</span>
                           </div>
                           <div className="h-3 bg-muted rounded-full overflow-hidden">

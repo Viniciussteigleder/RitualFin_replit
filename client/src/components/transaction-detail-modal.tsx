@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { getCategoryIcon } from "@/lib/merchant-icons";
 import { AliasLogo } from "@/components/alias-logo";
 import { AccountBadge } from "@/components/account-badge";
-import { transactionDetailCopy, t as translate } from "@/lib/i18n";
+import { transactionDetailCopy, translateCategory, t as translate } from "@/lib/i18n";
 import { useLocale } from "@/hooks/use-locale";
 import {
   Calendar,
@@ -210,7 +210,9 @@ export function TransactionDetailModal({
               className="w-3 h-3 rounded-full flex-shrink-0"
               style={{ backgroundColor: categoryColor }}
             />
-            <span className="font-semibold">{transaction.category1}</span>
+            <span className="font-semibold">
+              {translateCategory(locale, transaction.category1)}
+            </span>
             {transaction.category2 && (
               <>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />

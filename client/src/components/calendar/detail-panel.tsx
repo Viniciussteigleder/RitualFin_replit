@@ -17,7 +17,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { isSameDay, startOfWeek, endOfWeek } from "date-fns";
 import { Calendar, TrendingUp, TrendingDown } from "lucide-react";
 import { AliasLogo } from "@/components/alias-logo";
-import { getAccountIcon, IconBadge, TRANSACTION_ICONS } from "@/lib/icons";
+import { getAccountIcon, getTransactionIcons, IconBadge } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { calendarDetailCopy, t as translate } from "@/lib/i18n";
 import { useLocale } from "@/hooks/use-locale";
@@ -50,6 +50,7 @@ interface DetailPanelProps {
 
 export function DetailPanel({ mode, selectedDate, transactions }: DetailPanelProps) {
   const locale = useLocale();
+  const transactionIcons = getTransactionIcons(locale);
   const currencyFormatter = new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" });
   const dateFormatter = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "long", year: "numeric" });
   const dayFormatter = new Intl.DateTimeFormat(locale, { day: "2-digit" });
@@ -141,7 +142,7 @@ export function DetailPanel({ mode, selectedDate, transactions }: DetailPanelPro
           ) : (
             filteredTransactions.map((t) => {
               const fallbackDesc = t.simpleDesc || t.descRaw?.split(" -- ")[0]?.replace(/\s+\d{4,}/g, "");
-              const accountInfo = getAccountIcon(t.accountSource);
+              const accountInfo = getAccountIcon(t.accountSource, locale);
 
               return (
                 <div
@@ -168,16 +169,16 @@ export function DetailPanel({ mode, selectedDate, transactions }: DetailPanelPro
                         {/* Icon badges */}
                         <div className="flex items-center gap-0.5 flex-shrink-0">
                           {t.fixVar === "Fixo" && (
-                            <IconBadge {...TRANSACTION_ICONS.fixed} size="xs" />
+                            <IconBadge {...transactionIcons.fixed} size="xs" />
                           )}
                           {(t.recurringFlag || t.recurring) && (
-                            <IconBadge {...TRANSACTION_ICONS.recurring} size="xs" />
+                            <IconBadge {...transactionIcons.recurring} size="xs" />
                           )}
                           {t.isRefund && (
-                            <IconBadge {...TRANSACTION_ICONS.refund} size="xs" />
+                            <IconBadge {...transactionIcons.refund} size="xs" />
                           )}
                           {t.internalTransfer && (
-                            <IconBadge {...TRANSACTION_ICONS.internal} size="xs" />
+                            <IconBadge {...transactionIcons.internal} size="xs" />
                           )}
                         </div>
                       </div>

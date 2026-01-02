@@ -10,6 +10,151 @@ export function t(locale: Locale, triplet: TranslationTriplet) {
   return triplet[locale] || triplet["pt-BR"];
 }
 
+export const iconCopy = {
+  accountDefault: {
+    "pt-BR": "Conta",
+    "de-DE": "Konto",
+    "en-US": "Account"
+  },
+  transaction: {
+    income: {
+      "pt-BR": "Receita",
+      "de-DE": "Einnahme",
+      "en-US": "Income"
+    },
+    expense: {
+      "pt-BR": "Despesa",
+      "de-DE": "Ausgabe",
+      "en-US": "Expense"
+    },
+    fixed: {
+      "pt-BR": "Fixo",
+      "de-DE": "Fix",
+      "en-US": "Fixed"
+    },
+    variable: {
+      "pt-BR": "Variável",
+      "de-DE": "Variabel",
+      "en-US": "Variable"
+    },
+    recurring: {
+      "pt-BR": "Recorrente",
+      "de-DE": "Wiederkehrend",
+      "en-US": "Recurring"
+    },
+    refund: {
+      "pt-BR": "Reembolso",
+      "de-DE": "Erstattung",
+      "en-US": "Refund"
+    },
+    internal: {
+      "pt-BR": "Interna",
+      "de-DE": "Intern",
+      "en-US": "Internal"
+    }
+  },
+  status: {
+    unclassified: {
+      "pt-BR": "Não classificado",
+      "de-DE": "Nicht klassifiziert",
+      "en-US": "Unclassified"
+    },
+    lowConfidence: {
+      "pt-BR": "Baixa confiança",
+      "de-DE": "Niedrige Zuversicht",
+      "en-US": "Low confidence"
+    },
+    confirmed: {
+      "pt-BR": "Confirmado",
+      "de-DE": "Bestätigt",
+      "en-US": "Confirmed"
+    },
+    needsReview: {
+      "pt-BR": "Requer revisão",
+      "de-DE": "Prüfung erforderlich",
+      "en-US": "Needs review"
+    }
+  }
+};
+
+export const categoryLabels: Record<Locale, Record<string, string>> = {
+  "pt-BR": {
+    "Moradia": "Moradia",
+    "Mercado": "Mercado",
+    "Transporte": "Transporte",
+    "Saúde": "Saúde",
+    "Lazer": "Lazer",
+    "Compras Online": "Compras Online",
+    "Compras & Estilo de Vida": "Compras & Estilo de Vida",
+    "Alimentação": "Alimentação",
+    "Educação": "Educação",
+    "Receitas": "Receitas",
+    "Interno": "Interno",
+    "Interna": "Interna",
+    "Outros": "Outros",
+    "Mobilidade": "Mobilidade",
+    "Saúde & Seguros": "Saúde & Seguros",
+    "Educação & Crianças": "Educação & Crianças",
+    "Lazer & Viagens": "Lazer & Viagens",
+    "Finanças & Transferências": "Finanças & Transferências",
+    "Trabalho & Receitas": "Trabalho & Receitas",
+    "Doações & Outros": "Doações & Outros",
+    "Revisão & Não Classificado": "Revisão & Não Classificado"
+  },
+  "de-DE": {
+    "Moradia": "Wohnen",
+    "Mercado": "Lebensmittel",
+    "Transporte": "Transport",
+    "Saúde": "Gesundheit",
+    "Lazer": "Freizeit",
+    "Compras Online": "Online-Einkauf",
+    "Compras & Estilo de Vida": "Shopping & Lifestyle",
+    "Alimentação": "Essen",
+    "Educação": "Bildung",
+    "Receitas": "Einnahmen",
+    "Interno": "Intern",
+    "Interna": "Intern",
+    "Outros": "Sonstiges",
+    "Mobilidade": "Mobilität",
+    "Saúde & Seguros": "Gesundheit & Versicherungen",
+    "Educação & Crianças": "Bildung & Kinder",
+    "Lazer & Viagens": "Freizeit & Reisen",
+    "Finanças & Transferências": "Finanzen & Überweisungen",
+    "Trabalho & Receitas": "Arbeit & Einnahmen",
+    "Doações & Outros": "Spenden & Sonstiges",
+    "Revisão & Não Classificado": "Review & Nicht klassifiziert"
+  },
+  "en-US": {
+    "Moradia": "Housing",
+    "Mercado": "Groceries",
+    "Transporte": "Transport",
+    "Saúde": "Health",
+    "Lazer": "Leisure",
+    "Compras Online": "Online shopping",
+    "Compras & Estilo de Vida": "Shopping & lifestyle",
+    "Alimentação": "Food",
+    "Educação": "Education",
+    "Receitas": "Income",
+    "Interno": "Internal",
+    "Interna": "Internal",
+    "Outros": "Other",
+    "Mobilidade": "Mobility",
+    "Saúde & Seguros": "Health & insurance",
+    "Educação & Crianças": "Education & children",
+    "Lazer & Viagens": "Leisure & travel",
+    "Finanças & Transferências": "Finance & transfers",
+    "Trabalho & Receitas": "Work & income",
+    "Doações & Outros": "Donations & other",
+    "Revisão & Não Classificado": "Review & unclassified"
+  }
+};
+
+export function translateCategory(locale: Locale, category?: string) {
+  if (!category) return "";
+  const labels = categoryLabels[locale] || categoryLabels["pt-BR"];
+  return labels[category] || category;
+}
+
 export const uploadsCopy = {
   title: {
     "pt-BR": "Centro de Importação",
@@ -5815,6 +5960,79 @@ export const settingsCopy = {
         }
       }
     ]
+  }
+};
+
+export const aiChatCopy = {
+  title: {
+    "pt-BR": "Assistente IA",
+    "de-DE": "KI-Assistent",
+    "en-US": "AI Assistant"
+  },
+  poweredBy: {
+    "pt-BR": "Powered by GPT-4",
+    "de-DE": "Powered by GPT-4",
+    "en-US": "Powered by GPT-4"
+  },
+  beta: {
+    "pt-BR": "Beta",
+    "de-DE": "Beta",
+    "en-US": "Beta"
+  },
+  quickActions: {
+    "pt-BR": "Ações Rápidas",
+    "de-DE": "Schnellaktionen",
+    "en-US": "Quick actions"
+  },
+  inputPlaceholder: {
+    "pt-BR": "Digite sua pergunta...",
+    "de-DE": "Stellen Sie Ihre Frage...",
+    "en-US": "Type your question..."
+  },
+  userInitial: {
+    "pt-BR": "V",
+    "de-DE": "V",
+    "en-US": "U"
+  },
+  welcomeMessage: {
+    "pt-BR": "Olá! 👋 Sou seu assistente financeiro inteligente. Posso ajudar a analisar seus gastos, encontrar padrões e dar sugestões personalizadas. Como posso ajudar?",
+    "de-DE": "Hallo! 👋 Ich bin Ihr intelligenter Finanzassistent. Ich kann Ausgaben analysieren, Muster finden und personalisierte Vorschläge geben. Wie kann ich helfen?",
+    "en-US": "Hi! 👋 I'm your smart finance assistant. I can analyze spending, find patterns, and give personalized suggestions. How can I help?"
+  },
+  quickActionMonthLabel: {
+    "pt-BR": "Análise deste mês",
+    "de-DE": "Analyse dieses Monats",
+    "en-US": "This month analysis"
+  },
+  quickActionMonthPrompt: {
+    "pt-BR": "Analise meus gastos este mês e dê sugestões.",
+    "de-DE": "Analysiere meine Ausgaben in diesem Monat und gib mir Vorschläge.",
+    "en-US": "Analyze my spending this month and give suggestions."
+  },
+  quickActionSaveLabel: {
+    "pt-BR": "Sugerir economia",
+    "de-DE": "Sparmöglichkeiten",
+    "en-US": "Suggest savings"
+  },
+  quickActionSavePrompt: {
+    "pt-BR": "Onde posso economizar mais?",
+    "de-DE": "Wo kann ich am meisten sparen?",
+    "en-US": "Where can I save the most?"
+  },
+  quickActionDupesLabel: {
+    "pt-BR": "Encontrar duplicatas",
+    "de-DE": "Duplikate finden",
+    "en-US": "Find duplicates"
+  },
+  quickActionDupesPrompt: {
+    "pt-BR": "Há transações duplicadas?",
+    "de-DE": "Gibt es doppelte Transaktionen?",
+    "en-US": "Are there duplicate transactions?"
+  },
+  backendStub: {
+    "pt-BR": "🚧 **Backend em desenvolvimento**\n\nEste é um protótipo da interface do assistente IA. A integração com OpenAI será implementada pelo Codex.\n\nFuncionalidades planejadas:\n- Análise de gastos com insights personalizados\n- Detecção de padrões e anomalias\n- Sugestões de economia baseadas em histórico\n- Busca natural por transações\n- Previsões de gastos futuros",
+    "de-DE": "🚧 **Backend in Entwicklung**\n\nDies ist ein Prototyp der KI-Assistenten-Oberfläche. Die OpenAI-Integration wird von Codex implementiert.\n\nGeplante Funktionen:\n- Ausgabenanalyse mit personalisierten Insights\n- Muster- und Anomalieerkennung\n- Spartipps basierend auf Historie\n- Natürliche Suche nach Transaktionen\n- Prognosen für zukünftige Ausgaben",
+    "en-US": "🚧 **Backend in development**\n\nThis is a prototype of the AI assistant UI. OpenAI integration will be implemented by Codex.\n\nPlanned features:\n- Spending analysis with personalized insights\n- Pattern and anomaly detection\n- Savings suggestions based on history\n- Natural language transaction search\n- Forecasts for future spending"
   }
 };
 

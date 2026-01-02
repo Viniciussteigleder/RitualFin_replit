@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Trash2, Plus, TrendingUp, TrendingDown, Sparkles, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { budgetsCopy, t as translate } from "@/lib/i18n";
+import { budgetsCopy, translateCategory, t as translate } from "@/lib/i18n";
 import { useLocale } from "@/hooks/use-locale";
 
 const CATEGORIES = [
@@ -194,7 +194,9 @@ export default function BudgetsPage() {
                     className="bg-white/80 backdrop-blur rounded-lg p-3 border border-primary/10"
                   >
                     <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-semibold text-sm">{category}</h4>
+                      <h4 className="font-semibold text-sm">
+                        {translateCategory(locale, category)}
+                      </h4>
                       {data.trend === "up" ? (
                         <TrendingUp className="h-4 w-4 text-red-500" />
                       ) : data.trend === "down" ? (
@@ -240,7 +242,7 @@ export default function BudgetsPage() {
                 <option value="">{translate(locale, budgetsCopy.selectCategory)}</option>
                 {unusedCategories.map((cat) => (
                   <option key={cat} value={cat}>
-                    {cat}
+                    {translateCategory(locale, cat)}
                   </option>
                 ))}
               </select>
@@ -277,7 +279,9 @@ export default function BudgetsPage() {
                 <CardContent className="p-5">
                   <div className="flex justify-between items-start mb-3">
                     <div>
-                      <h3 className="font-bold text-lg">{budget.category1}</h3>
+                      <h3 className="font-bold text-lg">
+                        {translateCategory(locale, budget.category1)}
+                      </h3>
                       <p className="text-xs text-muted-foreground">
                         {formatMessage(translate(locale, budgetsCopy.spentOf), {
                           spent: currencyFormatter.format(spent),
