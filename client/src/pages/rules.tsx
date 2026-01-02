@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
+import { StatusPanel } from "@/components/status-panel";
 import * as XLSX from 'xlsx';
 
 const TYPE_COLORS: Record<string, string> = {
@@ -77,6 +78,7 @@ export default function RulesPage() {
   const [editingRule, setEditingRule] = useState<any>(null);
   const [formData, setFormData] = useState<RuleFormData>(EMPTY_RULE);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [statusInfo, setStatusInfo] = useState<{ variant: "success" | "warning" | "error"; title: string; description: string; payload?: Record<string, unknown> } | null>(null);
 
   const { data: rules = [], isLoading } = useQuery({
     queryKey: ["rules"],
@@ -89,9 +91,20 @@ export default function RulesPage() {
       queryClient.invalidateQueries({ queryKey: ["rules"] });
       closeDialog();
       toast({ title: "Regra criada com sucesso" });
+      setStatusInfo({
+        variant: "success",
+        title: "Regra criada",
+        description: "A nova regra foi adicionada com sucesso."
+      });
     },
     onError: (error: any) => {
       toast({ title: "Erro ao criar regra", description: error.message, variant: "destructive" });
+      setStatusInfo({
+        variant: "error",
+        title: "Falha ao criar regra",
+        description: error.message || "Não foi possível criar a regra.",
+        payload: error?.details || null
+      });
     }
   });
 
@@ -101,6 +114,19 @@ export default function RulesPage() {
       queryClient.invalidateQueries({ queryKey: ["rules"] });
       closeDialog();
       toast({ title: "Regra atualizada" });
+      setStatusInfo({
+        variant: "success",
+        title: "Regra atualizada",
+        description: "As alterações foram salvas."
+      });
+    },
+    onError: (error: any) => {
+      setStatusInfo({
+        variant: "error",
+        title: "Falha ao atualizar regra",
+        description: error.message || "Não foi possível atualizar a regra.",
+        payload: error?.details || null
+      });
     }
   });
 
@@ -109,7 +135,20 @@ export default function RulesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rules"] });
       toast({ title: "Regra removida" });
+      setStatusInfo({
+        variant: "success",
+        title: "Regra removida",
+        description: "A regra foi excluída com sucesso."
+      });
     },
+    onError: (error: any) => {
+      setStatusInfo({
+        variant: "error",
+        title: "Falha ao remover regra",
+        description: error.message || "Não foi possível remover a regra.",
+        payload: error?.details || null
+      });
+    }
   });
 
   const reapplyMutation = useMutation({
@@ -122,6 +161,20 @@ export default function RulesPage() {
         title: "Regras reaplicadas", 
         description: `${result.categorized} categorizadas automaticamente, ${result.stillPending} pendentes`
       });
+      setStatusInfo({
+        variant: "success",
+        title: "Regras reaplicadas",
+        description: `${result.categorized} categorizadas automaticamente, ${result.stillPending} pendentes`,
+        payload: result
+      });
+    },
+    onError: (error: any) => {
+      setStatusInfo({
+        variant: "error",
+        title: "Falha ao reaplicar regras",
+        description: error.message || "Não foi possível reaplicar as regras.",
+        payload: error?.details || null
+      });
     }
   });
 
@@ -130,7 +183,21 @@ export default function RulesPage() {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["rules"] });
       toast({ title: `${result.count} regras IA adicionadas` });
+      setStatusInfo({
+        variant: "success",
+        title: "Regras IA adicionadas",
+        description: `${result.count} regras importadas pela IA.`,
+        payload: result
+      });
     },
+    onError: (error: any) => {
+      setStatusInfo({
+        variant: "error",
+        title: "Falha ao gerar regras IA",
+        description: error.message || "Não foi possível gerar regras.",
+        payload: error?.details || null
+      });
+    }
   });
 
   const closeDialog = () => {
@@ -259,6 +326,11 @@ export default function RulesPage() {
 
         if (jsonData.length === 0) {
           toast({ title: "Arquivo vazio", variant: "destructive" });
+          setStatusInfo({
+            variant: "error",
+            title: "Importação falhou",
+            description: "O arquivo está vazio."
+          });
           return;
         }
 
@@ -315,11 +387,22 @@ export default function RulesPage() {
             description: errors.slice(0, 3).join('; '),
             variant: "destructive"
           });
+          setStatusInfo({
+            variant: "error",
+            title: "Importação falhou",
+            description: errors.slice(0, 3).join('; '),
+            payload: { errors: errors.slice(0, 10) }
+          });
           return;
         }
 
         if (rulesToImport.length === 0) {
           toast({ title: "Nenhuma regra válida para importar", variant: "destructive" });
+          setStatusInfo({
+            variant: "warning",
+            title: "Importação ignorada",
+            description: "Nenhuma regra válida encontrada no arquivo."
+          });
           return;
         }
 
@@ -341,10 +424,21 @@ export default function RulesPage() {
 
         if (failCount === 0) {
           toast({ title: `${successCount} regras importadas com sucesso` });
+          setStatusInfo({
+            variant: "success",
+            title: "Importação concluída",
+            description: `${successCount} regras importadas com sucesso.`
+          });
         } else {
           toast({
             title: "Importação concluída com erros",
             description: `${successCount} importadas, ${failCount} falharam`
+          });
+          setStatusInfo({
+            variant: "warning",
+            title: "Importação concluída com erros",
+            description: `${successCount} importadas, ${failCount} falharam`,
+            payload: { successCount, failCount }
           });
         }
 
@@ -353,6 +447,12 @@ export default function RulesPage() {
           title: "Erro ao processar arquivo",
           description: error.message,
           variant: "destructive"
+        });
+        setStatusInfo({
+          variant: "error",
+          title: "Erro ao processar arquivo",
+          description: error.message || "Não foi possível processar o arquivo.",
+          payload: error?.details || null
         });
       }
     };
@@ -494,6 +594,15 @@ export default function RulesPage() {
             </Button>
           </div>
         </div>
+
+        {statusInfo && (
+          <StatusPanel
+            title={statusInfo.title}
+            description={statusInfo.description}
+            variant={statusInfo.variant}
+            payload={statusInfo.payload}
+          />
+        )}
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="bg-white border-0 shadow-sm">

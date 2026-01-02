@@ -16,6 +16,7 @@ import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { AliasLogo } from "@/components/alias-logo";
+import { StatusPanel } from "@/components/status-panel";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { settingsApi, classificationApi, aliasApi, resetApi, dataImportsApi, auditLogsApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
@@ -157,6 +158,12 @@ export default function SettingsPage() {
   const [logosPreviewError, setLogosPreviewError] = useState<string | null>(null);
   const [logosStatus, setLogosStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [logosImportResults, setLogosImportResults] = useState<any[] | null>(null);
+  const [dataImportStatus, setDataImportStatus] = useState<{
+    variant: "success" | "warning" | "error";
+    title: string;
+    description: string;
+    payload?: Record<string, unknown>;
+  } | null>(null);
   const [ruleTestKeyDesc, setRuleTestKeyDesc] = useState("");
   const [ruleTestResult, setRuleTestResult] = useState<any | null>(null);
   const [aliasTestKeyDesc, setAliasTestKeyDesc] = useState("");
@@ -180,6 +187,13 @@ export default function SettingsPage() {
   const [dangerConfirmText, setDangerConfirmText] = useState("");
   const [dangerLastDeletedAt, setDangerLastDeletedAt] = useState<string | null>(null);
   const [dangerDeletedSummary, setDangerDeletedSummary] = useState<string[]>([]);
+  const [auditStatus, setAuditStatus] = useState<{
+    variant: "success" | "warning" | "error";
+    title: string;
+    description: string;
+    payload?: Record<string, unknown>;
+  } | null>(null);
+  const [auditFilter, setAuditFilter] = useState("all");
   const { toast } = useToast();
 
   // Fetch settings from API
@@ -221,6 +235,11 @@ export default function SettingsPage() {
   const { data: auditLogs = [], isLoading: auditLogsLoading } = useQuery({
     queryKey: ["audit-logs"],
     queryFn: () => auditLogsApi.list(),
+  });
+
+  const filteredAuditLogs = auditLogs.filter((log: any) => {
+    if (auditFilter === "all") return true;
+    return log.status === auditFilter;
   });
 
 
@@ -265,6 +284,7 @@ export default function SettingsPage() {
     setClassificationPreview(null);
     setClassificationPreviewError(null);
     setClassificationStatus(null);
+    setDataImportStatus(null);
     setConfirmRemap(false);
     try {
       const base64 = await readFileBase64(file);
@@ -278,9 +298,28 @@ export default function SettingsPage() {
       setClassificationImportId(preview.importId || null);
       if (!preview.success) {
         setClassificationPreviewError(preview.message || "Falha na validação do arquivo.");
+        setDataImportStatus({
+          variant: "error",
+          title: "Pré-visualização falhou",
+          description: preview.message || "Falha na validação do arquivo.",
+          payload: preview
+        });
+      } else {
+        setDataImportStatus({
+          variant: "success",
+          title: "Pré-visualização concluída",
+          description: "Revisão pronta para confirmação.",
+          payload: { importId: preview.importId, rowsTotal: preview.rowsTotal, rowsValid: preview.rowsValid }
+        });
       }
     } catch (err: any) {
       setClassificationPreviewError("Falha na validação do arquivo.");
+      setDataImportStatus({
+        variant: "error",
+        title: "Erro na pré-visualização",
+        description: err.message || "Falha na validação do arquivo.",
+        payload: err?.details || null
+      });
       toast({ title: "Erro na pré-visualização", description: err.message, variant: "destructive" });
     }
   };
@@ -293,12 +332,24 @@ export default function SettingsPage() {
         type: "success",
         message: `Importação concluída: ${result.rows} linhas aplicadas.`
       });
+      setDataImportStatus({
+        variant: "success",
+        title: "Importação aplicada",
+        description: `${result.rows} linhas aplicadas.`,
+        payload: result
+      });
       toast({ title: "Categorias atualizadas", description: `Linhas aplicadas: ${result.rows}` });
       queryClient.invalidateQueries({ queryKey: ["classification-leaves"] });
       queryClient.invalidateQueries({ queryKey: ["classification-rules"] });
       queryClient.invalidateQueries({ queryKey: ["data-imports-last", "classification"] });
     } catch (err: any) {
       setClassificationStatus({ type: "error", message: `Falha ao aplicar: ${err.message}` });
+      setDataImportStatus({
+        variant: "error",
+        title: "Falha ao aplicar importação",
+        description: err.message || "Não foi possível aplicar a importação.",
+        payload: err?.details || null
+      });
       toast({ title: "Erro ao aplicar categorias", description: err.message, variant: "destructive" });
     }
   };
@@ -307,6 +358,7 @@ export default function SettingsPage() {
     setAliasPreview(null);
     setAliasPreviewError(null);
     setAliasStatus(null);
+    setDataImportStatus(null);
     try {
       const base64 = await readFileBase64(file);
       const preview = await dataImportsApi.preview({
@@ -318,9 +370,28 @@ export default function SettingsPage() {
       setAliasImportId(preview.importId || null);
       if (!preview.success) {
         setAliasPreviewError(preview.message || "Falha na validação do arquivo.");
+        setDataImportStatus({
+          variant: "error",
+          title: "Pré-visualização falhou",
+          description: preview.message || "Falha na validação do arquivo.",
+          payload: preview
+        });
+      } else {
+        setDataImportStatus({
+          variant: "success",
+          title: "Pré-visualização concluída",
+          description: "Revisão pronta para confirmação.",
+          payload: { importId: preview.importId, rowsTotal: preview.rowsTotal, rowsValid: preview.rowsValid }
+        });
       }
     } catch (err: any) {
       setAliasPreviewError("Falha na validação do arquivo.");
+      setDataImportStatus({
+        variant: "error",
+        title: "Erro na pré-visualização",
+        description: err.message || "Falha na validação do arquivo.",
+        payload: err?.details || null
+      });
       toast({ title: "Erro na pré-visualização", description: err.message, variant: "destructive" });
     }
   };
@@ -333,11 +404,23 @@ export default function SettingsPage() {
         type: "success",
         message: `Importação concluída: ${result.rows} linhas aplicadas.`
       });
+      setDataImportStatus({
+        variant: "success",
+        title: "Aliases aplicados",
+        description: `${result.rows} linhas aplicadas.`,
+        payload: result
+      });
       toast({ title: "Aliases atualizados", description: `Linhas aplicadas: ${result.rows}` });
       queryClient.invalidateQueries({ queryKey: ["classification-review-queue"] });
       queryClient.invalidateQueries({ queryKey: ["data-imports-last", "aliases_key_desc"] });
     } catch (err: any) {
       setAliasStatus({ type: "error", message: `Falha ao aplicar: ${err.message}` });
+      setDataImportStatus({
+        variant: "error",
+        title: "Falha ao aplicar aliases",
+        description: err.message || "Não foi possível aplicar os aliases.",
+        payload: err?.details || null
+      });
       toast({ title: "Erro ao aplicar aliases", description: err.message, variant: "destructive" });
     }
   };
@@ -425,13 +508,27 @@ export default function SettingsPage() {
   };
 
   const handleExportAuditCsv = async () => {
-    const blob = await auditLogsApi.exportCsv();
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "ritualfin_audit_log.csv";
-    link.click();
-    URL.revokeObjectURL(url);
+    try {
+      const blob = await auditLogsApi.exportCsv();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "ritualfin_audit_log.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+      setAuditStatus({
+        variant: "success",
+        title: "Exportação concluída",
+        description: "O arquivo CSV do log foi gerado com sucesso."
+      });
+    } catch (err: any) {
+      setAuditStatus({
+        variant: "error",
+        title: "Falha ao exportar log",
+        description: err.message || "Não foi possível exportar o log de auditoria.",
+        payload: err?.details || null
+      });
+    }
   };
 
   const handleLogosPreview = async (file: File) => {
@@ -439,6 +536,7 @@ export default function SettingsPage() {
     setLogosImportResults(null);
     setLogosPreviewError(null);
     setLogosStatus(null);
+    setDataImportStatus(null);
     try {
       const base64 = await readFileBase64(file);
       const preview = await dataImportsApi.preview({
@@ -450,9 +548,28 @@ export default function SettingsPage() {
       setLogosImportId(preview.importId || null);
       if (!preview.success) {
         setLogosPreviewError(preview.message || "Falha na validação do arquivo.");
+        setDataImportStatus({
+          variant: "error",
+          title: "Pré-visualização falhou",
+          description: preview.message || "Falha na validação do arquivo.",
+          payload: preview
+        });
+      } else {
+        setDataImportStatus({
+          variant: "success",
+          title: "Pré-visualização concluída",
+          description: "Revisão pronta para confirmação.",
+          payload: { importId: preview.importId, rowsTotal: preview.rowsTotal, rowsValid: preview.rowsValid }
+        });
       }
     } catch (err: any) {
       setLogosPreviewError("Falha na validação do arquivo.");
+      setDataImportStatus({
+        variant: "error",
+        title: "Erro na pré-visualização",
+        description: err.message || "Falha na validação do arquivo.",
+        payload: err?.details || null
+      });
       toast({ title: "Erro na pré-visualização", description: err.message, variant: "destructive" });
     }
   };
@@ -466,10 +583,22 @@ export default function SettingsPage() {
         message: `Importação concluída: ${result.processed} linhas processadas.`
       });
       setLogosImportResults(result.results || []);
+      setDataImportStatus({
+        variant: "success",
+        title: "Logos importados",
+        description: `Processados: ${result.processed}`,
+        payload: result
+      });
       toast({ title: "Logos importados", description: `Processados: ${result.processed}` });
       queryClient.invalidateQueries({ queryKey: ["data-imports-last", "aliases_assets"] });
     } catch (err: any) {
       setLogosStatus({ type: "error", message: `Falha ao aplicar: ${err.message}` });
+      setDataImportStatus({
+        variant: "error",
+        title: "Falha ao importar logos",
+        description: err.message || "Não foi possível aplicar os logos.",
+        payload: err?.details || null
+      });
       toast({ title: "Erro ao importar logos", description: err.message, variant: "destructive" });
     }
   };
@@ -929,6 +1058,15 @@ export default function SettingsPage() {
                           <p className="text-muted-foreground">Sem importações anteriores.</p>
                         )}
                       </div>
+
+                      {dataImportStatus && (
+                        <StatusPanel
+                          title={dataImportStatus.title}
+                          description={dataImportStatus.description}
+                          variant={dataImportStatus.variant}
+                          payload={dataImportStatus.payload}
+                        />
+                      )}
 
                       {classificationStatus && (
                         <div
@@ -1441,6 +1579,15 @@ export default function SettingsPage() {
                       </div>
                     </div>
 
+                    {dataImportStatus && (
+                      <StatusPanel
+                        title={dataImportStatus.title}
+                        description={dataImportStatus.description}
+                        variant={dataImportStatus.variant}
+                        payload={dataImportStatus.payload}
+                      />
+                    )}
+
                     <Card className="bg-white border-0 shadow-sm">
                       <CardHeader>
                         <CardTitle className="text-base flex items-center gap-2">
@@ -1951,11 +2098,31 @@ export default function SettingsPage() {
                       <Download className="h-4 w-4" />
                       Exportar CSV (UTF-8 com BOM)
                     </Button>
+                    <Select value={auditFilter} onValueChange={setAuditFilter}>
+                      <SelectTrigger className="w-[180px] text-xs">
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todos</SelectItem>
+                        <SelectItem value="success">Sucesso</SelectItem>
+                        <SelectItem value="warning">Atenção</SelectItem>
+                        <SelectItem value="error">Falha</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
+
+                  {auditStatus && (
+                    <StatusPanel
+                      title={auditStatus.title}
+                      description={auditStatus.description}
+                      variant={auditStatus.variant}
+                      payload={auditStatus.payload}
+                    />
+                  )}
 
                   {auditLogsLoading ? (
                     <p className="text-sm text-muted-foreground">Carregando registros...</p>
-                  ) : auditLogs.length === 0 ? (
+                  ) : filteredAuditLogs.length === 0 ? (
                     <p className="text-sm text-muted-foreground">Nenhum evento registrado.</p>
                   ) : (
                     <div className="overflow-x-auto rounded-lg border">
@@ -1969,7 +2136,7 @@ export default function SettingsPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {auditLogs.map((log: any) => {
+                          {filteredAuditLogs.map((log: any) => {
                             const statusLabel =
                               log.status === "error" ? "Falha" : log.status === "warning" ? "Atenção" : "Sucesso";
                             const statusClass =
@@ -2024,6 +2191,15 @@ export default function SettingsPage() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {dangerLastDeletedAt && (
+                  <StatusPanel
+                    title="Última exclusão registrada"
+                    description={`Concluída em ${new Date(dangerLastDeletedAt).toLocaleString("pt-BR")}.`}
+                    variant="warning"
+                    payload={dangerDeletedSummary.length ? { datasets: dangerDeletedSummary } : undefined}
+                  />
+                )}
 
                 <Dialog open={dangerDialogOpen} onOpenChange={handleDangerDialogChange}>
                   <DialogContent>

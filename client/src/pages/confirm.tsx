@@ -15,6 +15,7 @@ import { AccountBadge } from "@/components/account-badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AliasLogo } from "@/components/alias-logo";
+import { StatusPanel } from "@/components/status-panel";
 
 interface TransactionForm {
   type: string;
@@ -41,6 +42,7 @@ export default function ConfirmPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState<Record<string, TransactionForm>>({});
   const [activeTab, setActiveTab] = useState("all");
+  const [statusPayload, setStatusPayload] = useState<{ variant: "success" | "warning" | "error"; title: string; description: string; payload?: Record<string, unknown> } | null>(null);
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["confirm-queue"],
@@ -78,7 +80,21 @@ export default function ConfirmPage() {
       queryClient.invalidateQueries({ queryKey: ["rules"] });
       setSelectedIds(new Set());
       toast({ title: `${result.count} transação(ões) confirmada(s)` });
+      setStatusPayload({
+        variant: "success",
+        title: "Confirmação concluída",
+        description: `${result.count} transação(ões) confirmada(s).`,
+        payload: result ? { count: result.count, ruleCreated: result.ruleCreated, ruleId: result.ruleId } : undefined
+      });
     },
+    onError: (error: any) => {
+      setStatusPayload({
+        variant: "error",
+        title: "Falha ao confirmar transações",
+        description: error?.message || "Não foi possível concluir a confirmação.",
+        payload: error?.details || null
+      });
+    }
   });
 
   const getFormData = (t: any): TransactionForm => {
@@ -243,6 +259,15 @@ export default function ConfirmPage() {
             </CardContent>
           </Card>
         </div>
+
+        {statusPayload && (
+          <StatusPanel
+            title={statusPayload.title}
+            description={statusPayload.description}
+            variant={statusPayload.variant}
+            payload={statusPayload.payload}
+          />
+        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="bg-white border shadow-sm p-1 h-auto">
