@@ -19,7 +19,7 @@ import { Calendar, TrendingUp, TrendingDown } from "lucide-react";
 import { AliasLogo } from "@/components/alias-logo";
 import { getAccountIcon, getTransactionIcons, IconBadge } from "@/lib/icons";
 import { cn } from "@/lib/utils";
-import { calendarDetailCopy, t as translate } from "@/lib/i18n";
+import { calendarDetailCopy, translateCategory, t as translate } from "@/lib/i18n";
 import { useLocale } from "@/hooks/use-locale";
 
 interface Transaction {
@@ -186,7 +186,7 @@ export function DetailPanel({ mode, selectedDate, transactions }: DetailPanelPro
                       {/* Category Subtitle */}
                       {t.category1 && (
                         <p className="text-xs text-muted-foreground truncate">
-                          {[t.category1, t.category2, t.category3]
+                          {[translateCategory(locale, t.category1), t.category2, t.category3]
                             .filter(Boolean)
                             .join(" → ")}
                         </p>

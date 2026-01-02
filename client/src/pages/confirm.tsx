@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, AlertTriangle, CheckCircle2, Loader2, Edit, AlertCircle, Sparkles, TrendingUp, Filter, ChevronDown, Zap, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -59,6 +58,7 @@ export default function ConfirmPage() {
   const [statusPayload, setStatusPayload] = useState<{ variant: "success" | "warning" | "error"; title: string; description: string; payload?: Record<string, unknown> } | null>(null);
   const locale = useLocale();
   const currencyFormatter = new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" });
+  const dateFormatter = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "2-digit", year: "2-digit" });
   const formatMessage = (template: string, vars: Record<string, string | number>) =>
     Object.entries(vars).reduce((result, [key, value]) => result.replace(`{${key}}`, String(value)), template);
 
@@ -376,7 +376,7 @@ export default function ConfirmPage() {
                           />
                         </td>
                         <td className="px-5 py-4 text-muted-foreground whitespace-nowrap">
-                          {format(new Date(t.paymentDate), "dd/MM/yy")}
+                          {dateFormatter.format(new Date(t.paymentDate))}
                         </td>
                         <td className="px-5 py-4">
                           <AccountBadge account={accountsById[t.accountId]} size="sm" />
