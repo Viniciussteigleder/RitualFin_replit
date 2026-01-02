@@ -974,6 +974,97 @@ export const settingsCopy = {
     "pt-BR": "Falha",
     "de-DE": "Fehler",
     "en-US": "Failure"
+  },
+  dangerDescription: {
+    "pt-BR": "Remova transações, categorias, regras, aliases e logos com confirmação em etapas.",
+    "de-DE": "Entfernen Sie Transaktionen, Kategorien, Regeln, Aliases und Logos mit Bestätigung.",
+    "en-US": "Remove transactions, categories, rules, aliases, and logos with step confirmation."
+  },
+  dangerLastDeleted: {
+    "pt-BR": "Última exclusão",
+    "de-DE": "Letzte Löschung",
+    "en-US": "Last deletion"
+  },
+  dangerLastTitle: {
+    "pt-BR": "Última exclusão registrada",
+    "de-DE": "Letzte Löschung erfasst",
+    "en-US": "Last deletion recorded"
+  },
+  dangerSelectTitle: {
+    "pt-BR": "Tem certeza que deseja apagar dados?",
+    "de-DE": "Sind Sie sicher, dass Sie Daten löschen möchten?",
+    "en-US": "Are you sure you want to delete data?"
+  },
+  dangerSelectDesc: {
+    "pt-BR": "Selecione quais dados deseja remover:",
+    "de-DE": "Wählen Sie aus, welche Daten entfernt werden sollen:",
+    "en-US": "Select which data to remove:"
+  },
+  dangerOptionTransactions: {
+    "pt-BR": "Transações",
+    "de-DE": "Transaktionen",
+    "en-US": "Transactions"
+  },
+  dangerOptionCategories: {
+    "pt-BR": "Categorias e Regras",
+    "de-DE": "Kategorien und Regeln",
+    "en-US": "Categories and Rules"
+  },
+  dangerOptionAliases: {
+    "pt-BR": "Aliases e Logos",
+    "de-DE": "Aliases und Logos",
+    "en-US": "Aliases and Logos"
+  },
+  dangerOptionAll: {
+    "pt-BR": "Tudo (Reset total)",
+    "de-DE": "Alles (Vollständiger Reset)",
+    "en-US": "Everything (Full reset)"
+  },
+  dangerNext: {
+    "pt-BR": "Avançar",
+    "de-DE": "Weiter",
+    "en-US": "Next"
+  },
+  dangerConfirmTitle: {
+    "pt-BR": "Confirma exclusão permanente?",
+    "de-DE": "Löschung endgültig bestätigen?",
+    "en-US": "Confirm permanent deletion?"
+  },
+  dangerConfirmDesc: {
+    "pt-BR": "Essa ação não pode ser desfeita. Confirme digitando \"APAGAR\".",
+    "de-DE": "Diese Aktion kann nicht rückgängig gemacht werden. Bitte \"LÖSCHEN\" eingeben.",
+    "en-US": "This action cannot be undone. Type \"DELETE\" to confirm."
+  },
+  dangerConfirmPlaceholder: {
+    "pt-BR": "Digite APAGAR",
+    "de-DE": "LÖSCHEN eingeben",
+    "en-US": "Type DELETE"
+  },
+  dangerBack: {
+    "pt-BR": "Voltar",
+    "de-DE": "Zurück",
+    "en-US": "Back"
+  },
+  dangerDoneTitle: {
+    "pt-BR": "Exclusão concluída",
+    "de-DE": "Löschung abgeschlossen",
+    "en-US": "Deletion complete"
+  },
+  dangerDoneFallback: {
+    "pt-BR": "Os dados selecionados foram apagados com sucesso.",
+    "de-DE": "Ausgewählte Daten wurden gelöscht.",
+    "en-US": "Selected data deleted successfully."
+  },
+  dangerDeletedItems: {
+    "pt-BR": "Itens apagados",
+    "de-DE": "Gelöschte Elemente",
+    "en-US": "Deleted items"
+  },
+  dangerClose: {
+    "pt-BR": "Fechar",
+    "de-DE": "Schließen",
+    "en-US": "Close"
+  }
   }
 };
 

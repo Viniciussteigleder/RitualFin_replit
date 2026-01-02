@@ -2184,7 +2184,7 @@ export default function SettingsPage() {
                   <CardContent className="p-4 space-y-3">
                     <h3 className="font-semibold text-rose-800">{t(locale, settingsCopy.dangerTitle)}</h3>
                     <p className="text-sm text-rose-700">
-                      Remova transações, categorias, regras, aliases e logos com confirmação em etapas.
+                      {t(locale, settingsCopy.dangerDescription)}
                     </p>
                     <div className="space-y-2">
                       <Button variant="destructive" className="gap-2" onClick={() => setDangerDialogOpen(true)}>
@@ -2193,7 +2193,7 @@ export default function SettingsPage() {
                       </Button>
                       {dangerLastDeletedAt ? (
                         <p className="text-xs text-rose-700">
-                          Última exclusão: {new Date(dangerLastDeletedAt).toLocaleString("pt-BR")}
+                          {t(locale, settingsCopy.dangerLastDeleted)}: {new Date(dangerLastDeletedAt).toLocaleString("pt-BR")}
                         </p>
                       ) : null}
                     </div>
@@ -2202,7 +2202,7 @@ export default function SettingsPage() {
 
                 {dangerLastDeletedAt && (
                   <StatusPanel
-                    title="Última exclusão registrada"
+                    title={t(locale, settingsCopy.dangerLastTitle)}
                     description={`Concluída em ${new Date(dangerLastDeletedAt).toLocaleString("pt-BR")}.`}
                     variant="warning"
                     payload={dangerDeletedSummary.length ? { datasets: dangerDeletedSummary } : undefined}
@@ -2214,8 +2214,8 @@ export default function SettingsPage() {
                     {dangerStep === "select" && (
                       <>
                         <DialogHeader>
-                          <DialogTitle>Tem certeza que deseja apagar dados?</DialogTitle>
-                          <DialogDescription>Selecione quais dados deseja remover:</DialogDescription>
+                          <DialogTitle>{t(locale, settingsCopy.dangerSelectTitle)}</DialogTitle>
+                          <DialogDescription>{t(locale, settingsCopy.dangerSelectDesc)}</DialogDescription>
                         </DialogHeader>
                         <div className="space-y-3 text-sm">
                           <label className="flex items-center gap-2">
@@ -2229,7 +2229,7 @@ export default function SettingsPage() {
                                 }))
                               }
                             />
-                            Transações
+                            {t(locale, settingsCopy.dangerOptionTransactions)}
                           </label>
                           <label className="flex items-center gap-2">
                             <Checkbox
@@ -2242,7 +2242,7 @@ export default function SettingsPage() {
                                 }))
                               }
                             />
-                            Categorias e Regras
+                            {t(locale, settingsCopy.dangerOptionCategories)}
                           </label>
                           <label className="flex items-center gap-2">
                             <Checkbox
@@ -2255,7 +2255,7 @@ export default function SettingsPage() {
                                 }))
                               }
                             />
-                            Aliases e Logos
+                            {t(locale, settingsCopy.dangerOptionAliases)}
                           </label>
                           <label className="flex items-center gap-2">
                             <Checkbox
@@ -2269,7 +2269,7 @@ export default function SettingsPage() {
                                 })
                               }
                             />
-                            Tudo (Reset total)
+                            {t(locale, settingsCopy.dangerOptionAll)}
                           </label>
                         </div>
                         <DialogFooter>
@@ -2284,7 +2284,7 @@ export default function SettingsPage() {
                               )
                             }
                           >
-                            Avançar
+                            {t(locale, settingsCopy.dangerNext)}
                           </Button>
                         </DialogFooter>
                       </>
@@ -2293,19 +2293,19 @@ export default function SettingsPage() {
                     {dangerStep === "confirm" && (
                       <>
                         <DialogHeader>
-                          <DialogTitle>Confirma exclusão permanente?</DialogTitle>
+                          <DialogTitle>{t(locale, settingsCopy.dangerConfirmTitle)}</DialogTitle>
                           <DialogDescription>
-                            Essa ação não pode ser desfeita. Confirme digitando &quot;APAGAR&quot;.
+                            {t(locale, settingsCopy.dangerConfirmDesc)}
                           </DialogDescription>
                         </DialogHeader>
                         <Input
                           value={dangerConfirmText}
                           onChange={(e) => setDangerConfirmText(e.target.value)}
-                          placeholder="Digite APAGAR"
+                          placeholder={t(locale, settingsCopy.dangerConfirmPlaceholder)}
                         />
                         <DialogFooter>
                           <Button variant="outline" onClick={() => setDangerStep("select")}>
-                            Voltar
+                            {t(locale, settingsCopy.dangerBack)}
                           </Button>
                           <Button
                             variant="destructive"
@@ -2321,23 +2321,23 @@ export default function SettingsPage() {
                     {dangerStep === "done" && (
                       <>
                         <DialogHeader>
-                          <DialogTitle>Exclusão concluída</DialogTitle>
+                          <DialogTitle>{t(locale, settingsCopy.dangerDoneTitle)}</DialogTitle>
                           <DialogDescription>
                             {dangerLastDeletedAt
                               ? `Concluído em ${new Date(dangerLastDeletedAt).toLocaleString("pt-BR")}.`
-                              : "Os dados selecionados foram apagados com sucesso."}
+                              : t(locale, settingsCopy.dangerDoneFallback)}
                           </DialogDescription>
                         </DialogHeader>
                         {dangerDeletedSummary.length > 0 && (
                           <div className="rounded-md border border-muted bg-muted/20 p-3 text-sm">
-                            <p className="font-medium">Itens apagados</p>
+                            <p className="font-medium">{t(locale, settingsCopy.dangerDeletedItems)}</p>
                             <p className="text-muted-foreground">
                               {dangerDeletedSummary.join(" · ")}
                             </p>
                           </div>
                         )}
                         <DialogFooter>
-                          <Button onClick={() => setDangerDialogOpen(false)}>Fechar</Button>
+                          <Button onClick={() => setDangerDialogOpen(false)}>{t(locale, settingsCopy.dangerClose)}</Button>
                         </DialogFooter>
                       </>
                     )}
