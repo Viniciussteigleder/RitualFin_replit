@@ -10,6 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Trash2, Plus, TrendingUp, TrendingDown, Sparkles, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { budgetsCopy, t as translate } from "@/lib/i18n";
+import { useLocale } from "@/hooks/use-locale";
 
 const CATEGORIES = [
   "Moradia",
@@ -24,9 +26,13 @@ const CATEGORIES = [
 export default function BudgetsPage() {
   const { month, formatMonth } = useMonth();
   const { toast } = useToast();
+  const locale = useLocale();
   const [newCategory, setNewCategory] = useState("");
   const [newAmount, setNewAmount] = useState("");
   const [showAISuggestions, setShowAISuggestions] = useState(true);
+  const currencyFormatter = new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" });
+  const formatMessage = (template: string, vars: Record<string, string | number>) =>
+    Object.entries(vars).reduce((result, [key, value]) => result.replace(`{${key}}`, String(value)), template);
 
   const { data: budgets = [] } = useQuery({
     queryKey: ["budgets", month],
@@ -57,7 +63,7 @@ export default function BudgetsPage() {
       budgetsApi.create({ month, ...data }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["budgets", month] });
-      toast({ title: "Orçamento criado" });
+      toast({ title: translate(locale, budgetsCopy.toastCreated) });
       setNewCategory("");
       setNewAmount("");
     },
@@ -68,7 +74,7 @@ export default function BudgetsPage() {
       budgetsApi.update(id, { amount }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["budgets", month] });
-      toast({ title: "Orçamento atualizado" });
+      toast({ title: translate(locale, budgetsCopy.toastUpdated) });
     },
   });
 
@@ -76,13 +82,13 @@ export default function BudgetsPage() {
     mutationFn: (id: string) => budgetsApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["budgets", month] });
-      toast({ title: "Orçamento removido" });
+      toast({ title: translate(locale, budgetsCopy.toastRemoved) });
     },
   });
 
   const handleCreateBudget = () => {
     if (!newCategory || !newAmount) {
-      toast({ title: "Preencha todos os campos", variant: "destructive" });
+      toast({ title: translate(locale, budgetsCopy.toastFillAll), variant: "destructive" });
       return;
     }
     createBudget.mutate({
@@ -141,7 +147,7 @@ export default function BudgetsPage() {
         createBudget.mutate({ category1: category, amount: data.avg });
       }
     });
-    toast({ title: "Sugestões aplicadas com sucesso" });
+    toast({ title: translate(locale, budgetsCopy.toastSuggestionsApplied) });
     setShowAISuggestions(false);
   };
 
@@ -150,10 +156,10 @@ export default function BudgetsPage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-            Orçamentos Mensais
+            {translate(locale, budgetsCopy.title)}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Defina limites de gasto por categoria para {formatMonth(month)}
+            {formatMessage(translate(locale, budgetsCopy.subtitle), { month: formatMonth(month) })}
           </p>
         </div>
 
@@ -164,7 +170,7 @@ export default function BudgetsPage() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-primary" />
-                  Sugestões Inteligentes de Orçamento
+                  {translate(locale, budgetsCopy.suggestionsTitle)}
                 </CardTitle>
                 <Button
                   variant="outline"
@@ -173,11 +179,11 @@ export default function BudgetsPage() {
                   className="gap-2"
                 >
                   <Copy className="h-4 w-4" />
-                  Aplicar Sugestões
+                  {translate(locale, budgetsCopy.suggestionsApply)}
                 </Button>
               </div>
               <p className="text-sm text-muted-foreground">
-                Baseado nos últimos 3 meses de gastos
+                {translate(locale, budgetsCopy.suggestionsBasedOn)}
               </p>
             </CardHeader>
             <CardContent>
@@ -197,21 +203,15 @@ export default function BudgetsPage() {
                     </div>
                     <div className="space-y-1">
                       <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">Média 3 meses:</span>
+                        <span className="text-muted-foreground">{translate(locale, budgetsCopy.avg3Months)}</span>
                         <span className="font-bold text-primary">
-                          {data.avg.toLocaleString("pt-BR", {
-                            style: "currency",
-                            currency: "EUR",
-                          })}
+                          {currencyFormatter.format(data.avg)}
                         </span>
                       </div>
                       <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">Mês anterior:</span>
+                        <span className="text-muted-foreground">{translate(locale, budgetsCopy.lastMonth)}</span>
                         <span className="font-medium">
-                          {data.last.toLocaleString("pt-BR", {
-                            style: "currency",
-                            currency: "EUR",
-                          })}
+                          {currencyFormatter.format(data.last)}
                         </span>
                       </div>
                     </div>
@@ -227,7 +227,7 @@ export default function BudgetsPage() {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Plus className="h-5 w-5" />
-              Adicionar Orçamento
+              {translate(locale, budgetsCopy.addBudgetTitle)}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -237,7 +237,7 @@ export default function BudgetsPage() {
                 value={newCategory}
                 onChange={(e) => setNewCategory(e.target.value)}
               >
-                <option value="">Selecione uma categoria</option>
+                <option value="">{translate(locale, budgetsCopy.selectCategory)}</option>
                 {unusedCategories.map((cat) => (
                   <option key={cat} value={cat}>
                     {cat}
@@ -246,7 +246,7 @@ export default function BudgetsPage() {
               </select>
               <Input
                 type="number"
-                placeholder="Valor (€)"
+                placeholder={translate(locale, budgetsCopy.amountPlaceholder)}
                 value={newAmount}
                 onChange={(e) => setNewAmount(e.target.value)}
                 className="flex-1"
@@ -257,7 +257,7 @@ export default function BudgetsPage() {
                 className="gap-2"
               >
                 <Plus className="h-4 w-4" />
-                Adicionar
+                {translate(locale, budgetsCopy.addAction)}
               </Button>
             </div>
           </CardContent>
@@ -279,14 +279,9 @@ export default function BudgetsPage() {
                     <div>
                       <h3 className="font-bold text-lg">{budget.category1}</h3>
                       <p className="text-xs text-muted-foreground">
-                        {spent.toLocaleString("pt-BR", {
-                          style: "currency",
-                          currency: "EUR",
-                        })}{" "}
-                        de{" "}
-                        {budget.amount.toLocaleString("pt-BR", {
-                          style: "currency",
-                          currency: "EUR",
+                        {formatMessage(translate(locale, budgetsCopy.spentOf), {
+                          spent: currencyFormatter.format(spent),
+                          total: currencyFormatter.format(budget.amount)
                         })}
                       </p>
                     </div>
@@ -338,10 +333,7 @@ export default function BudgetsPage() {
                         ) : (
                           <TrendingUp className="h-4 w-4" />
                         )}
-                        {Math.abs(remaining).toLocaleString("pt-BR", {
-                          style: "currency",
-                          currency: "EUR",
-                        })}
+                        {currencyFormatter.format(Math.abs(remaining))}
                       </div>
                     </div>
                   </div>
@@ -349,7 +341,7 @@ export default function BudgetsPage() {
                   {/* Edit Budget */}
                   <div className="mt-4 pt-4 border-t">
                     <label className="text-xs text-muted-foreground block mb-1">
-                      Atualizar orçamento
+                      {translate(locale, budgetsCopy.updateBudget)}
                     </label>
                     <Input
                       type="number"
@@ -368,10 +360,10 @@ export default function BudgetsPage() {
           <Card>
             <CardContent className="p-12 text-center">
               <p className="text-muted-foreground">
-                Nenhum orçamento definido para {formatMonth(month)}
+                {formatMessage(translate(locale, budgetsCopy.emptyTitle), { month: formatMonth(month) })}
               </p>
               <p className="text-sm text-muted-foreground mt-2">
-                Adicione um orçamento acima para começar a controlar seus gastos
+                {translate(locale, budgetsCopy.emptyBody)}
               </p>
             </CardContent>
           </Card>

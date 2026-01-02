@@ -2392,7 +2392,7 @@ export const aiKeywordsCopy = {
     "pt-BR": "Não há transações pendentes de categorização. Todas as suas transações já possuem uma categoria definida.",
     "de-DE": "Keine Transaktionen warten auf Kategorisierung. Alle Transaktionen sind kategorisiert.",
     "en-US": "No transactions pending categorization. All transactions already have a category."
-  }
+  },
   applySelected: {
     "pt-BR": "Aplicar regras",
     "de-DE": "Regeln anwenden",
@@ -2462,6 +2462,109 @@ export const aiKeywordsCopy = {
     "pt-BR": "Voltar ao Dashboard",
     "de-DE": "Zurück zum Dashboard",
     "en-US": "Back to dashboard"
+  }
+};
+
+export const budgetsCopy = {
+  title: {
+    "pt-BR": "Orçamentos Mensais",
+    "de-DE": "Monatliche Budgets",
+    "en-US": "Monthly budgets"
+  },
+  subtitle: {
+    "pt-BR": "Defina limites de gasto por categoria para {month}",
+    "de-DE": "Legen Sie Ausgabenlimits pro Kategorie für {month} fest",
+    "en-US": "Set spending limits per category for {month}"
+  },
+  toastCreated: {
+    "pt-BR": "Orçamento criado",
+    "de-DE": "Budget erstellt",
+    "en-US": "Budget created"
+  },
+  toastUpdated: {
+    "pt-BR": "Orçamento atualizado",
+    "de-DE": "Budget aktualisiert",
+    "en-US": "Budget updated"
+  },
+  toastRemoved: {
+    "pt-BR": "Orçamento removido",
+    "de-DE": "Budget entfernt",
+    "en-US": "Budget removed"
+  },
+  toastFillAll: {
+    "pt-BR": "Preencha todos os campos",
+    "de-DE": "Bitte alle Felder ausfüllen",
+    "en-US": "Fill in all fields"
+  },
+  suggestionsTitle: {
+    "pt-BR": "Sugestões Inteligentes de Orçamento",
+    "de-DE": "Intelligente Budgetvorschläge",
+    "en-US": "Smart budget suggestions"
+  },
+  suggestionsApply: {
+    "pt-BR": "Aplicar Sugestões",
+    "de-DE": "Vorschläge anwenden",
+    "en-US": "Apply suggestions"
+  },
+  suggestionsBasedOn: {
+    "pt-BR": "Baseado nos últimos 3 meses de gastos",
+    "de-DE": "Basierend auf den letzten 3 Monaten",
+    "en-US": "Based on the last 3 months"
+  },
+  avg3Months: {
+    "pt-BR": "Média 3 meses:",
+    "de-DE": "3-Monats-Schnitt:",
+    "en-US": "3-month avg:"
+  },
+  lastMonth: {
+    "pt-BR": "Mês anterior:",
+    "de-DE": "Vormonat:",
+    "en-US": "Last month:"
+  },
+  addBudgetTitle: {
+    "pt-BR": "Adicionar Orçamento",
+    "de-DE": "Budget hinzufügen",
+    "en-US": "Add budget"
+  },
+  selectCategory: {
+    "pt-BR": "Selecione uma categoria",
+    "de-DE": "Kategorie auswählen",
+    "en-US": "Select a category"
+  },
+  amountPlaceholder: {
+    "pt-BR": "Valor (€)",
+    "de-DE": "Betrag (€)",
+    "en-US": "Amount (€)"
+  },
+  addAction: {
+    "pt-BR": "Adicionar",
+    "de-DE": "Hinzufügen",
+    "en-US": "Add"
+  },
+  spentOf: {
+    "pt-BR": "{spent} de {total}",
+    "de-DE": "{spent} von {total}",
+    "en-US": "{spent} of {total}"
+  },
+  updateBudget: {
+    "pt-BR": "Atualizar orçamento",
+    "de-DE": "Budget aktualisieren",
+    "en-US": "Update budget"
+  },
+  emptyTitle: {
+    "pt-BR": "Nenhum orçamento definido para {month}",
+    "de-DE": "Kein Budget für {month} definiert",
+    "en-US": "No budget set for {month}"
+  },
+  emptyBody: {
+    "pt-BR": "Adicione um orçamento acima para começar a controlar seus gastos",
+    "de-DE": "Fügen Sie oben ein Budget hinzu, um Ihre Ausgaben zu kontrollieren",
+    "en-US": "Add a budget above to start controlling your spending"
+  },
+  toastSuggestionsApplied: {
+    "pt-BR": "Sugestões aplicadas com sucesso",
+    "de-DE": "Vorschläge erfolgreich angewendet",
+    "en-US": "Suggestions applied successfully"
   }
 };
 
