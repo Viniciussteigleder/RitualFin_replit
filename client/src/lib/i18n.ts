@@ -493,6 +493,189 @@ export const uploadsCopy = {
   }
 };
 
+export const dashboardCopy = {
+  title: {
+    "pt-BR": "Seu Mês em Foco",
+    "de-DE": "Ihr Monat im Fokus",
+    "en-US": "Your Month in Focus"
+  },
+  subtitle: {
+    "pt-BR": "Uma visão clara do seu orçamento. Sempre atualizada.",
+    "de-DE": "Ein klarer Blick auf Ihr Budget. Immer aktuell.",
+    "en-US": "A clear view of your budget. Always up to date."
+  },
+  accountFilterPlaceholder: {
+    "pt-BR": "Todas as contas",
+    "de-DE": "Alle Konten",
+    "en-US": "All accounts"
+  },
+  lastUpdateTitle: {
+    "pt-BR": "Última Atualização",
+    "de-DE": "Letzte Aktualisierung",
+    "en-US": "Last update"
+  },
+  viewAllUploads: {
+    "pt-BR": "Ver todos uploads",
+    "de-DE": "Alle Uploads ansehen",
+    "en-US": "View all uploads"
+  },
+  noUpload: {
+    "pt-BR": "Sem upload",
+    "de-DE": "Kein Upload",
+    "en-US": "No upload"
+  },
+  importedThrough: {
+    "pt-BR": "Até {date}",
+    "de-DE": "Bis {date}",
+    "en-US": "Through {date}"
+  },
+  monthlyProjection: {
+    "pt-BR": "Projeção do Mês",
+    "de-DE": "Monatsprognose",
+    "en-US": "Monthly projection"
+  },
+  remainingMonth: {
+    "pt-BR": "Restante do Mês",
+    "de-DE": "Rest des Monats",
+    "en-US": "Remaining this month"
+  },
+  alreadyCommitted: {
+    "pt-BR": "Já Comprometido",
+    "de-DE": "Bereits gebunden",
+    "en-US": "Already committed"
+  },
+  remainingCommitments: {
+    "pt-BR": "Compromissos Restantes",
+    "de-DE": "Verbleibende Verpflichtungen",
+    "en-US": "Remaining commitments"
+  },
+  viewAll: {
+    "pt-BR": "Ver todos",
+    "de-DE": "Alle anzeigen",
+    "en-US": "View all"
+  },
+  eventsThisMonth: {
+    "pt-BR": "{count} evento(s) este mês",
+    "de-DE": "{count} Ereignisse in diesem Monat",
+    "en-US": "{count} event(s) this month"
+  },
+  noCommitments: {
+    "pt-BR": "Nenhum compromisso cadastrado.",
+    "de-DE": "Keine Verpflichtungen erfasst.",
+    "en-US": "No commitments recorded."
+  },
+  addAction: {
+    "pt-BR": "Adicionar",
+    "de-DE": "Hinzufügen",
+    "en-US": "Add"
+  },
+  weeklyInsight: {
+    "pt-BR": "Insight Semanal",
+    "de-DE": "Wöchentlicher Einblick",
+    "en-US": "Weekly insight"
+  },
+  viewDetails: {
+    "pt-BR": "Ver detalhes",
+    "de-DE": "Details ansehen",
+    "en-US": "View details"
+  },
+  spendByCategory: {
+    "pt-BR": "Gastos por Categoria",
+    "de-DE": "Ausgaben nach Kategorie",
+    "en-US": "Spend by Category"
+  },
+  totalSpent: {
+    "pt-BR": "Total Gasto",
+    "de-DE": "Gesamtausgaben",
+    "en-US": "Total spent"
+  },
+  recentActivity: {
+    "pt-BR": "Atividade Recente",
+    "de-DE": "Letzte Aktivität",
+    "en-US": "Recent activity"
+  },
+  moreOptions: {
+    "pt-BR": "Mais opções",
+    "de-DE": "Weitere Optionen",
+    "en-US": "More options"
+  },
+  viewAllTransactions: {
+    "pt-BR": "Ver todas as transações",
+    "de-DE": "Alle Transaktionen ansehen",
+    "en-US": "View all transactions"
+  },
+  showAllAccounts: {
+    "pt-BR": "Mostrar todas as contas",
+    "de-DE": "Alle Konten anzeigen",
+    "en-US": "Show all accounts"
+  },
+  manageUploads: {
+    "pt-BR": "Gerenciar uploads",
+    "de-DE": "Uploads verwalten",
+    "en-US": "Manage uploads"
+  },
+  noTransactions: {
+    "pt-BR": "Nenhuma transação neste mês",
+    "de-DE": "Keine Transaktionen in diesem Monat",
+    "en-US": "No transactions this month"
+  },
+  smartCategorizationTitle: {
+    "pt-BR": "Categorização Inteligente",
+    "de-DE": "Intelligente Kategorisierung",
+    "en-US": "Smart categorization"
+  },
+  smartCategorizationBody: {
+    "pt-BR": "{count} transação(ões) aguardando sua confirmação. A IA já pré-analisou cada uma.",
+    "de-DE": "{count} Transaktion(en) warten auf Ihre Bestätigung. Die KI hat jede bereits voranalysiert.",
+    "en-US": "{count} transaction(s) awaiting your confirmation. AI has pre-analyzed each one."
+  },
+  reviewNow: {
+    "pt-BR": "Revisar agora",
+    "de-DE": "Jetzt prüfen",
+    "en-US": "Review now"
+  },
+  insightSaveTitle: {
+    "pt-BR": "Economia em {category}",
+    "de-DE": "Ersparnis bei {category}",
+    "en-US": "Savings in {category}"
+  },
+  insightSaveDescription: {
+    "pt-BR": "Você economizou {percent}% em {category} comparado ao mês anterior.",
+    "de-DE": "Sie haben {percent}% bei {category} im Vergleich zum Vormonat gespart.",
+    "en-US": "You saved {percent}% on {category} compared to last month."
+  },
+  insightWarnTitle: {
+    "pt-BR": "Atenção com {category}",
+    "de-DE": "Achtung bei {category}",
+    "en-US": "Watch {category}"
+  },
+  insightWarnDescription: {
+    "pt-BR": "Seus gastos em {category} aumentaram {percent}% este mês.",
+    "de-DE": "Ihre Ausgaben für {category} stiegen diesen Monat um {percent}%.",
+    "en-US": "Your spending on {category} increased {percent}% this month."
+  },
+  projectionWarningTitle: {
+    "pt-BR": "Projeção acima do orçamento",
+    "de-DE": "Prognose über dem Budget",
+    "en-US": "Projection above budget"
+  },
+  projectionWarningDescription: {
+    "pt-BR": "Com base no ritmo atual, você pode gastar {amount} a mais que o planejado.",
+    "de-DE": "Basierend auf dem aktuellen Tempo könnten Sie {amount} mehr als geplant ausgeben.",
+    "en-US": "At the current pace, you may spend {amount} more than planned."
+  },
+  defaultInsightTitle: {
+    "pt-BR": "Seus gastos estão estáveis",
+    "de-DE": "Ihre Ausgaben sind stabil",
+    "en-US": "Your spending is steady"
+  },
+  defaultInsightDescription: {
+    "pt-BR": "Continue acompanhando suas despesas para manter o controle financeiro.",
+    "de-DE": "Behalten Sie Ihre Ausgaben im Blick, um die Kontrolle zu behalten.",
+    "en-US": "Keep tracking your expenses to stay in control."
+  }
+};
+
 export const confirmCopy = {
   title: {
     "pt-BR": "Fila de Confirmação",
