@@ -44,3 +44,21 @@
 ### Notes
 - Corrected branch to fix/full-deploy-protocol before proceeding.
 
+## 2026-01-02
+
+### Work Log
+- Localized remaining UI labels and accessibility strings.
+- Added Vite vendor chunk splitting to reduce bundle size warnings.
+- Ran full deploy protocol with live verification.
+
+### Commands Executed
+- npm run check
+- npm run build
+- RENDER_SERVICE_URL=https://ritualfin-api.onrender.com VERCEL_PROD_URL=https://ritual-fin-replit.vercel.app scripts/deploy/run_full_deploy.sh
+
+### QA Results
+- npm run check: PASS
+- npm run build: PASS
+
+### Deployment Reports
+- docs/DEPLOYMENT_REPORTS/2026-01-02_1733_full_deploy.md
