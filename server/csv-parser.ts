@@ -692,9 +692,6 @@ function parseSparkasse(lines: string[]): ParseResult {
   const monthsArray = Array.from(months).sort();
   const monthAffected = monthsArray.length > 0 ? monthsArray[monthsArray.length - 1] : "";
 
-  const monthsArray = Array.from(months).sort();
-  const monthAffected = monthsArray.length > 0 ? monthsArray[monthsArray.length - 1] : "";
-
   return {
     success: transactions.length > 0,
     transactions,
