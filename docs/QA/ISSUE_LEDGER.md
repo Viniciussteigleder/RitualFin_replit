@@ -214,40 +214,49 @@ This ledger tracks all discovered issues during autonomous QA execution.
 ## P1 Issues (High Priority)
 
 ### IAL-005: Vercel Backend Deployment Strategy Undefined
-**Status**: 🔴 OPEN
+**Status**: 🟢 FIXED
 **Priority**: P1
 **Severity**: Medium (Deployment blocker)
 **Found**: Documentation audit
+**Fixed**: 2026-01-02
 
-**Where**: Deployment documentation, vercel.json
+**Where**: Deployment documentation, vercel.json, CLAUDE.md
 
-**Issue**:
-- vercel.json only configures frontend (SPA rewrites)
-- No backend deployment strategy documented
-- No API routing configuration
-- VITE_API_URL must point to separate backend
+**Resolution**:
+✅ Comprehensive deployment documentation exists in `docs/DEPLOYMENT_GUIDE.md` (322 lines)
+✅ Backend deployment strategy: Render (Express API)
+✅ Frontend deployment: Vercel (Static SPA)
+✅ VITE_API_URL environment variable documented
+✅ CORS configuration documented
+✅ Environment variable checklist complete
+✅ Troubleshooting guide included
 
-**Expected**:
-- Backend deployed separately (Vercel Serverless, Railway, Render, etc.)
-- VITE_API_URL environment variable configured
-- CORS configured for frontend domain
-- Database connection from backend
+**Fix Applied**:
+1. Added deployment section to `CLAUDE.md` with:
+   - Architecture diagram (Vercel → Render → Supabase)
+   - Required environment variables for both FE/BE
+   - Reference to complete deployment guide
+   - Key deployment principles
+2. Enhanced `vercel.json` with explanatory comments:
+   - Clarified frontend-only configuration
+   - Reference to DEPLOYMENT_GUIDE.md
+   - Explained SPA routing strategy
 
-**Actual**:
-- Frontend config exists
-- Backend deployment unclear
-- No documented strategy
-
-**Fix Strategy**:
-1. Document backend deployment options
-2. Add Vercel Functions configuration (if using Vercel)
-3. Or document external deployment (Railway/Render)
-4. Add VITE_API_URL to env var checklist
-5. Update deployment guide
+**Deployment Architecture**:
+```
+Vercel (Frontend SPA) → Render (Express API) → Supabase (PostgreSQL)
+```
 
 **Test IDs**: VER-002
 
-**Evidence**: vercel.json, deployment docs
+**Evidence**:
+- docs/DEPLOYMENT_GUIDE.md (comprehensive 8-step guide)
+- CLAUDE.md:154-182 (deployment section added)
+- vercel.json:4 (clarifying comment added)
+
+**Files Modified**:
+- `vercel.json` - Added comments explaining frontend-only config
+- `CLAUDE.md` - Added deployment section with architecture and env vars
 
 ---
 
@@ -414,10 +423,10 @@ This ledger tracks all discovered issues during autonomous QA execution.
 | Priority | Open | In Progress | Fixed | Verified | Closed | Total |
 |----------|------|-------------|-------|----------|--------|-------|
 | P0       | 0    | 0           | 3     | 1        | 0      | 4     |
-| P1       | 2    | 0           | 1     | 0        | 0      | 3     |
+| P1       | 1    | 0           | 2     | 0        | 0      | 3     |
 | P2       | 1    | 0           | 0     | 0        | 0      | 1     |
 | P3       | 1    | 0           | 0     | 0        | 0      | 1     |
-| **Total**| **4**| **0**       | **4** | **1**    | **0**  | **9** |
+| **Total**| **3**| **0**       | **5** | **1**    | **0**  | **9** |
 
 ---
 
