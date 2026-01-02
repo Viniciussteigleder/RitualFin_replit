@@ -1806,6 +1806,271 @@ export const eventDetailCopy = {
   }
 };
 
+export const accountsCopy = {
+  title: {
+    "pt-BR": "Contas",
+    "de-DE": "Konten",
+    "en-US": "Accounts"
+  },
+  subtitle: {
+    "pt-BR": "Gerencie seus cartões e contas bancárias",
+    "de-DE": "Verwalten Sie Ihre Karten und Bankkonten",
+    "en-US": "Manage your cards and bank accounts"
+  },
+  newAccount: {
+    "pt-BR": "Nova Conta",
+    "de-DE": "Neues Konto",
+    "en-US": "New account"
+  },
+  searchPlaceholder: {
+    "pt-BR": "Buscar conta...",
+    "de-DE": "Konto suchen...",
+    "en-US": "Search account..."
+  },
+  netPositionTitle: {
+    "pt-BR": "Posição Líquida Simulada",
+    "de-DE": "Simulierte Nettoposition",
+    "en-US": "Simulated net position"
+  },
+  netPositionHint: {
+    "pt-BR": "Saldo bancário menos saldos dos cartões",
+    "de-DE": "Bankguthaben minus Kartensalden",
+    "en-US": "Bank balance minus card balances"
+  },
+  staleBalances: {
+    "pt-BR": "Saldos desatualizados",
+    "de-DE": "Veraltete Salden",
+    "en-US": "Stale balances"
+  },
+  emptySearch: {
+    "pt-BR": "Nenhuma conta encontrada",
+    "de-DE": "Kein Konto gefunden",
+    "en-US": "No accounts found"
+  },
+  emptyAll: {
+    "pt-BR": "Nenhuma conta cadastrada",
+    "de-DE": "Keine Konten registriert",
+    "en-US": "No accounts yet"
+  },
+  createFirst: {
+    "pt-BR": "Criar primeira conta",
+    "de-DE": "Erstes Konto erstellen",
+    "en-US": "Create first account"
+  },
+  lastUpload: {
+    "pt-BR": "Último upload: {date}",
+    "de-DE": "Letzter Upload: {date}",
+    "en-US": "Last upload: {date}"
+  },
+  balance: {
+    "pt-BR": "Saldo",
+    "de-DE": "Saldo",
+    "en-US": "Balance"
+  },
+  updatedAt: {
+    "pt-BR": "Atualizado em {date}",
+    "de-DE": "Aktualisiert am {date}",
+    "en-US": "Updated on {date}"
+  },
+  limit: {
+    "pt-BR": "Limite",
+    "de-DE": "Limit",
+    "en-US": "Limit"
+  },
+  used: {
+    "pt-BR": "{amount} usado",
+    "de-DE": "{amount} genutzt",
+    "en-US": "{amount} used"
+  },
+  available: {
+    "pt-BR": "{amount} disponível",
+    "de-DE": "{amount} verfügbar",
+    "en-US": "{amount} available"
+  },
+  active: {
+    "pt-BR": "Ativa",
+    "de-DE": "Aktiv",
+    "en-US": "Active"
+  },
+  editAccount: {
+    "pt-BR": "Editar Conta",
+    "de-DE": "Konto bearbeiten",
+    "en-US": "Edit account"
+  },
+  createAccountTitle: {
+    "pt-BR": "Nova Conta",
+    "de-DE": "Neues Konto",
+    "en-US": "New account"
+  },
+  nameLabel: {
+    "pt-BR": "Nome da Conta",
+    "de-DE": "Kontoname",
+    "en-US": "Account name"
+  },
+  namePlaceholder: {
+    "pt-BR": "Ex: Nubank, Itaú, Amex...",
+    "de-DE": "z. B. N26, Sparkasse, Amex...",
+    "en-US": "e.g., N26, Sparkasse, Amex..."
+  },
+  typeLabel: {
+    "pt-BR": "Tipo",
+    "de-DE": "Typ",
+    "en-US": "Type"
+  },
+  lastDigitsLabel: {
+    "pt-BR": "Últimos 4 dígitos (opcional)",
+    "de-DE": "Letzte 4 Ziffern (optional)",
+    "en-US": "Last 4 digits (optional)"
+  },
+  iconLabel: {
+    "pt-BR": "Ícone",
+    "de-DE": "Icon",
+    "en-US": "Icon"
+  },
+  colorLabel: {
+    "pt-BR": "Cor",
+    "de-DE": "Farbe",
+    "en-US": "Color"
+  },
+  previewLabel: {
+    "pt-BR": "Preview",
+    "de-DE": "Vorschau",
+    "en-US": "Preview"
+  },
+  previewFallback: {
+    "pt-BR": "Nome da conta",
+    "de-DE": "Kontoname",
+    "en-US": "Account name"
+  },
+  cancel: {
+    "pt-BR": "Cancelar",
+    "de-DE": "Abbrechen",
+    "en-US": "Cancel"
+  },
+  saving: {
+    "pt-BR": "Salvando...",
+    "de-DE": "Speichern...",
+    "en-US": "Saving..."
+  },
+  update: {
+    "pt-BR": "Atualizar",
+    "de-DE": "Aktualisieren",
+    "en-US": "Update"
+  },
+  create: {
+    "pt-BR": "Criar Conta",
+    "de-DE": "Konto erstellen",
+    "en-US": "Create account"
+  },
+  toastCreated: {
+    "pt-BR": "Conta criada com sucesso",
+    "de-DE": "Konto erfolgreich erstellt",
+    "en-US": "Account created successfully"
+  },
+  toastCreateError: {
+    "pt-BR": "Erro ao criar conta",
+    "de-DE": "Fehler beim Erstellen des Kontos",
+    "en-US": "Failed to create account"
+  },
+  toastUpdated: {
+    "pt-BR": "Conta atualizada",
+    "de-DE": "Konto aktualisiert",
+    "en-US": "Account updated"
+  },
+  toastUpdateError: {
+    "pt-BR": "Erro ao atualizar conta",
+    "de-DE": "Fehler beim Aktualisieren des Kontos",
+    "en-US": "Failed to update account"
+  },
+  toastArchived: {
+    "pt-BR": "Conta arquivada",
+    "de-DE": "Konto archiviert",
+    "en-US": "Account archived"
+  },
+  toastArchiveError: {
+    "pt-BR": "Erro ao arquivar conta",
+    "de-DE": "Fehler beim Archivieren des Kontos",
+    "en-US": "Failed to archive account"
+  },
+  confirmArchive: {
+    "pt-BR": "Arquivar esta conta? As transações existentes não serão afetadas.",
+    "de-DE": "Dieses Konto archivieren? Bestehende Transaktionen bleiben unverändert.",
+    "en-US": "Archive this account? Existing transactions will not be affected."
+  },
+  typeLabels: {
+    "pt-BR": {
+      credit_card: "Cartão de Crédito",
+      debit_card: "Cartão de Débito",
+      bank_account: "Conta Bancária",
+      cash: "Dinheiro"
+    },
+    "de-DE": {
+      credit_card: "Kreditkarte",
+      debit_card: "Debitkarte",
+      bank_account: "Bankkonto",
+      cash: "Bargeld"
+    },
+    "en-US": {
+      credit_card: "Credit card",
+      debit_card: "Debit card",
+      bank_account: "Bank account",
+      cash: "Cash"
+    }
+  },
+  colorLabels: {
+    "pt-BR": {
+      blue: "Azul",
+      red: "Vermelho",
+      purple: "Roxo",
+      green: "Verde",
+      orange: "Laranja",
+      pink: "Rosa",
+      indigo: "Indigo",
+      gray: "Cinza"
+    },
+    "de-DE": {
+      blue: "Blau",
+      red: "Rot",
+      purple: "Lila",
+      green: "Grün",
+      orange: "Orange",
+      pink: "Rosa",
+      indigo: "Indigo",
+      gray: "Grau"
+    },
+    "en-US": {
+      blue: "Blue",
+      red: "Red",
+      purple: "Purple",
+      green: "Green",
+      orange: "Orange",
+      pink: "Pink",
+      indigo: "Indigo",
+      gray: "Gray"
+    }
+  },
+  iconLabels: {
+    "pt-BR": {
+      "credit-card": "Cartão",
+      landmark: "Banco",
+      wallet: "Carteira",
+      coins: "Moedas"
+    },
+    "de-DE": {
+      "credit-card": "Karte",
+      landmark: "Bank",
+      wallet: "Brieftasche",
+      coins: "Münzen"
+    },
+    "en-US": {
+      "credit-card": "Card",
+      landmark: "Bank",
+      wallet: "Wallet",
+      coins: "Coins"
+    }
+  }
+};
+
 export const confirmCopy = {
   title: {
     "pt-BR": "Fila de Confirmação",
