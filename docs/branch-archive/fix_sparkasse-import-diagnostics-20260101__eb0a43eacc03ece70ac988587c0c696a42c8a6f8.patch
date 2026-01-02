@@ -1,0 +1,249 @@
+From 82e942c11c96f11cb0a71edbdae2b73558d61506 Mon Sep 17 00:00:00 2001
+From: Vinicius <vinicius.steigleder@gmail.com>
+Date: Thu, 1 Jan 2026 22:48:17 +0100
+Subject: [PATCH 1/2] Add Sparkasse debug script
+
+---
+ package.json              |   1 +
+ script/sparkasse-debug.ts | 120 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 121 insertions(+)
+ create mode 100644 script/sparkasse-debug.ts
+
+diff --git a/package.json b/package.json
+index 9136f77..fff19b8 100644
+--- a/package.json
++++ b/package.json
+@@ -47,6 +47,7 @@
+     "cmdk": "^1.1.1",
+     "connect-pg-simple": "^10.0.0",
+     "cors": "^2.8.5",
++    "csv-parse": "^5.6.0",
+     "date-fns": "^3.6.0",
+     "dotenv": "^17.2.3",
+     "drizzle-orm": "^0.39.3",
+diff --git a/script/sparkasse-debug.ts b/script/sparkasse-debug.ts
+new file mode 100644
+index 0000000..3510d86
+--- /dev/null
++++ b/script/sparkasse-debug.ts
+@@ -0,0 +1,120 @@
++import fs from "node:fs";
++import path from "node:path";
++import { parse } from "csv-parse/sync";
++
++const DEFAULT_SAMPLE = "/mnt/data/20251229-22518260-umsatz.CSV";
++const FALLBACK_SAMPLE = path.join("attached_assets", "20251229-22518260-umsatz_1767103688511.CSV");
++
++const requiredHeaders = [
++  "Auftragskonto",
++  "Buchungstag",
++  "Valutadatum",
++  "Buchungstext",
++  "Verwendungszweck",
++  "Beguenstigter/Zahlungspflichtiger",
++  "Kontonummer/IBAN",
++  "Betrag",
++  "Waehrung",
++  "Info"
++];
++
++const fileArg = process.argv[2];
++const candidatePath = fileArg || (fs.existsSync(DEFAULT_SAMPLE) ? DEFAULT_SAMPLE : FALLBACK_SAMPLE);
++
++if (!fs.existsSync(candidatePath)) {
++  console.error("Sample file not found.", { candidatePath, DEFAULT_SAMPLE, FALLBACK_SAMPLE });
++  process.exit(1);
++}
++
++const buffer = fs.readFileSync(candidatePath);
++if (buffer.length === 0) {
++  console.error("Sample file is empty.");
++  process.exit(1);
++}
++
++const decodeBuffer = (encoding: string, fatal: boolean) =>
++  new TextDecoder(encoding, { fatal }).decode(buffer);
++
++const countReplacementChars = (text: string) => {
++  let count = 0;
++  for (const ch of text) {
++    if (ch === "\uFFFD") count += 1;
++  }
++  return count;
++};
++
++let encodingUsed = "utf-8";
++let content = "";
++try {
++  content = decodeBuffer("utf-8", true);
++  const replacementRatio = countReplacementChars(content) / Math.max(content.length, 1);
++  if (replacementRatio > 0.005) {
++    encodingUsed = "latin1";
++    content = decodeBuffer("latin1", false);
++  }
++} catch {
++  encodingUsed = "latin1";
++  content = decodeBuffer("latin1", false);
++}
++
++const detectDelimiter = (text: string) => {
++  const sampleLine = text.split(/\r?\n/).find(line => line.trim().length > 0) || "";
++  const tryDelimiter = (delimiter: string) => {
++    try {
++      const parsed = parse(sampleLine, { delimiter, relax_quotes: true, trim: true });
++      return parsed[0]?.length || 0;
++    } catch {
++      return 0;
++    }
++  };
++
++  const semicolonCols = tryDelimiter(";");
++  const commaCols = tryDelimiter(",");
++  const tabCols = tryDelimiter("\t");
++
++  const best = [
++    { delimiter: ";", cols: semicolonCols },
++    { delimiter: ",", cols: commaCols },
++    { delimiter: "\t", cols: tabCols }
++  ].sort((a, b) => b.cols - a.cols)[0];
++
++  return best.delimiter;
++};
++
++const delimiter = detectDelimiter(content);
++const records: string[][] = parse(content, {
++  delimiter,
++  relax_quotes: true,
++  trim: true,
++  skip_empty_lines: true
++});
++
++const header = records[0] || [];
++const headerMap: Record<string, number> = {};
++header.forEach((name, index) => {
++  headerMap[name] = index;
++});
++
++const mappedColumns = requiredHeaders.map((name) => ({
++  name,
++  index: headerMap[name] ?? -1
++}));
++
++const rows = records.slice(1, 21).map((row) => {
++  const record: Record<string, string> = {};
++  header.forEach((name, index) => {
++    record[name] = row[index] ?? "";
++  });
++  return record;
++});
++
++console.log(JSON.stringify({
++  file: candidatePath,
++  sizeBytes: buffer.length,
++  encodingUsed,
++  delimiter,
++  header,
++  mappedColumns,
++  rowsTotal: Math.max(records.length - 1, 0),
++  rowsPreview: rows
++}, null, 2));
+-- 
+2.50.1 (Apple Git-155)
+
+
+From eb0a43eacc03ece70ac988587c0c696a42c8a6f8 Mon Sep 17 00:00:00 2001
+From: Vinicius <vinicius.steigleder@gmail.com>
+Date: Thu, 1 Jan 2026 22:49:36 +0100
+Subject: [PATCH 2/2] Add Sparkasse encoding and delimiter helpers
+
+---
+ server/sparkasse-pipeline.ts | 77 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 77 insertions(+)
+ create mode 100644 server/sparkasse-pipeline.ts
+
+diff --git a/server/sparkasse-pipeline.ts b/server/sparkasse-pipeline.ts
+new file mode 100644
+index 0000000..7a414fa
+--- /dev/null
++++ b/server/sparkasse-pipeline.ts
+@@ -0,0 +1,77 @@
++import { parse } from "csv-parse/sync";
++
++export type SparkasseEncodingUsed = "utf-8" | "latin1";
++
++export interface SparkasseEncodingResult {
++  text: string;
++  encodingUsed: SparkasseEncodingUsed;
++  replacementRatio: number;
++  hadDecodeFailure: boolean;
++}
++
++export interface SparkasseDelimiterCheck {
++  delimiterUsed: string;
++  columnCounts: number[];
++  mismatch: boolean;
++  rowsChecked: number;
++}
++
++export const SPARKASSE_DELIMITER = ";";
++const REPLACEMENT_RATIO_THRESHOLD = 0.005;
++const DELIMITER_MISMATCH_THRESHOLD = 0.8;
++
++const countReplacementChars = (text: string) => {
++  let count = 0;
++  for (const ch of text) {
++    if (ch === "\uFFFD") count += 1;
++  }
++  return count;
++};
++
++export function decodeSparkasseBuffer(buffer: Buffer): SparkasseEncodingResult {
++  let encodingUsed: SparkasseEncodingUsed = "utf-8";
++  let text = "";
++  let hadDecodeFailure = false;
++
++  try {
++    text = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
++    const replacementRatio = countReplacementChars(text) / Math.max(text.length, 1);
++    if (replacementRatio > REPLACEMENT_RATIO_THRESHOLD) {
++      encodingUsed = "latin1";
++      text = new TextDecoder("latin1").decode(buffer);
++      return { text, encodingUsed, replacementRatio, hadDecodeFailure };
++    }
++    return { text, encodingUsed, replacementRatio, hadDecodeFailure };
++  } catch {
++    hadDecodeFailure = true;
++    encodingUsed = "latin1";
++    text = new TextDecoder("latin1").decode(buffer);
++    const replacementRatio = countReplacementChars(text) / Math.max(text.length, 1);
++    return { text, encodingUsed, replacementRatio, hadDecodeFailure };
++  }
++}
++
++export function parseSparkasseRows(csvContent: string): string[][] {
++  return parse(csvContent, {
++    delimiter: SPARKASSE_DELIMITER,
++    relax_quotes: true,
++    trim: true,
++    skip_empty_lines: true
++  });
++}
++
++export function checkSparkasseDelimiter(records: string[][]): SparkasseDelimiterCheck {
++  const columnCounts = records.map((row) => row.length);
++  const rowsChecked = columnCounts.length;
++  const singleColumnRows = columnCounts.filter((count) => count <= 1).length;
++  const mismatch = rowsChecked > 0
++    ? (singleColumnRows / rowsChecked) >= DELIMITER_MISMATCH_THRESHOLD
++    : true;
++
++  return {
++    delimiterUsed: SPARKASSE_DELIMITER,
++    columnCounts,
++    mismatch,
++    rowsChecked
++  };
++}
+-- 
+2.50.1 (Apple Git-155)
+
