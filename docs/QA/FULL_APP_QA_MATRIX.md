@@ -182,9 +182,9 @@ This matrix inventories every screen/route/action and records expected behavior,
 | CHAOS-01 | Chaos | Backend down | UI shows error states | Pending | TBD |
 | CHAOS-02 | Chaos | Slow network | Loading states visible | Pending | TBD |
 | CHAOS-03 | Chaos | DB unavailable | Clear errors/logs | Pending | TBD |
-| SEC-01 | Security | CORS restriction | Disallowed origin blocked | Pending | TBD |
-| SEC-02 | Security | Injection attempts | No SQL errors; text stored | Pending | TBD |
-| SEC-03 | Security | Secrets exposure scan | No secrets in bundle | Pending | TBD |
+| SEC-01 | Security | CORS restriction | Disallowed origin blocked | Pass | Local curl Origin tests (see `docs/SECURITY/SECURITY_AUDIT_REPORT.md`). |
+| SEC-02 | Security | Injection attempts | No SQL errors; text stored | Pass | Rules accepted injection-like text; invalid payload rejected with 400; upload missing content returns 400. |
+| SEC-03 | Security | Secrets exposure scan | No secrets in bundle | Pass | Repo + bundle scans clean (see `docs/SECURITY/SECURITY_AUDIT_REPORT.md`). |
 | PERF-01 | Perf | Large CSV upload | Meets SLO | Pending | TBD |
 | PERF-02 | Perf | Dashboard render | Under 2s | Pending | TBD |
 | PERF-03 | Perf | Confirm queue render | Under 2s | Pending | TBD |

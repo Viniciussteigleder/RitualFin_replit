@@ -40,6 +40,6 @@ This document defines the minimum security checks and acceptable posture for the
 - [x] Run bundle secrets scan
 - [x] Verify CORS headers on local dev
 - [ ] Verify CORS headers on prod/staging
-- [ ] Validate upload/rules input validation paths
+- [x] Validate upload/rules input validation paths
 - [x] Run `npm audit` and capture output
 - [x] Update SECURITY.md with any new blockers or mitigations

@@ -6,8 +6,8 @@
 - Release gate: Pending baseline checks and remediation
 
 ## Environment
-- Branch: fix/full-app-e2e-qa-security-2026-01-02
-- Git SHA: 576033f4ba5ecb692f35c87c099c8bcd83f7fb30
+- Branch: main
+- Git SHA: 7a11d5cc60a4bfcc3e1089a6e32f5f4f7c7cfdf3
 - Node: v24.4.0
 - npm: 11.4.2
 
@@ -23,7 +23,7 @@
 - Repo secrets scan: Completed (no hardcoded secrets found; references in docs only)
 - Bundle secrets scan: Completed (no matches in `dist/public`)
 - CORS validation: Completed (localhost allowed; unknown origin not echoed)
-- Input validation checks: Pending
+- Input validation checks: Completed (rules + upload payloads)
 - Dependency audit (`npm audit`): Completed (5 vulnerabilities: 4 moderate, 1 high after `npm audit fix`)
 
 ## Evidence log
@@ -31,6 +31,7 @@
 - Bundle scan completed with no matches under `dist/public`.
 - `npm audit` run on 2026-01-02 (post-fix; 5 remaining vulnerabilities).
 - CORS check: `Origin: http://localhost:5173` returns `Access-Control-Allow-Origin: http://localhost:5173`; `Origin: http://evil.example` does not return ACAO.
+- Input validation: rules accept injection-like strings without error; invalid payloads rejected with 400 (`keyWords` array) and upload missing `csvContent` returns 400.
 
 ## Remediation plan
 - Executed `npm audit fix` (remaining: `xlsx` high, `esbuild` moderate via `drizzle-kit`).
