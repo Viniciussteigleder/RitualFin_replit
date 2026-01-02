@@ -18,7 +18,8 @@ import {
   ListChecks,
   Filter,
   Brain,
-  CalendarCheck
+  CalendarCheck,
+  TrendingUp
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,12 @@ const NAV_CLUSTERS = [
         icon: Calendar,
         href: "/calendar",
         description: "Eventos e compromissos"
+      },
+      {
+        label: "Previsão",
+        icon: TrendingUp,
+        href: "/forecast",
+        description: "Recorrências e projeções"
       },
       {
         label: "Transações",

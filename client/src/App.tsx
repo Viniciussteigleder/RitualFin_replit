@@ -22,6 +22,7 @@ import RulesPage from "@/pages/rules";
 import MerchantDictionaryPage from "@/pages/merchant-dictionary";
 import AiKeywordsPage from "@/pages/ai-keywords";
 import InsightsPage from "@/pages/insights";
+import ForecastPage from "@/pages/forecast";
 
 function Router() {
   return (
@@ -43,6 +44,7 @@ function Router() {
       <Route path="/accounts" component={AccountsPage} />
       <Route path="/ai-keywords" component={AiKeywordsPage} />
       <Route path="/insights" component={InsightsPage} />
+      <Route path="/forecast" component={ForecastPage} />
       <Route path="/settings" component={SettingsPage} />
       <Route component={NotFound} />
     </Switch>

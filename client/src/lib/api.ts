@@ -127,6 +127,7 @@ export const accountsApi = {
 // Uploads
 export const uploadsApi = {
   list: () => fetchApi<any[]>("/uploads"),
+  errors: (id: string) => fetchApi<{ uploadId: string; errors: Array<{ rowNumber: number; errorMessage: string }>; count: number }>(`/uploads/${id}/errors`),
   preview: async (
     filename: string,
     csvContent: string,
