@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { AliasLogo } from "@/components/alias-logo";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { settingsApi, uploadsApi, classificationApi, aliasApi, resetApi } from "@/lib/api";
+import { settingsApi, uploadsApi, classificationApi, aliasApi, resetApi, dataImportsApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -55,13 +55,20 @@ export default function SettingsPage() {
     errors?: string[];
   } | null>(null);
   const [classificationPreview, setClassificationPreview] = useState<any | null>(null);
-  const [classificationFileBase64, setClassificationFileBase64] = useState<string | null>(null);
+  const [classificationImportId, setClassificationImportId] = useState<string | null>(null);
+  const [classificationPreviewError, setClassificationPreviewError] = useState<string | null>(null);
+  const [classificationStatus, setClassificationStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [confirmRemap, setConfirmRemap] = useState(false);
   const [showClassificationConfirm, setShowClassificationConfirm] = useState(false);
   const [aliasPreview, setAliasPreview] = useState<any | null>(null);
-  const [aliasFileBase64, setAliasFileBase64] = useState<string | null>(null);
-  const [logosPreview, setLogosPreview] = useState<any[] | null>(null);
-  const [logosFileBase64, setLogosFileBase64] = useState<string | null>(null);
+  const [aliasImportId, setAliasImportId] = useState<string | null>(null);
+  const [aliasPreviewError, setAliasPreviewError] = useState<string | null>(null);
+  const [aliasStatus, setAliasStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [logosPreview, setLogosPreview] = useState<any | null>(null);
+  const [logosImportId, setLogosImportId] = useState<string | null>(null);
+  const [logosPreviewError, setLogosPreviewError] = useState<string | null>(null);
+  const [logosStatus, setLogosStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [logosImportResults, setLogosImportResults] = useState<any[] | null>(null);
   const [ruleTestKeyDesc, setRuleTestKeyDesc] = useState("");
   const [ruleTestResult, setRuleTestResult] = useState<any | null>(null);
   const [aliasTestKeyDesc, setAliasTestKeyDesc] = useState("");
@@ -101,6 +108,21 @@ export default function SettingsPage() {
   const { data: classificationRules = [] } = useQuery({
     queryKey: ["classification-rules"],
     queryFn: classificationApi.listRules,
+  });
+
+  const { data: classificationLastImport } = useQuery({
+    queryKey: ["data-imports-last", "classification"],
+    queryFn: () => dataImportsApi.last("classification"),
+  });
+
+  const { data: aliasesLastImport } = useQuery({
+    queryKey: ["data-imports-last", "aliases_key_desc"],
+    queryFn: () => dataImportsApi.last("aliases_key_desc"),
+  });
+
+  const { data: logosLastImport } = useQuery({
+    queryKey: ["data-imports-last", "aliases_assets"],
+    queryFn: () => dataImportsApi.last("aliases_assets"),
   });
 
 
@@ -147,6 +169,12 @@ export default function SettingsPage() {
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
+
+  const formatImportStatus = (status?: string) => {
+    if (status === "confirmed") return "Sucesso";
+    if (status === "previewed") return "Prévia";
+    return "Falha";
+  };
 
   const handlePreviewImport = async () => {
     if (!importFile) return;
@@ -206,92 +234,82 @@ export default function SettingsPage() {
   };
 
   const handleClassificationPreview = async (file: File) => {
-    const base64 = await readFileBase64(file);
-    setClassificationFileBase64(base64);
+    setClassificationPreview(null);
+    setClassificationPreviewError(null);
+    setClassificationStatus(null);
     setConfirmRemap(false);
     try {
-      const preview = await classificationApi.previewImport(base64);
-      setClassificationPreview(preview);
-    } catch (err: any) {
-      setClassificationPreview(null);
-      setUploadDialog({
-        open: true,
-        status: "error",
-        title: "Falha no upload",
-        errors: [err.message]
+      const base64 = await readFileBase64(file);
+      const preview = await dataImportsApi.preview({
+        dataset: "classification",
+        filename: file.name,
+        fileBase64: base64,
+        confirmRemap
       });
+      setClassificationPreview(preview);
+      setClassificationImportId(preview.importId || null);
+      if (!preview.success) {
+        setClassificationPreviewError(preview.message || "Falha na validação do arquivo.");
+      }
+    } catch (err: any) {
+      setClassificationPreviewError("Falha na validação do arquivo.");
       toast({ title: "Erro na pré-visualização", description: err.message, variant: "destructive" });
     }
   };
 
   const handleClassificationApply = async () => {
-    if (!classificationFileBase64) return;
+    if (!classificationImportId) return;
     try {
-      const result = await classificationApi.applyImport(classificationFileBase64, confirmRemap);
-      toast({ title: "Categorias atualizadas", description: `Linhas aplicadas: ${result.rows}` });
-      setUploadDialog({
-        open: true,
-        status: "success",
-        title: "Upload concluído com sucesso",
-        rowsProcessed: result.rows,
-        newRows: result.diff?.newLeavesCount ?? 0,
-        updatedRows: result.diff?.updatedRulesCount ?? 0
+      const result = await dataImportsApi.confirm({ importId: classificationImportId, confirmRemap });
+      setClassificationStatus({
+        type: "success",
+        message: `Importação concluída: ${result.rows} linhas aplicadas.`
       });
+      toast({ title: "Categorias atualizadas", description: `Linhas aplicadas: ${result.rows}` });
       queryClient.invalidateQueries({ queryKey: ["classification-leaves"] });
       queryClient.invalidateQueries({ queryKey: ["classification-rules"] });
+      queryClient.invalidateQueries({ queryKey: ["data-imports-last", "classification"] });
     } catch (err: any) {
-      setUploadDialog({
-        open: true,
-        status: "error",
-        title: "Falha no upload",
-        errors: [err.message]
-      });
+      setClassificationStatus({ type: "error", message: `Falha ao aplicar: ${err.message}` });
       toast({ title: "Erro ao aplicar categorias", description: err.message, variant: "destructive" });
     }
   };
 
   const handleAliasPreview = async (file: File) => {
-    const base64 = await readFileBase64(file);
-    setAliasFileBase64(base64);
+    setAliasPreview(null);
+    setAliasPreviewError(null);
+    setAliasStatus(null);
     try {
-      const preview = await aliasApi.previewImport(base64);
-      setAliasPreview(preview);
-    } catch (err: any) {
-      setAliasPreview(null);
-      setUploadDialog({
-        open: true,
-        status: "error",
-        title: "Falha no upload",
-        errors: [err.message]
+      const base64 = await readFileBase64(file);
+      const preview = await dataImportsApi.preview({
+        dataset: "aliases_key_desc",
+        filename: file.name,
+        fileBase64: base64
       });
+      setAliasPreview(preview);
+      setAliasImportId(preview.importId || null);
+      if (!preview.success) {
+        setAliasPreviewError(preview.message || "Falha na validação do arquivo.");
+      }
+    } catch (err: any) {
+      setAliasPreviewError("Falha na validação do arquivo.");
       toast({ title: "Erro na pré-visualização", description: err.message, variant: "destructive" });
     }
   };
 
   const handleAliasApply = async () => {
-    if (!aliasFileBase64) return;
+    if (!aliasImportId) return;
     try {
-      const result = await aliasApi.applyImport(aliasFileBase64);
-      toast({
-        title: "Aliases atualizados",
-        description: `Aliases atualizados com sucesso (${result.newAliases || 0} novos, ${result.updatedAliases || 0} atualizados).`
+      const result = await dataImportsApi.confirm({ importId: aliasImportId });
+      setAliasStatus({
+        type: "success",
+        message: `Importação concluída: ${result.rows} linhas aplicadas.`
       });
-      setUploadDialog({
-        open: true,
-        status: "success",
-        title: "Upload concluído com sucesso",
-        rowsProcessed: aliasPreview?.aliasRows || 0,
-        newRows: result.newAliases || 0,
-        updatedRows: result.updatedAliases || 0
-      });
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      toast({ title: "Aliases atualizados", description: `Linhas aplicadas: ${result.rows}` });
+      queryClient.invalidateQueries({ queryKey: ["classification-review-queue"] });
+      queryClient.invalidateQueries({ queryKey: ["data-imports-last", "aliases_key_desc"] });
     } catch (err: any) {
-      setUploadDialog({
-        open: true,
-        status: "error",
-        title: "Falha no upload",
-        errors: [err.message]
-      });
+      setAliasStatus({ type: "error", message: `Falha ao aplicar: ${err.message}` });
       toast({ title: "Erro ao aplicar aliases", description: err.message, variant: "destructive" });
     }
   };
@@ -328,48 +346,92 @@ export default function SettingsPage() {
     URL.revokeObjectURL(url);
   };
 
-  const handleDownloadAliases = async () => {
-    const blob = await aliasApi.exportExcel();
+  const handleDownloadClassificationTemplateCsv = async () => {
+    const blob = await classificationApi.exportCsvTemplate();
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "ritualfin_aliases.xlsx";
+    link.download = "categorias_template.csv";
     link.click();
     URL.revokeObjectURL(url);
   };
 
-  const handleDownloadLogosTemplate = async () => {
-    const blob = await aliasApi.exportLogosTemplate();
+  const handleDownloadAliasesCsv = async () => {
+    const blob = await aliasApi.exportKeyDescCsv();
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "ritualfin_logos.xlsx";
+    link.download = "ritualfin_aliases_key_desc.csv";
     link.click();
     URL.revokeObjectURL(url);
   };
 
-  const handleLogosImport = async (base64Override?: string) => {
-    const payload = base64Override || logosFileBase64;
-    if (!payload) return;
+  const handleDownloadAliasesTemplateCsv = async () => {
+    const blob = await aliasApi.exportKeyDescTemplateCsv();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "ritualfin_aliases_key_desc_template.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadAssetsCsv = async () => {
+    const blob = await aliasApi.exportAssetsCsv();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "ritualfin_aliases_assets.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadAssetsTemplateCsv = async () => {
+    const blob = await aliasApi.exportAssetsTemplateCsv();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "ritualfin_aliases_assets_template.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleLogosPreview = async (file: File) => {
+    setLogosPreview(null);
+    setLogosImportResults(null);
+    setLogosPreviewError(null);
+    setLogosStatus(null);
     try {
-      const result = await aliasApi.importLogos(payload);
-      setLogosPreview(result.results || []);
-      setUploadDialog({
-        open: true,
-        status: "success",
-        title: "Upload concluído com sucesso",
-        rowsProcessed: result.processed || 0,
-        newRows: result.processed || 0,
-        updatedRows: 0
+      const base64 = await readFileBase64(file);
+      const preview = await dataImportsApi.preview({
+        dataset: "aliases_assets",
+        filename: file.name,
+        fileBase64: base64
       });
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      setLogosPreview(preview);
+      setLogosImportId(preview.importId || null);
+      if (!preview.success) {
+        setLogosPreviewError(preview.message || "Falha na validação do arquivo.");
+      }
     } catch (err: any) {
-      setUploadDialog({
-        open: true,
-        status: "error",
-        title: "Falha no upload",
-        errors: [err.message]
+      setLogosPreviewError("Falha na validação do arquivo.");
+      toast({ title: "Erro na pré-visualização", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleLogosApply = async () => {
+    if (!logosImportId) return;
+    try {
+      const result = await dataImportsApi.confirm({ importId: logosImportId });
+      setLogosStatus({
+        type: "success",
+        message: `Importação concluída: ${result.processed} linhas processadas.`
       });
+      setLogosImportResults(result.results || []);
+      toast({ title: "Logos importados", description: `Processados: ${result.processed}` });
+      queryClient.invalidateQueries({ queryKey: ["data-imports-last", "aliases_assets"] });
+    } catch (err: any) {
+      setLogosStatus({ type: "error", message: `Falha ao aplicar: ${err.message}` });
       toast({ title: "Erro ao importar logos", description: err.message, variant: "destructive" });
     }
   };
@@ -943,9 +1005,13 @@ export default function SettingsPage() {
 
                     <TabsContent value="categorias" className="mt-6 space-y-4">
                       <div className="flex flex-wrap gap-3">
+                        <Button variant="outline" className="gap-2" onClick={handleDownloadClassificationTemplateCsv}>
+                          <Download className="h-4 w-4" />
+                          Baixar template CSV
+                        </Button>
                         <Button variant="outline" className="gap-2" onClick={handleDownloadClassificationCsv}>
                           <Download className="h-4 w-4" />
-                          Baixar CSV
+                          Baixar dados CSV
                         </Button>
                         <Button variant="outline" className="gap-2" onClick={handleDownloadClassification}>
                           <Download className="h-4 w-4" />
@@ -954,9 +1020,12 @@ export default function SettingsPage() {
                         <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
                           <Input
                             type="file"
-                            accept=".xlsx"
+                            accept=".csv"
                             className="hidden"
-                            onChange={(e) => e.target.files?.[0] && handleClassificationPreview(e.target.files[0])}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleClassificationPreview(file);
+                            }}
                           />
                           <Button variant="outline" className="gap-2">
                             <Upload className="h-4 w-4" />
@@ -965,11 +1034,89 @@ export default function SettingsPage() {
                         </label>
                       </div>
 
-                      {classificationPreview && (
-                        <div className="space-y-2">
-                          <p className="text-sm text-muted-foreground">
-                            Linhas: {classificationPreview.rows} | Categorias: {classificationPreview.appCategories} | Regras: {classificationPreview.rules}
+                      <div className="rounded-lg border border-muted bg-muted/10 p-3 text-sm">
+                        <p className="font-medium">Última importação</p>
+                        {classificationLastImport ? (
+                          <p className="text-muted-foreground">
+                            {format(new Date(classificationLastImport.createdAt), "dd/MM/yyyy HH:mm")} ·{" "}
+                            {formatImportStatus(classificationLastImport.status)} ·{" "}
+                            {classificationLastImport.rowsValid || 0}/{classificationLastImport.rowsTotal || 0} linhas válidas
                           </p>
+                        ) : (
+                          <p className="text-muted-foreground">Sem importações anteriores.</p>
+                        )}
+                      </div>
+
+                      {classificationStatus && (
+                        <div
+                          className={cn(
+                            "flex items-center gap-2 rounded-md border px-3 py-2 text-xs",
+                            classificationStatus.type === "success"
+                              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                              : "border-rose-200 bg-rose-50 text-rose-700"
+                          )}
+                        >
+                          {classificationStatus.type === "success" ? (
+                            <CheckCircle2 className="h-4 w-4" />
+                          ) : (
+                            <XCircle className="h-4 w-4" />
+                          )}
+                          <span>{classificationStatus.message}</span>
+                        </div>
+                      )}
+
+                      {classificationPreviewError ? (
+                        <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 space-y-2">
+                          <p className="font-medium">{classificationPreviewError}</p>
+                          {classificationPreview?.fixes?.length ? (
+                            <div className="text-xs text-rose-700">
+                              {classificationPreview.fixes.map((fix: string) => (
+                                <div key={fix}>• {fix}</div>
+                              ))}
+                            </div>
+                          ) : null}
+                          {classificationPreview?.reasonCodes?.length ? (
+                            <p className="text-xs">Código: {classificationPreview.reasonCodes.join(", ")}</p>
+                          ) : null}
+                        </div>
+                      ) : null}
+
+                      {classificationPreview?.success && (
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <Card className="bg-muted/20 border-0">
+                              <CardContent className="p-3">
+                                <p className="text-xs text-muted-foreground">Encoding</p>
+                                <p className="text-sm font-semibold">{classificationPreview.detectedEncoding || "-"}</p>
+                              </CardContent>
+                            </Card>
+                            <Card className="bg-muted/20 border-0">
+                              <CardContent className="p-3">
+                                <p className="text-xs text-muted-foreground">Delimiter</p>
+                                <p className="text-sm font-semibold">{classificationPreview.detectedDelimiter || "-"}</p>
+                              </CardContent>
+                            </Card>
+                            <Card className="bg-muted/20 border-0">
+                              <CardContent className="p-3">
+                                <p className="text-xs text-muted-foreground">Linhas</p>
+                                <p className="text-sm font-semibold">{classificationPreview.rowsTotal || 0}</p>
+                              </CardContent>
+                            </Card>
+                            <Card className="bg-muted/20 border-0">
+                              <CardContent className="p-3">
+                                <p className="text-xs text-muted-foreground">Colunas</p>
+                                <p className="text-sm font-semibold">{classificationPreview.headerFound?.length || 0}</p>
+                              </CardContent>
+                            </Card>
+                          </div>
+
+                          <div className="rounded-lg border border-muted bg-muted/20 p-3 text-sm">
+                            <p className="font-medium">Colunas detectadas</p>
+                            <p className="text-xs text-muted-foreground">
+                              {classificationPreview.headerFound?.join(" · ") || "-"}
+                            </p>
+                          </div>
+
                           {classificationPreview.diff && (
                             <div className="rounded-lg border border-muted bg-muted/20 p-3 text-sm space-y-2">
                               <p className="font-medium">Prévia de alterações</p>
@@ -994,14 +1141,45 @@ export default function SettingsPage() {
                               ) : null}
                             </div>
                           )}
+
                           {classificationPreview.requiresRemap && (
                             <div className="flex items-center gap-2">
                               <Switch checked={confirmRemap} onCheckedChange={setConfirmRemap} />
                               <span className="text-sm">Confirmo o remapeamento de categorias da UI</span>
                             </div>
                           )}
-                          <Button className="gap-2" onClick={() => setShowClassificationConfirm(true)}>
-                            Aplicar planilha
+
+                          <div className="overflow-x-auto rounded-lg border">
+                            <table className="min-w-full text-sm">
+                              <thead className="bg-muted/30">
+                                <tr>
+                                  {(classificationPreview.headerFound || []).map((header: string) => (
+                                    <th key={header} className="px-3 py-2 text-left">
+                                      {header}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {classificationPreview.previewRows?.map((row: any, idx: number) => (
+                                  <tr key={idx} className="border-t">
+                                    {(classificationPreview.headerFound || []).map((header: string) => (
+                                      <td key={`${header}-${idx}`} className="px-3 py-2">
+                                        {row[header]}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          <Button
+                            className="gap-2"
+                            onClick={() => setShowClassificationConfirm(true)}
+                            disabled={!classificationPreview?.success}
+                          >
+                            Confirmar importação
                           </Button>
                         </div>
                       )}
@@ -1048,16 +1226,23 @@ export default function SettingsPage() {
 
                     <TabsContent value="aliases" className="mt-6 space-y-4">
                       <div className="flex flex-wrap gap-3">
-                        <Button variant="outline" className="gap-2" onClick={handleDownloadAliases}>
+                        <Button variant="outline" className="gap-2" onClick={handleDownloadAliasesTemplateCsv}>
                           <Download className="h-4 w-4" />
-                          Baixar Excel
+                          Baixar template CSV
+                        </Button>
+                        <Button variant="outline" className="gap-2" onClick={handleDownloadAliasesCsv}>
+                          <Download className="h-4 w-4" />
+                          Baixar dados CSV
                         </Button>
                         <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
                           <Input
                             type="file"
-                            accept=".xlsx,.csv"
+                            accept=".csv"
                             className="hidden"
-                            onChange={(e) => e.target.files?.[0] && handleAliasPreview(e.target.files[0])}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleAliasPreview(file);
+                            }}
                           />
                           <Button variant="outline" className="gap-2">
                             <Upload className="h-4 w-4" />
@@ -1066,13 +1251,116 @@ export default function SettingsPage() {
                         </label>
                       </div>
 
-                      {aliasPreview && (
-                        <div className="space-y-2">
-                          <p className="text-sm text-muted-foreground">
-                            key_desc_map: {aliasPreview.keyDescRows} | alias_assets: {aliasPreview.aliasRows}
+                      <div className="rounded-lg border border-muted bg-muted/10 p-3 text-sm">
+                        <p className="font-medium">Última importação</p>
+                        {aliasesLastImport ? (
+                          <p className="text-muted-foreground">
+                            {format(new Date(aliasesLastImport.createdAt), "dd/MM/yyyy HH:mm")} ·{" "}
+                            {formatImportStatus(aliasesLastImport.status)} ·{" "}
+                            {aliasesLastImport.rowsValid || 0}/{aliasesLastImport.rowsTotal || 0} linhas válidas
                           </p>
-                          <Button className="gap-2" onClick={handleAliasApply}>
-                            Aplicar planilha
+                        ) : (
+                          <p className="text-muted-foreground">Sem importações anteriores.</p>
+                        )}
+                      </div>
+
+                      {aliasStatus && (
+                        <div
+                          className={cn(
+                            "flex items-center gap-2 rounded-md border px-3 py-2 text-xs",
+                            aliasStatus.type === "success"
+                              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                              : "border-rose-200 bg-rose-50 text-rose-700"
+                          )}
+                        >
+                          {aliasStatus.type === "success" ? (
+                            <CheckCircle2 className="h-4 w-4" />
+                          ) : (
+                            <XCircle className="h-4 w-4" />
+                          )}
+                          <span>{aliasStatus.message}</span>
+                        </div>
+                      )}
+
+                      {aliasPreviewError ? (
+                        <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 space-y-2">
+                          <p className="font-medium">{aliasPreviewError}</p>
+                          {aliasPreview?.fixes?.length ? (
+                            <div className="text-xs text-rose-700">
+                              {aliasPreview.fixes.map((fix: string) => (
+                                <div key={fix}>• {fix}</div>
+                              ))}
+                            </div>
+                          ) : null}
+                          {aliasPreview?.reasonCodes?.length ? (
+                            <p className="text-xs">Código: {aliasPreview.reasonCodes.join(", ")}</p>
+                          ) : null}
+                        </div>
+                      ) : null}
+
+                      {aliasPreview?.success && (
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <Card className="bg-muted/20 border-0">
+                              <CardContent className="p-3">
+                                <p className="text-xs text-muted-foreground">Encoding</p>
+                                <p className="text-sm font-semibold">{aliasPreview.detectedEncoding || "-"}</p>
+                              </CardContent>
+                            </Card>
+                            <Card className="bg-muted/20 border-0">
+                              <CardContent className="p-3">
+                                <p className="text-xs text-muted-foreground">Delimiter</p>
+                                <p className="text-sm font-semibold">{aliasPreview.detectedDelimiter || "-"}</p>
+                              </CardContent>
+                            </Card>
+                            <Card className="bg-muted/20 border-0">
+                              <CardContent className="p-3">
+                                <p className="text-xs text-muted-foreground">Linhas</p>
+                                <p className="text-sm font-semibold">{aliasPreview.rowsTotal || 0}</p>
+                              </CardContent>
+                            </Card>
+                            <Card className="bg-muted/20 border-0">
+                              <CardContent className="p-3">
+                                <p className="text-xs text-muted-foreground">Colunas</p>
+                                <p className="text-sm font-semibold">{aliasPreview.headerFound?.length || 0}</p>
+                              </CardContent>
+                            </Card>
+                          </div>
+
+                          <div className="rounded-lg border border-muted bg-muted/20 p-3 text-sm">
+                            <p className="font-medium">Colunas detectadas</p>
+                            <p className="text-xs text-muted-foreground">
+                              {aliasPreview.headerFound?.join(" · ") || "-"}
+                            </p>
+                          </div>
+
+                          <div className="overflow-x-auto rounded-lg border">
+                            <table className="min-w-full text-sm">
+                              <thead className="bg-muted/30">
+                                <tr>
+                                  {(aliasPreview.headerFound || []).map((header: string) => (
+                                    <th key={header} className="px-3 py-2 text-left">
+                                      {header}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {aliasPreview.previewRows?.map((row: any, idx: number) => (
+                                  <tr key={idx} className="border-t">
+                                    {(aliasPreview.headerFound || []).map((header: string) => (
+                                      <td key={`${header}-${idx}`} className="px-3 py-2">
+                                        {row[header]}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          <Button className="gap-2" onClick={handleAliasApply} disabled={!aliasPreview?.success}>
+                            Confirmar importação
                           </Button>
                         </div>
                       )}
@@ -1095,27 +1383,28 @@ export default function SettingsPage() {
 
                     <TabsContent value="logos" className="mt-6 space-y-4">
                       <div className="flex flex-wrap gap-3">
-                        <Button variant="outline" className="gap-2" onClick={handleDownloadLogosTemplate}>
+                        <Button variant="outline" className="gap-2" onClick={handleDownloadAssetsTemplateCsv}>
                           <Download className="h-4 w-4" />
-                          Baixar modelo de logos (Excel)
+                          Baixar template CSV
+                        </Button>
+                        <Button variant="outline" className="gap-2" onClick={handleDownloadAssetsCsv}>
+                          <Download className="h-4 w-4" />
+                          Baixar dados CSV
                         </Button>
                         <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
                           <Input
                             type="file"
-                            accept=".xlsx,.csv"
+                            accept=".csv"
                             className="hidden"
                             onChange={async (e) => {
                               const file = e.target.files?.[0];
                               if (!file) return;
-                              const base64 = await readFileBase64(file);
-                              setLogosFileBase64(base64);
-                              setLogosPreview(null);
-                              await handleLogosImport(base64);
+                              await handleLogosPreview(file);
                             }}
                           />
                           <Button variant="outline" className="gap-2">
                             <Upload className="h-4 w-4" />
-                            Importar logos (Excel/CSV)
+                            Pré-visualizar upload
                           </Button>
                         </label>
                         <Button variant="outline" className="gap-2" onClick={handleRefreshLogos}>
@@ -1124,10 +1413,124 @@ export default function SettingsPage() {
                         </Button>
                       </div>
 
-                      {logosPreview && (
+                      <div className="rounded-lg border border-muted bg-muted/10 p-3 text-sm">
+                        <p className="font-medium">Última importação</p>
+                        {logosLastImport ? (
+                          <p className="text-muted-foreground">
+                            {format(new Date(logosLastImport.createdAt), "dd/MM/yyyy HH:mm")} ·{" "}
+                            {formatImportStatus(logosLastImport.status)} ·{" "}
+                            {logosLastImport.rowsValid || 0}/{logosLastImport.rowsTotal || 0} linhas válidas
+                          </p>
+                        ) : (
+                          <p className="text-muted-foreground">Sem importações anteriores.</p>
+                        )}
+                      </div>
+
+                      {logosStatus && (
+                        <div
+                          className={cn(
+                            "flex items-center gap-2 rounded-md border px-3 py-2 text-xs",
+                            logosStatus.type === "success"
+                              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                              : "border-rose-200 bg-rose-50 text-rose-700"
+                          )}
+                        >
+                          {logosStatus.type === "success" ? (
+                            <CheckCircle2 className="h-4 w-4" />
+                          ) : (
+                            <XCircle className="h-4 w-4" />
+                          )}
+                          <span>{logosStatus.message}</span>
+                        </div>
+                      )}
+
+                      {logosPreviewError ? (
+                        <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 space-y-2">
+                          <p className="font-medium">{logosPreviewError}</p>
+                          {logosPreview?.fixes?.length ? (
+                            <div className="text-xs text-rose-700">
+                              {logosPreview.fixes.map((fix: string) => (
+                                <div key={fix}>• {fix}</div>
+                              ))}
+                            </div>
+                          ) : null}
+                          {logosPreview?.reasonCodes?.length ? (
+                            <p className="text-xs">Código: {logosPreview.reasonCodes.join(", ")}</p>
+                          ) : null}
+                        </div>
+                      ) : null}
+
+                      {logosPreview?.success && (
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <Card className="bg-muted/20 border-0">
+                              <CardContent className="p-3">
+                                <p className="text-xs text-muted-foreground">Encoding</p>
+                                <p className="text-sm font-semibold">{logosPreview.detectedEncoding || "-"}</p>
+                              </CardContent>
+                            </Card>
+                            <Card className="bg-muted/20 border-0">
+                              <CardContent className="p-3">
+                                <p className="text-xs text-muted-foreground">Delimiter</p>
+                                <p className="text-sm font-semibold">{logosPreview.detectedDelimiter || "-"}</p>
+                              </CardContent>
+                            </Card>
+                            <Card className="bg-muted/20 border-0">
+                              <CardContent className="p-3">
+                                <p className="text-xs text-muted-foreground">Linhas</p>
+                                <p className="text-sm font-semibold">{logosPreview.rowsTotal || 0}</p>
+                              </CardContent>
+                            </Card>
+                            <Card className="bg-muted/20 border-0">
+                              <CardContent className="p-3">
+                                <p className="text-xs text-muted-foreground">Colunas</p>
+                                <p className="text-sm font-semibold">{logosPreview.headerFound?.length || 0}</p>
+                              </CardContent>
+                            </Card>
+                          </div>
+
+                          <div className="rounded-lg border border-muted bg-muted/20 p-3 text-sm">
+                            <p className="font-medium">Colunas detectadas</p>
+                            <p className="text-xs text-muted-foreground">
+                              {logosPreview.headerFound?.join(" · ") || "-"}
+                            </p>
+                          </div>
+
+                          <div className="overflow-x-auto rounded-lg border">
+                            <table className="min-w-full text-sm">
+                              <thead className="bg-muted/30">
+                                <tr>
+                                  {(logosPreview.headerFound || []).map((header: string) => (
+                                    <th key={header} className="px-3 py-2 text-left">
+                                      {header}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {logosPreview.previewRows?.map((row: any, idx: number) => (
+                                  <tr key={idx} className="border-t">
+                                    {(logosPreview.headerFound || []).map((header: string) => (
+                                      <td key={`${header}-${idx}`} className="px-3 py-2">
+                                        {row[header]}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          <Button className="gap-2" onClick={handleLogosApply} disabled={!logosPreview?.success}>
+                            Confirmar importação
+                          </Button>
+                        </div>
+                      )}
+
+                      {logosImportResults && (
                         <div className="space-y-2">
                           <p className="text-sm text-muted-foreground">
-                            Processados: {logosPreview.length}
+                            Processados: {logosImportResults.length}
                           </p>
                           <div className="overflow-x-auto rounded-lg border">
                             <table className="min-w-full text-sm">
@@ -1139,7 +1542,7 @@ export default function SettingsPage() {
                                 </tr>
                               </thead>
                               <tbody>
-                                {logosPreview.map((row: any, idx: number) => (
+                                {logosImportResults.map((row: any, idx: number) => (
                                   <tr key={`${row.aliasDesc}-${idx}`} className="border-t">
                                     <td className="px-3 py-2">
                                       <div className="flex items-center gap-2">
@@ -1166,10 +1569,10 @@ export default function SettingsPage() {
                                       </span>
                                     </td>
                                     <td className="px-3 py-2">
-                                      {row.status === "error" ? (
-                                        <span className="text-xs text-rose-700">{row.error}</span>
+                                      {row.status === "ok" ? (
+                                        <span className="text-xs text-emerald-700">Logo salva</span>
                                       ) : (
-                                        <span className="text-xs text-muted-foreground">Pronto</span>
+                                        <span className="text-xs text-rose-700">{row.error}</span>
                                       )}
                                     </td>
                                   </tr>

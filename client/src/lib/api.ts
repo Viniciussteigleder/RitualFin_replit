@@ -157,6 +157,7 @@ export const uploadsApi = {
 export const classificationApi = {
   exportExcel: () => fetchBlob("/classification/export"),
   exportCsv: () => fetchBlob("/classification/export-csv"),
+  exportCsvTemplate: () => fetchBlob("/classification/template-csv"),
   previewImport: (fileBase64: string) =>
     fetchApi<any>("/classification/import/preview", {
       method: "POST",
@@ -189,6 +190,10 @@ export const classificationApi = {
 
 export const aliasApi = {
   exportExcel: () => fetchBlob("/aliases/export"),
+  exportKeyDescCsv: () => fetchBlob("/aliases/key-desc/export-csv"),
+  exportKeyDescTemplateCsv: () => fetchBlob("/aliases/key-desc/template-csv"),
+  exportAssetsCsv: () => fetchBlob("/aliases/assets/export-csv"),
+  exportAssetsTemplateCsv: () => fetchBlob("/aliases/assets/template-csv"),
   exportLogosTemplate: () => fetchBlob("/aliases/logos/template"),
   previewImport: (fileBase64: string) =>
     fetchApi<any>("/aliases/import/preview", {
@@ -215,6 +220,27 @@ export const aliasApi = {
       method: "POST",
       body: JSON.stringify({ force }),
     }),
+};
+
+export const dataImportsApi = {
+  preview: async (payload: { dataset: string; filename: string; fileBase64: string; confirmRemap?: boolean }) => {
+    const res = await fetch(`${API_BASE}/data-imports/preview`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({ message: "Request failed" }));
+    if (!res.ok) {
+      return data;
+    }
+    return data;
+  },
+  confirm: (payload: { importId: string; confirmRemap?: boolean }) =>
+    fetchApi<any>("/data-imports/confirm", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  last: (dataset: string) => fetchApi<any>(`/data-imports/last?dataset=${encodeURIComponent(dataset)}`),
 };
 
 export const resetApi = {
