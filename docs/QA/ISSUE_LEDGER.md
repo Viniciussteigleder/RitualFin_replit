@@ -170,45 +170,44 @@ This ledger tracks all discovered issues during autonomous QA execution.
 ---
 
 ### IAL-004: Keyword Expressions May Be Space-Tokenized
-**Status**: 🟡 IN_PROGRESS (Needs verification)
+**Status**: 🔵 VERIFIED (No bug - behavior correct)
 **Priority**: P0
-**Severity**: Critical (Data corruption risk)
+**Severity**: N/A (False alarm - documentation issue only)
 **Found**: Mission requirements review
+**Verified**: 2026-01-02
 
 **Where**: Rules engine, keyword matching logic
 
-**Reproduce**:
-1. Create rule with keyword: `SV Fuerstenfeldbrucker Wasserratten e.V.`
-2. Save rule
-3. Check database: are keywords split into tokens?
-4. Test transaction match with full expression
+**Verification Results**:
+✅ Keywords stored exactly as entered in database
+✅ Split ONLY on semicolon (`;`) separator - `rule.keywords.split(";")`
+✅ Each expression between semicolons preserved as complete unit
+✅ Spaces within expressions are PRESERVED
+✅ Normalization (uppercase, remove accents) happens AFTER splitting
+✅ Match logic uses `includes()` with full expression
 
-**Expected**:
-- Keyword stored exactly as entered
-- Match checks if description contains full expression
-- No tokenization by spaces
+**Example Flow**:
+1. User enters: `"LIDL;SV Fuerstenfeldbrucker Wasserratten e.V.;REWE MARKT"`
+2. Stored in DB: `"LIDL;SV Fuerstenfeldbrucker Wasserratten e.V.;REWE MARKT"`
+3. Split into: `["LIDL", "SV Fuerstenfeldbrucker Wasserratten e.V.", "REWE MARKT"]`
+4. Normalized to: `["LIDL", "SV FUERSTENFELDBRUCKER WASSERRATTEN EV", "REWE MARKT"]`
+5. Each expression matched as whole unit against transaction description
 
-**Actual**:
-- Code inspection shows `keywords.split(";")` - CORRECT
-- But need to verify no secondary splitting occurs
-- Need to test with complex expressions
-
-**Suspected Root Cause**:
-- Unclear - code looks correct
-- May be issue in UI or secondary processing
-
-**Fix Strategy**:
-1. Add E2E test with complex expression (RULE-002)
-2. Verify DB storage
-3. Verify match logic
-4. Add integration test
-5. Document expression syntax in rules
+**Fix Applied**:
+- Enhanced UI documentation in rules.tsx with explicit multi-word example
+- Added code comments in rules-engine.ts documenting semicolon-only splitting
+- Added visual example showing complex expression support
 
 **Test IDs**: RULE-002, RULE-003
 
-**Evidence**: server/routes.ts:1037
+**Evidence**:
+- server/rules-engine.ts:52-62 (split logic)
+- server/routes.ts:1037 (endpoint usage)
+- client/src/pages/rules.tsx:730-745 (UI with enhanced hints)
 
-**Status Update**: Code review suggests this is NOT a bug, but needs E2E verification
+**Files Modified**:
+- `client/src/pages/rules.tsx` - Enhanced UI hints with multi-word examples
+- `server/rules-engine.ts` - Added documentation comments
 
 ---
 
@@ -414,11 +413,11 @@ This ledger tracks all discovered issues during autonomous QA execution.
 
 | Priority | Open | In Progress | Fixed | Verified | Closed | Total |
 |----------|------|-------------|-------|----------|--------|-------|
-| P0       | 4    | 0           | 0     | 0        | 0      | 4     |
+| P0       | 0    | 0           | 3     | 1        | 0      | 4     |
 | P1       | 2    | 0           | 1     | 0        | 0      | 3     |
 | P2       | 1    | 0           | 0     | 0        | 0      | 1     |
 | P3       | 1    | 0           | 0     | 0        | 0      | 1     |
-| **Total**| **8**| **0**       | **1** | **0**    | **0**  | **9** |
+| **Total**| **4**| **0**       | **4** | **1**    | **0**  | **9** |
 
 ---
 

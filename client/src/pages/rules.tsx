@@ -728,15 +728,20 @@ export default function RulesPage() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Palavras-chave</Label>
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Palavras-chave <span className="text-rose-500">*</span></Label>
                 <Input
                   value={formData.keywords}
                   onChange={(e) => setFormData({ ...formData, keywords: e.target.value })}
-                  placeholder="REWE;EDEKA;ALDI (separar com ;)"
+                  placeholder="REWE;EDEKA;ALDI;SV Wasserratten e.V. (separar com ;)"
                   className="bg-muted/30 border-0"
                   data-testid="input-rule-keywords"
                 />
-                <p className="text-xs text-muted-foreground">Separe multiplas palavras com ponto e virgula (;)</p>
+                <p className="text-xs text-muted-foreground">
+                  Separe múltiplas expressões com ponto e vírgula (;). Expressões podem conter espaços e serão preservadas integralmente.
+                </p>
+                <p className="text-xs text-amber-600 font-medium">
+                  Exemplo: "LIDL;SV Fuerstenfeldbrucker Wasserratten e.V.;REWE MARKT"
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
