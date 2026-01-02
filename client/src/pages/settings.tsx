@@ -279,9 +279,9 @@ export default function SettingsPage() {
     });
 
   const formatImportStatus = (status?: string) => {
-    if (status === "confirmed") return "Sucesso";
-    if (status === "previewed") return "Prévia";
-    return "Falha";
+    if (status === "confirmed") return t(locale, settingsCopy.statusSuccess);
+    if (status === "previewed") return t(locale, settingsCopy.statusPreview);
+    return t(locale, settingsCopy.statusFailure);
   };
 
   const handleClassificationPreview = async (file: File) => {

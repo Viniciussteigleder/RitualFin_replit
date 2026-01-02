@@ -954,6 +954,21 @@ export const settingsCopy = {
     "pt-BR": "Erro ao apagar dados",
     "de-DE": "Fehler beim Löschen der Daten",
     "en-US": "Failed to delete data"
+  },
+  statusSuccess: {
+    "pt-BR": "Sucesso",
+    "de-DE": "Erfolg",
+    "en-US": "Success"
+  },
+  statusPreview: {
+    "pt-BR": "Prévia",
+    "de-DE": "Vorschau",
+    "en-US": "Preview"
+  },
+  statusFailure: {
+    "pt-BR": "Falha",
+    "de-DE": "Fehler",
+    "en-US": "Failure"
   }
 };
 
