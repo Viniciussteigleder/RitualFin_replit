@@ -1052,6 +1052,179 @@ export const transactionDetailCopy = {
   }
 };
 
+export const notificationsCopy = {
+  title: {
+    "pt-BR": "Notificações",
+    "de-DE": "Benachrichtigungen",
+    "en-US": "Notifications"
+  },
+  subtitle: {
+    "pt-BR": "Central de mensagens e alertas do sistema",
+    "de-DE": "Zentrale für Systemmeldungen und -warnungen",
+    "en-US": "System messages and alerts center"
+  },
+  newSingle: {
+    "pt-BR": "nova",
+    "de-DE": "neu",
+    "en-US": "new"
+  },
+  newPlural: {
+    "pt-BR": "novas",
+    "de-DE": "neu",
+    "en-US": "new"
+  },
+  markAllRead: {
+    "pt-BR": "Marcar todas como lidas",
+    "de-DE": "Alle als gelesen markieren",
+    "en-US": "Mark all as read"
+  },
+  statsTotal: {
+    "pt-BR": "Total",
+    "de-DE": "Gesamt",
+    "en-US": "Total"
+  },
+  statsNotifications: {
+    "pt-BR": "notificações",
+    "de-DE": "Benachrichtigungen",
+    "en-US": "notifications"
+  },
+  statsUnread: {
+    "pt-BR": "Não lidas",
+    "de-DE": "Ungelesen",
+    "en-US": "Unread"
+  },
+  statsPending: {
+    "pt-BR": "pendentes",
+    "de-DE": "ausstehend",
+    "en-US": "pending"
+  },
+  statsImportant: {
+    "pt-BR": "Importantes",
+    "de-DE": "Wichtig",
+    "en-US": "Important"
+  },
+  statsAlerts: {
+    "pt-BR": "alertas",
+    "de-DE": "Warnungen",
+    "en-US": "alerts"
+  },
+  tabAll: {
+    "pt-BR": "Todas",
+    "de-DE": "Alle",
+    "en-US": "All"
+  },
+  tabUnread: {
+    "pt-BR": "Não lidas",
+    "de-DE": "Ungelesen",
+    "en-US": "Unread"
+  },
+  tabImportant: {
+    "pt-BR": "Importantes",
+    "de-DE": "Wichtig",
+    "en-US": "Important"
+  },
+  emptyTitle: {
+    "pt-BR": "Nenhuma notificação",
+    "de-DE": "Keine Benachrichtigungen",
+    "en-US": "No notifications"
+  },
+  emptyUnread: {
+    "pt-BR": "Você está em dia! Não há notificações não lidas.",
+    "de-DE": "Alles erledigt! Keine ungelesenen Benachrichtigungen.",
+    "en-US": "You're all caught up! No unread notifications."
+  },
+  emptyAll: {
+    "pt-BR": "Não há notificações para exibir neste momento.",
+    "de-DE": "Derzeit gibt es keine Benachrichtigungen.",
+    "en-US": "There are no notifications to show right now."
+  },
+  viewDetails: {
+    "pt-BR": "Ver detalhes",
+    "de-DE": "Details ansehen",
+    "en-US": "View details"
+  },
+  devTitle: {
+    "pt-BR": "Página em desenvolvimento",
+    "de-DE": "Seite in Entwicklung",
+    "en-US": "Page in development"
+  },
+  devBody: {
+    "pt-BR": "Esta é uma interface de demonstração. A integração com o backend para notificações reais está pendente e será implementada na próxima fase.",
+    "de-DE": "Dies ist eine Demo-Oberfläche. Die Backend-Integration für echte Benachrichtigungen ist noch ausstehend und wird in der nächsten Phase umgesetzt.",
+    "en-US": "This is a demo interface. Backend integration for real notifications is pending and will be implemented in the next phase."
+  },
+  mockUploadTitle: {
+    "pt-BR": "Upload concluído",
+    "de-DE": "Upload abgeschlossen",
+    "en-US": "Upload complete"
+  },
+  mockUploadMessage: {
+    "pt-BR": "{count} transações importadas de {source}",
+    "de-DE": "{count} Transaktionen aus {source} importiert",
+    "en-US": "{count} transactions imported from {source}"
+  },
+  mockBudgetTitle: {
+    "pt-BR": "Orçamento excedido",
+    "de-DE": "Budget überschritten",
+    "en-US": "Budget exceeded"
+  },
+  mockBudgetMessage: {
+    "pt-BR": "Você gastou {spent}/{budget} em {category} este mês",
+    "de-DE": "Sie haben diesen Monat {spent}/{budget} für {category} ausgegeben",
+    "en-US": "You spent {spent}/{budget} on {category} this month"
+  },
+  mockWeeklyTitle: {
+    "pt-BR": "Ritual semanal disponível",
+    "de-DE": "Wöchentliches Ritual verfügbar",
+    "en-US": "Weekly ritual available"
+  },
+  mockWeeklyMessage: {
+    "pt-BR": "Está na hora de revisar suas finanças da semana",
+    "de-DE": "Zeit, Ihre Finanzen der Woche zu prüfen",
+    "en-US": "Time to review your finances for the week"
+  },
+  mockConfirmTitle: {
+    "pt-BR": "Novas transações para confirmar",
+    "de-DE": "Neue Transaktionen zur Bestätigung",
+    "en-US": "New transactions to confirm"
+  },
+  mockConfirmMessage: {
+    "pt-BR": "{count} transações aguardam revisão na fila de confirmação",
+    "de-DE": "{count} Transaktionen warten in der Bestätigungswarteschlange",
+    "en-US": "{count} transactions await review in the confirmation queue"
+  },
+  mockGoalTitle: {
+    "pt-BR": "Meta atingida",
+    "de-DE": "Ziel erreicht",
+    "en-US": "Goal reached"
+  },
+  mockGoalMessage: {
+    "pt-BR": "Parabéns! Você economizou {amount} este mês",
+    "de-DE": "Glückwunsch! Sie haben diesen Monat {amount} gespart",
+    "en-US": "Congrats! You saved {amount} this month"
+  },
+  mockCardTitle: {
+    "pt-BR": "Fatura do cartão próxima",
+    "de-DE": "Kartenabrechnung bald fällig",
+    "en-US": "Card bill due soon"
+  },
+  mockCardMessage: {
+    "pt-BR": "{card} vence em {days} dias ({amount})",
+    "de-DE": "{card} fällig in {days} Tagen ({amount})",
+    "en-US": "{card} due in {days} days ({amount})"
+  },
+  mockAiTitle: {
+    "pt-BR": "Análise de IA disponível",
+    "de-DE": "KI-Analyse verfügbar",
+    "en-US": "AI analysis available"
+  },
+  mockAiMessage: {
+    "pt-BR": "Identificamos {count} novas palavras-chave para categorização",
+    "de-DE": "Wir haben {count} neue Schlüsselwörter für die Kategorisierung gefunden",
+    "en-US": "We found {count} new keywords for categorization"
+  }
+};
+
 export const confirmCopy = {
   title: {
     "pt-BR": "Fila de Confirmação",

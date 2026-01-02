@@ -15,7 +15,6 @@ import {
   CheckCheck,
   Upload,
   AlertTriangle,
-  TrendingUp,
   Calendar,
   CreditCard,
   Target,
@@ -24,9 +23,9 @@ import {
   Check
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { notificationsCopy, t as translate } from "@/lib/i18n";
+import { useLocale } from "@/hooks/use-locale";
 
 interface Notification {
   id: string;
@@ -38,80 +37,6 @@ interface Notification {
   actionUrl?: string;
   icon?: React.ComponentType<any>;
 }
-
-// Mock notifications (replace with API call when backend is ready)
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: "1",
-    title: "Upload concluído",
-    message: "426 transações importadas de Miles & More",
-    type: "success",
-    isRead: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 15), // 15 min ago
-    actionUrl: "/transactions",
-    icon: Upload
-  },
-  {
-    id: "2",
-    title: "Orçamento excedido",
-    message: "Você gastou €250/€200 em Lazer este mês",
-    type: "warning",
-    isRead: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-    actionUrl: "/dashboard",
-    icon: AlertTriangle
-  },
-  {
-    id: "3",
-    title: "Ritual semanal disponível",
-    message: "Está na hora de revisar suas finanças da semana",
-    type: "info",
-    isRead: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5), // 5 hours ago
-    actionUrl: "/rituals",
-    icon: Calendar
-  },
-  {
-    id: "4",
-    title: "Novas transações para confirmar",
-    message: "23 transações aguardam revisão na fila de confirmação",
-    type: "info",
-    isRead: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-    actionUrl: "/confirm",
-    icon: CheckCheck
-  },
-  {
-    id: "5",
-    title: "Meta atingida",
-    message: "Parabéns! Você economizou €500 este mês",
-    type: "success",
-    isRead: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2), // 2 days ago
-    actionUrl: "/goals",
-    icon: Target
-  },
-  {
-    id: "6",
-    title: "Fatura do cartão próxima",
-    message: "American Express vence em 5 dias (€1,234.56)",
-    type: "warning",
-    isRead: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3), // 3 days ago
-    actionUrl: "/accounts",
-    icon: CreditCard
-  },
-  {
-    id: "7",
-    title: "Análise de IA disponível",
-    message: "Identificamos 15 novas palavras-chave para categorização",
-    type: "info",
-    isRead: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5), // 5 days ago
-    actionUrl: "/ai-keywords",
-    icon: Sparkles
-  }
-];
 
 const NOTIFICATION_COLORS = {
   success: {
@@ -141,10 +66,114 @@ const NOTIFICATION_COLORS = {
 };
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
+  const locale = useLocale();
+  const currencyFormatter = new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" });
+  const timeFormatter = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" });
+  const dateFormatter = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "long" });
+  const formatMessage = (template: string, vars: Record<string, string | number>) =>
+    Object.entries(vars).reduce((result, [key, value]) => result.replace(`{${key}}`, String(value)), template);
+
+  const buildMockNotifications = (): Notification[] => [
+    {
+      id: "1",
+      title: translate(locale, notificationsCopy.mockUploadTitle),
+      message: formatMessage(translate(locale, notificationsCopy.mockUploadMessage), {
+        count: 426,
+        source: "Miles & More"
+      }),
+      type: "success",
+      isRead: false,
+      createdAt: new Date(Date.now() - 1000 * 60 * 15),
+      actionUrl: "/transactions",
+      icon: Upload
+    },
+    {
+      id: "2",
+      title: translate(locale, notificationsCopy.mockBudgetTitle),
+      message: formatMessage(translate(locale, notificationsCopy.mockBudgetMessage), {
+        spent: currencyFormatter.format(250),
+        budget: currencyFormatter.format(200),
+        category: "Lazer"
+      }),
+      type: "warning",
+      isRead: false,
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2),
+      actionUrl: "/dashboard",
+      icon: AlertTriangle
+    },
+    {
+      id: "3",
+      title: translate(locale, notificationsCopy.mockWeeklyTitle),
+      message: translate(locale, notificationsCopy.mockWeeklyMessage),
+      type: "info",
+      isRead: false,
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5),
+      actionUrl: "/rituals",
+      icon: Calendar
+    },
+    {
+      id: "4",
+      title: translate(locale, notificationsCopy.mockConfirmTitle),
+      message: formatMessage(translate(locale, notificationsCopy.mockConfirmMessage), { count: 23 }),
+      type: "info",
+      isRead: true,
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24),
+      actionUrl: "/confirm",
+      icon: CheckCheck
+    },
+    {
+      id: "5",
+      title: translate(locale, notificationsCopy.mockGoalTitle),
+      message: formatMessage(translate(locale, notificationsCopy.mockGoalMessage), {
+        amount: currencyFormatter.format(500)
+      }),
+      type: "success",
+      isRead: true,
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2),
+      actionUrl: "/goals",
+      icon: Target
+    },
+    {
+      id: "6",
+      title: translate(locale, notificationsCopy.mockCardTitle),
+      message: formatMessage(translate(locale, notificationsCopy.mockCardMessage), {
+        card: "American Express",
+        days: 5,
+        amount: currencyFormatter.format(1234.56)
+      }),
+      type: "warning",
+      isRead: true,
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3),
+      actionUrl: "/accounts",
+      icon: CreditCard
+    },
+    {
+      id: "7",
+      title: translate(locale, notificationsCopy.mockAiTitle),
+      message: formatMessage(translate(locale, notificationsCopy.mockAiMessage), { count: 15 }),
+      type: "info",
+      isRead: true,
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5),
+      actionUrl: "/ai-keywords",
+      icon: Sparkles
+    }
+  ];
+
+  const [notifications, setNotifications] = useState<Notification[]>(() => buildMockNotifications());
   const [activeTab, setActiveTab] = useState("all");
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
+
+  useEffect(() => {
+    setNotifications(prev => {
+      const base = buildMockNotifications();
+      const readMap = new Map(prev.map(n => [n.id, n.isRead]));
+      return base.map(notification => ({
+        ...notification,
+        isRead: readMap.get(notification.id) ?? notification.isRead
+      }));
+    });
+  }, [locale]);
 
   const markAsRead = (id: string) => {
     setNotifications(prev =>
@@ -171,15 +200,17 @@ export default function NotificationsPage() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold">Notificações</h1>
+              <h1 className="text-2xl font-bold">{translate(locale, notificationsCopy.title)}</h1>
               {unreadCount > 0 && (
                 <Badge className="bg-primary/10 text-primary border-0">
-                  {unreadCount} {unreadCount === 1 ? "nova" : "novas"}
+                  {unreadCount} {unreadCount === 1
+                    ? translate(locale, notificationsCopy.newSingle)
+                    : translate(locale, notificationsCopy.newPlural)}
                 </Badge>
               )}
             </div>
             <p className="text-muted-foreground mt-1">
-              Central de mensagens e alertas do sistema
+              {translate(locale, notificationsCopy.subtitle)}
             </p>
           </div>
           {unreadCount > 0 && (
@@ -189,7 +220,7 @@ export default function NotificationsPage() {
               className="gap-2"
             >
               <CheckCheck className="h-4 w-4" />
-              Marcar todas como lidas
+              {translate(locale, notificationsCopy.markAllRead)}
             </Button>
           )}
         </div>
@@ -200,9 +231,9 @@ export default function NotificationsPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{translate(locale, notificationsCopy.statsTotal)}</p>
                   <p className="text-3xl font-bold mt-1">{notifications.length}</p>
-                  <p className="text-xs text-muted-foreground mt-1">notificações</p>
+                  <p className="text-xs text-muted-foreground mt-1">{translate(locale, notificationsCopy.statsNotifications)}</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
                   <Bell className="h-6 w-6 text-blue-600" />
@@ -215,9 +246,9 @@ export default function NotificationsPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Não lidas</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{translate(locale, notificationsCopy.statsUnread)}</p>
                   <p className="text-3xl font-bold mt-1">{unreadCount}</p>
-                  <p className="text-xs text-muted-foreground mt-1">pendentes</p>
+                  <p className="text-xs text-muted-foreground mt-1">{translate(locale, notificationsCopy.statsPending)}</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
                   <Bell className="h-6 w-6 text-primary" />
@@ -230,11 +261,11 @@ export default function NotificationsPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Importantes</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{translate(locale, notificationsCopy.statsImportant)}</p>
                   <p className="text-3xl font-bold mt-1">
                     {notifications.filter(n => n.type === "warning" || n.type === "error").length}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">alertas</p>
+                  <p className="text-xs text-muted-foreground mt-1">{translate(locale, notificationsCopy.statsAlerts)}</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
                   <AlertTriangle className="h-6 w-6 text-amber-600" />
@@ -250,10 +281,10 @@ export default function NotificationsPage() {
             <div className="border-b px-6 pt-6">
               <TabsList className="w-full md:w-auto">
                 <TabsTrigger value="all" className="flex-1 md:flex-none">
-                  Todas
+                  {translate(locale, notificationsCopy.tabAll)}
                 </TabsTrigger>
                 <TabsTrigger value="unread" className="flex-1 md:flex-none">
-                  Não lidas
+                  {translate(locale, notificationsCopy.tabUnread)}
                   {unreadCount > 0 && (
                     <Badge className="ml-2 bg-primary/10 text-primary border-0 text-xs px-1.5 py-0">
                       {unreadCount}
@@ -261,7 +292,7 @@ export default function NotificationsPage() {
                   )}
                 </TabsTrigger>
                 <TabsTrigger value="important" className="flex-1 md:flex-none">
-                  Importantes
+                  {translate(locale, notificationsCopy.tabImportant)}
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -273,11 +304,11 @@ export default function NotificationsPage() {
                     <div className="w-16 h-16 rounded-full bg-muted/30 flex items-center justify-center mb-4">
                       <Bell className="h-8 w-8 text-muted-foreground" />
                     </div>
-                    <h3 className="text-lg font-semibold mb-1">Nenhuma notificação</h3>
+                    <h3 className="text-lg font-semibold mb-1">{translate(locale, notificationsCopy.emptyTitle)}</h3>
                     <p className="text-sm text-muted-foreground text-center">
                       {activeTab === "unread"
-                        ? "Você está em dia! Não há notificações não lidas."
-                        : "Não há notificações para exibir neste momento."}
+                        ? translate(locale, notificationsCopy.emptyUnread)
+                        : translate(locale, notificationsCopy.emptyAll)}
                     </p>
                   </div>
                 ) : (
@@ -330,7 +361,7 @@ export default function NotificationsPage() {
                                   {notification.title}
                                 </h3>
                                 <time className="text-xs text-muted-foreground flex-shrink-0">
-                                  {format(notification.createdAt, "HH:mm", { locale: ptBR })}
+                                  {timeFormatter.format(notification.createdAt)}
                                 </time>
                               </div>
                               <p className="text-sm text-muted-foreground mb-2">
@@ -338,7 +369,7 @@ export default function NotificationsPage() {
                               </p>
                               <div className="flex items-center gap-3">
                                 <time className="text-xs text-muted-foreground">
-                                  {format(notification.createdAt, "dd 'de' MMMM", { locale: ptBR })}
+                                  {dateFormatter.format(notification.createdAt)}
                                 </time>
                                 {notification.actionUrl && (
                                   <>
@@ -350,7 +381,7 @@ export default function NotificationsPage() {
                                         window.location.href = notification.actionUrl!;
                                       }}
                                     >
-                                      Ver detalhes
+                                      {translate(locale, notificationsCopy.viewDetails)}
                                       <ChevronRight className="h-3 w-3" />
                                     </button>
                                   </>
@@ -389,11 +420,10 @@ export default function NotificationsPage() {
             <Sparkles className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
             <div>
               <p className="font-medium text-sm text-blue-900 mb-1">
-                Página em desenvolvimento
+                {translate(locale, notificationsCopy.devTitle)}
               </p>
               <p className="text-xs text-blue-700">
-                Esta é uma interface de demonstração. A integração com o backend para
-                notificações reais está pendente e será implementada na próxima fase.
+                {translate(locale, notificationsCopy.devBody)}
               </p>
             </div>
           </div>
