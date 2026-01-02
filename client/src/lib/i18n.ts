@@ -701,6 +701,61 @@ export const rulesCopy = {
     "pt-BR": "Gerando...",
     "de-DE": "Wird erzeugt...",
     "en-US": "Generating..."
+  },
+  emptyTitle: {
+    "pt-BR": "Nenhuma regra configurada",
+    "de-DE": "Keine Regeln konfiguriert",
+    "en-US": "No rules configured"
+  },
+  emptyBody: {
+    "pt-BR": "Crie regras para categorizar suas transações automaticamente durante a importação.",
+    "de-DE": "Erstellen Sie Regeln, um Transaktionen beim Import automatisch zu kategorisieren.",
+    "en-US": "Create rules to automatically categorize transactions on import."
+  },
+  toastRuleCreated: {
+    "pt-BR": "Regra criada com sucesso",
+    "de-DE": "Regel erfolgreich erstellt",
+    "en-US": "Rule created successfully"
+  },
+  toastRuleUpdated: {
+    "pt-BR": "Regra atualizada",
+    "de-DE": "Regel aktualisiert",
+    "en-US": "Rule updated"
+  },
+  toastRuleRemoved: {
+    "pt-BR": "Regra removida",
+    "de-DE": "Regel entfernt",
+    "en-US": "Rule removed"
+  },
+  toastCreateError: {
+    "pt-BR": "Erro ao criar regra",
+    "de-DE": "Fehler beim Erstellen der Regel",
+    "en-US": "Failed to create rule"
+  },
+  toastExportEmpty: {
+    "pt-BR": "Nenhuma regra para exportar",
+    "de-DE": "Keine Regeln zum Export",
+    "en-US": "No rules to export"
+  },
+  toastFileEmpty: {
+    "pt-BR": "Arquivo vazio",
+    "de-DE": "Datei ist leer",
+    "en-US": "File is empty"
+  },
+  toastNoValidRules: {
+    "pt-BR": "Nenhuma regra válida para importar",
+    "de-DE": "Keine gültigen Regeln zum Import",
+    "en-US": "No valid rules to import"
+  },
+  toastImportSuccess: {
+    "pt-BR": "regras importadas com sucesso",
+    "de-DE": "Regeln erfolgreich importiert",
+    "en-US": "rules imported successfully"
+  },
+  toastFillRequired: {
+    "pt-BR": "Preencha nome e palavras-chave",
+    "de-DE": "Name und Schlüsselwörter ausfüllen",
+    "en-US": "Fill name and keywords"
   }
 };
 
@@ -774,6 +829,131 @@ export const settingsCopy = {
     "pt-BR": "Resumo",
     "de-DE": "Zusammenfassung",
     "en-US": "Summary"
+  },
+  previewUpload: {
+    "pt-BR": "Pré-visualizar upload",
+    "de-DE": "Upload-Vorschau",
+    "en-US": "Preview upload"
+  },
+  confirmImport: {
+    "pt-BR": "Confirmar importação",
+    "de-DE": "Import bestätigen",
+    "en-US": "Confirm import"
+  },
+  transactionsImports: {
+    "pt-BR": "Importações de transações",
+    "de-DE": "Transaktionsimporte",
+    "en-US": "Transaction imports"
+  },
+  noOpenTransactions: {
+    "pt-BR": "Nenhuma transação em aberto.",
+    "de-DE": "Keine offenen Transaktionen.",
+    "en-US": "No open transactions."
+  },
+  deleteData: {
+    "pt-BR": "Apagar dados",
+    "de-DE": "Daten löschen",
+    "en-US": "Delete data"
+  },
+  confirmAction: {
+    "pt-BR": "Confirmar",
+    "de-DE": "Bestätigen",
+    "en-US": "Confirm"
+  },
+  toastPreviewError: {
+    "pt-BR": "Erro na pré-visualização",
+    "de-DE": "Fehler bei der Vorschau",
+    "en-US": "Preview error"
+  },
+  toastCategoriesUpdated: {
+    "pt-BR": "Categorias atualizadas",
+    "de-DE": "Kategorien aktualisiert",
+    "en-US": "Categories updated"
+  },
+  toastApplyCategoriesError: {
+    "pt-BR": "Erro ao aplicar categorias",
+    "de-DE": "Fehler beim Anwenden der Kategorien",
+    "en-US": "Failed to apply categories"
+  },
+  toastAliasesUpdated: {
+    "pt-BR": "Aliases atualizados",
+    "de-DE": "Aliases aktualisiert",
+    "en-US": "Aliases updated"
+  },
+  toastApplyAliasesError: {
+    "pt-BR": "Erro ao aplicar aliases",
+    "de-DE": "Fehler beim Anwenden der Aliases",
+    "en-US": "Failed to apply aliases"
+  },
+  toastLogosImported: {
+    "pt-BR": "Logos importados",
+    "de-DE": "Logos importiert",
+    "en-US": "Logos imported"
+  },
+  toastLogosError: {
+    "pt-BR": "Erro ao importar logos",
+    "de-DE": "Fehler beim Import der Logos",
+    "en-US": "Failed to import logos"
+  },
+  toastLogosUpdated: {
+    "pt-BR": "Logos atualizados",
+    "de-DE": "Logos aktualisiert",
+    "en-US": "Logos updated"
+  },
+  toastDataReset: {
+    "pt-BR": "Dados resetados",
+    "de-DE": "Daten zurückgesetzt",
+    "en-US": "Data reset"
+  },
+  toastSelectCategory: {
+    "pt-BR": "Selecione uma categoria",
+    "de-DE": "Kategorie auswählen",
+    "en-US": "Select a category"
+  },
+  toastClassificationUpdated: {
+    "pt-BR": "Classificação atualizada",
+    "de-DE": "Klassifikation aktualisiert",
+    "en-US": "Classification updated"
+  },
+  toastEnterExpression: {
+    "pt-BR": "Informe ao menos uma expressão",
+    "de-DE": "Mindestens einen Ausdruck eingeben",
+    "en-US": "Enter at least one expression"
+  },
+  toastKeywordsUpdated: {
+    "pt-BR": "Palavras-chave atualizadas",
+    "de-DE": "Schlüsselwörter aktualisiert",
+    "en-US": "Keywords updated"
+  },
+  toastKeywordsError: {
+    "pt-BR": "Erro ao salvar palavras-chave",
+    "de-DE": "Fehler beim Speichern der Schlüsselwörter",
+    "en-US": "Failed to save keywords"
+  },
+  toastNegativeRequired: {
+    "pt-BR": "Informe ao menos uma expressão negativa",
+    "de-DE": "Mindestens einen negativen Ausdruck eingeben",
+    "en-US": "Enter at least one negative expression"
+  },
+  toastNegativeUpdated: {
+    "pt-BR": "Palavras-chave negativas atualizadas",
+    "de-DE": "Negative Schlüsselwörter aktualisiert",
+    "en-US": "Negative keywords updated"
+  },
+  toastNegativeError: {
+    "pt-BR": "Erro ao salvar negativas",
+    "de-DE": "Fehler beim Speichern der negativen Schlüsselwörter",
+    "en-US": "Failed to save negative keywords"
+  },
+  toastDangerSuccess: {
+    "pt-BR": "Os dados selecionados foram apagados com sucesso.",
+    "de-DE": "Ausgewählte Daten wurden gelöscht.",
+    "en-US": "Selected data deleted successfully."
+  },
+  toastDangerError: {
+    "pt-BR": "Erro ao apagar dados",
+    "de-DE": "Fehler beim Löschen der Daten",
+    "en-US": "Failed to delete data"
   }
 };
 

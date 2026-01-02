@@ -22,6 +22,7 @@ import { settingsApi, classificationApi, aliasApi, resetApi, dataImportsApi, aud
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { formatDateTime } from "@/lib/format";
 import { useLocale } from "@/hooks/use-locale";
 import { settingsCopy, t } from "@/lib/i18n";
 
@@ -323,7 +324,7 @@ export default function SettingsPage() {
         description: err.message || "Falha na validação do arquivo.",
         payload: err?.details || null
       });
-      toast({ title: "Erro na pré-visualização", description: err.message, variant: "destructive" });
+      toast({ title: t(locale, settingsCopy.toastPreviewError), description: err.message, variant: "destructive" });
     }
   };
 
@@ -341,7 +342,7 @@ export default function SettingsPage() {
         description: `${result.rows} linhas aplicadas.`,
         payload: result
       });
-      toast({ title: "Categorias atualizadas", description: `Linhas aplicadas: ${result.rows}` });
+      toast({ title: t(locale, settingsCopy.toastCategoriesUpdated), description: `Linhas aplicadas: ${result.rows}` });
       queryClient.invalidateQueries({ queryKey: ["classification-leaves"] });
       queryClient.invalidateQueries({ queryKey: ["classification-rules"] });
       queryClient.invalidateQueries({ queryKey: ["data-imports-last", "classification"] });
@@ -353,7 +354,7 @@ export default function SettingsPage() {
         description: err.message || "Não foi possível aplicar a importação.",
         payload: err?.details || null
       });
-      toast({ title: "Erro ao aplicar categorias", description: err.message, variant: "destructive" });
+      toast({ title: t(locale, settingsCopy.toastApplyCategoriesError), description: err.message, variant: "destructive" });
     }
   };
 
@@ -395,7 +396,7 @@ export default function SettingsPage() {
         description: err.message || "Falha na validação do arquivo.",
         payload: err?.details || null
       });
-      toast({ title: "Erro na pré-visualização", description: err.message, variant: "destructive" });
+      toast({ title: t(locale, settingsCopy.toastPreviewError), description: err.message, variant: "destructive" });
     }
   };
 
@@ -413,7 +414,7 @@ export default function SettingsPage() {
         description: `${result.rows} linhas aplicadas.`,
         payload: result
       });
-      toast({ title: "Aliases atualizados", description: `Linhas aplicadas: ${result.rows}` });
+      toast({ title: t(locale, settingsCopy.toastAliasesUpdated), description: `Linhas aplicadas: ${result.rows}` });
       queryClient.invalidateQueries({ queryKey: ["classification-review-queue"] });
       queryClient.invalidateQueries({ queryKey: ["data-imports-last", "aliases_key_desc"] });
     } catch (err: any) {
@@ -424,7 +425,7 @@ export default function SettingsPage() {
         description: err.message || "Não foi possível aplicar os aliases.",
         payload: err?.details || null
       });
-      toast({ title: "Erro ao aplicar aliases", description: err.message, variant: "destructive" });
+      toast({ title: t(locale, settingsCopy.toastApplyAliasesError), description: err.message, variant: "destructive" });
     }
   };
 
@@ -573,7 +574,7 @@ export default function SettingsPage() {
         description: err.message || "Falha na validação do arquivo.",
         payload: err?.details || null
       });
-      toast({ title: "Erro na pré-visualização", description: err.message, variant: "destructive" });
+      toast({ title: t(locale, settingsCopy.toastPreviewError), description: err.message, variant: "destructive" });
     }
   };
 
@@ -592,7 +593,7 @@ export default function SettingsPage() {
         description: `Processados: ${result.processed}`,
         payload: result
       });
-      toast({ title: "Logos importados", description: `Processados: ${result.processed}` });
+      toast({ title: t(locale, settingsCopy.toastLogosImported), description: `Processados: ${result.processed}` });
       queryClient.invalidateQueries({ queryKey: ["data-imports-last", "aliases_assets"] });
     } catch (err: any) {
       setLogosStatus({ type: "error", message: `Falha ao aplicar: ${err.message}` });
@@ -602,19 +603,19 @@ export default function SettingsPage() {
         description: err.message || "Não foi possível aplicar os logos.",
         payload: err?.details || null
       });
-      toast({ title: "Erro ao importar logos", description: err.message, variant: "destructive" });
+      toast({ title: t(locale, settingsCopy.toastLogosError), description: err.message, variant: "destructive" });
     }
   };
 
   const handleRefreshLogos = async () => {
     const result = await aliasApi.refreshLogos();
-    toast({ title: "Logos atualizados", description: `Total: ${result.total}` });
+    toast({ title: t(locale, settingsCopy.toastLogosUpdated), description: `Total: ${result.total}` });
     queryClient.invalidateQueries({ queryKey: ["transactions"] });
   };
 
   const handleResetData = async () => {
     await resetApi.resetData();
-    toast({ title: "Dados resetados", description: "Seu ambiente foi reinicializado." });
+    toast({ title: t(locale, settingsCopy.toastDataReset), description: "Seu ambiente foi reinicializado." });
     queryClient.invalidateQueries({ queryKey: ["transactions"] });
     queryClient.invalidateQueries({ queryKey: ["classification-review-queue"] });
     queryClient.invalidateQueries({ queryKey: ["classification-leaves"] });
@@ -624,7 +625,7 @@ export default function SettingsPage() {
   const handleReviewAssign = async (transactionId: string) => {
     const leafId = reviewSelections[transactionId];
     if (!leafId) {
-      toast({ title: "Selecione uma categoria", variant: "destructive" });
+      toast({ title: t(locale, settingsCopy.toastSelectCategory), variant: "destructive" });
       return;
     }
     const newExpression = reviewExpressions[transactionId]?.trim();
@@ -634,7 +635,7 @@ export default function SettingsPage() {
       newExpression: newExpression || undefined,
       createRule: Boolean(newExpression)
     });
-    toast({ title: "Classificação atualizada" });
+    toast({ title: t(locale, settingsCopy.toastClassificationUpdated) });
     setReviewExpressions((prev) => ({ ...prev, [transactionId]: "" }));
     queryClient.invalidateQueries({ queryKey: ["classification-review-queue"] });
   };
@@ -642,42 +643,42 @@ export default function SettingsPage() {
   const handleAppendKeywords = async (transactionId: string) => {
     const leafId = reviewSelections[transactionId];
     if (!leafId) {
-      toast({ title: "Selecione uma categoria", variant: "destructive" });
+      toast({ title: t(locale, settingsCopy.toastSelectCategory), variant: "destructive" });
       return;
     }
     const expressions = reviewKeywordDrafts[transactionId]?.trim() || "";
     if (!expressions) {
-      toast({ title: "Informe ao menos uma expressão", variant: "destructive" });
+      toast({ title: t(locale, settingsCopy.toastEnterExpression), variant: "destructive" });
       return;
     }
     try {
       await classificationApi.appendRuleKeywords({ leafId, expressions });
-      toast({ title: "Palavras-chave atualizadas" });
+      toast({ title: t(locale, settingsCopy.toastKeywordsUpdated) });
       setReviewKeywordDrafts((prev) => ({ ...prev, [transactionId]: "" }));
       queryClient.invalidateQueries({ queryKey: ["classification-rules"] });
     } catch (err: any) {
-      toast({ title: "Erro ao salvar palavras-chave", description: err.message, variant: "destructive" });
+      toast({ title: t(locale, settingsCopy.toastKeywordsError), description: err.message, variant: "destructive" });
     }
   };
 
   const handleAppendNegativeKeywords = async (transactionId: string) => {
     const leafId = reviewSelections[transactionId];
     if (!leafId) {
-      toast({ title: "Selecione uma categoria", variant: "destructive" });
+      toast({ title: t(locale, settingsCopy.toastSelectCategory), variant: "destructive" });
       return;
     }
     const expressions = reviewNegativeDrafts[transactionId]?.trim() || "";
     if (!expressions) {
-      toast({ title: "Informe ao menos uma expressão negativa", variant: "destructive" });
+      toast({ title: t(locale, settingsCopy.toastNegativeRequired), variant: "destructive" });
       return;
     }
     try {
       await classificationApi.appendRuleNegativeKeywords({ leafId, expressions });
-      toast({ title: "Palavras-chave negativas atualizadas" });
+      toast({ title: t(locale, settingsCopy.toastNegativeUpdated) });
       setReviewNegativeDrafts((prev) => ({ ...prev, [transactionId]: "" }));
       queryClient.invalidateQueries({ queryKey: ["classification-rules"] });
     } catch (err: any) {
-      toast({ title: "Erro ao salvar negativas", description: err.message, variant: "destructive" });
+      toast({ title: t(locale, settingsCopy.toastNegativeError), description: err.message, variant: "destructive" });
     }
   };
 
@@ -714,13 +715,13 @@ export default function SettingsPage() {
       setDangerLastDeletedAt(result.deletedAt);
       setDangerDeletedSummary(summary);
       setDangerStep("done");
-      toast({ title: "Os dados selecionados foram apagados com sucesso." });
+      toast({ title: t(locale, settingsCopy.toastDangerSuccess) });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["classification-review-queue"] });
       queryClient.invalidateQueries({ queryKey: ["classification-leaves"] });
       queryClient.invalidateQueries({ queryKey: ["classification-rules"] });
     } catch (err: any) {
-      toast({ title: "Erro ao apagar dados", description: err.message, variant: "destructive" });
+      toast({ title: t(locale, settingsCopy.toastDangerError), description: err.message, variant: "destructive" });
     }
   };
 
@@ -2156,7 +2157,7 @@ export default function SettingsPage() {
                             return (
                             <tr key={log.id} className="border-t">
                               <td className="px-3 py-2 whitespace-nowrap">
-                                {new Date(log.createdAt).toLocaleString("pt-BR")}
+                                {formatDateTime(locale, log.createdAt)}
                               </td>
                               <td className="px-3 py-2">{actionLabel}</td>
                               <td className="px-3 py-2">

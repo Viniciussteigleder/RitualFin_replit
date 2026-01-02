@@ -93,7 +93,7 @@ export default function RulesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rules"] });
       closeDialog();
-      toast({ title: "Regra criada com sucesso" });
+      toast({ title: t(locale, rulesCopy.toastRuleCreated) });
       setStatusInfo({
         variant: "success",
         title: "Regra criada",
@@ -101,7 +101,7 @@ export default function RulesPage() {
       });
     },
     onError: (error: any) => {
-      toast({ title: "Erro ao criar regra", description: error.message, variant: "destructive" });
+      toast({ title: t(locale, rulesCopy.toastCreateError), description: error.message, variant: "destructive" });
       setStatusInfo({
         variant: "error",
         title: "Falha ao criar regra",
@@ -116,7 +116,7 @@ export default function RulesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rules"] });
       closeDialog();
-      toast({ title: "Regra atualizada" });
+      toast({ title: t(locale, rulesCopy.toastRuleUpdated) });
       setStatusInfo({
         variant: "success",
         title: "Regra atualizada",
@@ -137,7 +137,7 @@ export default function RulesPage() {
     mutationFn: rulesApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rules"] });
-      toast({ title: "Regra removida" });
+      toast({ title: t(locale, rulesCopy.toastRuleRemoved) });
       setStatusInfo({
         variant: "success",
         title: "Regra removida",
@@ -217,7 +217,7 @@ export default function RulesPage() {
 
   const handleDownloadExcel = () => {
     if (rules.length === 0) {
-      toast({ title: "Nenhuma regra para exportar", variant: "destructive" });
+      toast({ title: t(locale, rulesCopy.toastExportEmpty), variant: "destructive" });
       return;
     }
 
@@ -328,7 +328,7 @@ export default function RulesPage() {
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
         if (jsonData.length === 0) {
-          toast({ title: "Arquivo vazio", variant: "destructive" });
+          toast({ title: t(locale, rulesCopy.toastFileEmpty), variant: "destructive" });
           setStatusInfo({
             variant: "error",
             title: "Importação falhou",
@@ -400,7 +400,7 @@ export default function RulesPage() {
         }
 
         if (rulesToImport.length === 0) {
-          toast({ title: "Nenhuma regra válida para importar", variant: "destructive" });
+          toast({ title: t(locale, rulesCopy.toastNoValidRules), variant: "destructive" });
           setStatusInfo({
             variant: "warning",
             title: "Importação ignorada",
@@ -426,7 +426,7 @@ export default function RulesPage() {
         queryClient.invalidateQueries({ queryKey: ["rules"] });
 
         if (failCount === 0) {
-          toast({ title: `${successCount} regras importadas com sucesso` });
+          toast({ title: `${successCount} ${t(locale, rulesCopy.toastImportSuccess)}` });
           setStatusInfo({
             variant: "success",
             title: "Importação concluída",
@@ -486,7 +486,7 @@ export default function RulesPage() {
 
   const handleSave = () => {
     if (!formData.name || !formData.keywords) {
-      toast({ title: "Preencha nome e palavras-chave", variant: "destructive" });
+      toast({ title: t(locale, rulesCopy.toastFillRequired), variant: "destructive" });
       return;
     }
     
