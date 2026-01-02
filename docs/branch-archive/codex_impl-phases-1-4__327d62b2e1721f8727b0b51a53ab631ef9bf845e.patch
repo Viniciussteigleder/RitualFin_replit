@@ -1,0 +1,2835 @@
+From 88461b2174096a48774194a345495af2338c2839 Mon Sep 17 00:00:00 2001
+From: Vinicius <vinicius.steigleder@gmail.com>
+Date: Mon, 29 Dec 2025 17:04:16 +0100
+Subject: [PATCH 1/7] Phase 1: AI usage tracking
+
+---
+ docs/_codex/CODEX_ACTIVITY_LOG.md |  65 ++++++++++++
+ docs/_codex/DECISION_LOG.md       |  24 +++++
+ docs/_codex/DIFF_SUMMARY.md       |  17 ++++
+ docs/_codex/ISSUES_REGISTER.md    |   7 ++
+ docs/_codex/PLAN_LOG.md           |  31 ++++++
+ docs/_codex/QA_NOTES.md           |  17 ++++
+ server/ai-logger.ts               |  57 +++++++++++
+ server/ai-usage.ts                |  61 ++++--------
+ server/routes.ts                  | 159 ++++++++++++++++++++++++++++--
+ server/storage.ts                 |  10 +-
+ shared/schema.ts                  |  27 +++--
+ 11 files changed, 407 insertions(+), 68 deletions(-)
+ create mode 100644 server/ai-logger.ts
+
+diff --git a/docs/_codex/CODEX_ACTIVITY_LOG.md b/docs/_codex/CODEX_ACTIVITY_LOG.md
+index 20e606b..87ccfe3 100644
+--- a/docs/_codex/CODEX_ACTIVITY_LOG.md
++++ b/docs/_codex/CODEX_ACTIVITY_LOG.md
+@@ -242,3 +242,68 @@
+   - Fixed TypeScript AbortError typing in batch utils.
+ - Observations & risks:
+   - Dev server cannot start without DATABASE_URL; endpoint smoke test skipped.
++
++## 2025-12-29T15:50:34Z (UTC)
++- Session goal: Execute phases 1-4 from BATCH_EXECUTION_INSTRUCTIONS (C.4, C.5, C.7, C.6) on branch codex/impl-phases-1-4.
++- Approval gate status: User instructed autonomous execution without confirmation.
++- Commands executed (READ-ONLY):
++  - ls
++  - cat CLAUDE.md
++  - cat docs/_codex/codex_instructions.md
++  - cat docs/_codex/BATCH_EXECUTION_INSTRUCTIONS.md
++  - cat docs/_codex/FEATURE_IMPLEMENTATION_PLAN.md
++  - cat docs/_codex/RESOLVED_DECISIONS.md
++  - cat docs/ARCHITECTURE_AND_AI_LOGIC.md
++  - cat docs/IMPLEMENTATION_LOG.md
++  - rg -n "SECURITY_AUDIT" docs
++  - cat docs/SECURITY_AUDIT_2025-12-29.md
++  - rg -n "Phase|PHASE" docs/_codex/BATCH_EXECUTION_INSTRUCTIONS.md
++  - sed -n '1,220p' docs/_codex/BATCH_EXECUTION_INSTRUCTIONS.md
++  - ls docs/_codex
++  - tail -n 80 docs/_codex/CODEX_ACTIVITY_LOG.md
++  - rg -n "ai_usage_logs|aiUsageLogs" shared/schema.ts server
++  - rg -n "logAIUsage|ai-logger" server
++  - sed -n '1,140p' shared/schema.ts
++  - sed -n '1,260p' server/storage.ts
++  - rg -n "ai usage|aiUsage|aiUsageLogs|usage" server/routes.ts
++  - sed -n '1980,2105p' server/routes.ts
++  - rg -n "notifications" server/routes.ts
++  - sed -n '70,190p' server/routes.ts
++  - rg -n "parseCSVStreaming|csv-parse|papaparse|progress" server/csv-parser.ts server/routes.ts
++  - rg -n "ai/chat|SSE|event-stream|stream" server/routes.ts
++  - rg -n "notifications|ai/usage|ai usage" client/src
++  - sed -n '1,220p' docs/_codex/BATCH_EXECUTION_INSTRUCTIONS.md
++  - tail -n 120 docs/_codex/PLAN_LOG.md
++  - date -u +%Y-%m-%dT%H:%M:%SZ
++- Commands executed (MUTATING):
++  - git checkout main
++  - git pull
++  - git checkout -b codex/impl-phases-1-4
++  - git branch --show-current
++  - git status -sb
++  - update docs/_codex/PLAN_LOG.md
++  - update docs/_codex/CODEX_ACTIVITY_LOG.md
++- Notes:
++  - BATCH_EXECUTION_INSTRUCTIONS does not enumerate "phases" explicitly; interpreting phases 1-4 as C.4, C.5, C.7, C.6 per spec.
++
++## 2025-12-29T16:03:03Z (UTC)
++- Session goal: Phase 1 (C.4) AI usage tracking implementation and QA.
++- Commands executed (READ-ONLY):
++  - cat server/logger.ts
++  - rg -n "logger.error" server/routes.ts
++- Commands executed (MUTATING):
++  - apply_patch (shared/schema.ts, server/storage.ts, server/ai-usage.ts, server/routes.ts)
++  - create server/ai-logger.ts
++  - npm run check
++  - npm run dev (background)
++  - curl -s http://localhost:5000/api/health
++  - tail -n 60 /tmp/ritualfin-dev.log
++  - npm run db:push
++- Summary of changes:
++  - Aligned `ai_usage_logs` schema to C.4 spec and added logAIUsage wrapper.
++  - Added AI suggest-keyword/bulk-categorize endpoints and updated AI usage retrieval.
++  - Updated OpenAI usage logging to map to new operation enum.
++- QA results:
++  - `npm run check` passed.
++  - `npm run db:push` failed: missing `DATABASE_URL`.
++  - `npm run dev` failed: missing `DATABASE_URL`; endpoint smoke tests skipped.
+diff --git a/docs/_codex/DECISION_LOG.md b/docs/_codex/DECISION_LOG.md
+index c96cbf4..3148431 100644
+--- a/docs/_codex/DECISION_LOG.md
++++ b/docs/_codex/DECISION_LOG.md
+@@ -71,3 +71,27 @@
+ - Rationale: Avoid misleading cost data for models without confirmed pricing.
+ - Risks: Some usage rows will have null cost estimates until pricing is added.
+ - Follow-ups: Add pricing entries when model rates are confirmed.
++
++## 2025-12-29T16:03:03Z (UTC)
++- Decision: Interpret “phases 1–4” in BATCH_EXECUTION_INSTRUCTIONS as packages C.4, C.5, C.7, and C.6.
++- Alternatives considered: Treat pre-flight + Batches 1–3 as phases; stop for clarification.
++- Tradeoffs: Removes ambiguity and allows execution vs. potential mismatch with author intent.
++- Rationale: Document contains only those four execution packages across Batches 1–3.
++- Risks: If “phases” meant a different grouping, scope may diverge.
++- Follow-ups: None unless user clarifies.
++
++## 2025-12-29T16:03:03Z (UTC)
++- Decision: Log AI usage against `user.id` (UUID) instead of literal "demo" to satisfy foreign key constraints.
++- Alternatives considered: Insert "demo" literal and relax FK, or skip logging when userId absent.
++- Tradeoffs: Strict FK integrity vs. slight divergence from spec placeholder.
++- Rationale: `ai_usage_logs.user_id` references `users.id`; using the UUID prevents insert failures.
++- Risks: If downstream expects "demo" literal, reporting may differ.
++- Follow-ups: Replace with real auth userId when auth is implemented.
++
++## 2025-12-29T16:03:03Z (UTC)
++- Decision: Map existing OpenAI feature tags to `operation` values (categorize/chat/bulk) when logging usage.
++- Alternatives considered: Drop logging from legacy wrappers or add a new enum value.
++- Tradeoffs: Simpler schema alignment vs. less granular operation labels.
++- Rationale: Preserve existing logging call sites while matching the spec enum.
++- Risks: Some operations may be bucketed as `categorize` even if not a perfect match.
++- Follow-ups: Refine mapping once feature taxonomy is finalized.
+diff --git a/docs/_codex/DIFF_SUMMARY.md b/docs/_codex/DIFF_SUMMARY.md
+index 191b9e3..ddd2d61 100644
+--- a/docs/_codex/DIFF_SUMMARY.md
++++ b/docs/_codex/DIFF_SUMMARY.md
+@@ -115,3 +115,20 @@
+ - Modified: docs/_codex/CODEX_ACTIVITY_LOG.md, docs/_codex/DECISION_LOG.md, docs/_codex/ISSUES_REGISTER.md
+   - Change: Logged session constraints, decisions, and missing docs.
+   - Reason: Codex governance.
++
++## 2025-12-29T16:03:03Z (UTC)
++- Modified: shared/schema.ts
++  - Change: Reworked `ai_usage_logs` schema to match C.4 spec (operation/tokens/cost/modelUsed).
++  - Reason: Align AI usage tracking schema with Batch 1 C.4.
++- New: server/ai-logger.ts
++  - Change: Added logAIUsage wrapper with pricing-based cost calculation.
++  - Reason: Centralize AI usage logging per spec.
++- Modified: server/ai-usage.ts
++  - Change: Adapted OpenAI usage helper to call logAIUsage with operation mapping.
++  - Reason: Preserve existing OpenAI instrumentation while using new schema.
++- Modified: server/routes.ts
++  - Change: Added `/api/ai/suggest-keyword`, `/api/ai/bulk-categorize`, and upgraded `/api/ai/usage` with date filtering and totals.
++  - Reason: Implement Batch 1 C.4 endpoints and logging integration.
++- Modified: server/storage.ts
++  - Change: Updated AI usage log types to new schema names.
++  - Reason: Align storage types with schema changes.
+diff --git a/docs/_codex/ISSUES_REGISTER.md b/docs/_codex/ISSUES_REGISTER.md
+index 37797d9..7c7e761 100644
+--- a/docs/_codex/ISSUES_REGISTER.md
++++ b/docs/_codex/ISSUES_REGISTER.md
+@@ -78,3 +78,10 @@
+   - Status: Open
+   - Owner: Claude
+   - Mitigation: Restore or confirm canonical locations for missing docs.
++
++## 2025-12-29T16:03:03Z (UTC)
++- Issue: `DATABASE_URL` missing blocks `npm run db:push` and local dev server (`npm run dev`), preventing endpoint smoke tests.
++  - Severity: Medium
++  - Status: Open
++  - Owner: Codex
++  - Mitigation: Provide a valid `DATABASE_URL` for local QA; rerun db:push and smoke tests.
+diff --git a/docs/_codex/PLAN_LOG.md b/docs/_codex/PLAN_LOG.md
+index 5cab4af..74b8231 100644
+--- a/docs/_codex/PLAN_LOG.md
++++ b/docs/_codex/PLAN_LOG.md
+@@ -29,3 +29,34 @@
+ - Status: Approved
+ - Scope: docs/_codex/CODEX_HANDOFF_TO_CLAUDE.md, docs/_codex/CODEX_ACTIVITY_LOG.md, docs/_codex/DECISION_LOG.md, docs/_codex/ISSUES_REGISTER.md, docs/_codex/DIFF_SUMMARY.md, docs/_codex/QA_NOTES.md.
+ - Approval source: User instruction to proceed (2025-12-29T13:07:57Z).
++
++## 2025-12-29T15:50:34Z (UTC)
++- Plan: Execute phases 1-4 from docs/_codex/BATCH_EXECUTION_INSTRUCTIONS.md (interpreted as packages C.4, C.5, C.7, C.6).
++- Status: Approved (autonomous execution requested by user).
++- Goal: Deliver AI usage tracking, notification system, async CSV processing with progress, and AI chat streaming backend with documentation and QA.
++- In Scope:
++  - C.4: AI usage tracking schema, logging wrapper, endpoint, route integration.
++  - C.5: Notifications schema + storage + CRUD endpoints per spec.
++  - C.7: Streaming CSV parsing with progress reporting and upload progress endpoint.
++  - C.6: AI assistant SSE endpoint + context assembly + conversation storage.
++  - Required docs/_codex updates and QA logs after each phase.
++- Out of Scope:
++  - Auth/RLS changes, deployment steps, UI redesign, new product features beyond specs.
++- Dependencies:
++  - Existing OpenAI client, database access, Drizzle schema updates, node/npm.
++  - date-fns for chat context (per spec).
++- Data implications:
++  - Schema changes for AI usage logs, notifications, uploads progress, conversations/messages.
++  - Potential backfill not required; new tables/columns created via db:push.
++- Risks:
++  - Spec mismatch with existing implementation; may require refactor to align.
++  - Streaming CSV and SSE endpoints may impact performance if not handled carefully.
++  - OpenAI usage logging must not block responses.
++- Acceptance criteria:
++  - All package acceptance criteria in BATCH_EXECUTION_INSTRUCTIONS.md met for C.4/C.5/C.7/C.6.
++  - QA commands executed and logged after each phase.
++  - Documentation updated under docs/_codex and completion summary produced.
++- QA approach:
++  - Run npm run check + dev smoke + endpoint smoke tests after each phase.
++  - Record results in docs/_codex/QA_NOTES.md.
++- Approval source: User instruction to execute phases 1-4 without confirmation (2025-12-29).
+diff --git a/docs/_codex/QA_NOTES.md b/docs/_codex/QA_NOTES.md
+index a3401e4..aaac3e5 100644
+--- a/docs/_codex/QA_NOTES.md
++++ b/docs/_codex/QA_NOTES.md
+@@ -64,3 +64,20 @@
+   - No secrets printed in test output.
+ - Failures: Missing `DATABASE_URL` prevents dev server start.
+ - Repro steps: Set `DATABASE_URL`, rerun `npm run dev`, then `curl http://localhost:5000/api/health`.
++
++## 2025-12-29T16:03:03Z (UTC)
++- Environment: local
++- Commands executed (READ-ONLY): none.
++- Commands executed (MUTATING):
++  - `npm run check`
++  - `npm run db:push`
++  - `npm run dev` (via background run)
++  - `curl http://localhost:5000/api/health`
++  - `tail -n 60 /tmp/ritualfin-dev.log`
++- Test results:
++  - `npm run check` passed.
++  - `npm run db:push` failed: `DATABASE_URL` not set.
++  - `npm run dev` failed: `DATABASE_URL` not set; server did not start.
++  - Endpoint smoke tests (including `/api/health` and AI endpoints) skipped due to dev server failure.
++- Failures: Missing `DATABASE_URL` blocked db:push and local dev server.
++- Repro steps: Set `DATABASE_URL`, rerun `npm run db:push` and `npm run dev`, then hit `/api/health` and AI endpoints.
+diff --git a/server/ai-logger.ts b/server/ai-logger.ts
+new file mode 100644
+index 0000000..e692f7d
+--- /dev/null
++++ b/server/ai-logger.ts
+@@ -0,0 +1,57 @@
++import { db } from "./db";
++import { aiUsageLogs } from "@shared/schema";
++import { logger } from "./logger";
++
++// OpenAI pricing as of January 2025
++// Source: https://openai.com/pricing
++const PRICING = {
++  "gpt-4": {
++    input: 0.03 / 1000,   // $0.03 per 1K input tokens
++    output: 0.06 / 1000   // $0.06 per 1K output tokens
++  },
++  "gpt-4o-mini": {
++    input: 0.00015 / 1000,  // $0.00015 per 1K input tokens
++    output: 0.0006 / 1000   // $0.0006 per 1K output tokens
++  },
++};
++
++/**
++ * Log AI usage to database with cost calculation
++ * Call AFTER successful OpenAI API response
++ *
++ * @param userId - User ID (currently "demo")
++ * @param operation - Type of operation: "categorize" | "chat" | "bulk"
++ * @param tokensUsed - Total tokens from response.usage.total_tokens
++ * @param modelUsed - Model identifier (default: "gpt-4o-mini")
++ */
++export async function logAIUsage(
++  userId: string,
++  operation: "categorize" | "chat" | "bulk",
++  tokensUsed: number,
++  modelUsed: string = "gpt-4o-mini"
++): Promise<void> {
++  try {
++    const pricing = PRICING[modelUsed as keyof typeof PRICING] || PRICING["gpt-4o-mini"];
++
++    // Simplified cost calculation
++    // Assumes 50/50 split between input and output tokens
++    // More accurate: track input/output separately via response.usage
++    const avgTokenPrice = (pricing.input + pricing.output) / 2;
++    const cost = tokensUsed * avgTokenPrice;
++
++    await db.insert(aiUsageLogs).values({
++      userId,
++      operation,
++      tokensUsed,
++      cost: cost.toFixed(6),
++      modelUsed,
++    });
++
++    logger.info(`AI usage logged: ${operation}, ${tokensUsed} tokens, $${cost.toFixed(6)}`);
++  } catch (error) {
++    logger.error("ai_usage_log_failed", {
++      error: error instanceof Error ? error.message : String(error),
++    });
++    // Don't throw - logging failure shouldn't break AI features
++  }
++}
+diff --git a/server/ai-usage.ts b/server/ai-usage.ts
+index aad8500..8d9c90e 100644
+--- a/server/ai-usage.ts
++++ b/server/ai-usage.ts
+@@ -1,4 +1,4 @@
+-import { storage } from "./storage";
++import { logAIUsage } from "./ai-logger";
+ 
+ type OpenAIUsage = {
+   prompt_tokens?: number | null;
+@@ -6,32 +6,18 @@ type OpenAIUsage = {
+   total_tokens?: number | null;
+ };
+ 
+-const MODEL_PRICING_PER_MILLION: Record<string, { input: number; output: number }> = {
+-  "gpt-4o-mini": { input: 0.15, output: 0.6 },
+-};
+-
+-function estimateOpenAICost(
+-  model: string,
+-  usage?: OpenAIUsage
+-): number | null {
+-  if (!usage) return null;
+-  const pricing = MODEL_PRICING_PER_MILLION[model];
+-  if (!pricing) return null;
+-
+-  const promptTokens = usage.prompt_tokens ?? 0;
+-  const completionTokens = usage.completion_tokens ?? 0;
+-  if (promptTokens === 0 && completionTokens === 0) return null;
+-
+-  const inputCost = (promptTokens / 1_000_000) * pricing.input;
+-  const outputCost = (completionTokens / 1_000_000) * pricing.output;
+-  return Number((inputCost + outputCost).toFixed(6));
++function getTokensUsed(usage?: OpenAIUsage): number {
++  if (!usage) return 0;
++  const total = usage.total_tokens ?? null;
++  if (typeof total === "number") return total;
++  return (usage.prompt_tokens ?? 0) + (usage.completion_tokens ?? 0);
+ }
+ 
+-function normalizeErrorMessage(error: unknown): string | null {
+-  if (!error) return null;
+-  const message = error instanceof Error ? error.message : String(error);
+-  if (!message) return null;
+-  return message.slice(0, 300);
++function mapFeatureTagToOperation(featureTag: string): "categorize" | "chat" | "bulk" {
++  const normalized = featureTag.toLowerCase();
++  if (normalized.includes("bulk")) return "bulk";
++  if (normalized.includes("chat")) return "chat";
++  return "categorize";
+ }
+ 
+ export async function logOpenAIUsage(params: {
+@@ -43,22 +29,17 @@ export async function logOpenAIUsage(params: {
+   status?: "success" | "error";
+   error?: unknown;
+ }): Promise<void> {
+-  try {
+-    await storage.createAiUsageLog({
+-      userId: params.userId ?? null,
+-      sessionId: params.sessionId ?? null,
+-      featureTag: params.featureTag,
+-      model: params.model,
+-      promptTokens: params.usage?.prompt_tokens ?? null,
+-      completionTokens: params.usage?.completion_tokens ?? null,
+-      totalTokens: params.usage?.total_tokens ?? null,
+-      costEstimateUsd: estimateOpenAICost(params.model, params.usage),
+-      status: params.status ?? "success",
+-      errorMessage: normalizeErrorMessage(params.error),
+-    });
+-  } catch (logError) {
+-    console.warn("Failed to log AI usage:", logError);
++  if (params.status === "error") {
++    return;
+   }
++
++  const tokensUsed = getTokensUsed(params.usage);
++  if (tokensUsed <= 0) return;
++
++  const userId = params.userId ?? "demo";
++  const operation = mapFeatureTagToOperation(params.featureTag);
++
++  await logAIUsage(userId, operation, tokensUsed, params.model);
+ }
+ 
+ export async function withOpenAIUsage<T>(
+diff --git a/server/routes.ts b/server/routes.ts
+index 233bf37..82c5302 100644
+--- a/server/routes.ts
++++ b/server/routes.ts
+@@ -1,14 +1,15 @@
+ import type { Express, Request, Response } from "express";
+ import { createServer, type Server } from "http";
+ import { storage } from "./storage";
+-import { insertRuleSchema, insertGoalSchema, insertCategoryGoalSchema, insertRitualSchema, type MerchantMetadata, type UpdateNotification } from "@shared/schema";
++import { aiUsageLogs, insertRuleSchema, insertGoalSchema, insertCategoryGoalSchema, insertRitualSchema, type MerchantMetadata, type UpdateNotification } from "@shared/schema";
+ import { z } from "zod";
+ import { parseCSV, type ParsedTransaction } from "./csv-parser";
+ import { categorizeTransaction, suggestKeyword, AI_SEED_RULES } from "./rules-engine";
+ import OpenAI from "openai";
+ import { logger } from "./logger";
+ import { withOpenAIUsage } from "./ai-usage";
+-import { sql } from "drizzle-orm";
++import { logAIUsage } from "./ai-logger";
++import { sql, eq, gte, lte, desc, and } from "drizzle-orm";
+ import { db } from "./db";
+ 
+ const openai = process.env.OPENAI_API_KEY
+@@ -2005,16 +2006,160 @@ export async function registerRoutes(
+   });
+ 
+   // ===== AI KEYWORD ANALYSIS =====
++  app.post("/api/ai/suggest-keyword", async (req: Request, res: Response) => {
++    try {
++      const user = await storage.getUserByUsername("demo");
++      if (!user) {
++        return res.status(401).json({ error: "Usuário não encontrado" });
++      }
++
++      if (!openai) {
++        return res.status(503).json({ error: "OpenAI não configurado" });
++      }
++
++      const { description, amount } = req.body;
++      if (!description || typeof amount !== "number") {
++        return res.status(400).json({ error: "Missing required fields: description, amount" });
++      }
++
++      const response = await openai.chat.completions.create({
++        model: "gpt-4o-mini",
++        messages: [
++          {
++            role: "system",
++            content: "Você sugere palavras-chave curtas para categorizar transações financeiras. Responda apenas com a palavra-chave."
++          },
++          {
++            role: "user",
++            content: `Descrição: ${description}\nValor: ${amount}`
++          }
++        ],
++        temperature: 0.3,
++      });
++
++      // Log AI usage
++      await logAIUsage(
++        user.id,
++        "categorize",
++        response.usage?.total_tokens || 0,
++        "gpt-4o-mini"
++      );
++
++      const keyword = response.choices[0]?.message?.content?.trim() || "";
++      res.json({ keyword });
++    } catch (error: any) {
++      logger.error("ai_suggest_keyword_failed", {
++        error: error instanceof Error ? error.message : String(error),
++      });
++      res.status(500).json({ error: error.message });
++    }
++  });
++
++  app.post("/api/ai/bulk-categorize", async (req: Request, res: Response) => {
++    try {
++      const user = await storage.getUserByUsername("demo");
++      if (!user) {
++        return res.status(401).json({ error: "Usuário não encontrado" });
++      }
++
++      if (!openai) {
++        return res.status(503).json({ error: "OpenAI não configurado" });
++      }
++
++      const { transactions } = req.body;
++      if (!Array.isArray(transactions) || transactions.length === 0) {
++        return res.status(400).json({ error: "transactions must be a non-empty array" });
++      }
++
++      const payload = transactions.map((tx, index) => ({
++        id: tx.id ?? String(index),
++        description: tx.description,
++        amount: tx.amount
++      }));
++
++      const response = await openai.chat.completions.create({
++        model: "gpt-4o-mini",
++        messages: [
++          {
++            role: "system",
++            content: "Você sugere palavras-chave curtas para categorizar transações financeiras. Retorne um array JSON com {id, keyword}."
++          },
++          {
++            role: "user",
++            content: JSON.stringify(payload)
++          }
++        ],
++        temperature: 0.3,
++      });
++
++      // Log AI usage
++      await logAIUsage(
++        user.id,
++        "bulk",
++        response.usage?.total_tokens || 0,
++        "gpt-4o-mini"
++      );
++
++      const content = response.choices[0]?.message?.content || "[]";
++      let suggestions = [];
++      try {
++        suggestions = JSON.parse(content.replace(/```json\n?|\n?```/g, ""));
++      } catch (parseError) {
++        logger.error("ai_bulk_categorize_parse_failed", {
++          error: parseError instanceof Error ? parseError.message : String(parseError),
++        });
++      }
++
++      res.json({ suggestions });
++    } catch (error: any) {
++      logger.error("ai_bulk_categorize_failed", {
++        error: error instanceof Error ? error.message : String(error),
++      });
++      res.status(500).json({ error: error.message });
++    }
++  });
++
++  // GET /api/ai/usage - Retrieve AI usage logs with filtering
+   app.get("/api/ai/usage", async (req: Request, res: Response) => {
+     try {
++      const { startDate, endDate } = req.query;
+       const user = await storage.getUserByUsername("demo");
+-      if (!user) return res.json([]);
++      if (!user) {
++        return res.status(401).json({ error: "Usuário não encontrado" });
++      }
+ 
+-      const limitParam = req.query.limit ? Number(req.query.limit) : undefined;
+-      const limit = Number.isFinite(limitParam) && limitParam ? Math.min(Math.max(limitParam, 1), 200) : 100;
+-      const logs = await storage.getAiUsageLogs(user.id, limit);
+-      res.json(logs);
++      const conditions = [eq(aiUsageLogs.userId, user.id)];
++
++      if (startDate) {
++        const start = new Date(startDate as string);
++        conditions.push(gte(aiUsageLogs.createdAt, start));
++      }
++      if (endDate) {
++        const end = new Date(endDate as string);
++        end.setHours(23, 59, 59, 999);
++        conditions.push(lte(aiUsageLogs.createdAt, end));
++      }
++
++      const whereClause = conditions.length === 1 ? conditions[0] : and(...conditions);
++
++      const logs = await db
++        .select()
++        .from(aiUsageLogs)
++        .where(whereClause)
++        .orderBy(desc(aiUsageLogs.createdAt));
++
++      const totalTokens = logs.reduce((sum, log) => sum + log.tokensUsed, 0);
++      const totalCost = logs.reduce((sum, log) => sum + parseFloat(String(log.cost)), 0);
++
++      res.json({
++        logs,
++        totalTokens,
++        totalCost: totalCost.toFixed(6),
++      });
+     } catch (error: any) {
++      logger.error("ai_usage_fetch_failed", {
++        error: error instanceof Error ? error.message : String(error),
++      });
+       res.status(500).json({ error: error.message });
+     }
+   });
+diff --git a/server/storage.ts b/server/storage.ts
+index 19e51bc..8c1c5ff 100644
+--- a/server/storage.ts
++++ b/server/storage.ts
+@@ -15,7 +15,7 @@ import {
+   type CategoryGoal, type InsertCategoryGoal,
+   type Ritual, type InsertRitual,
+   type Settings, type InsertSettings, type UpdateSettings,
+-  type AiUsageLog, type InsertAiUsageLog,
++  type AIUsageLog, type InsertAIUsageLog,
+   type Notification, type InsertNotification, type UpdateNotification
+ } from "@shared/schema";
+ import { db } from "./db";
+@@ -33,8 +33,8 @@ export interface IStorage {
+   updateSettings(userId: string, data: UpdateSettings): Promise<Settings | undefined>;
+ 
+   // AI Usage Logs
+-  createAiUsageLog(log: InsertAiUsageLog): Promise<AiUsageLog>;
+-  getAiUsageLogs(userId: string, limit?: number): Promise<AiUsageLog[]>;
++  createAiUsageLog(log: InsertAIUsageLog): Promise<AIUsageLog>;
++  getAiUsageLogs(userId: string, limit?: number): Promise<AIUsageLog[]>;
+ 
+   // Notifications
+   getNotifications(userId: string, limit?: number): Promise<Notification[]>;
+@@ -194,12 +194,12 @@ export class DatabaseStorage implements IStorage {
+   }
+ 
+   // AI Usage Logs
+-  async createAiUsageLog(log: InsertAiUsageLog): Promise<AiUsageLog> {
++  async createAiUsageLog(log: InsertAIUsageLog): Promise<AIUsageLog> {
+     const [created] = await db.insert(aiUsageLogs).values(log).returning();
+     return created;
+   }
+ 
+-  async getAiUsageLogs(userId: string, limit = 100): Promise<AiUsageLog[]> {
++  async getAiUsageLogs(userId: string, limit = 100): Promise<AIUsageLog[]> {
+     return db
+       .select()
+       .from(aiUsageLogs)
+diff --git a/shared/schema.ts b/shared/schema.ts
+index 38f93b0..a81e3fa 100644
+--- a/shared/schema.ts
++++ b/shared/schema.ts
+@@ -1,5 +1,5 @@
+ import { sql, relations } from "drizzle-orm";
+-import { pgTable, text, varchar, integer, boolean, real, timestamp, pgEnum } from "drizzle-orm/pg-core";
++import { pgTable, text, varchar, integer, boolean, real, timestamp, pgEnum, serial, numeric } from "drizzle-orm/pg-core";
+ import { createInsertSchema } from "drizzle-zod";
+ import { z } from "zod";
+ 
+@@ -47,20 +47,15 @@ export type InsertSettings = z.infer<typeof insertSettingsSchema>;
+ export type UpdateSettings = z.infer<typeof updateSettingsSchema>;
+ export type Settings = typeof settings.$inferSelect;
+ 
+-// AI Usage Logs (safe metadata only)
++// AI Usage Logs (token usage + cost)
+ export const aiUsageLogs = pgTable("ai_usage_logs", {
+-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+-  userId: varchar("user_id").references(() => users.id),
+-  sessionId: text("session_id"),
+-  featureTag: text("feature_tag").notNull(),
+-  model: text("model").notNull(),
+-  promptTokens: integer("prompt_tokens"),
+-  completionTokens: integer("completion_tokens"),
+-  totalTokens: integer("total_tokens"),
+-  costEstimateUsd: real("cost_estimate_usd"),
+-  status: text("status").notNull().default("success"),
+-  errorMessage: text("error_message"),
+-  createdAt: timestamp("created_at").notNull().defaultNow(),
++  id: serial("id").primaryKey(),
++  userId: text("user_id").notNull().references(() => users.id),
++  operation: text("operation", { enum: ["categorize", "chat", "bulk"] }).notNull(),
++  tokensUsed: integer("tokens_used").notNull(),
++  cost: numeric("cost", { precision: 10, scale: 6 }).notNull(),
++  modelUsed: text("model_used").notNull(),
++  createdAt: timestamp("created_at").defaultNow().notNull(),
+ });
+ 
+ export const aiUsageLogsRelations = relations(aiUsageLogs, ({ one }) => ({
+@@ -68,8 +63,8 @@ export const aiUsageLogsRelations = relations(aiUsageLogs, ({ one }) => ({
+ }));
+ 
+ export const insertAiUsageLogSchema = createInsertSchema(aiUsageLogs).omit({ id: true, createdAt: true });
+-export type InsertAiUsageLog = z.infer<typeof insertAiUsageLogSchema>;
+-export type AiUsageLog = typeof aiUsageLogs.$inferSelect;
++export type InsertAIUsageLog = z.infer<typeof insertAiUsageLogSchema>;
++export type AIUsageLog = typeof aiUsageLogs.$inferSelect;
+ 
+ // Notifications (in-app only)
+ export const notifications = pgTable("notifications", {
+-- 
+2.50.1 (Apple Git-155)
+
+
+From 88e8d6f27801f651b4984c760833a2071c030a4d Mon Sep 17 00:00:00 2001
+From: Vinicius <vinicius.steigleder@gmail.com>
+Date: Mon, 29 Dec 2025 17:07:49 +0100
+Subject: [PATCH 2/7] Phase 2: Notifications backend
+
+---
+ docs/_codex/CODEX_ACTIVITY_LOG.md | 19 ++++++++++
+ docs/_codex/DIFF_SUMMARY.md       | 11 ++++++
+ docs/_codex/QA_NOTES.md           | 17 +++++++++
+ server/routes.ts                  | 61 ++++++++++++++++++++-----------
+ server/storage.ts                 |  8 ++--
+ shared/schema.ts                  | 21 ++++++-----
+ 6 files changed, 102 insertions(+), 35 deletions(-)
+
+diff --git a/docs/_codex/CODEX_ACTIVITY_LOG.md b/docs/_codex/CODEX_ACTIVITY_LOG.md
+index 87ccfe3..0040adc 100644
+--- a/docs/_codex/CODEX_ACTIVITY_LOG.md
++++ b/docs/_codex/CODEX_ACTIVITY_LOG.md
+@@ -307,3 +307,22 @@
+   - `npm run check` passed.
+   - `npm run db:push` failed: missing `DATABASE_URL`.
+   - `npm run dev` failed: missing `DATABASE_URL`; endpoint smoke tests skipped.
++
++## 2025-12-29T16:07:04Z (UTC)
++- Session goal: Phase 2 (C.5) notification system implementation and QA.
++- Commands executed (READ-ONLY):
++  - rg -n "UpdateNotification" -g"*.ts"
++- Commands executed (MUTATING):
++  - apply_patch (shared/schema.ts, server/storage.ts, server/routes.ts)
++  - npm run check
++  - npm run db:push
++  - npm run dev (background)
++  - curl -s http://localhost:5000/api/health
++  - tail -n 60 /tmp/ritualfin-dev.log
++- Summary of changes:
++  - Added notification type enum and aligned notifications schema.
++  - Switched notifications API to CRUD with /:id/read and type validation.
++- QA results:
++  - `npm run check` passed.
++  - `npm run db:push` failed: missing `DATABASE_URL`.
++  - `npm run dev` failed: missing `DATABASE_URL`; endpoint smoke tests skipped.
+diff --git a/docs/_codex/DIFF_SUMMARY.md b/docs/_codex/DIFF_SUMMARY.md
+index ddd2d61..c527db7 100644
+--- a/docs/_codex/DIFF_SUMMARY.md
++++ b/docs/_codex/DIFF_SUMMARY.md
+@@ -132,3 +132,14 @@
+ - Modified: server/storage.ts
+   - Change: Updated AI usage log types to new schema names.
+   - Reason: Align storage types with schema changes.
++
++## 2025-12-29T16:07:04Z (UTC)
++- Modified: shared/schema.ts
++  - Change: Added `notification_type` enum and aligned `notifications` table with C.5 schema.
++  - Reason: Implement Batch 1 C.5 notification backend spec.
++- Modified: server/storage.ts
++  - Change: Replaced notification update method with mark-as-read helper.
++  - Reason: Match notification API contract.
++- Modified: server/routes.ts
++  - Change: Updated notification endpoints to GET/POST/PATCH :id/read/DELETE with validation.
++  - Reason: Match C.5 CRUD behavior and validation requirements.
+diff --git a/docs/_codex/QA_NOTES.md b/docs/_codex/QA_NOTES.md
+index aaac3e5..1cc590c 100644
+--- a/docs/_codex/QA_NOTES.md
++++ b/docs/_codex/QA_NOTES.md
+@@ -81,3 +81,20 @@
+   - Endpoint smoke tests (including `/api/health` and AI endpoints) skipped due to dev server failure.
+ - Failures: Missing `DATABASE_URL` blocked db:push and local dev server.
+ - Repro steps: Set `DATABASE_URL`, rerun `npm run db:push` and `npm run dev`, then hit `/api/health` and AI endpoints.
++
++## 2025-12-29T16:07:04Z (UTC)
++- Environment: local
++- Commands executed (READ-ONLY): none.
++- Commands executed (MUTATING):
++  - `npm run check`
++  - `npm run db:push`
++  - `npm run dev` (via background run)
++  - `curl http://localhost:5000/api/health`
++  - `tail -n 60 /tmp/ritualfin-dev.log`
++- Test results:
++  - `npm run check` passed.
++  - `npm run db:push` failed: `DATABASE_URL` not set.
++  - `npm run dev` failed: `DATABASE_URL` not set; server did not start.
++  - Endpoint smoke tests (including `/api/health` and notification endpoints) skipped due to dev server failure.
++- Failures: Missing `DATABASE_URL` blocked db:push and local dev server.
++- Repro steps: Set `DATABASE_URL`, rerun `npm run db:push` and `npm run dev`, then hit `/api/health` and notification endpoints.
+diff --git a/server/routes.ts b/server/routes.ts
+index 82c5302..dc0da46 100644
+--- a/server/routes.ts
++++ b/server/routes.ts
+@@ -1,7 +1,7 @@
+ import type { Express, Request, Response } from "express";
+ import { createServer, type Server } from "http";
+ import { storage } from "./storage";
+-import { aiUsageLogs, insertRuleSchema, insertGoalSchema, insertCategoryGoalSchema, insertRitualSchema, type MerchantMetadata, type UpdateNotification } from "@shared/schema";
++import { aiUsageLogs, insertRuleSchema, insertGoalSchema, insertCategoryGoalSchema, insertRitualSchema, type MerchantMetadata } from "@shared/schema";
+ import { z } from "zod";
+ import { parseCSV, type ParsedTransaction } from "./csv-parser";
+ import { categorizeTransaction, suggestKeyword, AI_SEED_RULES } from "./rules-engine";
+@@ -107,61 +107,75 @@ export async function registerRoutes(
+   });
+ 
+   // ===== NOTIFICATIONS =====
+-  app.get("/api/notifications", async (req: Request, res: Response) => {
++  app.get("/api/notifications", async (_req: Request, res: Response) => {
+     try {
+       const user = await storage.getUserByUsername("demo");
+       if (!user) return res.json([]);
+ 
+-      const limitParam = req.query.limit ? Number(req.query.limit) : undefined;
+-      const limit = Number.isFinite(limitParam) && limitParam ? Math.min(Math.max(limitParam, 1), 200) : 200;
+-      const notifications = await storage.getNotifications(user.id, limit);
++      const notifications = await storage.getNotifications(user.id);
+       res.json(notifications);
+     } catch (error: any) {
++      logger.error("notifications_fetch_failed", {
++        error: error instanceof Error ? error.message : String(error),
++      });
+       res.status(500).json({ error: error.message });
+     }
+   });
+ 
+   app.post("/api/notifications", async (req: Request, res: Response) => {
+     try {
+-      let user = await storage.getUserByUsername("demo");
++      const user = await storage.getUserByUsername("demo");
+       if (!user) {
+-        user = await storage.createUser({ username: "demo", password: "demo" });
++        return res.status(401).json({ error: "User not found" });
+       }
+ 
+-      if (!req.body.title || !req.body.message) {
+-        return res.status(400).json({ error: "Title and message are required" });
++      const { type, title, message } = req.body;
++
++      if (!type || !title || !message) {
++        return res.status(400).json({
++          error: "Missing required fields: type, title, message"
++        });
++      }
++
++      if (!["info", "warning", "error", "success"].includes(type)) {
++        return res.status(400).json({
++          error: "Invalid type. Must be: info, warning, error, or success"
++        });
+       }
+ 
+       const notification = await storage.createNotification({
+         userId: user.id,
+-        title: req.body.title,
+-        message: req.body.message,
+-        type: req.body.type || "info",
+-        isRead: Boolean(req.body.isRead),
++        type,
++        title,
++        message,
+       });
++
+       res.status(201).json(notification);
+     } catch (error: any) {
++      logger.error("notifications_create_failed", {
++        error: error instanceof Error ? error.message : String(error),
++      });
+       res.status(500).json({ error: error.message });
+     }
+   });
+ 
+-  app.patch("/api/notifications/:id", async (req: Request, res: Response) => {
++  app.patch("/api/notifications/:id/read", async (req: Request, res: Response) => {
+     try {
+       const user = await storage.getUserByUsername("demo");
+       if (!user) return res.status(401).json({ error: "User not found" });
+ 
+-      const updateData: UpdateNotification = {};
+-      if (req.body.title !== undefined) updateData.title = req.body.title;
+-      if (req.body.message !== undefined) updateData.message = req.body.message;
+-      if (req.body.type !== undefined) updateData.type = req.body.type;
+-      if (req.body.isRead !== undefined) updateData.isRead = req.body.isRead;
++      const { id } = req.params;
++      const notification = await storage.markNotificationRead(id, user.id);
+ 
+-      const updated = await storage.updateNotification(req.params.id, user.id, updateData);
+-      if (!updated) {
++      if (!notification) {
+         return res.status(404).json({ error: "Notification not found" });
+       }
+-      res.json(updated);
++
++      res.json(notification);
+     } catch (error: any) {
++      logger.error("notifications_mark_read_failed", {
++        error: error instanceof Error ? error.message : String(error),
++      });
+       res.status(500).json({ error: error.message });
+     }
+   });
+@@ -174,6 +188,9 @@ export async function registerRoutes(
+       await storage.deleteNotification(req.params.id, user.id);
+       res.status(204).send();
+     } catch (error: any) {
++      logger.error("notifications_delete_failed", {
++        error: error instanceof Error ? error.message : String(error),
++      });
+       res.status(500).json({ error: error.message });
+     }
+   });
+diff --git a/server/storage.ts b/server/storage.ts
+index 8c1c5ff..5884e59 100644
+--- a/server/storage.ts
++++ b/server/storage.ts
+@@ -16,7 +16,7 @@ import {
+   type Ritual, type InsertRitual,
+   type Settings, type InsertSettings, type UpdateSettings,
+   type AIUsageLog, type InsertAIUsageLog,
+-  type Notification, type InsertNotification, type UpdateNotification
++  type Notification, type InsertNotification
+ } from "@shared/schema";
+ import { db } from "./db";
+ import { eq, and, desc, sql, like, gte, lt, or, isNull } from "drizzle-orm";
+@@ -39,7 +39,7 @@ export interface IStorage {
+   // Notifications
+   getNotifications(userId: string, limit?: number): Promise<Notification[]>;
+   createNotification(notification: InsertNotification): Promise<Notification>;
+-  updateNotification(id: string, userId: string, data: UpdateNotification): Promise<Notification | undefined>;
++  markNotificationRead(id: string, userId: string): Promise<Notification | undefined>;
+   deleteNotification(id: string, userId: string): Promise<void>;
+ 
+   // Accounts
+@@ -223,10 +223,10 @@ export class DatabaseStorage implements IStorage {
+     return created;
+   }
+ 
+-  async updateNotification(id: string, userId: string, data: UpdateNotification): Promise<Notification | undefined> {
++  async markNotificationRead(id: string, userId: string): Promise<Notification | undefined> {
+     const [updated] = await db
+       .update(notifications)
+-      .set({ ...data, updatedAt: new Date() })
++      .set({ isRead: true })
+       .where(and(eq(notifications.id, id), eq(notifications.userId, userId)))
+       .returning();
+     return updated || undefined;
+diff --git a/shared/schema.ts b/shared/schema.ts
+index a81e3fa..2b06d8f 100644
+--- a/shared/schema.ts
++++ b/shared/schema.ts
+@@ -12,6 +12,12 @@ export const category1Enum = pgEnum("category_1", [
+ ]);
+ export const uploadStatusEnum = pgEnum("upload_status", ["processing", "ready", "duplicate", "error"]);
+ export const accountTypeEnum = pgEnum("account_type", ["credit_card", "debit_card", "bank_account", "cash"]);
++export const notificationTypeEnum = pgEnum("notification_type", [
++  "info",
++  "warning",
++  "error",
++  "success"
++]);
+ 
+ // Users table
+ export const users = pgTable("users", {
+@@ -68,24 +74,21 @@ export type AIUsageLog = typeof aiUsageLogs.$inferSelect;
+ 
+ // Notifications (in-app only)
+ export const notifications = pgTable("notifications", {
+-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+-  userId: varchar("user_id").notNull().references(() => users.id),
++  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
++  userId: text("user_id").notNull().references(() => users.id),
++  type: notificationTypeEnum("type").notNull(),
+   title: text("title").notNull(),
+   message: text("message").notNull(),
+-  type: text("type").default("info"),
+-  isRead: boolean("is_read").notNull().default(false),
+-  createdAt: timestamp("created_at").notNull().defaultNow(),
+-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
++  isRead: boolean("is_read").default(false).notNull(),
++  createdAt: timestamp("created_at").defaultNow().notNull(),
+ });
+ 
+ export const notificationsRelations = relations(notifications, ({ one }) => ({
+   user: one(users, { fields: [notifications.userId], references: [users.id] }),
+ }));
+ 
+-export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true, updatedAt: true });
+-export const updateNotificationSchema = insertNotificationSchema.partial();
++export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
+ export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+-export type UpdateNotification = z.infer<typeof updateNotificationSchema>;
+ export type Notification = typeof notifications.$inferSelect;
+ 
+ // Accounts table (credit cards, bank accounts, etc.)
+-- 
+2.50.1 (Apple Git-155)
+
+
+From 9ecfc3b1a125fc4697f917803faaf16635a6feb1 Mon Sep 17 00:00:00 2001
+From: Vinicius <vinicius.steigleder@gmail.com>
+Date: Mon, 29 Dec 2025 17:20:04 +0100
+Subject: [PATCH 3/7] Phase 3: Async CSV processing
+
+---
+ client/src/pages/uploads.tsx      |   4 +-
+ docs/_codex/CODEX_ACTIVITY_LOG.md |  28 +++
+ docs/_codex/DECISION_LOG.md       |  16 ++
+ docs/_codex/DIFF_SUMMARY.md       |  20 ++
+ docs/_codex/QA_NOTES.md           |  17 ++
+ package-lock.json                 |  11 +-
+ package.json                      |   1 +
+ server/csv-parser.ts              | 405 +++++++++++++++++++++++++++++-
+ server/routes.ts                  |  83 +++++-
+ server/storage.ts                 |  17 +-
+ shared/schema.ts                  |   5 +-
+ 11 files changed, 586 insertions(+), 21 deletions(-)
+
+diff --git a/client/src/pages/uploads.tsx b/client/src/pages/uploads.tsx
+index 174006a..8143cd3 100644
+--- a/client/src/pages/uploads.tsx
++++ b/client/src/pages/uploads.tsx
+@@ -97,7 +97,7 @@ export default function UploadsPage() {
+   };
+ 
+   const totalImported = uploads.reduce((sum: number, u: any) => sum + (u.rowsImported || 0), 0);
+-  const successfulUploads = uploads.filter((u: any) => u.status === 'ready').length;
++  const successfulUploads = uploads.filter((u: any) => u.status === 'ready' || u.status === 'completed').length;
+ 
+   return (
+     <AppLayout>
+@@ -269,7 +269,7 @@ export default function UploadsPage() {
+                         <div className="flex items-center gap-2 mb-1">
+                           <p className="font-semibold truncate">{upload.filename}</p>
+                           <BankBadge provider={upload.filename} size="sm" variant="compact" />
+-                          {upload.status === 'ready' && (
++                          {(upload.status === 'ready' || upload.status === 'completed') && (
+                             <Badge variant="secondary" className="bg-primary/10 text-primary text-xs">
+                               Processado
+                             </Badge>
+diff --git a/docs/_codex/CODEX_ACTIVITY_LOG.md b/docs/_codex/CODEX_ACTIVITY_LOG.md
+index 0040adc..69c94fd 100644
+--- a/docs/_codex/CODEX_ACTIVITY_LOG.md
++++ b/docs/_codex/CODEX_ACTIVITY_LOG.md
+@@ -326,3 +326,31 @@
+   - `npm run check` passed.
+   - `npm run db:push` failed: missing `DATABASE_URL`.
+   - `npm run dev` failed: missing `DATABASE_URL`; endpoint smoke tests skipped.
++
++## 2025-12-29T16:19:05Z (UTC)
++- Session goal: Phase 3 (C.7) async CSV streaming + progress tracking and QA.
++- Commands executed (READ-ONLY):
++  - rg -n "uploads/process" server/routes.ts
++  - sed -n '320,520p' server/routes.ts
++  - rg -n "upload.*status|status" client/src/pages/uploads.tsx
++  - sed -n '80,140p' client/src/pages/uploads.tsx
++  - sed -n '250,300p' client/src/pages/uploads.tsx
++  - rg -n "getUpload" server/storage.ts
++  - sed -n '300,340p' server/storage.ts
++  - rg -n "ParseResult" server
++- Commands executed (MUTATING):
++  - apply_patch (shared/schema.ts, server/storage.ts, server/routes.ts, server/csv-parser.ts, client/src/pages/uploads.tsx)
++  - npm install csv-parse
++  - npm run check
++  - npm run db:push
++  - npm run dev (background)
++  - curl -s http://localhost:5000/api/health
++  - tail -n 60 /tmp/ritualfin-dev.log
++- Summary of changes:
++  - Added streaming CSV parser with progress callbacks and upload progress endpoint.
++  - Added progress/rows fields to uploads table and status `completed` handling.
++  - Updated uploads UI to treat `completed` as processed.
++- QA results:
++  - `npm run check` passed.
++  - `npm run db:push` failed: missing `DATABASE_URL`.
++  - `npm run dev` failed: missing `DATABASE_URL`; endpoint smoke tests skipped.
+diff --git a/docs/_codex/DECISION_LOG.md b/docs/_codex/DECISION_LOG.md
+index 3148431..92a02b1 100644
+--- a/docs/_codex/DECISION_LOG.md
++++ b/docs/_codex/DECISION_LOG.md
+@@ -95,3 +95,19 @@
+ - Rationale: Preserve existing logging call sites while matching the spec enum.
+ - Risks: Some operations may be bucketed as `categorize` even if not a perfect match.
+ - Follow-ups: Refine mapping once feature taxonomy is finalized.
++
++## 2025-12-29T16:19:05Z (UTC)
++- Decision: Introduce `completed` upload status and keep existing `duplicate` status; UI treats `completed` as processed.
++- Alternatives considered: Reuse existing `ready` status only, or migrate UI to `completed` exclusively.
++- Tradeoffs: Aligns with spec while preserving existing duplicate semantics; minor UI adjustment.
++- Rationale: Spec calls for `completed`, but existing UI relies on `ready`/`duplicate` signals.
++- Risks: Mixed status values in data if legacy uploads exist.
++- Follow-ups: Consider normalizing legacy `ready` to `completed` in a future cleanup.
++
++## 2025-12-29T16:19:05Z (UTC)
++- Decision: Accept both `content` and legacy `csvContent` fields in upload requests.
++- Alternatives considered: Require only `content` and update client API.
++- Tradeoffs: Backward compatibility vs. stricter API contract.
++- Rationale: Avoid breaking existing client usage while aligning with spec request body.
++- Risks: None (explicit fallback).
++- Follow-ups: Standardize on `content` in a future cleanup.
+diff --git a/docs/_codex/DIFF_SUMMARY.md b/docs/_codex/DIFF_SUMMARY.md
+index c527db7..67d2b51 100644
+--- a/docs/_codex/DIFF_SUMMARY.md
++++ b/docs/_codex/DIFF_SUMMARY.md
+@@ -143,3 +143,23 @@
+ - Modified: server/routes.ts
+   - Change: Updated notification endpoints to GET/POST/PATCH :id/read/DELETE with validation.
+   - Reason: Match C.5 CRUD behavior and validation requirements.
++
++## 2025-12-29T16:19:05Z (UTC)
++- Modified: shared/schema.ts
++  - Change: Added upload progress/rows fields and `completed` status enum value.
++  - Reason: Support async CSV progress tracking.
++- Modified: server/csv-parser.ts
++  - Change: Added streaming parser with progress callbacks; deprecated parseCSV to use streaming.
++  - Reason: Replace buffered parsing with chunked streaming.
++- Modified: server/storage.ts
++  - Change: Added upload progress updates and user-scoped getUpload.
++  - Reason: Store progress and enforce user isolation on progress polling.
++- Modified: server/routes.ts
++  - Change: Refactored uploads processing to use streaming parser with progress updates and added `/api/uploads/:id/progress`.
++  - Reason: Implement async CSV processing per C.7.
++- Modified: client/src/pages/uploads.tsx
++  - Change: Treat `completed` status as successful uploads in UI badges and stats.
++  - Reason: Align UI with new upload status.
++- Modified: package.json, package-lock.json
++  - Change: Added `csv-parse` dependency.
++  - Reason: Streaming CSV parsing requirement.
+diff --git a/docs/_codex/QA_NOTES.md b/docs/_codex/QA_NOTES.md
+index 1cc590c..892d0d5 100644
+--- a/docs/_codex/QA_NOTES.md
++++ b/docs/_codex/QA_NOTES.md
+@@ -98,3 +98,20 @@
+   - Endpoint smoke tests (including `/api/health` and notification endpoints) skipped due to dev server failure.
+ - Failures: Missing `DATABASE_URL` blocked db:push and local dev server.
+ - Repro steps: Set `DATABASE_URL`, rerun `npm run db:push` and `npm run dev`, then hit `/api/health` and notification endpoints.
++
++## 2025-12-29T16:19:05Z (UTC)
++- Environment: local
++- Commands executed (READ-ONLY): none.
++- Commands executed (MUTATING):
++  - `npm run check`
++  - `npm run db:push`
++  - `npm run dev` (via background run)
++  - `curl http://localhost:5000/api/health`
++  - `tail -n 60 /tmp/ritualfin-dev.log`
++- Test results:
++  - `npm run check` passed.
++  - `npm run db:push` failed: `DATABASE_URL` not set.
++  - `npm run dev` failed: `DATABASE_URL` not set; server did not start.
++  - Endpoint smoke tests (including `/api/health` and uploads progress endpoints) skipped due to dev server failure.
++- Failures: Missing `DATABASE_URL` blocked db:push and local dev server.
++- Repro steps: Set `DATABASE_URL`, rerun `npm run db:push` and `npm run dev`, then hit `/api/health` and uploads endpoints.
+diff --git a/package-lock.json b/package-lock.json
+index a762fe8..daa0020 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -1,12 +1,12 @@
+ {
+   "name": "rest-express",
+-  "version": "1.0.0",
++  "version": "1.0.1",
+   "lockfileVersion": 3,
+   "requires": true,
+   "packages": {
+     "": {
+       "name": "rest-express",
+-      "version": "1.0.0",
++      "version": "1.0.1",
+       "license": "MIT",
+       "dependencies": {
+         "@hookform/resolvers": "^3.10.0",
+@@ -44,6 +44,7 @@
+         "cmdk": "^1.1.1",
+         "connect-pg-simple": "^10.0.0",
+         "cors": "^2.8.5",
++        "csv-parse": "^6.1.0",
+         "date-fns": "^3.6.0",
+         "drizzle-orm": "^0.39.3",
+         "drizzle-zod": "^0.7.1",
+@@ -5009,6 +5010,12 @@
+       "integrity": "sha512-M1uQkMl8rQK/szD0LNhtqxIPLpimGm8sOBwU7lLnCpSbTyY3yeU1Vc7l4KT5zT4s/yOxHH5O7tIuuLOCnLADRw==",
+       "license": "MIT"
+     },
++    "node_modules/csv-parse": {
++      "version": "6.1.0",
++      "resolved": "https://registry.npmjs.org/csv-parse/-/csv-parse-6.1.0.tgz",
++      "integrity": "sha512-CEE+jwpgLn+MmtCpVcPtiCZpVtB6Z2OKPTr34pycYYoL7sxdOkXDdQ4lRiw6ioC0q6BLqhc6cKweCVvral8yhw==",
++      "license": "MIT"
++    },
+     "node_modules/d3-array": {
+       "version": "3.2.4",
+       "resolved": "https://registry.npmjs.org/d3-array/-/d3-array-3.2.4.tgz",
+diff --git a/package.json b/package.json
+index de88e6a..1a225dd 100644
+--- a/package.json
++++ b/package.json
+@@ -47,6 +47,7 @@
+     "cmdk": "^1.1.1",
+     "connect-pg-simple": "^10.0.0",
+     "cors": "^2.8.5",
++    "csv-parse": "^6.1.0",
+     "date-fns": "^3.6.0",
+     "drizzle-orm": "^0.39.3",
+     "drizzle-zod": "^0.7.1",
+diff --git a/server/csv-parser.ts b/server/csv-parser.ts
+index 7dd9a6c..1eb0021 100644
+--- a/server/csv-parser.ts
++++ b/server/csv-parser.ts
+@@ -1,5 +1,7 @@
+ // Multi-format CSV Parser (Miles & More + Amex)
+ 
++import { parse } from "csv-parse";
++import { Readable } from "node:stream";
+ import { logger } from "./logger";
+ 
+ export interface MilesAndMoreRow {
+@@ -44,6 +46,21 @@ export interface ParsedTransaction {
+   accountSource: string;
+ }
+ 
++export interface CSVParseProgress {
++  rowsProcessed: number;
++  rowsTotal: number;
++}
++
++export interface ParseStreamingResult {
++  transactions: ParsedTransaction[];
++  errors: string[];
++  rowsTotal: number;
++  rowsProcessed: number;
++  rowsFailed: number;
++  monthAffected: string;
++  format?: "miles_and_more" | "amex" | "sparkasse" | "unknown";
++}
++
+ export interface ParseResult {
+   success: boolean;
+   transactions: ParsedTransaction[];
+@@ -636,7 +653,7 @@ function parseSparkasse(lines: string[]): ParseResult {
+  * Split CSV content into lines, respecting quoted fields that may contain newlines.
+  * This is critical for Amex CSVs which have multi-line address fields.
+  */
+-function splitCSVLines(csvContent: string): string[] {
++function splitCSVLines(csvContent: string, maxLines?: number): string[] {
+   const lines: string[] = [];
+   let currentLine = "";
+   let inQuotes = false;
+@@ -660,6 +677,9 @@ function splitCSVLines(csvContent: string): string[] {
+       // End of line (not inside quotes)
+       if (currentLine.trim() !== "") {
+         lines.push(currentLine);
++        if (maxLines && lines.length >= maxLines) {
++          return lines;
++        }
+       }
+       currentLine = "";
+       // Skip \r\n together
+@@ -679,7 +699,388 @@ function splitCSVLines(csvContent: string): string[] {
+   return lines;
+ }
+ 
+-export function parseCSV(csvContent: string): ParseResult {
++export async function parseCSVStreaming(
++  csvContent: string,
++  onProgress?: (progress: CSVParseProgress) => Promise<void> | void
++): Promise<ParseStreamingResult> {
++  const cleanedContent = csvContent.charCodeAt(0) === 0xFEFF
++    ? csvContent.slice(1)
++    : csvContent;
++
++  const previewLines = splitCSVLines(cleanedContent, 5).filter(line => line.trim() !== "");
++  if (previewLines.length === 0) {
++    logger.warn("csv_parse_empty", { rowsTotal: 0 });
++    return {
++      transactions: [],
++      errors: ["Arquivo CSV vazio"],
++      rowsTotal: 0,
++      rowsProcessed: 0,
++      rowsFailed: 0,
++      monthAffected: "",
++      format: "unknown"
++    };
++  }
++
++  const { format, separator } = detectCsvFormat(previewLines);
++
++  logger.info("csv_format_detected", {
++    format,
++    totalLines: previewLines.length
++  });
++
++  let headerIndex = -1;
++  let headers: string[] = [];
++  let cardInfo = "";
++
++  if (format === "miles_and_more") {
++    const headerResult = findMMHeaderLine(previewLines);
++    headerIndex = headerResult.headerIndex;
++    headers = headerResult.headers;
++    cardInfo = headerResult.cardInfo;
++  } else if (format === "amex") {
++    const headerResult = findAmexHeaderLine(previewLines);
++    headerIndex = headerResult.headerIndex;
++    headers = headerResult.headers;
++  } else if (format === "sparkasse") {
++    headerIndex = 0;
++    headers = parseCSVLine(previewLines[0], ";");
++  }
++
++  if (headerIndex === -1 || format === "unknown") {
++    return {
++      transactions: [],
++      errors: [
++        "Formato de CSV nao reconhecido",
++        "Formatos suportados: Miles & More, American Express (Amex), Sparkasse",
++        "Verifique se o arquivo contem os cabecalhos corretos"
++      ],
++      rowsTotal: 0,
++      rowsProcessed: 0,
++      rowsFailed: 0,
++      monthAffected: "",
++      format: "unknown"
++    };
++  }
++
++  const missingColumns = (() => {
++    if (format === "miles_and_more") {
++      return MM_REQUIRED_COLUMNS.filter(col =>
++        !headers.some(h => h.toLowerCase() === col.toLowerCase())
++      );
++    }
++    if (format === "amex") {
++      return AMEX_REQUIRED_COLUMNS.filter(col =>
++        !headers.some(h => h.toLowerCase() === col.toLowerCase())
++      );
++    }
++    if (format === "sparkasse") {
++      return SPARKASSE_REQUIRED_COLUMNS.filter(col =>
++        !headers.some(h => h.toLowerCase() === col.toLowerCase())
++      );
++    }
++    return [];
++  })();
++
++  if (missingColumns.length > 0) {
++    return {
++      transactions: [],
++      errors: [`CSV invalido: faltam colunas obrigatorias: ${missingColumns.join(", ")}`],
++      rowsTotal: 0,
++      rowsProcessed: 0,
++      rowsFailed: 0,
++      monthAffected: "",
++      format
++    };
++  }
++
++  const colIndex: Record<string, number> = {};
++  headers.forEach((h, i) => {
++    colIndex[h.toLowerCase()] = i;
++  });
++
++  const transactions: ParsedTransaction[] = [];
++  const errors: string[] = [];
++  const months = new Set<string>();
++
++  const accountSource = format === "miles_and_more"
++    ? (cardInfo ? cardInfo.split(";")[0].trim() || "Miles & More Gold Credit Card" : "Miles & More Gold Credit Card")
++    : undefined;
++
++  let rowsProcessed = 0;
++  let rowsFailed = 0;
++  let lastProgressRows = 0;
++  const progressInterval = 100;
++
++  const parser = parse({
++    delimiter: separator,
++    relax_column_count: true,
++    trim: true,
++    skip_empty_lines: true,
++    from_line: headerIndex + 2
++  });
++
++  const stream = Readable.from([cleanedContent]);
++  stream.pipe(parser);
++
++  try {
++    for await (const record of parser) {
++      rowsProcessed += 1;
++      const rowNumber = headerIndex + 1 + rowsProcessed;
++      const cols = Array.isArray(record) ? record : Object.values(record);
++
++      try {
++        if (format === "miles_and_more" && accountSource) {
++          const authorisedOn = cols[colIndex["authorised on"]] || "";
++          const processedOn = cols[colIndex["processed on"]] || "";
++          const amountStr = cols[colIndex["amount"]] || "0";
++          const currency = cols[colIndex["currency"]] || "EUR";
++          const description = cols[colIndex["description"]] || "";
++          const paymentType = cols[colIndex["payment type"]] || "";
++          const status = cols[colIndex["status"]] || "";
++
++          const foreignAmountIdx = headers.findIndex(h => h.toLowerCase() === "amount in foreign currency");
++          const foreignAmountStr = foreignAmountIdx >= 0 ? cols[foreignAmountIdx] || "" : "";
++
++          const currencyIndices = headers.reduce((acc: number[], h, idx) => {
++            if (h.toLowerCase() === "currency") acc.push(idx);
++            return acc;
++          }, []);
++          const foreignCurrencyIdx = currencyIndices.length > 1 ? currencyIndices[1] : -1;
++          const foreignCurrency = foreignCurrencyIdx >= 0 ? cols[foreignCurrencyIdx] || "" : "";
++
++          const exchangeRateIdx = headers.findIndex(h => h.toLowerCase() === "exchange rate");
++          const exchangeRateStr = exchangeRateIdx >= 0 ? cols[exchangeRateIdx] || "" : "";
++
++          const row: MilesAndMoreRow = {
++            authorisedOn,
++            processedOn,
++            amount: parseAmountGerman(amountStr),
++            currency,
++            description,
++            paymentType,
++            status,
++            foreignAmount: foreignAmountStr ? parseAmountGerman(foreignAmountStr) : undefined,
++            foreignCurrency: foreignCurrency || undefined,
++            exchangeRate: exchangeRateStr ? parseAmountGerman(exchangeRateStr) : undefined
++          };
++
++          const paymentDate = parseDateMM(row.authorisedOn) || parseDateMM(row.processedOn);
++          if (!paymentDate) {
++            errors.push(`Linha ${rowNumber}: Data invalida`);
++            rowsFailed += 1;
++            continue;
++          }
++
++          if (!row.description) {
++            errors.push(`Linha ${rowNumber}: Descricao vazia`);
++            rowsFailed += 1;
++            continue;
++          }
++
++          const descRaw = buildDescRawMM(row);
++          const descNorm = normalizeText(descRaw);
++          const dateIso = paymentDate.toISOString().split("T")[0];
++          const key = `${descNorm} -- ${row.amount} -- ${dateIso}`;
++
++          const monthStr = `${paymentDate.getFullYear()}-${String(paymentDate.getMonth() + 1).padStart(2, "0")}`;
++          months.add(monthStr);
++
++          transactions.push({
++            paymentDate,
++            descRaw,
++            descNorm,
++            amount: row.amount,
++            currency: row.currency,
++            foreignAmount: row.foreignAmount,
++            foreignCurrency: row.foreignCurrency,
++            exchangeRate: row.exchangeRate,
++            key,
++            accountSource
++          });
++        } else if (format === "amex") {
++          const datum = cols[colIndex["datum"]] || "";
++          const beschreibung = cols[colIndex["beschreibung"]] || "";
++          const karteninhaber = cols[colIndex["karteninhaber"]] || "";
++          const konto = cols[colIndex["konto #"]] || cols[colIndex["konto"]] || "";
++          const betragStr = cols[colIndex["betrag"]] || "0";
++          const weitereDetails = cols[colIndex["weitere details"]] || "";
++          const erscheintAls = cols[colIndex["erscheint auf ihrer abrechnung als"]] || "";
++          const adresse = cols[colIndex["adresse"]] || "";
++          const stadt = cols[colIndex["stadt"]] || "";
++          const plz = cols[colIndex["plz"]] || "";
++          const land = cols[colIndex["land"]] || "";
++          const betreff = cols[colIndex["betreff"]] || "";
++
++          const row: AmexRow = {
++            datum,
++            beschreibung,
++            karteninhaber,
++            konto,
++            betrag: parseAmountGerman(betragStr),
++            weitereDetails,
++            erscheintAls,
++            adresse,
++            stadt,
++            plz,
++            land,
++            betreff
++          };
++
++          const paymentDate = parseDateAmex(row.datum);
++          if (!paymentDate) {
++            errors.push(`Linha ${rowNumber}: Data invalida (${row.datum})`);
++            rowsFailed += 1;
++            continue;
++          }
++
++          if (!row.beschreibung) {
++            errors.push(`Linha ${rowNumber}: Descricao vazia`);
++            rowsFailed += 1;
++            continue;
++          }
++
++          let amount = row.betrag;
++          if (amount > 0) {
++            amount = -amount;
++          }
++
++          const descRaw = buildDescRawAmex(row);
++          const descNorm = normalizeText(descRaw);
++          const dateIso = paymentDate.toISOString().split("T")[0];
++          const key = `${descNorm} -- ${amount} -- ${dateIso}`;
++
++          const monthStr = `${paymentDate.getFullYear()}-${String(paymentDate.getMonth() + 1).padStart(2, "0")}`;
++          months.add(monthStr);
++
++          let foreignAmount: number | undefined;
++          let foreignCurrency: string | undefined;
++          let exchangeRate: number | undefined;
++
++          if (row.weitereDetails && row.weitereDetails.includes("Foreign Spend Amount")) {
++            const foreignMatch = row.weitereDetails.match(/Foreign Spend Amount:\\s*([\\d.,]+)\\s*(\\w+)/i);
++            const rateMatch = row.weitereDetails.match(/Currency Exchange Rate:\\s*([\\d.,]+)/i);
++
++            if (foreignMatch) {
++              foreignAmount = parseAmountGerman(foreignMatch[1]);
++              foreignCurrency = foreignMatch[2];
++            }
++            if (rateMatch) {
++              exchangeRate = parseAmountGerman(rateMatch[1]);
++            }
++          }
++
++          const firstName = row.karteninhaber.split(" ")[0];
++          const capitalizedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
++          const accountLast4 = row.konto.replace(/[^0-9]/g, "").slice(-4);
++          const derivedAccountSource = `Amex - ${capitalizedFirstName} (${accountLast4})`;
++
++          transactions.push({
++            paymentDate,
++            descRaw,
++            descNorm,
++            amount,
++            currency: "EUR",
++            foreignAmount,
++            foreignCurrency,
++            exchangeRate,
++            key,
++            accountSource: derivedAccountSource
++          });
++        } else if (format === "sparkasse") {
++          const auftragskonto = cols[colIndex["auftragskonto"]] || "";
++          const buchungstag = cols[colIndex["buchungstag"]] || "";
++          const verwendungszweck = cols[colIndex["verwendungszweck"]] || "";
++          const beguenstigter = cols[colIndex["beguenstigter/zahlungspflichtiger"]] || "";
++          const betragStr = cols[colIndex["betrag"]] || "";
++
++          const paymentDate = parseDateMM(buchungstag);
++          if (!paymentDate) {
++            errors.push(`Linha ${rowNumber}: Data invalida`);
++            rowsFailed += 1;
++            continue;
++          }
++
++          const monthStr = `${paymentDate.getFullYear()}-${String(paymentDate.getMonth() + 1).padStart(2, "0")}`;
++          months.add(monthStr);
++
++          const amount = parseAmountGerman(betragStr);
++          const descRaw = `${verwendungszweck.slice(0, 100)} -- ${beguenstigter.slice(0, 50)} -- Sparkasse`;
++          const descNorm = normalizeText(descRaw);
++          const key = `${descNorm} -- ${amount} -- ${paymentDate.toISOString().split("T")[0]}`;
++
++          const ibanLast4 = auftragskonto.slice(-4);
++          const derivedAccountSource = `Sparkasse - ${ibanLast4}`;
++
++          transactions.push({
++            paymentDate,
++            descRaw,
++            descNorm,
++            amount,
++            currency: "EUR",
++            foreignAmount: undefined,
++            foreignCurrency: undefined,
++            exchangeRate: undefined,
++            key,
++            accountSource: derivedAccountSource
++          });
++        }
++      } catch (_err) {
++        errors.push(`Linha ${rowNumber}: Erro ao processar`);
++        rowsFailed += 1;
++      }
++
++      if (onProgress && rowsProcessed - lastProgressRows >= progressInterval) {
++        lastProgressRows = rowsProcessed;
++        await onProgress({ rowsProcessed, rowsTotal: 0 });
++      }
++    }
++  } catch (error) {
++    errors.push(`Erro ao processar CSV: ${error instanceof Error ? error.message : String(error)}`);
++  }
++
++  if (onProgress) {
++    await onProgress({ rowsProcessed, rowsTotal: rowsProcessed });
++  }
++
++  const monthsArray = Array.from(months).sort();
++  const monthAffected = monthsArray.length > 0 ? monthsArray[monthsArray.length - 1] : "";
++
++  logger.info("csv_parse_complete", {
++    format,
++    success: transactions.length > 0,
++    rowsTotal: rowsProcessed,
++    rowsImported: transactions.length,
++    errorsCount: errors.length,
++    accountSources: Array.from(new Set(transactions.map(t => t.accountSource))),
++    monthAffected
++  });
++
++  if (errors.length > 0) {
++    logger.warn("csv_parse_errors", {
++      format,
++      errorsCount: errors.length,
++      sampleErrors: errors.slice(0, 3)
++    });
++  }
++
++  return {
++    transactions,
++    errors,
++    rowsTotal: rowsProcessed,
++    rowsProcessed,
++    rowsFailed,
++    monthAffected,
++    format
++  };
++}
++
++export async function parseCSV(csvContent: string): Promise<ParsedTransaction[]> {
++  logger.warn("parseCSV is deprecated. Use parseCSVStreaming instead.");
++  const { transactions } = await parseCSVStreaming(csvContent);
++  return transactions;
++}
++
++export function parseCSVSync(csvContent: string): ParseResult {
+   // Remove UTF-8 BOM (Byte Order Mark) if present
+   // BOM is \uFEFF character often added by German banking CSV exports
+   const cleanedContent = csvContent.charCodeAt(0) === 0xFEFF
+diff --git a/server/routes.ts b/server/routes.ts
+index dc0da46..8fa510d 100644
+--- a/server/routes.ts
++++ b/server/routes.ts
+@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
+ import { storage } from "./storage";
+ import { aiUsageLogs, insertRuleSchema, insertGoalSchema, insertCategoryGoalSchema, insertRitualSchema, type MerchantMetadata } from "@shared/schema";
+ import { z } from "zod";
+-import { parseCSV, type ParsedTransaction } from "./csv-parser";
++import { parseCSVStreaming, type ParsedTransaction, type CSVParseProgress } from "./csv-parser";
+ import { categorizeTransaction, suggestKeyword, AI_SEED_RULES } from "./rules-engine";
+ import OpenAI from "openai";
+ import { logger } from "./logger";
+@@ -333,15 +333,16 @@ export async function registerRoutes(
+         user = await storage.createUser({ username: "demo", password: "demo" });
+       }
+ 
+-      const { filename, csvContent } = req.body;
++      const { filename, csvContent, content } = req.body;
++      const fileContent = content ?? csvContent;
+ 
+       logger.info("upload_start", {
+         userId: user.id,
+         filename: filename || "upload.csv",
+-        contentLength: csvContent?.length || 0
++        contentLength: fileContent?.length || 0
+       });
+ 
+-      if (!csvContent) {
++      if (!fileContent) {
+         logger.warn("upload_missing_content", { userId: user.id, filename });
+         return res.status(400).json({ error: "CSV content is required" });
+       }
+@@ -351,14 +352,29 @@ export async function registerRoutes(
+         userId: user.id,
+         filename: filename || "upload.csv",
+         status: "processing",
++        progress: 0,
++        rowsProcessed: 0,
++        rowsFailed: 0,
+         rowsTotal: 0,
+         rowsImported: 0,
+       });
+ 
++      const updateProgress = async (progress: CSVParseProgress) => {
++        const percent = progress.rowsTotal > 0
++          ? Math.round((progress.rowsProcessed / progress.rowsTotal) * 100)
++          : Math.min(Math.round(progress.rowsProcessed / 10), 99);
++
++        await storage.updateUploadProgress(upload.id, percent);
++        logger.info("upload_progress", {
++          uploadId: upload.id,
++          progress: percent
++        });
++      };
++
+       // Parse CSV
+-      const parseResult = parseCSV(csvContent);
++      const parseResult = await parseCSVStreaming(fileContent, updateProgress);
+       
+-      if (!parseResult.success) {
++      if (parseResult.transactions.length === 0 && parseResult.errors.length > 0) {
+         logger.error("upload_parse_failed", {
+           userId: user.id,
+           uploadId: upload.id,
+@@ -371,6 +387,9 @@ export async function registerRoutes(
+         await storage.updateUpload(upload.id, {
+           status: "error",
+           errorMessage: parseResult.errors.join("; "),
++          progress: 100,
++          rowsProcessed: parseResult.rowsProcessed,
++          rowsFailed: parseResult.rowsFailed,
+           rowsTotal: parseResult.rowsTotal,
+           rowsImported: 0
+         });
+@@ -550,18 +569,30 @@ export async function registerRoutes(
+               errorMessage,
+               rawData: null
+             });
++          } else {
++            await storage.createUploadError({
++              uploadId: upload.id,
++              rowNumber: 0,
++              errorMessage: errorStr,
++              rawData: null
++            });
+           }
+         }
+       }
+ 
+       // Update upload status
+-      const finalStatus = duplicateCount === parseResult.transactions.length ? "duplicate" : "ready";
++      const finalStatus = duplicateCount === parseResult.transactions.length ? "duplicate" : "completed";
++      const combinedErrors = [...parseResult.errors, ...errors];
++      const rowsFailed = parseResult.rowsFailed + errors.length;
+       await storage.updateUpload(upload.id, {
+         status: finalStatus,
++        progress: 100,
++        rowsProcessed: parseResult.rowsProcessed,
++        rowsFailed,
+         rowsTotal: parseResult.rowsTotal,
+         rowsImported: importedCount,
+         monthAffected: parseResult.monthAffected,
+-        errorMessage: errors.length > 0 ? errors.join("; ") : undefined
++        errorMessage: combinedErrors.length > 0 ? combinedErrors.join("; ") : undefined
+       });
+ 
+       const duration = Date.now() - startTime;
+@@ -575,6 +606,8 @@ export async function registerRoutes(
+         rowsTotal: parseResult.rowsTotal,
+         rowsImported: importedCount,
+         duplicates: duplicateCount,
++        rowsProcessed: parseResult.rowsProcessed,
++        rowsFailed,
+         storageErrorsCount: errors.length,
+         monthAffected: parseResult.monthAffected,
+         durationMs: duration
+@@ -587,7 +620,7 @@ export async function registerRoutes(
+         rowsImported: importedCount,
+         duplicates: duplicateCount,
+         monthAffected: parseResult.monthAffected,
+-        errors: errors.length > 0 ? errors : undefined
++        errors: combinedErrors.length > 0 ? combinedErrors.slice(0, 10) : undefined
+       });
+     } catch (error: any) {
+       logger.error("upload_server_error", {
+@@ -598,6 +631,34 @@ export async function registerRoutes(
+     }
+   });
+ 
++  // GET /api/uploads/:id/progress - Poll upload progress
++  app.get("/api/uploads/:id/progress", async (req: Request, res: Response) => {
++    try {
++      const user = await storage.getUserByUsername("demo");
++      if (!user) {
++        return res.status(401).json({ error: "User not found" });
++      }
++
++      const upload = await storage.getUpload(req.params.id, user.id);
++      if (!upload) {
++        return res.status(404).json({ error: "Upload not found" });
++      }
++
++      res.json({
++        id: upload.id,
++        status: upload.status,
++        progress: upload.progress,
++        rowsProcessed: upload.rowsProcessed,
++        rowsFailed: upload.rowsFailed,
++      });
++    } catch (error: any) {
++      logger.error("upload_progress_failed", {
++        error: error instanceof Error ? error.message : String(error),
++      });
++      res.status(500).json({ error: error.message });
++    }
++  });
++
+   // Get errors for a specific upload
+   app.get("/api/uploads/:id/errors", async (req: Request, res: Response) => {
+     try {
+@@ -607,8 +668,8 @@ export async function registerRoutes(
+       }
+ 
+       // Verify upload exists and belongs to user
+-      const upload = await storage.getUpload(req.params.id);
+-      if (!upload || upload.userId !== user.id) {
++      const upload = await storage.getUpload(req.params.id, user.id);
++      if (!upload) {
+         return res.status(404).json({ error: "Upload not found" });
+       }
+ 
+diff --git a/server/storage.ts b/server/storage.ts
+index 5884e59..7689df1 100644
+--- a/server/storage.ts
++++ b/server/storage.ts
+@@ -52,9 +52,10 @@ export interface IStorage {
+ 
+   // Uploads
+   getUploads(userId: string): Promise<Upload[]>;
+-  getUpload(id: string): Promise<Upload | undefined>;
++  getUpload(id: string, userId: string): Promise<Upload | undefined>;
+   createUpload(upload: InsertUpload): Promise<Upload>;
+   updateUpload(id: string, data: Partial<Upload>): Promise<Upload | undefined>;
++  updateUploadProgress(uploadId: string, progress: number): Promise<void>;
+ 
+   // Upload Errors
+   createUploadError(error: InsertUploadError): Promise<UploadError>;
+@@ -311,8 +312,11 @@ export class DatabaseStorage implements IStorage {
+       .orderBy(desc(uploads.createdAt));
+   }
+ 
+-  async getUpload(id: string): Promise<Upload | undefined> {
+-    const [upload] = await db.select().from(uploads).where(eq(uploads.id, id));
++  async getUpload(id: string, userId: string): Promise<Upload | undefined> {
++    const [upload] = await db
++      .select()
++      .from(uploads)
++      .where(and(eq(uploads.id, id), eq(uploads.userId, userId)));
+     return upload || undefined;
+   }
+ 
+@@ -326,6 +330,13 @@ export class DatabaseStorage implements IStorage {
+     return updated || undefined;
+   }
+ 
++  async updateUploadProgress(uploadId: string, progress: number): Promise<void> {
++    await db
++      .update(uploads)
++      .set({ progress })
++      .where(eq(uploads.id, uploadId));
++  }
++
+   // Upload Errors
+   async createUploadError(error: InsertUploadError): Promise<UploadError> {
+     const [created] = await db.insert(uploadErrors).values(error).returning();
+diff --git a/shared/schema.ts b/shared/schema.ts
+index 2b06d8f..a79aa11 100644
+--- a/shared/schema.ts
++++ b/shared/schema.ts
+@@ -10,7 +10,7 @@ export const category1Enum = pgEnum("category_1", [
+   "Receitas", "Moradia", "Mercado", "Compras Online", 
+   "Transporte", "Saúde", "Lazer", "Outros", "Interno"
+ ]);
+-export const uploadStatusEnum = pgEnum("upload_status", ["processing", "ready", "duplicate", "error"]);
++export const uploadStatusEnum = pgEnum("upload_status", ["processing", "ready", "completed", "duplicate", "error"]);
+ export const accountTypeEnum = pgEnum("account_type", ["credit_card", "debit_card", "bank_account", "cash"]);
+ export const notificationTypeEnum = pgEnum("notification_type", [
+   "info",
+@@ -118,6 +118,9 @@ export const uploads = pgTable("uploads", {
+   userId: varchar("user_id").notNull().references(() => users.id),
+   filename: text("filename").notNull(),
+   status: uploadStatusEnum("status").notNull().default("processing"),
++  progress: integer("progress").notNull().default(0),
++  rowsProcessed: integer("rows_processed").notNull().default(0),
++  rowsFailed: integer("rows_failed").notNull().default(0),
+   rowsTotal: integer("rows_total").notNull().default(0),
+   rowsImported: integer("rows_imported").notNull().default(0),
+   monthAffected: text("month_affected"),
+-- 
+2.50.1 (Apple Git-155)
+
+
+From b853337e55af52daac76cb029d971224482bfbb3 Mon Sep 17 00:00:00 2001
+From: Vinicius <vinicius.steigleder@gmail.com>
+Date: Mon, 29 Dec 2025 17:28:24 +0100
+Subject: [PATCH 4/7] Phase 4: AI chat streaming
+
+---
+ docs/_codex/CODEX_ACTIVITY_LOG.md          | 26 ++++++
+ docs/_codex/DECISION_LOG.md                |  8 ++
+ docs/_codex/DIFF_SUMMARY.md                | 17 ++++
+ docs/_codex/QA_NOTES.md                    | 17 ++++
+ server/ai-context.ts                       | 77 +++++++++++++++++
+ server/replit_integrations/chat/routes.ts  | 27 +++++-
+ server/replit_integrations/chat/storage.ts | 34 ++++----
+ server/routes.ts                           | 98 ++++++++++++++++++++++
+ server/storage.ts                          | 85 ++++++++++++++++---
+ shared/schema.ts                           | 14 ++--
+ 10 files changed, 363 insertions(+), 40 deletions(-)
+ create mode 100644 server/ai-context.ts
+
+diff --git a/docs/_codex/CODEX_ACTIVITY_LOG.md b/docs/_codex/CODEX_ACTIVITY_LOG.md
+index 69c94fd..6a02a61 100644
+--- a/docs/_codex/CODEX_ACTIVITY_LOG.md
++++ b/docs/_codex/CODEX_ACTIVITY_LOG.md
+@@ -354,3 +354,29 @@
+   - `npm run check` passed.
+   - `npm run db:push` failed: missing `DATABASE_URL`.
+   - `npm run dev` failed: missing `DATABASE_URL`; endpoint smoke tests skipped.
++
++## 2025-12-29T16:27:20Z (UTC)
++- Session goal: Phase 4 (C.6) AI assistant streaming backend and QA.
++- Commands executed (READ-ONLY):
++  - rg -n "conversations|messages" shared/schema.ts
++  - sed -n '350,430p' shared/schema.ts
++  - sed -n '1,120p' server/replit_integrations/chat/storage.ts
++  - sed -n '1,160p' server/replit_integrations/chat/routes.ts
++  - rg -n "getTransactions\(" -n server/storage.ts
++  - sed -n '380,440p' server/storage.ts
++- Commands executed (MUTATING):
++  - apply_patch (shared/schema.ts, server/storage.ts, server/routes.ts, server/replit_integrations/chat/storage.ts, server/replit_integrations/chat/routes.ts)
++  - create server/ai-context.ts
++  - npm run check
++  - npm run db:push
++  - npm run dev (background)
++  - curl -s http://localhost:5000/api/health
++  - tail -n 60 /tmp/ritualfin-dev.log
++- Summary of changes:
++  - Added SSE AI chat endpoint with conversation persistence and context assembly.
++  - Updated conversations/messages schema and storage helpers.
++  - Scoped replit chat integrations to demo user.
++- QA results:
++  - `npm run check` passed.
++  - `npm run db:push` failed: missing `DATABASE_URL`.
++  - `npm run dev` failed: missing `DATABASE_URL`; endpoint smoke tests skipped.
+diff --git a/docs/_codex/DECISION_LOG.md b/docs/_codex/DECISION_LOG.md
+index 92a02b1..506baa9 100644
+--- a/docs/_codex/DECISION_LOG.md
++++ b/docs/_codex/DECISION_LOG.md
+@@ -111,3 +111,11 @@
+ - Rationale: Avoid breaking existing client usage while aligning with spec request body.
+ - Risks: None (explicit fallback).
+ - Follow-ups: Standardize on `content` in a future cleanup.
++
++## 2025-12-29T16:27:20Z (UTC)
++- Decision: Scope replit integration chat conversations to the demo user ID.
++- Alternatives considered: Allow null userId in conversations, or disable replit chat routes.
++- Tradeoffs: Maintains schema constraints vs. tying integrations to demo user.
++- Rationale: Conversations now require userId; demo user is the existing single-user fallback.
++- Risks: Replit integration chat data is not separated from demo user data.
++- Follow-ups: Revisit once real auth is implemented.
+diff --git a/docs/_codex/DIFF_SUMMARY.md b/docs/_codex/DIFF_SUMMARY.md
+index 67d2b51..ac5f74f 100644
+--- a/docs/_codex/DIFF_SUMMARY.md
++++ b/docs/_codex/DIFF_SUMMARY.md
+@@ -163,3 +163,20 @@
+ - Modified: package.json, package-lock.json
+   - Change: Added `csv-parse` dependency.
+   - Reason: Streaming CSV parsing requirement.
++
++## 2025-12-29T16:27:20Z (UTC)
++- New: server/ai-context.ts
++  - Change: Added chat context assembly using recent transactions and goals.
++  - Reason: Provide AI assistant context for SSE chat.
++- Modified: shared/schema.ts
++  - Change: Updated conversations/messages tables to match C.6 schema (UUID text ids, role enum, cascade delete).
++  - Reason: Enable AI chat persistence with user scoping.
++- Modified: server/storage.ts
++  - Change: Added conversation/message storage helpers and extended `getTransactions` for date range queries.
++  - Reason: Support AI chat context and persistence.
++- Modified: server/routes.ts
++  - Change: Added `/api/ai/chat` SSE endpoint with context assembly and usage logging.
++  - Reason: Implement Batch 3 C.6 AI assistant streaming backend.
++- Modified: server/replit_integrations/chat/storage.ts, server/replit_integrations/chat/routes.ts
++  - Change: Added demo user scoping for conversations and role typing.
++  - Reason: Align integrations with new conversations schema.
+diff --git a/docs/_codex/QA_NOTES.md b/docs/_codex/QA_NOTES.md
+index 892d0d5..cea5c70 100644
+--- a/docs/_codex/QA_NOTES.md
++++ b/docs/_codex/QA_NOTES.md
+@@ -115,3 +115,20 @@
+   - Endpoint smoke tests (including `/api/health` and uploads progress endpoints) skipped due to dev server failure.
+ - Failures: Missing `DATABASE_URL` blocked db:push and local dev server.
+ - Repro steps: Set `DATABASE_URL`, rerun `npm run db:push` and `npm run dev`, then hit `/api/health` and uploads endpoints.
++
++## 2025-12-29T16:27:20Z (UTC)
++- Environment: local
++- Commands executed (READ-ONLY): none.
++- Commands executed (MUTATING):
++  - `npm run check`
++  - `npm run db:push`
++  - `npm run dev` (via background run)
++  - `curl http://localhost:5000/api/health`
++  - `tail -n 60 /tmp/ritualfin-dev.log`
++- Test results:
++  - `npm run check` passed.
++  - `npm run db:push` failed: `DATABASE_URL` not set.
++  - `npm run dev` failed: `DATABASE_URL` not set; server did not start.
++  - Endpoint smoke tests (including `/api/health` and `/api/ai/chat`) skipped due to dev server failure.
++- Failures: Missing `DATABASE_URL` blocked db:push and local dev server.
++- Repro steps: Set `DATABASE_URL`, rerun `npm run db:push` and `npm run dev`, then hit `/api/health` and AI chat endpoints.
+diff --git a/server/ai-context.ts b/server/ai-context.ts
+new file mode 100644
+index 0000000..a033ed2
+--- /dev/null
++++ b/server/ai-context.ts
+@@ -0,0 +1,77 @@
++import { storage } from "./storage";
++import { subDays, startOfMonth } from "date-fns";
++
++export interface ChatContext {
++  systemPrompt: string;
++  tokensEstimate: number;
++}
++
++/**
++ * Assemble context for AI chat from user's transaction data
++ * Returns system prompt with embedded context
++ */
++export async function assembleChatContext(userId: string): Promise<ChatContext> {
++  const now = new Date();
++  const thirtyDaysAgo = subDays(now, 30);
++  const monthStart = startOfMonth(now);
++
++  // Fetch recent transactions
++  const transactions = await storage.getTransactions({
++    userId,
++    startDate: thirtyDaysAgo.toISOString().split("T")[0],
++    limit: 50,
++  });
++
++  // Fetch current month goal
++  const goals = await storage.getGoals(userId);
++  const currentGoal = goals.find(g => g.month === now.toISOString().slice(0, 7));
++
++  // Calculate spending summary
++  const totalSpent = transactions
++    .filter(t => t.amount < 0)
++    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
++
++  // Get top categories
++  const categoryTotals: Record<string, number> = {};
++  transactions.forEach(t => {
++    if (t.amount < 0 && t.category1) {
++      categoryTotals[t.category1] = (categoryTotals[t.category1] || 0) + Math.abs(t.amount);
++    }
++  });
++  const topCategories = Object.entries(categoryTotals)
++    .sort(([, a], [, b]) => b - a)
++    .slice(0, 3)
++    .map(([cat, amt]) => `${cat}: €${amt.toFixed(2)}`);
++
++  // Format recent transactions
++  const recentTxns = transactions.slice(0, 10).map(t =>
++    `${t.paymentDate.toISOString().slice(5, 10)}: ${t.descNorm} - €${Math.abs(t.amount).toFixed(2)} (${t.category1 || "Uncategorized"})`
++  ).join("\n");
++
++  // Build system prompt
++  const systemPrompt = `You are a personal finance assistant for RitualFin, a budgeting app.
++
++Current Date: ${now.toISOString().slice(0, 10)}
++
++User Context:
++- Current Month: ${now.toLocaleString("pt-BR", { month: "long", year: "numeric" })}
++- Total Spending (30 days): €${totalSpent.toFixed(2)}
++${currentGoal ? `- Monthly Budget: €${currentGoal.totalPlanned} (Remaining: €${(currentGoal.totalPlanned - totalSpent).toFixed(2)})` : ""}
++- Top Spending Categories:
++  ${topCategories.join("\n  ")}
++
++Recent Transactions (last 10):
++${recentTxns}
++
++Instructions:
++- Answer in Portuguese (pt-BR)
++- Be concise and actionable (2-3 paragraphs max)
++- Reference specific transactions when relevant
++- Provide budget insights based on user's goals
++- If asked about periods outside 30 days, explain data limitation`;
++
++  // Estimate tokens (rough: 1 token ≈ 4 characters)
++  const tokensEstimate = Math.ceil(systemPrompt.length / 4);
++
++  return { systemPrompt, tokensEstimate };
++}
+diff --git a/server/replit_integrations/chat/routes.ts b/server/replit_integrations/chat/routes.ts
+index 3d7a7ea..9696a1e 100644
+--- a/server/replit_integrations/chat/routes.ts
++++ b/server/replit_integrations/chat/routes.ts
+@@ -1,6 +1,7 @@
+ import type { Express, Request, Response } from "express";
+ import OpenAI from "openai";
+ import { chatStorage } from "./storage";
++import { storage } from "../../storage";
+ import { logOpenAIUsage } from "../../ai-usage";
+ 
+ const openai = new OpenAI({
+@@ -8,11 +9,20 @@ const openai = new OpenAI({
+   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+ });
+ 
++async function getDemoUser() {
++  let user = await storage.getUserByUsername("demo");
++  if (!user) {
++    user = await storage.createUser({ username: "demo", password: "demo" });
++  }
++  return user;
++}
++
+ export function registerChatRoutes(app: Express): void {
+   // Get all conversations
+   app.get("/api/conversations", async (req: Request, res: Response) => {
+     try {
+-      const conversations = await chatStorage.getAllConversations();
++      const user = await getDemoUser();
++      const conversations = await chatStorage.getAllConversations(user.id);
+       res.json(conversations);
+     } catch (error) {
+       console.error("Error fetching conversations:", error);
+@@ -23,8 +33,9 @@ export function registerChatRoutes(app: Express): void {
+   // Get single conversation with messages
+   app.get("/api/conversations/:id", async (req: Request, res: Response) => {
+     try {
++      const user = await getDemoUser();
+       const id = req.params.id;
+-      const conversation = await chatStorage.getConversation(id);
++      const conversation = await chatStorage.getConversation(id, user.id);
+       if (!conversation) {
+         return res.status(404).json({ error: "Conversation not found" });
+       }
+@@ -40,7 +51,8 @@ export function registerChatRoutes(app: Express): void {
+   app.post("/api/conversations", async (req: Request, res: Response) => {
+     try {
+       const { title } = req.body;
+-      const conversation = await chatStorage.createConversation(title || "New Chat");
++      const user = await getDemoUser();
++      const conversation = await chatStorage.createConversation(user.id, title || "New Chat");
+       res.status(201).json(conversation);
+     } catch (error) {
+       console.error("Error creating conversation:", error);
+@@ -51,8 +63,9 @@ export function registerChatRoutes(app: Express): void {
+   // Delete conversation
+   app.delete("/api/conversations/:id", async (req: Request, res: Response) => {
+     try {
++      const user = await getDemoUser();
+       const id = req.params.id;
+-      await chatStorage.deleteConversation(id);
++      await chatStorage.deleteConversation(id, user.id);
+       res.status(204).send();
+     } catch (error) {
+       console.error("Error deleting conversation:", error);
+@@ -65,6 +78,12 @@ export function registerChatRoutes(app: Express): void {
+     const conversationId = req.params.id;
+     try {
+       const { content } = req.body;
++      const user = await getDemoUser();
++      const conversation = await chatStorage.getConversation(conversationId, user.id);
++
++      if (!conversation) {
++        return res.status(404).json({ error: "Conversation not found" });
++      }
+ 
+       // Save user message
+       await chatStorage.createMessage(conversationId, "user", content);
+diff --git a/server/replit_integrations/chat/storage.ts b/server/replit_integrations/chat/storage.ts
+index 216b19c..bca91f8 100644
+--- a/server/replit_integrations/chat/storage.ts
++++ b/server/replit_integrations/chat/storage.ts
+@@ -1,43 +1,45 @@
+ import { db } from "../../db";
+ import { conversations, messages } from "@shared/schema";
+-import { eq, desc } from "drizzle-orm";
++import { and, eq, desc } from "drizzle-orm";
+ 
+ export interface IChatStorage {
+-  getConversation(id: string): Promise<typeof conversations.$inferSelect | undefined>;
+-  getAllConversations(): Promise<(typeof conversations.$inferSelect)[]>;
+-  createConversation(title: string): Promise<typeof conversations.$inferSelect>;
+-  deleteConversation(id: string): Promise<void>;
++  getConversation(id: string, userId: string): Promise<typeof conversations.$inferSelect | undefined>;
++  getAllConversations(userId: string): Promise<(typeof conversations.$inferSelect)[]>;
++  createConversation(userId: string, title: string): Promise<typeof conversations.$inferSelect>;
++  deleteConversation(id: string, userId: string): Promise<void>;
+   getMessagesByConversation(conversationId: string): Promise<(typeof messages.$inferSelect)[]>;
+-  createMessage(conversationId: string, role: string, content: string): Promise<typeof messages.$inferSelect>;
++  createMessage(conversationId: string, role: "user" | "assistant", content: string): Promise<typeof messages.$inferSelect>;
+ }
+ 
+ export const chatStorage: IChatStorage = {
+-  async getConversation(id: string) {
+-    const [conversation] = await db.select().from(conversations).where(eq(conversations.id, id));
++  async getConversation(id: string, userId: string) {
++    const [conversation] = await db.select().from(conversations)
++      .where(and(eq(conversations.id, id), eq(conversations.userId, userId)));
+     return conversation;
+   },
+ 
+-  async getAllConversations() {
+-    return db.select().from(conversations).orderBy(desc(conversations.createdAt));
++  async getAllConversations(userId: string) {
++    return db.select().from(conversations)
++      .where(eq(conversations.userId, userId))
++      .orderBy(desc(conversations.createdAt));
+   },
+ 
+-  async createConversation(title: string) {
+-    const [conversation] = await db.insert(conversations).values({ title }).returning();
++  async createConversation(userId: string, title: string) {
++    const [conversation] = await db.insert(conversations).values({ userId, title }).returning();
+     return conversation;
+   },
+ 
+-  async deleteConversation(id: string) {
++  async deleteConversation(id: string, userId: string) {
+     await db.delete(messages).where(eq(messages.conversationId, id));
+-    await db.delete(conversations).where(eq(conversations.id, id));
++    await db.delete(conversations).where(and(eq(conversations.id, id), eq(conversations.userId, userId)));
+   },
+ 
+   async getMessagesByConversation(conversationId: string) {
+     return db.select().from(messages).where(eq(messages.conversationId, conversationId)).orderBy(messages.createdAt);
+   },
+ 
+-  async createMessage(conversationId: string, role: string, content: string) {
++  async createMessage(conversationId: string, role: "user" | "assistant", content: string) {
+     const [message] = await db.insert(messages).values({ conversationId, role, content }).returning();
+     return message;
+   },
+ };
+-
+diff --git a/server/routes.ts b/server/routes.ts
+index 8fa510d..d2ed396 100644
+--- a/server/routes.ts
++++ b/server/routes.ts
+@@ -9,6 +9,7 @@ import OpenAI from "openai";
+ import { logger } from "./logger";
+ import { withOpenAIUsage } from "./ai-usage";
+ import { logAIUsage } from "./ai-logger";
++import { assembleChatContext } from "./ai-context";
+ import { sql, eq, gte, lte, desc, and } from "drizzle-orm";
+ import { db } from "./db";
+ 
+@@ -2083,6 +2084,103 @@ export async function registerRoutes(
+     }
+   });
+ 
++  // ===== AI CHAT =====
++  app.post("/api/ai/chat", async (req: Request, res: Response) => {
++    try {
++      const { message, conversationId } = req.body;
++      const user = await storage.getUserByUsername("demo");
++
++      if (!user) {
++        return res.status(401).json({ error: "Usuário não encontrado" });
++      }
++
++      if (!message) {
++        return res.status(400).json({ error: "Message is required" });
++      }
++
++      if (!openai) {
++        return res.status(503).json({ error: "OpenAI não configurado" });
++      }
++
++      res.setHeader("Content-Type", "text/event-stream");
++      res.setHeader("Cache-Control", "no-cache");
++      res.setHeader("Connection", "keep-alive");
++      res.flushHeaders();
++
++      const sendEvent = (event: any) => {
++        res.write(`data: ${JSON.stringify(event)}\n\n`);
++      };
++
++      try {
++        const { systemPrompt, tokensEstimate } = await assembleChatContext(user.id);
++
++        let convId = conversationId;
++        if (!convId) {
++          const title = message.slice(0, 50);
++          const conversation = await storage.createConversation({ userId: user.id, title });
++          convId = conversation.id;
++        }
++
++        await storage.createMessage({
++          conversationId: convId,
++          role: "user",
++          content: message,
++        });
++
++        const stream = await openai.chat.completions.create({
++          model: "gpt-4o-mini",
++          messages: [
++            { role: "system", content: systemPrompt },
++            { role: "user", content: message },
++          ],
++          temperature: 0.7,
++          stream: true,
++        });
++
++        let fullResponse = "";
++        let totalTokens = 0;
++
++        for await (const chunk of stream) {
++          const content = chunk.choices[0]?.delta?.content || "";
++          if (content) {
++            fullResponse += content;
++            sendEvent({ type: "data", content });
++          }
++
++          if (chunk.usage) {
++            totalTokens = chunk.usage.total_tokens || totalTokens;
++          }
++        }
++
++        if (totalTokens === 0) {
++          totalTokens = tokensEstimate + Math.ceil((message.length + fullResponse.length) / 4);
++        }
++
++        await storage.createMessage({
++          conversationId: convId,
++          role: "assistant",
++          content: fullResponse,
++        });
++
++        await logAIUsage(user.id, "chat", totalTokens, "gpt-4o-mini");
++
++        sendEvent({ type: "done", conversationId: convId });
++        res.end();
++      } catch (error: any) {
++        logger.error("ai_chat_error", {
++          error: error instanceof Error ? error.message : String(error),
++        });
++        sendEvent({ type: "error", error: error.message });
++        res.end();
++      }
++    } catch (error: any) {
++      logger.error("ai_chat_setup_failed", {
++        error: error instanceof Error ? error.message : String(error),
++      });
++      res.status(500).json({ error: error.message });
++    }
++  });
++
+   // ===== AI KEYWORD ANALYSIS =====
+   app.post("/api/ai/suggest-keyword", async (req: Request, res: Response) => {
+     try {
+diff --git a/server/storage.ts b/server/storage.ts
+index 7689df1..39e768f 100644
+--- a/server/storage.ts
++++ b/server/storage.ts
+@@ -1,5 +1,6 @@
+ import {
+   users, accounts, uploads, uploadErrors, merchantMetadata, transactions, rules, budgets, calendarEvents, eventOccurrences, goals, categoryGoals, rituals, settings,
++  conversations, messages,
+   aiUsageLogs, notifications,
+   type User, type InsertUser,
+   type Account, type InsertAccount,
+@@ -16,7 +17,8 @@ import {
+   type Ritual, type InsertRitual,
+   type Settings, type InsertSettings, type UpdateSettings,
+   type AIUsageLog, type InsertAIUsageLog,
+-  type Notification, type InsertNotification
++  type Notification, type InsertNotification,
++  type Conversation, type Message
+ } from "@shared/schema";
+ import { db } from "./db";
+ import { eq, and, desc, sql, like, gte, lt, or, isNull } from "drizzle-orm";
+@@ -42,6 +44,12 @@ export interface IStorage {
+   markNotificationRead(id: string, userId: string): Promise<Notification | undefined>;
+   deleteNotification(id: string, userId: string): Promise<void>;
+ 
++  // Conversations
++  createConversation(data: { userId: string; title: string }): Promise<Conversation>;
++  getConversations(userId: string): Promise<Conversation[]>;
++  createMessage(data: { conversationId: string; role: "user" | "assistant"; content: string }): Promise<Message>;
++  getMessages(conversationId: string): Promise<Message[]>;
++
+   // Accounts
+   getAccounts(userId: string): Promise<Account[]>;
+   getAccount(id: string): Promise<Account | undefined>;
+@@ -71,6 +79,7 @@ export interface IStorage {
+ 
+   // Transactions
+   getTransactions(userId: string, month?: string): Promise<Transaction[]>;
++  getTransactions(options: { userId: string; startDate?: string; endDate?: string; limit?: number }): Promise<Transaction[]>;
+   getTransactionsByNeedsReview(userId: string): Promise<Transaction[]>;
+   getTransaction(id: string): Promise<Transaction | undefined>;
+   getTransactionByKey(key: string): Promise<Transaction | undefined>;
+@@ -237,6 +246,39 @@ export class DatabaseStorage implements IStorage {
+     await db.delete(notifications).where(and(eq(notifications.id, id), eq(notifications.userId, userId)));
+   }
+ 
++  // Conversations
++  async createConversation(data: { userId: string; title: string }): Promise<Conversation> {
++    const [conversation] = await db
++      .insert(conversations)
++      .values(data)
++      .returning();
++    return conversation;
++  }
++
++  async getConversations(userId: string): Promise<Conversation[]> {
++    return db
++      .select()
++      .from(conversations)
++      .where(eq(conversations.userId, userId))
++      .orderBy(desc(conversations.createdAt));
++  }
++
++  async createMessage(data: { conversationId: string; role: "user" | "assistant"; content: string }): Promise<Message> {
++    const [message] = await db
++      .insert(messages)
++      .values(data)
++      .returning();
++    return message;
++  }
++
++  async getMessages(conversationId: string): Promise<Message[]> {
++    return db
++      .select()
++      .from(messages)
++      .where(eq(messages.conversationId, conversationId))
++      .orderBy(messages.createdAt);
++  }
++
+   // Accounts
+   async getAccounts(userId: string): Promise<Account[]> {
+     return db.select().from(accounts)
+@@ -394,23 +436,40 @@ export class DatabaseStorage implements IStorage {
+   }
+ 
+   // Transactions
+-  async getTransactions(userId: string, month?: string): Promise<Transaction[]> {
++  async getTransactions(
++    userIdOrOptions: string | { userId: string; startDate?: string; endDate?: string; limit?: number },
++    month?: string
++  ): Promise<Transaction[]> {
++    const userId = typeof userIdOrOptions === "string" ? userIdOrOptions : userIdOrOptions.userId;
++    const startDateValue = typeof userIdOrOptions === "string" ? undefined : userIdOrOptions.startDate;
++    const endDateValue = typeof userIdOrOptions === "string" ? undefined : userIdOrOptions.endDate;
++    const limitValue = typeof userIdOrOptions === "string" ? undefined : userIdOrOptions.limit;
++
++    const conditions = [eq(transactions.userId, userId)];
++
+     if (month) {
+       const startDate = new Date(`${month}-01`);
+       const endDate = new Date(startDate);
+       endDate.setMonth(endDate.getMonth() + 1);
+-      
+-      return db.select().from(transactions)
+-        .where(and(
+-          eq(transactions.userId, userId),
+-          gte(transactions.paymentDate, startDate),
+-          lt(transactions.paymentDate, endDate)
+-        ))
+-        .orderBy(desc(transactions.paymentDate));
++      conditions.push(gte(transactions.paymentDate, startDate));
++      conditions.push(lt(transactions.paymentDate, endDate));
++    } else {
++      if (startDateValue) {
++        conditions.push(gte(transactions.paymentDate, new Date(startDateValue)));
++      }
++      if (endDateValue) {
++        conditions.push(lt(transactions.paymentDate, new Date(endDateValue)));
++      }
+     }
+-    return db.select().from(transactions)
+-      .where(eq(transactions.userId, userId))
+-      .orderBy(desc(transactions.paymentDate));
++
++    const baseQuery = db.select().from(transactions).where(and(...conditions));
++    const orderedQuery = baseQuery.orderBy(desc(transactions.paymentDate));
++
++    if (limitValue) {
++      return orderedQuery.limit(limitValue);
++    }
++
++    return orderedQuery;
+   }
+ 
+   async getTransactionsByNeedsReview(userId: string): Promise<Transaction[]> {
+diff --git a/shared/schema.ts b/shared/schema.ts
+index a79aa11..d9bcf1c 100644
+--- a/shared/schema.ts
++++ b/shared/schema.ts
+@@ -363,10 +363,10 @@ export type Ritual = typeof rituals.$inferSelect;
+ 
+ // Conversations table (for AI chat features)
+ export const conversations = pgTable("conversations", {
+-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+-  userId: varchar("user_id").references(() => users.id),
++  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
++  userId: text("user_id").notNull().references(() => users.id),
+   title: text("title").notNull(),
+-  createdAt: timestamp("created_at").notNull().defaultNow(),
++  createdAt: timestamp("created_at").defaultNow().notNull(),
+ });
+ 
+ export const conversationsRelations = relations(conversations, ({ one }) => ({
+@@ -379,11 +379,11 @@ export type Conversation = typeof conversations.$inferSelect;
+ 
+ // Messages table (for AI chat features)
+ export const messages = pgTable("messages", {
+-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+-  conversationId: varchar("conversation_id").notNull().references(() => conversations.id),
+-  role: text("role").notNull(),
++  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
++  conversationId: text("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
++  role: text("role", { enum: ["user", "assistant"] }).notNull(),
+   content: text("content").notNull(),
+-  createdAt: timestamp("created_at").notNull().defaultNow(),
++  createdAt: timestamp("created_at").defaultNow().notNull(),
+ });
+ 
+ export const messagesRelations = relations(messages, ({ one }) => ({
+-- 
+2.50.1 (Apple Git-155)
+
+
+From 30f612d1a66524d1c80af20a2127028a44edf0f5 Mon Sep 17 00:00:00 2001
+From: Vinicius <vinicius.steigleder@gmail.com>
+Date: Mon, 29 Dec 2025 17:30:29 +0100
+Subject: [PATCH 5/7] Phase 4: Completion documentation
+
+---
+ docs/_codex/CODEX_ACTIVITY_LOG.md             | 11 ++++
+ docs/_codex/DEPLOYMENT_NOTES.md               |  5 ++
+ docs/_codex/DIFF_SUMMARY.md                   |  8 +++
+ docs/_codex/PHASES_1_TO_4_COMPLETE_SUMMARY.md | 56 +++++++++++++++++++
+ 4 files changed, 80 insertions(+)
+ create mode 100644 docs/_codex/PHASES_1_TO_4_COMPLETE_SUMMARY.md
+
+diff --git a/docs/_codex/CODEX_ACTIVITY_LOG.md b/docs/_codex/CODEX_ACTIVITY_LOG.md
+index 6a02a61..3f6e86f 100644
+--- a/docs/_codex/CODEX_ACTIVITY_LOG.md
++++ b/docs/_codex/CODEX_ACTIVITY_LOG.md
+@@ -380,3 +380,14 @@
+   - `npm run check` passed.
+   - `npm run db:push` failed: missing `DATABASE_URL`.
+   - `npm run dev` failed: missing `DATABASE_URL`; endpoint smoke tests skipped.
++
++## 2025-12-29T16:28:46Z (UTC)
++- Session goal: Create phase completion summary and update deployment notes.
++- Commands executed (READ-ONLY):
++  - git log --oneline -4
++- Commands executed (MUTATING):
++  - update docs/_codex/DEPLOYMENT_NOTES.md
++  - create docs/_codex/PHASES_1_TO_4_COMPLETE_SUMMARY.md
++  - update docs/_codex/DIFF_SUMMARY.md
++- Summary of changes:
++  - Added final phases 1–4 completion summary and deployment notes for schema/API changes.
+diff --git a/docs/_codex/DEPLOYMENT_NOTES.md b/docs/_codex/DEPLOYMENT_NOTES.md
+index 6cb2a22..4f944f0 100644
+--- a/docs/_codex/DEPLOYMENT_NOTES.md
++++ b/docs/_codex/DEPLOYMENT_NOTES.md
+@@ -5,3 +5,8 @@
+ - Risks noted: serverless timeouts, bundle limits, and Git integration reliability.
+ - Rollback guidance: Use platform rollback features; avoid relying on untested auto-deploy.
+ - CORS required for split backend; ensure ALLOWED_ORIGIN is set (value redacted).
++
++## 2025-12-29T16:28:46Z (UTC)
++- Schema changes require db:push: `ai_usage_logs` (operation/tokens/cost), `notification_type` enum + notifications update, uploads progress fields, conversations/messages tables, `upload_status` enum includes `completed`.
++- New/updated endpoints: `/api/ai/usage` (date filters + totals), `/api/ai/suggest-keyword`, `/api/ai/bulk-categorize`, `/api/ai/chat` (SSE), `/api/uploads/:id/progress`, `/api/notifications` CRUD with `/read` patch.
++- New dependency: `csv-parse` for streaming CSV parsing.
+diff --git a/docs/_codex/DIFF_SUMMARY.md b/docs/_codex/DIFF_SUMMARY.md
+index ac5f74f..c3eab38 100644
+--- a/docs/_codex/DIFF_SUMMARY.md
++++ b/docs/_codex/DIFF_SUMMARY.md
+@@ -180,3 +180,11 @@
+ - Modified: server/replit_integrations/chat/storage.ts, server/replit_integrations/chat/routes.ts
+   - Change: Added demo user scoping for conversations and role typing.
+   - Reason: Align integrations with new conversations schema.
++
++## 2025-12-29T16:28:46Z (UTC)
++- New: docs/_codex/PHASES_1_TO_4_COMPLETE_SUMMARY.md
++  - Change: Added consolidated completion summary for phases 1–4.
++  - Reason: Required final deliverable.
++- Modified: docs/_codex/DEPLOYMENT_NOTES.md
++  - Change: Documented deployment-relevant schema changes, endpoints, and dependency additions.
++  - Reason: Deployment-impact documentation requirement.
+diff --git a/docs/_codex/PHASES_1_TO_4_COMPLETE_SUMMARY.md b/docs/_codex/PHASES_1_TO_4_COMPLETE_SUMMARY.md
+new file mode 100644
+index 0000000..7488f71
+--- /dev/null
++++ b/docs/_codex/PHASES_1_TO_4_COMPLETE_SUMMARY.md
+@@ -0,0 +1,56 @@
++# Phases 1–4 Completion Summary
++
++Branch: `codex/impl-phases-1-4`
++
++## Phases Completed
++
++### Phase 1 (C.4) — AI Usage Tracking
++Implemented AI usage tracking aligned with the C.4 spec. The `ai_usage_logs` schema now captures operation, token usage, cost, and model; a new `logAIUsage` wrapper calculates cost and writes logs. Added `/api/ai/suggest-keyword`, `/api/ai/bulk-categorize`, and upgraded `/api/ai/usage` with date filters and totals. Existing OpenAI usage logging was adapted to map feature tags into the new operation enum.
++
++### Phase 2 (C.5) — Notification System Backend
++Added `notification_type` enum and updated `notifications` schema to match the spec. Storage methods now support get/create/mark-read/delete flows. API endpoints were updated to `GET /api/notifications`, `POST /api/notifications`, `PATCH /api/notifications/:id/read`, and `DELETE /api/notifications/:id` with required field and enum validation.
++
++### Phase 3 (C.7) — Async CSV Refactor
++Refactored CSV processing to a streaming parser using `csv-parse` with progress callbacks and new `/api/uploads/:id/progress` endpoint. Upload records now track progress, rows processed/failed, and support `completed` status while preserving `duplicate`. Upload processing now streams rows, stores row-level errors, and updates progress to 100% on completion. Uploads UI treats `completed` as processed.
++
++### Phase 4 (C.6) — AI Assistant Streaming
++Implemented `/api/ai/chat` SSE endpoint with context assembly and conversation persistence. Added `server/ai-context.ts` to build prompts from recent transactions and goals, and conversation/message storage methods. Conversations/messages schema updated to UUID text ids with role enum and cascade delete. Replit chat integrations now scope data to the demo user to satisfy the new schema requirements.
++
++## Commits Overview
++- `b853337` Phase 4: AI chat streaming
++- `9ecfc3b` Phase 3: Async CSV processing
++- `88e8d6f` Phase 2: Notifications backend
++- `88461b2` Phase 1: AI usage tracking
++
++## Files Changed (Grouped)
++- Backend: `shared/schema.ts`, `server/routes.ts`, `server/storage.ts`, `server/csv-parser.ts`, `server/ai-logger.ts`, `server/ai-context.ts`, `server/ai-usage.ts`, `server/replit_integrations/chat/routes.ts`, `server/replit_integrations/chat/storage.ts`
++- Frontend: `client/src/pages/uploads.tsx`
++- Dependencies: `package.json`, `package-lock.json`
++- Documentation: `docs/_codex/CODEX_ACTIVITY_LOG.md`, `docs/_codex/DECISION_LOG.md`, `docs/_codex/DIFF_SUMMARY.md`, `docs/_codex/QA_NOTES.md`, `docs/_codex/DEPLOYMENT_NOTES.md`
++
++## QA Executed
++- `npm run check` (passed per phase)
++- `npm run db:push` (failed: `DATABASE_URL` not set)
++- `npm run dev` (failed: `DATABASE_URL` not set)
++- Endpoint smoke tests (skipped because dev server did not start)
++
++## How to Test Locally
++1) Set `DATABASE_URL` to a valid Postgres connection string.
++2) Run `npm install`.
++3) Run `npm run db:push`.
++4) Run `npm run dev`.
++5) Smoke test endpoints:
++   - `curl http://localhost:5000/api/health`
++   - `curl -X POST http://localhost:5000/api/notifications -H "Content-Type: application/json" -d '{"type":"info","title":"Test","message":"Hello"}'`
++   - `curl http://localhost:5000/api/notifications`
++   - `curl -X POST http://localhost:5000/api/ai/suggest-keyword -H "Content-Type: application/json" -d '{"description":"netflix monthly subscription","amount":-12.99}'`
++   - `curl http://localhost:5000/api/ai/usage`
++   - `curl -N -X POST http://localhost:5000/api/ai/chat -H "Content-Type: application/json" -d '{"message":"Analise meus gastos este mês"}'`
++   - Upload CSV via UI and poll `GET /api/uploads/:id/progress`
++
++## Known Limitations / Deferred Items
++- Local QA blocked without `DATABASE_URL`; endpoint smoke tests not executed.
++- CSV progress percentage uses estimation when total rows are unknown until parsing completes.
++
++## Next Recommended Step
++- Open a PR to Claude for review of phases 1–4 before any merge to `main`.
+-- 
+2.50.1 (Apple Git-155)
+
+
+From 83297e960bff729f754a5638db81a44e63b9d74f Mon Sep 17 00:00:00 2001
+From: Vinicius <vinicius.steigleder@gmail.com>
+Date: Mon, 29 Dec 2025 17:59:04 +0100
+Subject: [PATCH 6/7] QA: clarify DB-missing startup error
+
+---
+ docs/_codex/CODEX_ACTIVITY_LOG.md | 28 ++++++++++++++++++++++++++++
+ docs/_codex/DECISION_LOG.md       |  8 ++++++++
+ docs/_codex/DIFF_SUMMARY.md       |  5 +++++
+ docs/_codex/PLAN_LOG.md           | 13 +++++++++++++
+ docs/_codex/QA_NOTES.md           | 22 ++++++++++++++++++++++
+ server/db.ts                      |  5 ++---
+ 6 files changed, 78 insertions(+), 3 deletions(-)
+
+diff --git a/docs/_codex/CODEX_ACTIVITY_LOG.md b/docs/_codex/CODEX_ACTIVITY_LOG.md
+index 3f6e86f..b31748e 100644
+--- a/docs/_codex/CODEX_ACTIVITY_LOG.md
++++ b/docs/_codex/CODEX_ACTIVITY_LOG.md
+@@ -391,3 +391,31 @@
+   - update docs/_codex/DIFF_SUMMARY.md
+ - Summary of changes:
+   - Added final phases 1–4 completion summary and deployment notes for schema/API changes.
++
++## 2025-12-29T16:57:01Z (UTC)
++- Session goal: QA + debug + stabilization (env triage, static checks, conditional DB tests).
++- Commands executed (READ-ONLY):
++  - cat .env.example
++  - rg -n "process.env" server client shared
++  - if [ -n "$DATABASE_URL" ]; then echo ...
++  - date -u +%Y-%m-%dT%H:%M:%SZ
++- Commands executed (MUTATING):
++  - update docs/_codex/PLAN_LOG.md
++  - update docs/_codex/QA_NOTES.md
++- Notes:
++  - DATABASE_URL not set; DB-backed QA steps currently blocked.
++
++## 2025-12-29T16:58:22Z (UTC)
++- Session goal: Run static checks and harden DB-missing startup messaging.
++- Commands executed (READ-ONLY):
++  - date -u +%Y-%m-%dT%H:%M:%SZ
++- Commands executed (MUTATING):
++  - apply_patch (server/db.ts)
++  - npm run check
++  - npm run build
++  - update docs/_codex/QA_NOTES.md
++  - update docs/_codex/DIFF_SUMMARY.md
++  - update docs/_codex/DECISION_LOG.md
++- QA results:
++  - `npm run check` passed.
++  - `npm run build` passed with chunk-size warnings.
+diff --git a/docs/_codex/DECISION_LOG.md b/docs/_codex/DECISION_LOG.md
+index 506baa9..240f5da 100644
+--- a/docs/_codex/DECISION_LOG.md
++++ b/docs/_codex/DECISION_LOG.md
+@@ -119,3 +119,11 @@
+ - Rationale: Conversations now require userId; demo user is the existing single-user fallback.
+ - Risks: Replit integration chat data is not separated from demo user data.
+ - Follow-ups: Revisit once real auth is implemented.
++
++## 2025-12-29T16:58:22Z (UTC)
++- Decision: Exit early with a clear console error when DATABASE_URL is missing instead of throwing.
++- Alternatives considered: Keep the thrown error with stack trace.
++- Tradeoffs: Cleaner logs vs. loss of stack trace (not actionable here).
++- Rationale: QA mode requires clear, non-noisy diagnostics when DB is unavailable.
++- Risks: None; startup remains blocked without DB.
++- Follow-ups: None.
+diff --git a/docs/_codex/DIFF_SUMMARY.md b/docs/_codex/DIFF_SUMMARY.md
+index c3eab38..7ae845c 100644
+--- a/docs/_codex/DIFF_SUMMARY.md
++++ b/docs/_codex/DIFF_SUMMARY.md
+@@ -188,3 +188,8 @@
+ - Modified: docs/_codex/DEPLOYMENT_NOTES.md
+   - Change: Documented deployment-relevant schema changes, endpoints, and dependency additions.
+   - Reason: Deployment-impact documentation requirement.
++
++## 2025-12-29T16:58:22Z (UTC)
++- Modified: server/db.ts
++  - Change: Replace thrown error with explicit console error and exit when DATABASE_URL missing.
++  - Reason: Provide clear, non-noisy startup failure for DB-free QA.
+diff --git a/docs/_codex/PLAN_LOG.md b/docs/_codex/PLAN_LOG.md
+index 74b8231..fcd7c58 100644
+--- a/docs/_codex/PLAN_LOG.md
++++ b/docs/_codex/PLAN_LOG.md
+@@ -60,3 +60,16 @@
+   - Run npm run check + dev smoke + endpoint smoke tests after each phase.
+   - Record results in docs/_codex/QA_NOTES.md.
+ - Approval source: User instruction to execute phases 1-4 without confirmation (2025-12-29).
++
++## 2025-12-29T16:57:01Z (UTC)
++- Plan: Execute QA + debug + stabilization for phases 1–4 per user QA plan.
++- Status: Approved (user instruction for autonomous QA).
++- Goal: Validate build, identify DB-dependent blockers, run endpoint smoke tests if DB available, and harden if needed.
++- In Scope: Static checks (tsc/build), DB availability check, startup diagnostics, endpoint smoke tests when possible, fixes for non-env issues, documentation updates.
++- Out of Scope: New features, redesigns, auth/RLS changes, deployment changes.
++- Dependencies: DATABASE_URL for db:push and dev server; OpenAI key for AI endpoint tests.
++- Data implications: None unless DB available for migrations.
++- Risks: QA blocked by missing DB; limited verification without OpenAI key.
++- Acceptance criteria: npm run check/build clean; DB-dependent tests documented if blocked; QA summary produced.
++- QA approach: Follow user-defined QA steps 1–6 and record outcomes.
++- Approval source: User instruction (QA + stabilization mode).
+diff --git a/docs/_codex/QA_NOTES.md b/docs/_codex/QA_NOTES.md
+index cea5c70..d69a5e1 100644
+--- a/docs/_codex/QA_NOTES.md
++++ b/docs/_codex/QA_NOTES.md
+@@ -132,3 +132,25 @@
+   - Endpoint smoke tests (including `/api/health` and `/api/ai/chat`) skipped due to dev server failure.
+ - Failures: Missing `DATABASE_URL` blocked db:push and local dev server.
+ - Repro steps: Set `DATABASE_URL`, rerun `npm run db:push` and `npm run dev`, then hit `/api/health` and AI chat endpoints.
++
++## 2025-12-29T16:57:01Z (UTC)
++- Environment: local
++- Step 1 (env triage):
++  - Required env vars detected: DATABASE_URL, CORS_ORIGIN, OPENAI_API_KEY, NODE_ENV, PORT, VITE_API_URL, AI_INTEGRATIONS_OPENAI_API_KEY, AI_INTEGRATIONS_OPENAI_BASE_URL.
++  - DB available: no (DATABASE_URL not set).
++  - Blocked QA items: db:push, npm run dev, all DB-backed endpoint smoke tests, AI usage logging persistence, SSE chat persistence.
++- Commands executed (READ-ONLY):
++  - `cat .env.example`
++  - `rg -n "process.env" server client shared`
++  - `if [ -n "$DATABASE_URL" ]; then echo ...`
++- Commands executed (MUTATING): none.
++
++## 2025-12-29T16:58:22Z (UTC)
++- Environment: local
++- Commands executed (MUTATING):
++  - `npm run check`
++  - `npm run build`
++- Test results:
++  - `npm run check` passed.
++  - `npm run build` passed with existing chunk size warnings.
++- Notes: Startup error message for missing DATABASE_URL was hardened to avoid stack spam.
+diff --git a/server/db.ts b/server/db.ts
+index 0822629..7094c5e 100644
+--- a/server/db.ts
++++ b/server/db.ts
+@@ -5,9 +5,8 @@ import * as schema from "@shared/schema";
+ const { Pool } = pg;
+ 
+ if (!process.env.DATABASE_URL) {
+-  throw new Error(
+-    "DATABASE_URL must be set. Did you forget to provision a database?",
+-  );
++  console.error("DATABASE_URL must be set. Did you forget to provision a database?");
++  process.exit(1);
+ }
+ 
+ export const pool = new Pool({
+-- 
+2.50.1 (Apple Git-155)
+
+
+From 327d62b2e1721f8727b0b51a53ab631ef9bf845e Mon Sep 17 00:00:00 2001
+From: Vinicius <vinicius.steigleder@gmail.com>
+Date: Mon, 29 Dec 2025 17:59:52 +0100
+Subject: [PATCH 7/7] QA: add phases 1-4 QA summary
+
+---
+ docs/_codex/CODEX_ACTIVITY_LOG.md             | 10 +++++++
+ docs/_codex/DIFF_SUMMARY.md                   |  5 ++++
+ .../PHASES_1_TO_4_QA_COMPLETE_SUMMARY.md      | 26 +++++++++++++++++++
+ 3 files changed, 41 insertions(+)
+ create mode 100644 docs/_codex/PHASES_1_TO_4_QA_COMPLETE_SUMMARY.md
+
+diff --git a/docs/_codex/CODEX_ACTIVITY_LOG.md b/docs/_codex/CODEX_ACTIVITY_LOG.md
+index b31748e..664999a 100644
+--- a/docs/_codex/CODEX_ACTIVITY_LOG.md
++++ b/docs/_codex/CODEX_ACTIVITY_LOG.md
+@@ -419,3 +419,13 @@
+ - QA results:
+   - `npm run check` passed.
+   - `npm run build` passed with chunk-size warnings.
++
++## 2025-12-29T16:59:24Z (UTC)
++- Session goal: Produce QA completion summary.
++- Commands executed (READ-ONLY):
++  - date -u +%Y-%m-%dT%H:%M:%SZ
++- Commands executed (MUTATING):
++  - create docs/_codex/PHASES_1_TO_4_QA_COMPLETE_SUMMARY.md
++  - update docs/_codex/DIFF_SUMMARY.md
++- Summary of changes:
++  - Added QA completion summary with blocked items and verdict.
+diff --git a/docs/_codex/DIFF_SUMMARY.md b/docs/_codex/DIFF_SUMMARY.md
+index 7ae845c..23da7a1 100644
+--- a/docs/_codex/DIFF_SUMMARY.md
++++ b/docs/_codex/DIFF_SUMMARY.md
+@@ -193,3 +193,8 @@
+ - Modified: server/db.ts
+   - Change: Replace thrown error with explicit console error and exit when DATABASE_URL missing.
+   - Reason: Provide clear, non-noisy startup failure for DB-free QA.
++
++## 2025-12-29T16:59:24Z (UTC)
++- New: docs/_codex/PHASES_1_TO_4_QA_COMPLETE_SUMMARY.md
++  - Change: Added QA completion summary for phases 1–4.
++  - Reason: Required final QA deliverable.
+diff --git a/docs/_codex/PHASES_1_TO_4_QA_COMPLETE_SUMMARY.md b/docs/_codex/PHASES_1_TO_4_QA_COMPLETE_SUMMARY.md
+new file mode 100644
+index 0000000..9a930a3
+--- /dev/null
++++ b/docs/_codex/PHASES_1_TO_4_QA_COMPLETE_SUMMARY.md
+@@ -0,0 +1,26 @@
++# Phases 1–4 QA Complete Summary
++
++Branch: `codex/impl-phases-1-4`
++
++## QA Steps Executed
++- Environment triage: identified required env vars and confirmed DATABASE_URL is not set.
++- Static checks: `npm run check`, `npm run build` (both passed; build has existing chunk-size warnings).
++- DB bootstrap: blocked (DATABASE_URL missing).
++- Endpoint smoke tests: blocked (server cannot start without DATABASE_URL).
++- Frontend flow QA: blocked (requires running backend).
++
++## Fixes Applied
++- Hardened DB-missing startup behavior to emit a clear error and exit without stack spam.
++  - Commit: `83297e9`
++
++## What Passed
++- TypeScript check: `npm run check`.
++- Production build: `npm run build`.
++
++## What Remains Blocked (Env-Dependent)
++- `npm run db:push` (DATABASE_URL not set).
++- `npm run dev` (DATABASE_URL not set).
++- All DB-backed endpoint smoke tests (health, notifications, uploads progress, AI usage, AI chat SSE).
++
++## Verdict
++Blocked by missing `DATABASE_URL`. Provide a valid database connection string to complete DB migrations and endpoint smoke tests, then the branch can be marked PR-ready.
+-- 
+2.50.1 (Apple Git-155)
+

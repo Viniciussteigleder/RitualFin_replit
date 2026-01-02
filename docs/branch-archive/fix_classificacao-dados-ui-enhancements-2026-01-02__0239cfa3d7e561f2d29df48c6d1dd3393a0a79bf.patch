@@ -1,0 +1,173 @@
+From 0239cfa3d7e561f2d29df48c6d1dd3393a0a79bf Mon Sep 17 00:00:00 2001
+From: Vinicius <vinicius.steigleder@gmail.com>
+Date: Fri, 2 Jan 2026 00:23:34 +0100
+Subject: [PATCH] Add microcopy for various UI components in PT/DE/EN to
+ enhance user experience
+
+---
+ docs/UX_UI_MASTER_PLAN.md | 49 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 49 insertions(+)
+
+diff --git a/docs/UX_UI_MASTER_PLAN.md b/docs/UX_UI_MASTER_PLAN.md
+index 0ac54a1..0959e2f 100644
+--- a/docs/UX_UI_MASTER_PLAN.md
++++ b/docs/UX_UI_MASTER_PLAN.md
+@@ -406,6 +406,9 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
+ - **Microcopy (PT/DE/EN)**:
+   - Primary action: “Analisar transações” / “Transaktionen analysieren” / “Analyze transactions”
+   - Helper text: “Sugestões em lote.” / “Batch-Vorschläge.” / “Batch suggestions.”
++  - Empty state: “Nenhuma sugestão.” / “Keine Vorschläge.” / “No suggestions.”
++  - Validation error: “Selecione ao menos uma sugestão.” / “Mindestens einen Vorschlag wählen.” / “Select at least one suggestion.”
++  - Confirmation: “Sugestões aplicadas.” / “Vorschläge angewendet.” / “Suggestions applied.”
+ 
+ ### Alias Manager
+ - **Route + Nav**: `/aliases`.
+@@ -419,6 +422,9 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
+ - **Microcopy (PT/DE/EN)**:
+   - Primary action: “Salvar alias” / “Alias speichern” / “Save alias”
+   - Helper text: “Não dividir expressões.” / “Ausdrücke nicht trennen.” / “Do not split expressions.”
++  - Empty state: “Nenhum alias.” / “Keine Aliases.” / “No aliases.”
++  - Validation error: “Alias obrigatório.” / “Alias erforderlich.” / “Alias required.”
++  - Confirmation: “Alias salvo.” / “Alias gespeichert.” / “Alias saved.”
+ 
+ ### Logo Manager
+ - **Route + Nav**: `/aliases/logos`.
+@@ -432,6 +438,9 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
+ - **Microcopy (PT/DE/EN)**:
+   - Primary action: “Atualizar logos” / “Logos aktualisieren” / “Refresh logos”
+   - Helper text: “Mostra status de download.” / “Download-Status anzeigen.” / “Show download status.”
++  - Empty state: “Nenhum logo pendente.” / “Keine ausstehenden Logos.” / “No pending logos.”
++  - Validation error: “URL inválida.” / “Ungültige URL.” / “Invalid URL.”
++  - Confirmation: “Logos atualizados.” / “Logos aktualisiert.” / “Logos updated.”
+ 
+ ### Accounts
+ - **Route + Nav**: `/accounts`.
+@@ -444,6 +453,9 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
+ - **Audit trail events**: `account.created`, `account.updated`, `account.archived`.
+ - **Microcopy (PT/DE/EN)**:
+   - Primary action: “Nova conta” / “Neues Konto” / “New account”
++  - Helper text: “Use o nome do banco.” / “Namen der Bank verwenden.” / “Use the bank name.”
++  - Empty state: “Nenhuma conta.” / “Keine Konten.” / “No accounts.”
++  - Validation error: “Nome obrigatório.” / “Name erforderlich.” / “Name required.”
+   - Confirmation: “Conta arquivada.” / “Konto archiviert.” / “Account archived.”
+ 
+ ### Budgets
+@@ -457,7 +469,10 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
+ - **Audit trail events**: `budget.created`, `budget.updated`, `budget.deleted`.
+ - **Microcopy (PT/DE/EN)**:
+   - Primary action: “Salvar orçamento” / “Budget speichern” / “Save budget”
++  - Helper text: “Defina o limite mensal.” / “Monatslimit festlegen.” / “Set monthly limit.”
++  - Empty state: “Nenhum orçamento.” / “Keine Budgets.” / “No budgets.”
+   - Validation error: “Valor inválido.” / “Ungültiger Betrag.” / “Invalid amount.”
++  - Confirmation: “Orçamento salvo.” / “Budget gespeichert.” / “Budget saved.”
+ 
+ ### Goals
+ - **Route + Nav**: `/goals`.
+@@ -470,7 +485,10 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
+ - **Audit trail events**: `goal.created`, `goal.updated`, `goal.deleted`.
+ - **Microcopy (PT/DE/EN)**:
+   - Primary action: “Criar meta” / “Ziel erstellen” / “Create goal”
++  - Helper text: “Defina a renda estimada.” / “Geschätztes Einkommen angeben.” / “Set estimated income.”
+   - Empty state: “Nenhuma meta.” / “Keine Ziele.” / “No goals.”
++  - Validation error: “Mês inválido.” / “Ungültiger Monat.” / “Invalid month.”
++  - Confirmation: “Meta salva.” / “Ziel gespeichert.” / “Goal saved.”
+ 
+ ### Calendar
+ - **Route + Nav**: `/calendar`.
+@@ -484,6 +502,9 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
+ - **Microcopy (PT/DE/EN)**:
+   - Primary action: “Novo evento” / “Neues Ereignis” / “New event”
+   - Helper text: “Escolha recorrência.” / “Wiederholung wählen.” / “Pick recurrence.”
++  - Empty state: “Nenhum evento.” / “Keine Ereignisse.” / “No events.”
++  - Validation error: “Data inválida.” / “Ungültiges Datum.” / “Invalid date.”
++  - Confirmation: “Evento salvo.” / “Ereignis gespeichert.” / “Event saved.”
+ 
+ ### Event Detail
+ - **Route + Nav**: `/calendar/:id`.
+@@ -496,6 +517,10 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
+ - **Audit trail events**: `event.detail_viewed`, `occurrence.updated`.
+ - **Microcopy (PT/DE/EN)**:
+   - Primary action: “Atualizar ocorrência” / “Vorkommen aktualisieren” / “Update occurrence”
++  - Helper text: “Atualize o status do pagamento.” / “Zahlungsstatus aktualisieren.” / “Update payment status.”
++  - Empty state: “Nenhuma ocorrência.” / “Keine Vorkommen.” / “No occurrences.”
++  - Validation error: “Status inválido.” / “Ungültiger Status.” / “Invalid status.”
++  - Confirmation: “Ocorrência atualizada.” / “Vorkommen aktualisiert.” / “Occurrence updated.”
+ 
+ ### Forecasting / Recurrence Signals (New)
+ - **Route + Nav**: `/forecast`.
+@@ -509,6 +534,9 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
+ - **Microcopy (PT/DE/EN)**:
+   - Primary action: “Ver agenda” / “Agenda anzeigen” / “View agenda”
+   - Helper text: “Confiança baseada em histórico.” / “Vertrauen basiert auf Verlauf.” / “Confidence based on history.”
++  - Empty state: “Sem previsões.” / “Keine Prognosen.” / “No forecasts.”
++  - Validation error: “Filtro inválido.” / “Ungültiger Filter.” / “Invalid filter.”
++  - Confirmation: “Filtro aplicado.” / “Filter angewendet.” / “Filter applied.”
+ 
+ ### Rituals
+ - **Route + Nav**: `/rituals`.
+@@ -521,6 +549,10 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
+ - **Audit trail events**: `ritual.completed`.
+ - **Microcopy (PT/DE/EN)**:
+   - Primary action: “Concluir ritual” / “Ritual abschließen” / “Complete ritual”
++  - Helper text: “Adicione notas do período.” / “Notizen hinzufügen.” / “Add notes.”
++  - Empty state: “Nenhum ritual.” / “Keine Rituale.” / “No rituals.”
++  - Validation error: “Nota muito longa.” / “Notiz zu lang.” / “Note too long.”
++  - Confirmation: “Ritual concluído.” / “Ritual abgeschlossen.” / “Ritual completed.”
+ 
+ ### Notifications
+ - **Route + Nav**: `/notifications`.
+@@ -533,6 +565,10 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
+ - **Audit trail events**: `notification.read`, `notification.read_all`.
+ - **Microcopy (PT/DE/EN)**:
+   - Primary action: “Marcar todas como lidas” / “Alle als gelesen markieren” / “Mark all as read”
++  - Helper text: “Filtre por não lidas.” / “Nach ungelesen filtern.” / “Filter by unread.”
++  - Empty state: “Nenhuma notificação.” / “Keine Benachrichtigungen.” / “No notifications.”
++  - Validation error: “Filtro inválido.” / “Ungültiger Filter.” / “Invalid filter.”
++  - Confirmation: “Notificações atualizadas.” / “Benachrichtigungen aktualisiert.” / “Notifications updated.”
+ 
+ ### Settings — Data Management
+ - **Route + Nav**: `/settings` → Classificação & Dados.
+@@ -545,6 +581,9 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
+ - **Audit trail events**: `classification.previewed`, `classification.applied`, `aliases.applied`.
+ - **Microcopy (PT/DE/EN)**:
+   - Primary action: “Pré-visualizar” / “Vorschau” / “Preview”
++  - Helper text: “Mostramos diferenças antes de aplicar.” / “Änderungen vorab anzeigen.” / “Show diff before apply.”
++  - Empty state: “Nenhum arquivo.” / “Keine Datei.” / “No file.”
++  - Validation error: “Colunas faltando.” / “Fehlende Spalten.” / “Missing columns.”
+   - Confirmation: “Aplicar mudanças” / “Änderungen anwenden” / “Apply changes”
+ 
+ ### Settings — Localization
+@@ -559,6 +598,9 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
+ - **Microcopy (PT/DE/EN)**:
+   - Primary action: “Salvar preferências” / “Einstellungen speichern” / “Save preferences”
+   - Helper text: “Idioma do aplicativo.” / “App-Sprache.” / “App language.”
++  - Empty state: “Idioma atual: PT-BR.” / “Aktuelle Sprache: PT-BR.” / “Current language: PT-BR.”
++  - Validation error: “Locale inválido.” / “Ungültige Locale.” / “Invalid locale.”
++  - Confirmation: “Idioma atualizado.” / “Sprache aktualisiert.” / “Language updated.”
+ 
+ ### Settings — Danger Zone
+ - **Route + Nav**: `/settings` → Danger Zone.
+@@ -570,6 +612,10 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
+ - **Error taxonomy**: RESET_FAILED + `{ request_id, scope }`.
+ - **Audit trail events**: `data.reset_requested`, `data.reset_completed`.
+ - **Microcopy (PT/DE/EN)**:
++  - Primary action: “Excluir dados” / “Daten löschen” / “Delete data”
++  - Helper text: “Selecione o escopo.” / “Bereich wählen.” / “Select scope.”
++  - Empty state: “Nada selecionado.” / “Nichts ausgewählt.” / “Nothing selected.”
++  - Validation error: “Confirmação incorreta.” / “Falsche Bestätigung.” / “Incorrect confirmation.”
+   - Confirmation: “Digite APAGAR para confirmar.” / “Geben Sie LÖSCHEN ein.” / “Type DELETE to confirm.”
+ 
+ ### Transactions Search / Filter / Sort Patterns
+@@ -712,6 +758,9 @@ Deliver a calm, predictable ritual for financial clarity: “import once, confir
+ - **Microcopy (PT/DE/EN)**:
+   - Primary action: “Voltar ao dashboard” / “Zurück zum Dashboard” / “Back to dashboard”
+   - Helper text: “Página não encontrada.” / “Seite nicht gefunden.” / “Page not found.”
++  - Empty state: “Link inválido.” / “Ungültiger Link.” / “Invalid link.”
++  - Validation error: “URL inválida.” / “Ungültige URL.” / “Invalid URL.”
++  - Confirmation: “Redirecionado ao dashboard.” / “Zum Dashboard umgeleitet.” / “Redirected to dashboard.”
+ 
+ ## 9. UI Kit & Interaction Standards (keep current style)
+ - Continue Tailwind + shadcn; use existing tokens in `client/src/index.css` (green primary, card-based layout).
+-- 
+2.50.1 (Apple Git-155)
+
