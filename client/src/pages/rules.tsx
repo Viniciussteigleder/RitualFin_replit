@@ -694,9 +694,9 @@ export default function RulesPage() {
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                 <Sparkles className="h-8 w-8 text-primary/50" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Nenhuma regra configurada</h3>
+              <h3 className="text-lg font-semibold mb-2">{t(locale, rulesCopy.emptyTitle)}</h3>
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                Crie regras para categorizar suas transações automaticamente durante a importação.
+                {t(locale, rulesCopy.emptyBody)}
               </p>
               <div className="flex gap-3 justify-center">
                 <Button 
@@ -706,7 +706,7 @@ export default function RulesPage() {
                   className="gap-2"
                 >
                   <Zap className="h-4 w-4" />
-                  Criar Regras Padrao
+                  {t(locale, rulesCopy.createDefault)}
                 </Button>
                 <Button className="gap-2" onClick={openNewDialog}>
                   <Plus className="h-4 w-4" />

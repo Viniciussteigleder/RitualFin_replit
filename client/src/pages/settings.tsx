@@ -1011,7 +1011,7 @@ export default function SettingsPage() {
 
                     <TabsContent value="categorias" className="mt-6 space-y-4">
                       <div className="rounded-lg border border-muted bg-muted/10 p-3 text-sm">
-                        <p className="font-medium">Importações de transações</p>
+                        <p className="font-medium">{t(locale, settingsCopy.transactionsImports)}</p>
                         <p className="text-muted-foreground">
                           Os arquivos de extrato ficam em <Link href="/uploads" className="text-primary underline">Operações → Upload</Link>.
                         </p>
@@ -1041,7 +1041,7 @@ export default function SettingsPage() {
                           />
                           <Button variant="outline" className="gap-2">
                             <Upload className="h-4 w-4" />
-                            Pré-visualizar upload
+                            {t(locale, settingsCopy.previewUpload)}
                           </Button>
                         </label>
                       </div>
@@ -1203,7 +1203,7 @@ export default function SettingsPage() {
                             onClick={() => setShowClassificationConfirm(true)}
                             disabled={!classificationPreview?.success}
                           >
-                            Confirmar importação
+                            {t(locale, settingsCopy.confirmImport)}
                           </Button>
                         </div>
                       )}
@@ -1226,7 +1226,7 @@ export default function SettingsPage() {
                                 handleClassificationApply();
                               }}
                             >
-                              Confirmar
+                              {t(locale, settingsCopy.confirmAction)}
                             </Button>
                           </DialogFooter>
                         </DialogContent>
@@ -1340,7 +1340,7 @@ export default function SettingsPage() {
 
                     <TabsContent value="revisao" className="mt-6 space-y-3">
                       {reviewQueue.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">Nenhuma transação em aberto.</p>
+                        <p className="text-sm text-muted-foreground">{t(locale, settingsCopy.noOpenTransactions)}</p>
                       ) : (
                         <div className="space-y-3">
                           {reviewQueue.map((tx: any) => {
@@ -1623,7 +1623,7 @@ export default function SettingsPage() {
                             />
                             <Button variant="outline" className="gap-2">
                               <Upload className="h-4 w-4" />
-                              Pré-visualizar upload
+                              {t(locale, settingsCopy.previewUpload)}
                             </Button>
                           </label>
                         </div>
@@ -1737,7 +1737,7 @@ export default function SettingsPage() {
                             </div>
 
                             <Button className="gap-2" onClick={handleAliasApply} disabled={!aliasPreview?.success}>
-                              Confirmar importação
+                              {t(locale, settingsCopy.confirmImport)}
                             </Button>
                           </div>
                         )}
@@ -1792,7 +1792,7 @@ export default function SettingsPage() {
                             />
                             <Button variant="outline" className="gap-2">
                               <Upload className="h-4 w-4" />
-                              Pré-visualizar upload
+                              {t(locale, settingsCopy.previewUpload)}
                             </Button>
                           </label>
                           <Button variant="outline" className="gap-2" onClick={handleRefreshLogos}>
@@ -1910,7 +1910,7 @@ export default function SettingsPage() {
                             </div>
 
                             <Button className="gap-2" onClick={handleLogosApply} disabled={!logosPreview?.success}>
-                              Confirmar importação
+                              {t(locale, settingsCopy.confirmImport)}
                             </Button>
                           </div>
                         )}
@@ -2188,7 +2188,7 @@ export default function SettingsPage() {
                     <div className="space-y-2">
                       <Button variant="destructive" className="gap-2" onClick={() => setDangerDialogOpen(true)}>
                         <Trash2 className="h-4 w-4" />
-                        Apagar dados
+                        {t(locale, settingsCopy.deleteData)}
                       </Button>
                       {dangerLastDeletedAt ? (
                         <p className="text-xs text-rose-700">
@@ -2311,7 +2311,7 @@ export default function SettingsPage() {
                             onClick={handleDangerDelete}
                             disabled={dangerConfirmText !== "APAGAR"}
                           >
-                            Confirmar
+                            {t(locale, settingsCopy.confirmAction)}
                           </Button>
                         </DialogFooter>
                       </>
