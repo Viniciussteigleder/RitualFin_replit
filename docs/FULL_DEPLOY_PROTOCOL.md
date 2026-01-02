@@ -156,3 +156,4 @@ This script runs preflight checks, verifies version endpoints, and writes a depl
 - `RENDER_SERVICE_URL`: Render base URL (preferred for backend verification).
 - `VERCEL_PROD_URL`: Vercel production URL (required to verify `/version.json`).
 - `SUPABASE_PROJECT_REF`: Optional explicit Supabase project ref (non-secret).
+- `VERCEL_TOKEN`: Required for Vercel CLI deploys in CI (store as a CI secret, never commit).
