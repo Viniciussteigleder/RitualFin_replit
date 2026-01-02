@@ -10,6 +10,14 @@ export function t(locale: Locale, triplet: TranslationTriplet) {
   return triplet[locale] || triplet["pt-BR"];
 }
 
+export const accountBadgeCopy = {
+  noAccount: {
+    "pt-BR": "Sem conta",
+    "de-DE": "Kein Konto",
+    "en-US": "No account"
+  }
+};
+
 export const iconCopy = {
   accountDefault: {
     "pt-BR": "Conta",

@@ -37,7 +37,7 @@ import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { ritualsApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
-import { ritualsCopy, t as translate } from "@/lib/i18n";
+import { ritualsCopy, translateCategory, t as translate } from "@/lib/i18n";
 import { useLocale } from "@/hooks/use-locale";
 
 const CATEGORY_ICONS: Record<string, any> = {
@@ -202,10 +202,12 @@ export default function RitualsPage() {
     const prevCat = previousMonth?.spentByCategory?.find((c: any) => c.category === cat.category);
     const target = prevCat?.amount || cat.amount;
     const percentage = target > 0 ? (cat.amount / target) * 100 : 0;
+    const essentialsLabel = translate(locale, ritualsCopy.filterEssentials);
+    const lifestyleLabel = translate(locale, ritualsCopy.filterLifestyle);
     
     return {
       category: cat.category,
-      label: cat.category === "Mercado" ? "Essenciais" : cat.category === "Lazer" ? "Lazer" : "Essenciais",
+      label: cat.category === "Mercado" ? essentialsLabel : cat.category === "Lazer" ? lifestyleLabel : essentialsLabel,
       currentAmount: cat.amount,
       targetAmount: target,
       status: percentage > 100 ? "exceeded" : percentage > 80 ? "warning" : "within"
@@ -508,7 +510,9 @@ export default function RitualsPage() {
                               <Icon className="h-5 w-5" style={{ color }} />
                             </div>
                             <div>
-                              <p className="font-bold text-foreground">{cat.category}</p>
+                              <p className="font-bold text-foreground">
+                                {translateCategory(locale, cat.category)}
+                              </p>
                               <p className="text-xs text-muted-foreground">{cat.label}</p>
                             </div>
                           </div>
@@ -569,7 +573,9 @@ export default function RitualsPage() {
                       <CardContent className="p-5">
                         <div className="flex justify-between items-center mb-2">
                           <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                            {formatMessage(translate(locale, ritualsCopy.plannedForCategory), { category: cat.category })}
+                            {formatMessage(translate(locale, ritualsCopy.plannedForCategory), {
+                              category: translateCategory(locale, cat.category)
+                            })}
                           </label>
                           {isAboveAverage && (
                             <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary">

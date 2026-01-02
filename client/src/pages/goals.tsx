@@ -33,7 +33,7 @@ import { useMonth } from "@/lib/month-context";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { goalsApi, categoryGoalsApi } from "@/lib/api";
-import { goalsCopy, t as translate } from "@/lib/i18n";
+import { goalsCopy, translateCategory, t as translate } from "@/lib/i18n";
 import { useLocale } from "@/hooks/use-locale";
 
 const CATEGORY_ICONS: Record<string, any> = {
@@ -391,7 +391,9 @@ export default function GoalsPage() {
                         <Icon className="h-5 w-5" style={{ color }} />
                       </div>
                       <div>
-                        <p className="font-bold text-lg text-foreground">{cat.category}</p>
+                        <p className="font-bold text-lg text-foreground">
+                          {translateCategory(locale, cat.category)}
+                        </p>
                         <p className="text-xs text-muted-foreground">
                           {categoryHints[cat.category as keyof typeof categoryHints]}
                         </p>

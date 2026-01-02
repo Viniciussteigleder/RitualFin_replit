@@ -33,7 +33,7 @@ import { Link, useParams, useLocation } from "wouter";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { eventOccurrencesApi } from "@/lib/api";
-import { eventDetailCopy, t as translate } from "@/lib/i18n";
+import { eventDetailCopy, translateCategory, t as translate } from "@/lib/i18n";
 import { useLocale } from "@/hooks/use-locale";
 
 const CATEGORY_ICONS: Record<string, any> = {
@@ -259,7 +259,9 @@ export default function EventDetailPage() {
                     <p className="text-sm text-muted-foreground mb-1">{translate(locale, eventDetailCopy.category)}</p>
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-                      <span className="font-semibold">{event.category1}</span>
+                      <span className="font-semibold">
+                        {translateCategory(locale, event.category1)}
+                      </span>
                     </div>
                   </div>
                   <div>

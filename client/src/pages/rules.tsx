@@ -16,7 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { StatusPanel } from "@/components/status-panel";
 import * as XLSX from 'xlsx';
 import { useLocale } from "@/hooks/use-locale";
-import { rulesCopy, t } from "@/lib/i18n";
+import { rulesCopy, translateCategory, t } from "@/lib/i18n";
 
 const TYPE_COLORS: Record<string, string> = {
   "Despesa": "bg-rose-100 text-rose-700",
@@ -747,7 +747,9 @@ export default function RulesPage() {
             <SelectContent>
               <SelectItem value="all">{t(locale, rulesCopy.filterAllCategories)}</SelectItem>
               {categories.map((cat) => (
-                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                <SelectItem key={cat} value={cat}>
+                  {translateCategory(locale, cat)}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -814,7 +816,7 @@ export default function RulesPage() {
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            {[rule.category1, rule.category2, rule.category3]
+                            {[translateCategory(locale, rule.category1), rule.category2, rule.category3]
                               .filter(Boolean)
                               .join(" → ")}
                           </p>
@@ -912,15 +914,21 @@ export default function RulesPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Mercado">Mercado</SelectItem>
-                    <SelectItem value="Moradia">Moradia</SelectItem>
-                    <SelectItem value="Transporte">Transporte</SelectItem>
-                    <SelectItem value="Saúde">Saúde</SelectItem>
-                    <SelectItem value="Lazer">Lazer</SelectItem>
-                    <SelectItem value="Compras Online">Compras Online</SelectItem>
-                    <SelectItem value="Receitas">Receitas</SelectItem>
-                    <SelectItem value="Interno">Interno</SelectItem>
-                    <SelectItem value="Outros">Outros</SelectItem>
+                    {[
+                      "Mercado",
+                      "Moradia",
+                      "Transporte",
+                      "Saúde",
+                      "Lazer",
+                      "Compras Online",
+                      "Receitas",
+                      "Interno",
+                      "Outros"
+                    ].map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        {translateCategory(locale, cat)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

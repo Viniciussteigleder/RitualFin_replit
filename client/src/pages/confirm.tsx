@@ -17,7 +17,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AliasLogo } from "@/components/alias-logo";
 import { StatusPanel } from "@/components/status-panel";
 import { useLocale } from "@/hooks/use-locale";
-import { confirmCopy, t } from "@/lib/i18n";
+import { confirmCopy, translateCategory, t } from "@/lib/i18n";
 
 interface TransactionForm {
   type: string;
@@ -38,6 +38,18 @@ const CATEGORY_COLORS: Record<string, string> = {
   "Interno": "#475569"
 };
 
+const CATEGORIES = [
+  "Mercado",
+  "Lazer",
+  "Transporte",
+  "Compras Online",
+  "Moradia",
+  "Saúde",
+  "Receitas",
+  "Outros",
+  "Interno"
+];
+
 export default function ConfirmPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -46,6 +58,7 @@ export default function ConfirmPage() {
   const [activeTab, setActiveTab] = useState("all");
   const [statusPayload, setStatusPayload] = useState<{ variant: "success" | "warning" | "error"; title: string; description: string; payload?: Record<string, unknown> } | null>(null);
   const locale = useLocale();
+  const currencyFormatter = new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" });
   const formatMessage = (template: string, vars: Record<string, string | number>) =>
     Object.entries(vars).reduce((result, [key, value]) => result.replace(`{${key}}`, String(value)), template);
 
@@ -384,7 +397,7 @@ export default function ConfirmPage() {
                         </td>
                         <td className="px-5 py-4 text-right font-semibold whitespace-nowrap">
                           <span className={t.amount > 0 ? "text-emerald-600" : ""}>
-                            {t.amount?.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                            {currencyFormatter.format(t.amount || 0)}
                           </span>
                         </td>
                         <td className="px-5 py-4">
@@ -429,15 +442,11 @@ export default function ConfirmPage() {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="Mercado">Mercado</SelectItem>
-                                <SelectItem value="Lazer">Lazer</SelectItem>
-                                <SelectItem value="Transporte">Transporte</SelectItem>
-                                <SelectItem value="Compras Online">Compras Online</SelectItem>
-                                <SelectItem value="Moradia">Moradia</SelectItem>
-                                <SelectItem value="Saúde">Saúde</SelectItem>
-                                <SelectItem value="Receitas">Receitas</SelectItem>
-                                <SelectItem value="Outros">Outros</SelectItem>
-                                <SelectItem value="Interno">Interno</SelectItem>
+                                {CATEGORIES.map((cat) => (
+                                  <SelectItem key={cat} value={cat}>
+                                    {translateCategory(locale, cat)}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                             {confidence >= 80 && (
