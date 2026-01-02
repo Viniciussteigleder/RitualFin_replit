@@ -603,6 +603,51 @@ export const confirmCopy = {
     "pt-BR": "Ação",
     "de-DE": "Aktion",
     "en-US": "Action"
+  },
+  emptyAll: {
+    "pt-BR": "Nenhuma transação pendente de revisão.",
+    "de-DE": "Keine Transaktionen zur Überprüfung.",
+    "en-US": "No transactions pending review."
+  },
+  emptyByConfidence: {
+    "pt-BR": "Nenhuma transação com {level} confiança.",
+    "de-DE": "Keine Transaktionen mit {level} Zuversicht.",
+    "en-US": "No transactions with {level} confidence."
+  },
+  confidenceHighLabel: {
+    "pt-BR": "alta",
+    "de-DE": "hoher",
+    "en-US": "high"
+  },
+  confidenceMediumLabel: {
+    "pt-BR": "média",
+    "de-DE": "mittlerer",
+    "en-US": "medium"
+  },
+  confidenceLowLabel: {
+    "pt-BR": "baixa",
+    "de-DE": "niedriger",
+    "en-US": "low"
+  },
+  emptyTitle: {
+    "pt-BR": "Tudo limpo!",
+    "de-DE": "Alles erledigt!",
+    "en-US": "All clear!"
+  },
+  showingCount: {
+    "pt-BR": "Mostrando {shown} de {total} itens",
+    "de-DE": "{shown} von {total} Einträgen angezeigt",
+    "en-US": "Showing {shown} of {total} items"
+  },
+  selectedCount: {
+    "pt-BR": "{count} selecionado(s)",
+    "de-DE": "{count} ausgewählt",
+    "en-US": "{count} selected"
+  },
+  selectedLabel: {
+    "pt-BR": "selecionado(s)",
+    "de-DE": "ausgewählt",
+    "en-US": "selected"
   }
 };
 

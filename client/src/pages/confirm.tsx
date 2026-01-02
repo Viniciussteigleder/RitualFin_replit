@@ -470,9 +470,15 @@ export default function ConfirmPage() {
             </div>
             
             <div className="px-5 py-3 bg-muted/20 text-sm text-muted-foreground border-t flex items-center justify-between">
-              <span>Mostrando {filteredItems.length} de {items.length} itens</span>
+              <span>
+                {t(locale, confirmCopy.showingCount)
+                  .replace("{shown}", String(filteredItems.length))
+                  .replace("{total}", String(items.length))}
+              </span>
               {selectedIds.size > 0 && (
-                <span className="font-medium text-primary">{selectedIds.size} selecionado(s)</span>
+                <span className="font-medium text-primary">
+                  {t(locale, confirmCopy.selectedCount).replace("{count}", String(selectedIds.size))}
+                </span>
               )}
             </div>
           </Card>
@@ -482,12 +488,18 @@ export default function ConfirmPage() {
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                 <CheckCircle2 className="h-8 w-8 text-primary/50" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Tudo limpo!</h3>
+              <h3 className="text-lg font-semibold mb-2">{t(locale, confirmCopy.emptyTitle)}</h3>
               <p className="text-muted-foreground text-sm">
                 {activeTab === "all"
-                  ? "Nenhuma transação pendente de revisão."
-                  : `Nenhuma transação com ${activeTab === "high" ? "alta" : activeTab === "medium" ? "média" : "baixa"} confiança.`
-                }
+                  ? t(locale, confirmCopy.emptyAll)
+                  : t(locale, confirmCopy.emptyByConfidence).replace(
+                      "{level}",
+                      activeTab === "high"
+                        ? t(locale, confirmCopy.confidenceHighLabel)
+                        : activeTab === "medium"
+                          ? t(locale, confirmCopy.confidenceMediumLabel)
+                          : t(locale, confirmCopy.confidenceLowLabel)
+                    )}
               </p>
             </CardContent>
           </Card>
@@ -499,7 +511,7 @@ export default function ConfirmPage() {
               <span className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-sm font-bold">
                 {selectedIds.size}
               </span>
-              selecionado(s)
+              {t(locale, confirmCopy.selectedLabel)}
             </span>
             <Button 
               className="bg-primary hover:bg-primary/90 gap-2"
