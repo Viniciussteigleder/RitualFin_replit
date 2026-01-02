@@ -101,11 +101,35 @@ npm start
 ### Manual Smoke Tests
 See `docs/QA/E2E_TEST_MATRIX.md` for comprehensive test scripts
 
-### Automated Tests (TBD)
+### Automated E2E Tests (Playwright)
 ```bash
-# Playwright E2E (to be implemented)
-# npm run test:e2e
+# Run all E2E tests (headless)
+npm run test:e2e
 
+# Run tests with UI mode (interactive)
+npm run test:e2e:ui
+
+# Run tests in headed mode (see browser)
+npm run test:e2e:headed
+
+# Debug specific test
+npm run test:e2e:debug
+```
+
+**Test Suites**:
+- `tests/e2e/navigation.spec.ts` - All routes and sidebar navigation (14 tests)
+- `tests/e2e/csv-import.spec.ts` - CSV upload, parsing, deduplication (5 test suites, some skipped without sample CSVs)
+- `tests/e2e/rules-engine.spec.ts` - Keyword matching, manual override, Interno auto-flagging (11 tests)
+
+**Prerequisites**:
+- Local dev server must be running OR tests will start it automatically via `webServer` config
+- Database must be accessible (configured via `DATABASE_URL`)
+- For CSV import tests: Place sample CSVs in `attached_assets/` (optional, tests skip if missing)
+
+**Configuration**: `playwright.config.ts`
+
+### API & Database Tests (Future)
+```bash
 # API smoke tests (to be implemented)
 # npm run test:api
 
@@ -115,8 +139,9 @@ See `docs/QA/E2E_TEST_MATRIX.md` for comprehensive test scripts
 
 ## QA Scripts Location
 
-All QA automation scripts will be located in:
-- `scripts/qa/` - API smoke tests, DB invariants, helpers
+- `tests/e2e/` - Playwright E2E test suites
+- `scripts/qa/` - API smoke tests, DB invariants, helpers (future)
+- `playwright.config.ts` - Playwright configuration
 
 ## Known Baseline Issues
 
@@ -125,7 +150,6 @@ All QA automation scripts will be located in:
 
 ### P1 (Important)
 - Bundle size optimization needed (1.2 MB server, 1.1 MB client)
-- No automated E2E tests present
 
 ### P2 (Nice to have)
 - Code splitting not implemented
