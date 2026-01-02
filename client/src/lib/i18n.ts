@@ -2579,6 +2579,261 @@ export const rulesCopy = {
 };
 
 export const settingsCopy = {
+  title: {
+    "pt-BR": "Configurações",
+    "de-DE": "Einstellungen",
+    "en-US": "Settings"
+  },
+  subtitle: {
+    "pt-BR": "Gerencie seu perfil, dados e preferências",
+    "de-DE": "Verwalten Sie Ihr Profil, Daten und Präferenzen",
+    "en-US": "Manage your profile, data, and preferences"
+  },
+  tabAccount: {
+    "pt-BR": "Conta",
+    "de-DE": "Konto",
+    "en-US": "Account"
+  },
+  tabAccountDesc: {
+    "pt-BR": "Perfil e informações pessoais",
+    "de-DE": "Profil und persönliche Informationen",
+    "en-US": "Profile and personal info"
+  },
+  tabRegional: {
+    "pt-BR": "Preferências Regionais",
+    "de-DE": "Regionale Einstellungen",
+    "en-US": "Regional preferences"
+  },
+  tabRegionalDesc: {
+    "pt-BR": "Idioma, moeda e região fiscal",
+    "de-DE": "Sprache, Währung und Steuerregion",
+    "en-US": "Language, currency, and fiscal region"
+  },
+  tabNotifications: {
+    "pt-BR": "Notificações",
+    "de-DE": "Benachrichtigungen",
+    "en-US": "Notifications"
+  },
+  tabNotificationsDesc: {
+    "pt-BR": "Alertas e comunicações",
+    "de-DE": "Warnungen und Mitteilungen",
+    "en-US": "Alerts and communications"
+  },
+  tabIntegrations: {
+    "pt-BR": "Integrações",
+    "de-DE": "Integrationen",
+    "en-US": "Integrations"
+  },
+  tabIntegrationsDesc: {
+    "pt-BR": "Fontes de dados via CSV",
+    "de-DE": "CSV-Datenquellen",
+    "en-US": "CSV data sources"
+  },
+  tabClassification: {
+    "pt-BR": "Classificação & Dados",
+    "de-DE": "Klassifikation & Daten",
+    "en-US": "Classification & Data"
+  },
+  tabClassificationDesc: {
+    "pt-BR": "Categorias, regras e fila de revisão",
+    "de-DE": "Kategorien, Regeln und Review-Queue",
+    "en-US": "Categories, rules, and review queue"
+  },
+  tabDictionary: {
+    "pt-BR": "Dicionário de Comerciantes",
+    "de-DE": "Händlerverzeichnis",
+    "en-US": "Merchant dictionary"
+  },
+  tabDictionaryDesc: {
+    "pt-BR": "Aliases e logos de comerciantes",
+    "de-DE": "Händler-Aliase und Logos",
+    "en-US": "Merchant aliases and logos"
+  },
+  tabAudit: {
+    "pt-BR": "Log de Auditoria",
+    "de-DE": "Audit-Log",
+    "en-US": "Audit log"
+  },
+  tabAuditDesc: {
+    "pt-BR": "Registros críticos do sistema",
+    "de-DE": "Kritische Systemprotokolle",
+    "en-US": "Critical system records"
+  },
+  tabDanger: {
+    "pt-BR": "Zona de Perigo",
+    "de-DE": "Gefahrenzone",
+    "en-US": "Danger zone"
+  },
+  tabDangerDesc: {
+    "pt-BR": "Exclusões com confirmação reforçada",
+    "de-DE": "Löschungen mit zusätzlicher Bestätigung",
+    "en-US": "Deletions with reinforced confirmation"
+  },
+  profileTitle: {
+    "pt-BR": "Usuário RitualFin",
+    "de-DE": "RitualFin Nutzer",
+    "en-US": "RitualFin user"
+  },
+  profileSince: {
+    "pt-BR": "Membro desde 2024",
+    "de-DE": "Mitglied seit 2024",
+    "en-US": "Member since 2024"
+  },
+  profilePlan: {
+    "pt-BR": "Plano Starter",
+    "de-DE": "Starter-Plan",
+    "en-US": "Starter plan"
+  },
+  editPhoto: {
+    "pt-BR": "Editar Foto",
+    "de-DE": "Foto bearbeiten",
+    "en-US": "Edit photo"
+  },
+  labelName: {
+    "pt-BR": "Nome",
+    "de-DE": "Name",
+    "en-US": "Name"
+  },
+  labelEmail: {
+    "pt-BR": "Email",
+    "de-DE": "E-Mail",
+    "en-US": "Email"
+  },
+  saveChanges: {
+    "pt-BR": "Salvar Alterações",
+    "de-DE": "Änderungen speichern",
+    "en-US": "Save changes"
+  },
+  regionalTitle: {
+    "pt-BR": "Preferências Regionais",
+    "de-DE": "Regionale Einstellungen",
+    "en-US": "Regional preferences"
+  },
+  labelLanguage: {
+    "pt-BR": "Idioma",
+    "de-DE": "Sprache",
+    "en-US": "Language"
+  },
+  labelCurrency: {
+    "pt-BR": "Moeda",
+    "de-DE": "Währung",
+    "en-US": "Currency"
+  },
+  labelFiscalRegion: {
+    "pt-BR": "Região Fiscal",
+    "de-DE": "Steuerregion",
+    "en-US": "Fiscal region"
+  },
+  langPtBr: {
+    "pt-BR": "Português (Brasil)",
+    "de-DE": "Portugiesisch (Brasilien)",
+    "en-US": "Portuguese (Brazil)"
+  },
+  langPtPt: {
+    "pt-BR": "Português (Portugal)",
+    "de-DE": "Portugiesisch (Portugal)",
+    "en-US": "Portuguese (Portugal)"
+  },
+  langEn: {
+    "pt-BR": "Inglês",
+    "de-DE": "Englisch",
+    "en-US": "English"
+  },
+  currencyEur: {
+    "pt-BR": "Euro (EUR)",
+    "de-DE": "Euro (EUR)",
+    "en-US": "Euro (EUR)"
+  },
+  currencyBrl: {
+    "pt-BR": "Real (BRL)",
+    "de-DE": "Real (BRL)",
+    "en-US": "Real (BRL)"
+  },
+  currencyUsd: {
+    "pt-BR": "Dólar (USD)",
+    "de-DE": "US-Dollar (USD)",
+    "en-US": "US Dollar (USD)"
+  },
+  fiscalPortugal: {
+    "pt-BR": "Portugal (PT)",
+    "de-DE": "Portugal (PT)",
+    "en-US": "Portugal (PT)"
+  },
+  fiscalEu: {
+    "pt-BR": "União Europeia",
+    "de-DE": "Europäische Union",
+    "en-US": "European Union"
+  },
+  fiscalOther: {
+    "pt-BR": "Outros",
+    "de-DE": "Andere",
+    "en-US": "Other"
+  },
+  exportDataTitle: {
+    "pt-BR": "Exportar Dados",
+    "de-DE": "Daten exportieren",
+    "en-US": "Export data"
+  },
+  exportDataDesc: {
+    "pt-BR": "Baixe todas as suas transações e configurações.",
+    "de-DE": "Laden Sie alle Transaktionen und Einstellungen herunter.",
+    "en-US": "Download all your transactions and settings."
+  },
+  exportCsv: {
+    "pt-BR": "Exportar CSV",
+    "de-DE": "CSV exportieren",
+    "en-US": "Export CSV"
+  },
+  exportJson: {
+    "pt-BR": "Exportar JSON",
+    "de-DE": "JSON exportieren",
+    "en-US": "Export JSON"
+  },
+  regionalDesc: {
+    "pt-BR": "Defina idioma, moeda e região fiscal padrão.",
+    "de-DE": "Standard-Sprache, Währung und Steuerregion festlegen.",
+    "en-US": "Set default language, currency, and fiscal region."
+  },
+  notificationsTitle: {
+    "pt-BR": "Notificações",
+    "de-DE": "Benachrichtigungen",
+    "en-US": "Notifications"
+  },
+  notificationsDesc: {
+    "pt-BR": "Defina quando deseja receber alertas do RitualFin.",
+    "de-DE": "Legen Sie fest, wann Sie RitualFin-Warnungen erhalten möchten.",
+    "en-US": "Set when you want to receive RitualFin alerts."
+  },
+  notifyImportTitle: {
+    "pt-BR": "Importações concluídas",
+    "de-DE": "Importe abgeschlossen",
+    "en-US": "Imports completed"
+  },
+  notifyImportDesc: {
+    "pt-BR": "Resumo após cada upload",
+    "de-DE": "Zusammenfassung nach jedem Upload",
+    "en-US": "Summary after each upload"
+  },
+  notifyReviewTitle: {
+    "pt-BR": "Fila de revisão",
+    "de-DE": "Review-Warteschlange",
+    "en-US": "Review queue"
+  },
+  notifyReviewDesc: {
+    "pt-BR": "Lembretes para classificar pendências",
+    "de-DE": "Erinnerungen zur Klassifizierung offener Punkte",
+    "en-US": "Reminders to classify pending items"
+  },
+  notifyMonthlyTitle: {
+    "pt-BR": "Resumo mensal",
+    "de-DE": "Monatsübersicht",
+    "en-US": "Monthly summary"
+  },
+  notifyMonthlyDesc: {
+    "pt-BR": "Fechamento e insights do mês",
+    "de-DE": "Monatsabschluss und Insights",
+    "en-US": "Month close and insights"
+  },
   auditTitle: {
     "pt-BR": "Log de Auditoria",
     "de-DE": "Audit-Protokoll",

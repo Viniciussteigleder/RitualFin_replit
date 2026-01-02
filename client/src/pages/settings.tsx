@@ -26,17 +26,6 @@ import { formatDateTime } from "@/lib/format";
 import { useLocale } from "@/hooks/use-locale";
 import { settingsCopy, t } from "@/lib/i18n";
 
-const TABS = [
-  { id: "conta", label: "Conta", icon: User, description: "Perfil e informações pessoais" },
-  { id: "preferencias-regionais", label: "Preferências Regionais", icon: Globe, description: "Idioma, moeda e região fiscal" },
-  { id: "notificacoes", label: "Notificações", icon: Bell, description: "Alertas e comunicações" },
-  { id: "integracoes", label: "Integrações", icon: CreditCard, description: "Fontes de dados via CSV" },
-  { id: "classificacao", label: "Classificação & Dados", icon: Database, description: "Categorias, regras e fila de revisão" },
-  { id: "dicionario", label: "Dicionário de Comerciantes", icon: BookOpen, description: "Aliases e logos de comerciantes" },
-  { id: "auditoria", label: "Log de Auditoria", icon: FileText, description: "Registros críticos do sistema" },
-  { id: "danger", label: "Zona de Perigo", icon: ShieldAlert, description: "Exclusões com confirmação reforçada" },
-];
-
 const INTEGRATION_PROVIDERS = [
   {
     id: "miles_and_more",
@@ -199,6 +188,16 @@ export default function SettingsPage() {
   } | null>(null);
   const [auditFilter, setAuditFilter] = useState("all");
   const { toast } = useToast();
+  const tabs = useMemo(() => ([
+    { id: "conta", label: t(locale, settingsCopy.tabAccount), icon: User, description: t(locale, settingsCopy.tabAccountDesc) },
+    { id: "preferencias-regionais", label: t(locale, settingsCopy.tabRegional), icon: Globe, description: t(locale, settingsCopy.tabRegionalDesc) },
+    { id: "notificacoes", label: t(locale, settingsCopy.tabNotifications), icon: Bell, description: t(locale, settingsCopy.tabNotificationsDesc) },
+    { id: "integracoes", label: t(locale, settingsCopy.tabIntegrations), icon: CreditCard, description: t(locale, settingsCopy.tabIntegrationsDesc) },
+    { id: "classificacao", label: t(locale, settingsCopy.tabClassification), icon: Database, description: t(locale, settingsCopy.tabClassificationDesc) },
+    { id: "dicionario", label: t(locale, settingsCopy.tabDictionary), icon: BookOpen, description: t(locale, settingsCopy.tabDictionaryDesc) },
+    { id: "auditoria", label: t(locale, settingsCopy.tabAudit), icon: FileText, description: t(locale, settingsCopy.tabAuditDesc) },
+    { id: "danger", label: t(locale, settingsCopy.tabDanger), icon: ShieldAlert, description: t(locale, settingsCopy.tabDangerDesc) },
+  ]), [locale]);
 
   // Fetch settings from API
   const { data: settings, isLoading } = useQuery({
@@ -771,9 +770,9 @@ export default function SettingsPage() {
     <AppLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">Configurações</h1>
+          <h1 className="text-2xl font-bold">{t(locale, settingsCopy.title)}</h1>
           <p className="text-muted-foreground mt-1">
-            Gerencie sua conta e personalize o RitualFin.
+            {t(locale, settingsCopy.subtitle)}
           </p>
         </div>
 
@@ -782,7 +781,7 @@ export default function SettingsPage() {
             <Card className="bg-white border-0 shadow-sm sticky top-6">
               <CardContent className="p-3">
                 <nav className="space-y-1">
-                  {TABS.map((tab) => {
+                  {tabs.map((tab) => {
                     const isActive = activeTab === tab.id;
                     return (
                       <button
@@ -821,55 +820,55 @@ export default function SettingsPage() {
                         </div>
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-bold text-xl">Usuário RitualFin</h3>
-                        <p className="text-sm text-muted-foreground">Membro desde 2024</p>
+                        <h3 className="font-bold text-xl">{t(locale, settingsCopy.profileTitle)}</h3>
+                        <p className="text-sm text-muted-foreground">{t(locale, settingsCopy.profileSince)}</p>
                         <div className="flex items-center gap-2 mt-2">
-                          <Badge className="bg-primary text-white">Plano Starter</Badge>
+                          <Badge className="bg-primary text-white">{t(locale, settingsCopy.profilePlan)}</Badge>
                         </div>
                       </div>
-                      <Button variant="outline" size="sm">Editar Foto</Button>
+                      <Button variant="outline" size="sm">{t(locale, settingsCopy.editPhoto)}</Button>
                     </div>
                   </div>
                   <CardContent className="p-6 space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label className="text-muted-foreground text-xs uppercase tracking-wide">Nome</Label>
+                        <Label className="text-muted-foreground text-xs uppercase tracking-wide">{t(locale, settingsCopy.labelName)}</Label>
                         <Input defaultValue="Usuário" className="bg-muted/30 border-0" />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-muted-foreground text-xs uppercase tracking-wide">Email</Label>
+                        <Label className="text-muted-foreground text-xs uppercase tracking-wide">{t(locale, settingsCopy.labelEmail)}</Label>
                         <Input defaultValue="usuario@exemplo.com" className="bg-muted/30 border-0" disabled />
                       </div>
                     </div>
                     <div className="flex justify-end">
-                      <Button className="bg-primary hover:bg-primary/90">Salvar Alterações</Button>
+                      <Button className="bg-primary hover:bg-primary/90">{t(locale, settingsCopy.saveChanges)}</Button>
                     </div>
                   </CardContent>
                 </Card>
 
                 <Card className="bg-white border-0 shadow-sm">
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Download className="h-4 w-4 text-primary" />
-                      Exportar Dados
-                    </CardTitle>
-                    <CardDescription>
-                      Baixe todas as suas transações e configurações.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex gap-3">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Download className="h-4 w-4 text-primary" />
+                      {t(locale, settingsCopy.exportDataTitle)}
+                  </CardTitle>
+                  <CardDescription>
+                      {t(locale, settingsCopy.exportDataDesc)}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex gap-3">
                       <Button variant="outline" className="gap-2">
                         <Download className="h-4 w-4" />
-                        Exportar CSV
+                        {t(locale, settingsCopy.exportCsv)}
                       </Button>
                       <Button variant="outline" className="gap-2">
                         <Download className="h-4 w-4" />
-                        Exportar JSON
+                        {t(locale, settingsCopy.exportJson)}
                       </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </CardContent>
+              </Card>
               </>
             )}
 
@@ -878,16 +877,16 @@ export default function SettingsPage() {
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
                     <Globe className="h-4 w-4 text-primary" />
-                    Preferências Regionais
+                    {t(locale, settingsCopy.regionalTitle)}
                   </CardTitle>
                   <CardDescription>
-                    Defina idioma, moeda e região fiscal padrão.
+                    {t(locale, settingsCopy.regionalDesc)}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-muted-foreground text-xs uppercase tracking-wide">Idioma</Label>
+                      <Label className="text-muted-foreground text-xs uppercase tracking-wide">{t(locale, settingsCopy.labelLanguage)}</Label>
                       <Select
                         value={settings?.language || "pt-BR"}
                         onValueChange={(value) => updateSettingsMutation.mutate({ language: value })}
@@ -896,14 +895,14 @@ export default function SettingsPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="pt-BR">Português (Brasil)</SelectItem>
-                          <SelectItem value="pt-PT">Português (Portugal)</SelectItem>
-                          <SelectItem value="en">English</SelectItem>
+                          <SelectItem value="pt-BR">{t(locale, settingsCopy.langPtBr)}</SelectItem>
+                          <SelectItem value="pt-PT">{t(locale, settingsCopy.langPtPt)}</SelectItem>
+                          <SelectItem value="en">{t(locale, settingsCopy.langEn)}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-muted-foreground text-xs uppercase tracking-wide">Moeda</Label>
+                      <Label className="text-muted-foreground text-xs uppercase tracking-wide">{t(locale, settingsCopy.labelCurrency)}</Label>
                       <Select
                         value={settings?.currency || "EUR"}
                         onValueChange={(value) => updateSettingsMutation.mutate({ currency: value })}
@@ -912,14 +911,14 @@ export default function SettingsPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="EUR">Euro (EUR)</SelectItem>
-                          <SelectItem value="BRL">Real (BRL)</SelectItem>
-                          <SelectItem value="USD">Dólar (USD)</SelectItem>
+                          <SelectItem value="EUR">{t(locale, settingsCopy.currencyEur)}</SelectItem>
+                          <SelectItem value="BRL">{t(locale, settingsCopy.currencyBrl)}</SelectItem>
+                          <SelectItem value="USD">{t(locale, settingsCopy.currencyUsd)}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-muted-foreground text-xs uppercase tracking-wide">Região Fiscal</Label>
+                      <Label className="text-muted-foreground text-xs uppercase tracking-wide">{t(locale, settingsCopy.labelFiscalRegion)}</Label>
                       <Select
                         value={settings?.fiscalRegion || "Portugal/PT"}
                         onValueChange={(value) => updateSettingsMutation.mutate({ fiscalRegion: value })}
@@ -928,9 +927,9 @@ export default function SettingsPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Portugal/PT">Portugal (PT)</SelectItem>
-                          <SelectItem value="União Europeia">União Europeia</SelectItem>
-                          <SelectItem value="Outros">Outros</SelectItem>
+                          <SelectItem value="Portugal/PT">{t(locale, settingsCopy.fiscalPortugal)}</SelectItem>
+                          <SelectItem value="União Europeia">{t(locale, settingsCopy.fiscalEu)}</SelectItem>
+                          <SelectItem value="Outros">{t(locale, settingsCopy.fiscalOther)}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -947,17 +946,17 @@ export default function SettingsPage() {
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
                     <Bell className="h-4 w-4 text-primary" />
-                    Notificações
+                    {t(locale, settingsCopy.notificationsTitle)}
                   </CardTitle>
                   <CardDescription>
-                    Defina quando deseja receber alertas do RitualFin.
+                    {t(locale, settingsCopy.notificationsDesc)}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
                     <div>
-                      <p className="font-medium">Importações concluídas</p>
-                      <p className="text-sm text-muted-foreground">Resumo após cada upload</p>
+                      <p className="font-medium">{t(locale, settingsCopy.notifyImportTitle)}</p>
+                      <p className="text-sm text-muted-foreground">{t(locale, settingsCopy.notifyImportDesc)}</p>
                     </div>
                     <Switch
                       checked={settings?.notifyImportStatus ?? true}
@@ -967,8 +966,8 @@ export default function SettingsPage() {
                   </div>
                   <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
                     <div>
-                      <p className="font-medium">Fila de revisão</p>
-                      <p className="text-sm text-muted-foreground">Lembretes para classificar pendências</p>
+                      <p className="font-medium">{t(locale, settingsCopy.notifyReviewTitle)}</p>
+                      <p className="text-sm text-muted-foreground">{t(locale, settingsCopy.notifyReviewDesc)}</p>
                     </div>
                     <Switch
                       checked={settings?.notifyReviewQueue ?? true}
@@ -978,8 +977,8 @@ export default function SettingsPage() {
                   </div>
                   <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
                     <div>
-                      <p className="font-medium">Resumo mensal</p>
-                      <p className="text-sm text-muted-foreground">Fechamento e insights do mês</p>
+                      <p className="font-medium">{t(locale, settingsCopy.notifyMonthlyTitle)}</p>
+                      <p className="text-sm text-muted-foreground">{t(locale, settingsCopy.notifyMonthlyDesc)}</p>
                     </div>
                     <Switch
                       checked={settings?.notifyMonthlyReport ?? true}
