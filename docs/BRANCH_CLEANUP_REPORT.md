@@ -165,3 +165,4 @@ Date: 2026-01-02
 ## Limitations
 
 - None. All non-merged branches were archived before deletion.
+- PRs #9-#14 were already closed at the time of automated closure attempts.
