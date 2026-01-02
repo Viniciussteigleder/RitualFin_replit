@@ -52,6 +52,8 @@ export default function UploadsPage() {
   const [diagnosticsLoading, setDiagnosticsLoading] = useState(false);
   const [diagnosticsPayload, setDiagnosticsPayload] = useState<any | null>(null);
   const [diagnosticsFilename, setDiagnosticsFilename] = useState<string | null>(null);
+  const formatMessage = (template: string, vars: Record<string, string | number>) =>
+    Object.entries(vars).reduce((result, [key, value]) => result.replace(`{${key}}`, String(value)), template);
 
   const { data: uploads = [], isLoading } = useQuery({
     queryKey: ["uploads"],
@@ -106,14 +108,20 @@ export default function UploadsPage() {
       setIsPreviewConfirmed(false);
       
       if (result.rowsImported > 0) {
+        const duplicatesSuffix = result.duplicates > 0
+          ? `, ${formatMessage(t(locale, uploadsCopy.importDuplicatesSuffix), { count: result.duplicates })}`
+          : "";
         toast({
           title: t(locale, uploadsCopy.importDoneTitle),
-          description: `${result.rowsImported} ${t(locale, uploadsCopy.statsTransactions)}${result.duplicates > 0 ? `, ${result.duplicates} duplicadas` : ""}`
+          description: `${result.rowsImported} ${t(locale, uploadsCopy.statsTransactions)}${duplicatesSuffix}`
         });
       } else if (result.duplicates > 0) {
         toast({
           title: t(locale, uploadsCopy.importDuplicateTitle),
-          description: `${result.duplicates} ${t(locale, uploadsCopy.statsTransactions)} já existem no sistema`,
+          description: formatMessage(t(locale, uploadsCopy.importDuplicatesExisting), {
+            count: result.duplicates,
+            label: t(locale, uploadsCopy.statsTransactions)
+          }),
           variant: "destructive"
         });
       }
@@ -278,9 +286,15 @@ export default function UploadsPage() {
         action: conflictAction,
         duplicateCount: lastSummary.duplicates
       });
+      const conflictActionLabel = conflictAction === "keep"
+        ? t(locale, uploadsCopy.conflictKeep)
+        : t(locale, uploadsCopy.conflictReplace);
       setConflictStatus({
         variant: "success",
-        message: `Resolução aplicada: ${result.action} (${result.duplicateCount} duplicadas)`
+        message: formatMessage(t(locale, uploadsCopy.conflictResolved), {
+          action: conflictActionLabel,
+          count: result.duplicateCount
+        })
       });
       setConflictDialogOpen(false);
     } catch (error: any) {
@@ -391,7 +405,7 @@ export default function UploadsPage() {
                 <h3 className="font-semibold text-lg mb-2">Processando arquivo...</h3>
                 <Progress value={uploadProgress} className="h-2 mb-2" />
                 <p className="text-sm text-muted-foreground">
-                  Validando e categorizando transações
+                  {t(locale, uploadsCopy.validatingTransactions)}
                 </p>
               </div>
             ) : (
@@ -568,14 +582,14 @@ export default function UploadsPage() {
           >
             {previewError && (
               <div className="rounded-md border border-white/60 bg-white/70 p-2 text-xs text-rose-700">
-                <p className="font-semibold">Pré-visualização falhou</p>
+                <p className="font-semibold">{t(locale, uploadsCopy.previewFailedTitle)}</p>
                 <p>{previewError}</p>
               </div>
             )}
 
             {lastSummary && !lastError && (
               <div className="rounded-md border border-white/60 bg-white/70 p-2 text-xs text-emerald-700">
-                <p className="font-semibold">Resumo da importação</p>
+                <p className="font-semibold">{t(locale, uploadsCopy.importSummaryTitle)}</p>
                 <p>Inseridas: {lastSummary.rowsImported}</p>
                 <p>Duplicadas: {lastSummary.duplicates}</p>
               </div>

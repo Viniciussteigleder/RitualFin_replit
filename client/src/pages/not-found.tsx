@@ -11,14 +11,17 @@ import { useLocation } from "wouter";
 import { Home, Search, ArrowLeft, FileQuestion, Compass } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { animations, buttonPress } from "@/lib/animations";
+import { useLocale } from "@/hooks/use-locale";
+import { notFoundCopy, t as translate } from "@/lib/i18n";
 
 export default function NotFound() {
   const [, setLocation] = useLocation();
+  const locale = useLocale();
 
   const popularPages = [
-    { label: "Dashboard", href: "/dashboard", icon: Home },
-    { label: "Uploads", href: "/uploads", icon: FileQuestion },
-    { label: "Transações", href: "/transactions", icon: Search },
+    { label: translate(locale, notFoundCopy.pageDashboard), href: "/dashboard", icon: Home },
+    { label: translate(locale, notFoundCopy.pageUploads), href: "/uploads", icon: FileQuestion },
+    { label: translate(locale, notFoundCopy.pageTransactions), href: "/transactions", icon: Search },
   ];
 
   return (
@@ -50,10 +53,10 @@ export default function NotFound() {
                   404
                 </h1>
                 <h2 className="text-2xl md:text-3xl font-bold text-foreground">
-                  Página não encontrada
+                  {translate(locale, notFoundCopy.title)}
                 </h2>
                 <p className="text-muted-foreground max-w-md mx-auto">
-                  Parece que você se perdeu. A página que você está procurando não existe ou foi movida.
+                  {translate(locale, notFoundCopy.subtitle)}
                 </p>
               </div>
             </div>
@@ -74,7 +77,7 @@ export default function NotFound() {
                   )}
                 >
                   <Home className="w-5 h-5 mr-2" />
-                  Voltar ao Dashboard
+                  {translate(locale, notFoundCopy.backDashboard)}
                 </Button>
                 <Button
                   onClick={() => window.history.back()}
@@ -85,7 +88,7 @@ export default function NotFound() {
                   )}
                 >
                   <ArrowLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform duration-200" />
-                  Voltar
+                  {translate(locale, notFoundCopy.back)}
                 </Button>
               </div>
             </div>
@@ -98,7 +101,7 @@ export default function NotFound() {
               animations.delay[400]
             )}>
               <p className="text-sm font-medium text-muted-foreground text-center">
-                Páginas populares:
+                {translate(locale, notFoundCopy.popularPages)}
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {popularPages.map((page, index) => {
@@ -130,7 +133,8 @@ export default function NotFound() {
               animations.delay[600]
             )}>
               <p className="text-sm text-blue-900 text-center">
-                <strong>Precisa de ajuda?</strong> Se você acha que isso é um erro, entre em contato com o suporte.
+                <strong>{translate(locale, notFoundCopy.helpTitle)}</strong>{" "}
+                {translate(locale, notFoundCopy.helpBody)}
               </p>
             </div>
           </div>

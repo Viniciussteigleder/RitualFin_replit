@@ -25,118 +25,46 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useMonth } from "@/lib/month-context";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useLocale } from "@/hooks/use-locale";
+import { layoutCopy, t as translate } from "@/lib/i18n";
+import { useMemo } from "react";
 
 const GROUP_STATE_KEY = "ritualfin_sidebar_groups";
 
-const NAV_CLUSTERS = [
+const NAV_CLUSTER_DEFS = [
   {
-    label: "Visão Geral",
+    id: "overview",
     items: [
-      {
-        label: "Dashboard",
-        icon: LayoutDashboard,
-        href: "/dashboard",
-        description: "Visão geral do mês"
-      },
-      {
-        label: "Calendário",
-        icon: Calendar,
-        href: "/calendar",
-        description: "Eventos e compromissos"
-      },
-      {
-        label: "Previsão",
-        icon: TrendingUp,
-        href: "/forecast",
-        description: "Recorrências e projeções"
-      },
-      {
-        label: "Transações",
-        icon: Receipt,
-        href: "/transactions",
-        description: "Histórico completo"
-      },
-      {
-        label: "Contas",
-        icon: Wallet,
-        href: "/accounts",
-        description: "Gerenciar cartões e contas"
-      },
-      {
-        label: "Insights",
-        icon: Lightbulb,
-        href: "/insights",
-        description: "Leituras e tendências"
-      },
+      { id: "dashboard", icon: LayoutDashboard, href: "/dashboard", labelKey: "dashboard", descriptionKey: "dashboard" },
+      { id: "calendar", icon: Calendar, href: "/calendar", labelKey: "calendar", descriptionKey: "calendar" },
+      { id: "forecast", icon: TrendingUp, href: "/forecast", labelKey: "forecast", descriptionKey: "forecast" },
+      { id: "transactions", icon: Receipt, href: "/transactions", labelKey: "transactions", descriptionKey: "transactions" },
+      { id: "accounts", icon: Wallet, href: "/accounts", labelKey: "accounts", descriptionKey: "accounts" },
+      { id: "insights", icon: Lightbulb, href: "/insights", labelKey: "insights", descriptionKey: "insights" },
     ]
   },
   {
-    label: "Operações",
+    id: "operations",
     items: [
-      {
-        label: "Upload",
-        icon: Upload,
-        href: "/uploads",
-        description: "Importar CSV"
-      },
-      {
-        label: "Lista de Confirmação",
-        icon: ListChecks,
-        href: "/confirm",
-        description: "Pendências para revisar"
-      },
-      {
-        label: "Regras",
-        icon: Filter,
-        href: "/rules",
-        description: "Gerenciar regras"
-      },
-      {
-        label: "AI Keywords",
-        icon: Brain,
-        href: "/ai-keywords",
-        description: "Sugestões com IA"
-      },
-      {
-        label: "Notificações",
-        icon: Bell,
-        href: "/notifications",
-        description: "Alertas e mensagens"
-      },
+      { id: "upload", icon: Upload, href: "/uploads", labelKey: "upload", descriptionKey: "upload" },
+      { id: "confirm", icon: ListChecks, href: "/confirm", labelKey: "confirm", descriptionKey: "confirm" },
+      { id: "rules", icon: Filter, href: "/rules", labelKey: "rules", descriptionKey: "rules" },
+      { id: "ai-keywords", icon: Brain, href: "/ai-keywords", labelKey: "aiKeywords", descriptionKey: "aiKeywords" },
+      { id: "notifications", icon: Bell, href: "/notifications", labelKey: "notifications", descriptionKey: "notifications" },
     ]
   },
   {
-    label: "Planejamento",
+    id: "planning",
     items: [
-      {
-        label: "Orçamento",
-        icon: Wallet,
-        href: "/budgets",
-        description: "Limites por categoria"
-      },
-      {
-        label: "Metas",
-        icon: Target,
-        href: "/goals",
-        description: "Planejamento financeiro"
-      },
+      { id: "budgets", icon: Wallet, href: "/budgets", labelKey: "budgets", descriptionKey: "budgets" },
+      { id: "goals", icon: Target, href: "/goals", labelKey: "goals", descriptionKey: "goals" },
     ]
   },
   {
-    label: "Rituais",
+    id: "rituals",
     items: [
-      {
-        label: "Semanal",
-        icon: CalendarCheck,
-        href: "/rituals?type=weekly",
-        description: "Revisão semanal"
-      },
-      {
-        label: "Mensal",
-        icon: Calendar,
-        href: "/rituals?type=monthly",
-        description: "Revisão mensal"
-      },
+      { id: "ritual-weekly", icon: CalendarCheck, href: "/rituals?type=weekly", labelKey: "ritualWeekly", descriptionKey: "ritualWeekly" },
+      { id: "ritual-monthly", icon: Calendar, href: "/rituals?type=monthly", labelKey: "ritualMonthly", descriptionKey: "ritualMonthly" },
     ]
   },
 ];
@@ -146,24 +74,40 @@ export function Sidebar() {
   const normalizedLocation = location.split("?")[0];
   const [isOpen, setIsOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const locale = useLocale();
+  const sidebarLabels = useMemo(() => translate(locale, layoutCopy.sidebar), [locale]);
+  const formatMessage = (template: string, vars: Record<string, string>) =>
+    Object.entries(vars).reduce((result, [key, value]) => result.replace(`{${key}}`, value), template);
   const [groupOpenState, setGroupOpenState] = useState<Record<string, boolean>>(() => {
+    const defaultState = Object.fromEntries(NAV_CLUSTER_DEFS.map((cluster) => [cluster.id, true]));
     if (typeof window === "undefined") {
-      return Object.fromEntries(NAV_CLUSTERS.map((cluster) => [cluster.label, true]));
+      return defaultState;
     }
     const stored = window.localStorage.getItem(GROUP_STATE_KEY);
     if (!stored) {
-      return Object.fromEntries(NAV_CLUSTERS.map((cluster) => [cluster.label, true]));
+      return defaultState;
     }
     try {
       const parsed = JSON.parse(stored) as Record<string, boolean>;
       return Object.fromEntries(
-        NAV_CLUSTERS.map((cluster) => [cluster.label, parsed[cluster.label] ?? true])
+        NAV_CLUSTER_DEFS.map((cluster) => [cluster.id, parsed[cluster.id] ?? true])
       );
     } catch {
-      return Object.fromEntries(NAV_CLUSTERS.map((cluster) => [cluster.label, true]));
+      return defaultState;
     }
   });
   const { month, setMonth, formatMonth } = useMonth();
+  const navClusters = useMemo(() => {
+    return NAV_CLUSTER_DEFS.map((cluster) => ({
+      id: cluster.id,
+      label: sidebarLabels.groups[cluster.id as keyof typeof sidebarLabels.groups],
+      items: cluster.items.map((item) => ({
+        ...item,
+        label: sidebarLabels.items[item.labelKey as keyof typeof sidebarLabels.items],
+        description: sidebarLabels.descriptions[item.descriptionKey as keyof typeof sidebarLabels.descriptions]
+      }))
+    }));
+  }, [sidebarLabels]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -171,11 +115,11 @@ export function Sidebar() {
   }, [groupOpenState]);
 
   useEffect(() => {
-    const activeCluster = NAV_CLUSTERS.find((cluster) =>
+    const activeCluster = NAV_CLUSTER_DEFS.find((cluster) =>
       cluster.items.some((item) => normalizedLocation === item.href.split("?")[0])
     );
-    if (activeCluster && !groupOpenState[activeCluster.label]) {
-      setGroupOpenState((prev) => ({ ...prev, [activeCluster.label]: true }));
+    if (activeCluster && !groupOpenState[activeCluster.id]) {
+      setGroupOpenState((prev) => ({ ...prev, [activeCluster.id]: true }));
     }
   }, [normalizedLocation, groupOpenState]);
 
@@ -250,7 +194,9 @@ export function Sidebar() {
           <div className="px-4 py-4 border-b border-white/10">
             <div className="bg-white/5 rounded-xl p-3">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] uppercase tracking-wider text-white/50 font-medium">Período</span>
+                <span className="text-[10px] uppercase tracking-wider text-white/50 font-medium">
+                  {sidebarLabels.period}
+                </span>
                 <Calendar className="h-3.5 w-3.5 text-primary" />
               </div>
               <div className="flex items-center gap-1">
@@ -279,8 +225,8 @@ export function Sidebar() {
         )}
 
         <nav className="flex-1 py-4 px-3 overflow-y-auto">
-          {NAV_CLUSTERS.map((cluster, clusterIdx) => (
-            <div key={cluster.label} className={clusterIdx > 0 ? "mt-6" : ""}>
+          {navClusters.map((cluster, clusterIdx) => (
+            <div key={cluster.id} className={clusterIdx > 0 ? "mt-6" : ""}>
               {!isCollapsed && (
                 <div className="px-3 mb-2 flex items-center justify-between">
                   <span className="text-[10px] uppercase tracking-wider text-white/40 font-bold">
@@ -291,13 +237,13 @@ export function Sidebar() {
                     onClick={() =>
                       setGroupOpenState((prev) => ({
                         ...prev,
-                        [cluster.label]: !prev[cluster.label]
+                        [cluster.id]: !prev[cluster.id]
                       }))
                     }
                     className="text-white/50 hover:text-white transition-colors"
-                    aria-label={`Alternar grupo ${cluster.label}`}
+                    aria-label={formatMessage(sidebarLabels.toggleGroup, { group: cluster.label })}
                   >
-                    {groupOpenState[cluster.label] ? (
+                    {groupOpenState[cluster.id] ? (
                       <ChevronLeft className="h-3.5 w-3.5 rotate-90" />
                     ) : (
                       <ChevronRight className="h-3.5 w-3.5 rotate-90" />
@@ -305,7 +251,7 @@ export function Sidebar() {
                   </button>
                 </div>
               )}
-              {groupOpenState[cluster.label] && (
+              {groupOpenState[cluster.id] && (
                 <div className="space-y-1">
                 {cluster.items.map((item) => {
                   const isActive = item.href.includes("?")
@@ -323,7 +269,7 @@ export function Sidebar() {
                           ? "bg-primary text-white shadow-lg shadow-primary/30"
                           : "text-white/70 hover:bg-white/10 hover:text-white"
                       )}
-                      data-testid={`nav-${item.label.toLowerCase()}`}
+                      data-testid={`nav-${item.id}`}
                     >
                       <item.icon className={cn(
                         "h-5 w-5 transition-colors",
@@ -360,7 +306,7 @@ export function Sidebar() {
           {!isCollapsed && (
             <div className="px-3 mb-2">
               <span className="text-[10px] uppercase tracking-wider text-white/40 font-bold">
-                Sistema
+                {sidebarLabels.system}
               </span>
             </div>
           )}
@@ -380,7 +326,7 @@ export function Sidebar() {
                     <Settings className="h-5 w-5" />
                   </Link>
                 </TooltipTrigger>
-                <TooltipContent side="right">Configurações</TooltipContent>
+                <TooltipContent side="right">{sidebarLabels.items.settings}</TooltipContent>
               </Tooltip>
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
@@ -391,7 +337,7 @@ export function Sidebar() {
                     <LogOut className="h-5 w-5" />
                   </Link>
                 </TooltipTrigger>
-                <TooltipContent side="right">Sair</TooltipContent>
+                <TooltipContent side="right">{sidebarLabels.items.logout}</TooltipContent>
               </Tooltip>
             </>
           ) : (
@@ -408,7 +354,7 @@ export function Sidebar() {
                 data-testid="nav-settings"
               >
                 <Settings className="h-5 w-5" />
-                Configurações
+                {sidebarLabels.items.settings}
               </Link>
               <Link
                 href="/login"
@@ -417,7 +363,7 @@ export function Sidebar() {
                 data-testid="nav-logout"
               >
                 <LogOut className="h-5 w-5" />
-                Sair
+                {sidebarLabels.items.logout}
               </Link>
             </>
           )}

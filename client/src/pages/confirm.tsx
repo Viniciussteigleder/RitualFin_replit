@@ -46,6 +46,8 @@ export default function ConfirmPage() {
   const [activeTab, setActiveTab] = useState("all");
   const [statusPayload, setStatusPayload] = useState<{ variant: "success" | "warning" | "error"; title: string; description: string; payload?: Record<string, unknown> } | null>(null);
   const locale = useLocale();
+  const formatMessage = (template: string, vars: Record<string, string | number>) =>
+    Object.entries(vars).reduce((result, [key, value]) => result.replace(`{${key}}`, String(value)), template);
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["confirm-queue"],
@@ -82,19 +84,19 @@ export default function ConfirmPage() {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["rules"] });
       setSelectedIds(new Set());
-      toast({ title: `${result.count} transação(ões) confirmada(s)` });
+      toast({ title: formatMessage(t(locale, confirmCopy.toastConfirmed), { count: result.count }) });
       setStatusPayload({
         variant: "success",
-        title: "Confirmação concluída",
-        description: `${result.count} transação(ões) confirmada(s).`,
+        title: t(locale, confirmCopy.statusSuccessTitle),
+        description: formatMessage(t(locale, confirmCopy.statusSuccessBody), { count: result.count }),
         payload: result ? { count: result.count, ruleCreated: result.ruleCreated, ruleId: result.ruleId } : undefined
       });
     },
     onError: (error: any) => {
       setStatusPayload({
         variant: "error",
-        title: "Falha ao confirmar transações",
-        description: error?.message || "Não foi possível concluir a confirmação.",
+        title: t(locale, confirmCopy.statusErrorTitle),
+        description: error?.message || t(locale, confirmCopy.statusErrorBody),
         payload: error?.details || null
       });
     }
@@ -103,7 +105,7 @@ export default function ConfirmPage() {
   const getFormData = (t: any): TransactionForm => {
     return formData[t.id] || {
       type: t.type || "Despesa",
-      fixVar: t.fixVar || "Variavel",
+      fixVar: t.fixVar || "Variável",
       category1: t.category1 || "Outros",
       excludeFromBudget: t.excludeFromBudget || false
     };
@@ -403,9 +405,9 @@ export default function ConfirmPage() {
                               {confidence}%
                             </span>
                             {!settings?.autoConfirmHighConfidence && confidence >= (settings?.confidenceThreshold || 80) && (
-                              <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-emerald-500/30 text-emerald-700 bg-emerald-50/50">
-                                <Zap className="h-2.5 w-2.5 mr-0.5" />
-                                Auto
+                                <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-emerald-500/30 text-emerald-700 bg-emerald-50/50">
+                                  <Zap className="h-2.5 w-2.5 mr-0.5" />
+                                {t(locale, confirmCopy.autoBadge)}
                               </Badge>
                             )}
                           </div>
@@ -432,7 +434,7 @@ export default function ConfirmPage() {
                                 <SelectItem value="Transporte">Transporte</SelectItem>
                                 <SelectItem value="Compras Online">Compras Online</SelectItem>
                                 <SelectItem value="Moradia">Moradia</SelectItem>
-                                <SelectItem value="Saúde">Saude</SelectItem>
+                                <SelectItem value="Saúde">Saúde</SelectItem>
                                 <SelectItem value="Receitas">Receitas</SelectItem>
                                 <SelectItem value="Outros">Outros</SelectItem>
                                 <SelectItem value="Interno">Interno</SelectItem>
@@ -440,7 +442,7 @@ export default function ConfirmPage() {
                             </Select>
                             {confidence >= 80 && (
                               <Badge className="text-[10px] bg-emerald-100 text-emerald-700 border-0">
-                                IA
+                                {t(locale, confirmCopy.aiBadge)}
                               </Badge>
                             )}
                           </div>

@@ -121,6 +121,26 @@ export const uploadsCopy = {
     "de-DE": "Fehler bei der Vorschau",
     "en-US": "Preview error"
   },
+  previewFailedTitle: {
+    "pt-BR": "Pré-visualização falhou",
+    "de-DE": "Vorschau fehlgeschlagen",
+    "en-US": "Preview failed"
+  },
+  importSummaryTitle: {
+    "pt-BR": "Resumo da importação",
+    "de-DE": "Importzusammenfassung",
+    "en-US": "Import summary"
+  },
+  validatingTransactions: {
+    "pt-BR": "Validando e categorizando transações",
+    "de-DE": "Transaktionen werden validiert und kategorisiert",
+    "en-US": "Validating and categorizing transactions"
+  },
+  conflictResolved: {
+    "pt-BR": "Resolução aplicada: {action} ({count} duplicadas)",
+    "de-DE": "Auflösung angewendet: {action} ({count} Duplikate)",
+    "en-US": "Resolution applied: {action} ({count} duplicates)"
+  },
   importDoneTitle: {
     "pt-BR": "Importação concluída",
     "de-DE": "Import abgeschlossen",
@@ -130,6 +150,16 @@ export const uploadsCopy = {
     "pt-BR": "Arquivo já importado",
     "de-DE": "Datei bereits importiert",
     "en-US": "File already imported"
+  },
+  importDuplicatesSuffix: {
+    "pt-BR": "{count} duplicadas",
+    "de-DE": "{count} Duplikate",
+    "en-US": "{count} duplicates"
+  },
+  importDuplicatesExisting: {
+    "pt-BR": "{count} {label} já existem no sistema",
+    "de-DE": "{count} {label} sind bereits im System vorhanden",
+    "en-US": "{count} {label} already exist in the system"
   },
   importErrorTitle: {
     "pt-BR": "Erro na importação",
@@ -2836,6 +2866,602 @@ export const merchantDictionaryCopy = {
   }
 };
 
+export const notFoundCopy = {
+  title: {
+    "pt-BR": "Página não encontrada",
+    "de-DE": "Seite nicht gefunden",
+    "en-US": "Page not found"
+  },
+  subtitle: {
+    "pt-BR": "Parece que você se perdeu. A página que você está procurando não existe ou foi movida.",
+    "de-DE": "Es sieht so aus, als hätten Sie sich verirrt. Die Seite existiert nicht oder wurde verschoben.",
+    "en-US": "It looks like you got lost. The page you're looking for doesn't exist or was moved."
+  },
+  backDashboard: {
+    "pt-BR": "Voltar ao Dashboard",
+    "de-DE": "Zurück zum Dashboard",
+    "en-US": "Back to dashboard"
+  },
+  back: {
+    "pt-BR": "Voltar",
+    "de-DE": "Zurück",
+    "en-US": "Go back"
+  },
+  popularPages: {
+    "pt-BR": "Páginas populares:",
+    "de-DE": "Beliebte Seiten:",
+    "en-US": "Popular pages:"
+  },
+  helpTitle: {
+    "pt-BR": "Precisa de ajuda?",
+    "de-DE": "Brauchen Sie Hilfe?",
+    "en-US": "Need help?"
+  },
+  helpBody: {
+    "pt-BR": "Se você acha que isso é um erro, entre em contato com o suporte.",
+    "de-DE": "Wenn Sie glauben, dass dies ein Fehler ist, kontaktieren Sie den Support.",
+    "en-US": "If you think this is an error, contact support."
+  },
+  pageDashboard: {
+    "pt-BR": "Dashboard",
+    "de-DE": "Dashboard",
+    "en-US": "Dashboard"
+  },
+  pageUploads: {
+    "pt-BR": "Uploads",
+    "de-DE": "Uploads",
+    "en-US": "Uploads"
+  },
+  pageTransactions: {
+    "pt-BR": "Transações",
+    "de-DE": "Transaktionen",
+    "en-US": "Transactions"
+  }
+};
+
+export const keyboardShortcutsCopy = {
+  title: {
+    "pt-BR": "Atalhos de Teclado",
+    "de-DE": "Tastenkürzel",
+    "en-US": "Keyboard shortcuts"
+  },
+  tipLabel: {
+    "pt-BR": "Dica:",
+    "de-DE": "Tipp:",
+    "en-US": "Tip:"
+  },
+  tipPrefix: {
+    "pt-BR": "Pressione",
+    "de-DE": "Drücken Sie",
+    "en-US": "Press"
+  },
+  tipSuffix: {
+    "pt-BR": "a qualquer momento para ver estes atalhos.",
+    "de-DE": "jederzeit, um diese Tastenkürzel zu sehen.",
+    "en-US": "at any time to view these shortcuts."
+  },
+  categoryGeneral: {
+    "pt-BR": "Geral",
+    "de-DE": "Allgemein",
+    "en-US": "General"
+  },
+  categoryConfirmation: {
+    "pt-BR": "Confirmação",
+    "de-DE": "Bestätigung",
+    "en-US": "Confirmation"
+  },
+  categoryTransactions: {
+    "pt-BR": "Transações",
+    "de-DE": "Transaktionen",
+    "en-US": "Transactions"
+  },
+  categoryOther: {
+    "pt-BR": "Outros",
+    "de-DE": "Sonstiges",
+    "en-US": "Other"
+  },
+  toggleShortcuts: {
+    "pt-BR": "Mostrar/ocultar atalhos",
+    "de-DE": "Tastenkürzel anzeigen/ausblenden",
+    "en-US": "Show/hide shortcuts"
+  },
+  closeDialog: {
+    "pt-BR": "Fechar modal ou diálogo",
+    "de-DE": "Modal/Dialog schließen",
+    "en-US": "Close modal or dialog"
+  },
+  confirmTransaction: {
+    "pt-BR": "Confirmar transação selecionada",
+    "de-DE": "Ausgewählte Transaktion bestätigen",
+    "en-US": "Confirm selected transaction"
+  },
+  navigateTransactions: {
+    "pt-BR": "Navegar entre transações",
+    "de-DE": "Zwischen Transaktionen navigieren",
+    "en-US": "Navigate between transactions"
+  },
+  toggleSelection: {
+    "pt-BR": "Selecionar/desselecionar transação",
+    "de-DE": "Transaktion auswählen/abwählen",
+    "en-US": "Select/deselect transaction"
+  },
+  selectAll: {
+    "pt-BR": "Selecionar todas as transações",
+    "de-DE": "Alle Transaktionen auswählen",
+    "en-US": "Select all transactions"
+  },
+  focusSearch: {
+    "pt-BR": "Focar na busca",
+    "de-DE": "Suche fokussieren",
+    "en-US": "Focus search"
+  },
+  quickSearch: {
+    "pt-BR": "Busca rápida (em breve)",
+    "de-DE": "Schnellsuche (bald verfügbar)",
+    "en-US": "Quick search (coming soon)"
+  }
+};
+
+export const onboardingCopy = {
+  step1Title: {
+    "pt-BR": "Bem-vindo ao RitualFin",
+    "de-DE": "Willkommen bei RitualFin",
+    "en-US": "Welcome to RitualFin"
+  },
+  step1Description: {
+    "pt-BR": "Sua vida financeira organizada em minutos, não horas.",
+    "de-DE": "Ihre Finanzen in Minuten organisiert, nicht in Stunden.",
+    "en-US": "Your financial life organized in minutes, not hours."
+  },
+  step1Body: {
+    "pt-BR": "RitualFin usa inteligência artificial para categorizar suas transações automaticamente. Você só precisa revisar e confirmar.",
+    "de-DE": "RitualFin nutzt KI, um Ihre Transaktionen automatisch zu kategorisieren. Sie müssen nur prüfen und bestätigen.",
+    "en-US": "RitualFin uses AI to automatically categorize your transactions. You only need to review and confirm."
+  },
+  step1CardImport: {
+    "pt-BR": "Importe CSV",
+    "de-DE": "CSV importieren",
+    "en-US": "Import CSV"
+  },
+  step1CardAi: {
+    "pt-BR": "IA Categoriza",
+    "de-DE": "KI kategorisiert",
+    "en-US": "AI categorizes"
+  },
+  step1CardConfirm: {
+    "pt-BR": "Você Confirma",
+    "de-DE": "Sie bestätigen",
+    "en-US": "You confirm"
+  },
+  step1BadgeTitle: {
+    "pt-BR": "Modo Lazy Ativado",
+    "de-DE": "Lazy-Modus aktiviert",
+    "en-US": "Lazy mode enabled"
+  },
+  step1BadgeBody: {
+    "pt-BR": "O sistema aprende com suas confirmações e melhora a cada mês.",
+    "de-DE": "Das System lernt aus Ihren Bestätigungen und verbessert sich monatlich.",
+    "en-US": "The system learns from your confirmations and improves each month."
+  },
+  step2Title: {
+    "pt-BR": "Bancos Suportados",
+    "de-DE": "Unterstützte Banken",
+    "en-US": "Supported banks"
+  },
+  step2Description: {
+    "pt-BR": "Importe extratos de múltiplos bancos e cartões.",
+    "de-DE": "Importieren Sie Auszüge von mehreren Banken und Karten.",
+    "en-US": "Import statements from multiple banks and cards."
+  },
+  step2Body: {
+    "pt-BR": "RitualFin detecta automaticamente o formato do seu CSV e extrai todas as informações.",
+    "de-DE": "RitualFin erkennt das CSV-Format automatisch und extrahiert alle Informationen.",
+    "en-US": "RitualFin automatically detects your CSV format and extracts all information."
+  },
+  step2MilesDesc: {
+    "pt-BR": "Cartão de crédito Lufthansa",
+    "de-DE": "Lufthansa-Kreditkarte",
+    "en-US": "Lufthansa credit card"
+  },
+  step2AmexDesc: {
+    "pt-BR": "Multi-cartões suportado",
+    "de-DE": "Mehrere Karten unterstützt",
+    "en-US": "Multi-card supported"
+  },
+  step2SparkasseDesc: {
+    "pt-BR": "Conta bancária IBAN",
+    "de-DE": "IBAN-Bankkonto",
+    "en-US": "IBAN bank account"
+  },
+  statusActive: {
+    "pt-BR": "Ativo",
+    "de-DE": "Aktiv",
+    "en-US": "Active"
+  },
+  step2ComingSoon: {
+    "pt-BR": "Em breve: Nubank, Revolut, N26, Wise",
+    "de-DE": "Demnächst: Nubank, Revolut, N26, Wise",
+    "en-US": "Coming soon: Nubank, Revolut, N26, Wise"
+  },
+  step3Title: {
+    "pt-BR": "Pronto para começar!",
+    "de-DE": "Bereit loszulegen!",
+    "en-US": "Ready to start!"
+  },
+  step3Description: {
+    "pt-BR": "Vamos importar seu primeiro arquivo CSV.",
+    "de-DE": "Lassen Sie uns Ihre erste CSV importieren.",
+    "en-US": "Let's import your first CSV file."
+  },
+  step3Body: {
+    "pt-BR": "Depois de importar, você poderá:",
+    "de-DE": "Nach dem Import können Sie:",
+    "en-US": "After importing, you'll be able to:"
+  },
+  step3BulletReviewTitle: {
+    "pt-BR": "Revisar transações pendentes",
+    "de-DE": "Offene Transaktionen prüfen",
+    "en-US": "Review pending transactions"
+  },
+  step3BulletReviewBody: {
+    "pt-BR": "Confirme as categorizações sugeridas pela IA",
+    "de-DE": "Bestätigen Sie die von der KI vorgeschlagenen Kategorien",
+    "en-US": "Confirm the categories suggested by AI"
+  },
+  step3BulletRulesTitle: {
+    "pt-BR": "Criar regras de categorização",
+    "de-DE": "Kategorisierungsregeln erstellen",
+    "en-US": "Create categorization rules"
+  },
+  step3BulletRulesBody: {
+    "pt-BR": "Ensine o sistema a reconhecer suas despesas recorrentes",
+    "de-DE": "Bringen Sie dem System wiederkehrende Ausgaben bei",
+    "en-US": "Teach the system to recognize recurring expenses"
+  },
+  step3BulletInsightsTitle: {
+    "pt-BR": "Visualizar insights financeiros",
+    "de-DE": "Finanzielle Insights ansehen",
+    "en-US": "View financial insights"
+  },
+  step3BulletInsightsBody: {
+    "pt-BR": "Dashboard com gastos por categoria e projeções",
+    "de-DE": "Dashboard mit Ausgaben nach Kategorie und Prognosen",
+    "en-US": "Dashboard with category spend and forecasts"
+  },
+  step3Tip: {
+    "pt-BR": "Dica: Comece importando o último mês para ver o RitualFin em ação!",
+    "de-DE": "Tipp: Importieren Sie den letzten Monat, um RitualFin in Aktion zu sehen!",
+    "en-US": "Tip: Start by importing the last month to see RitualFin in action!"
+  },
+  back: {
+    "pt-BR": "Voltar",
+    "de-DE": "Zurück",
+    "en-US": "Back"
+  },
+  skipIntro: {
+    "pt-BR": "Pular introdução",
+    "de-DE": "Einführung überspringen",
+    "en-US": "Skip intro"
+  },
+  next: {
+    "pt-BR": "Próximo",
+    "de-DE": "Weiter",
+    "en-US": "Next"
+  },
+  start: {
+    "pt-BR": "Começar",
+    "de-DE": "Starten",
+    "en-US": "Start"
+  }
+};
+
+export const layoutCopy = {
+  nav: {
+    "pt-BR": {
+      dashboard: "Painel",
+      transactions: "Transações",
+      settings: "Configurações",
+      uploadCsv: "Upload CSV"
+    },
+    "de-DE": {
+      dashboard: "Dashboard",
+      transactions: "Transaktionen",
+      settings: "Einstellungen",
+      uploadCsv: "CSV hochladen"
+    },
+    "en-US": {
+      dashboard: "Dashboard",
+      transactions: "Transactions",
+      settings: "Settings",
+      uploadCsv: "Upload CSV"
+    }
+  },
+  sidebar: {
+    "pt-BR": {
+      period: "Período",
+      system: "Sistema",
+      toggleGroup: "Alternar grupo {group}",
+      groups: {
+        overview: "Visão Geral",
+        operations: "Operações",
+        planning: "Planejamento",
+        rituals: "Rituais"
+      },
+      items: {
+        dashboard: "Dashboard",
+        calendar: "Calendário",
+        forecast: "Previsão",
+        transactions: "Transações",
+        accounts: "Contas",
+        insights: "Insights",
+        upload: "Upload",
+        confirm: "Lista de Confirmação",
+        rules: "Regras",
+        aiKeywords: "AI Keywords",
+        notifications: "Notificações",
+        budgets: "Orçamento",
+        goals: "Metas",
+        ritualWeekly: "Semanal",
+        ritualMonthly: "Mensal",
+        settings: "Configurações",
+        logout: "Sair"
+      },
+      descriptions: {
+        dashboard: "Visão geral do mês",
+        calendar: "Eventos e compromissos",
+        forecast: "Recorrências e projeções",
+        transactions: "Histórico completo",
+        accounts: "Gerenciar cartões e contas",
+        insights: "Leituras e tendências",
+        upload: "Importar CSV",
+        confirm: "Pendências para revisar",
+        rules: "Gerenciar regras",
+        aiKeywords: "Sugestões com IA",
+        notifications: "Alertas e mensagens",
+        budgets: "Limites por categoria",
+        goals: "Planejamento financeiro",
+        ritualWeekly: "Revisão semanal",
+        ritualMonthly: "Revisão mensal"
+      }
+    },
+    "de-DE": {
+      period: "Zeitraum",
+      system: "System",
+      toggleGroup: "Gruppe {group} umschalten",
+      groups: {
+        overview: "Übersicht",
+        operations: "Operationen",
+        planning: "Planung",
+        rituals: "Rituale"
+      },
+      items: {
+        dashboard: "Dashboard",
+        calendar: "Kalender",
+        forecast: "Prognose",
+        transactions: "Transaktionen",
+        accounts: "Konten",
+        insights: "Insights",
+        upload: "Upload",
+        confirm: "Bestätigungsliste",
+        rules: "Regeln",
+        aiKeywords: "AI Keywords",
+        notifications: "Benachrichtigungen",
+        budgets: "Budget",
+        goals: "Ziele",
+        ritualWeekly: "Wöchentlich",
+        ritualMonthly: "Monatlich",
+        settings: "Einstellungen",
+        logout: "Abmelden"
+      },
+      descriptions: {
+        dashboard: "Monatsübersicht",
+        calendar: "Ereignisse und Termine",
+        forecast: "Wiederkehrendes und Prognosen",
+        transactions: "Vollständige Historie",
+        accounts: "Karten und Konten verwalten",
+        insights: "Auswertungen und Trends",
+        upload: "CSV importieren",
+        confirm: "Ausstehende prüfen",
+        rules: "Regeln verwalten",
+        aiKeywords: "KI-Vorschläge",
+        notifications: "Warnungen und Nachrichten",
+        budgets: "Grenzen pro Kategorie",
+        goals: "Finanzplanung",
+        ritualWeekly: "Wöchentliche Prüfung",
+        ritualMonthly: "Monatliche Prüfung"
+      }
+    },
+    "en-US": {
+      period: "Period",
+      system: "System",
+      toggleGroup: "Toggle {group} group",
+      groups: {
+        overview: "Overview",
+        operations: "Operations",
+        planning: "Planning",
+        rituals: "Rituals"
+      },
+      items: {
+        dashboard: "Dashboard",
+        calendar: "Calendar",
+        forecast: "Forecast",
+        transactions: "Transactions",
+        accounts: "Accounts",
+        insights: "Insights",
+        upload: "Upload",
+        confirm: "Confirmation list",
+        rules: "Rules",
+        aiKeywords: "AI Keywords",
+        notifications: "Notifications",
+        budgets: "Budget",
+        goals: "Goals",
+        ritualWeekly: "Weekly",
+        ritualMonthly: "Monthly",
+        settings: "Settings",
+        logout: "Log out"
+      },
+      descriptions: {
+        dashboard: "Monthly overview",
+        calendar: "Events and commitments",
+        forecast: "Recurrence and projections",
+        transactions: "Full history",
+        accounts: "Manage cards and accounts",
+        insights: "Readouts and trends",
+        upload: "Import CSV",
+        confirm: "Pending reviews",
+        rules: "Manage rules",
+        aiKeywords: "AI suggestions",
+        notifications: "Alerts and messages",
+        budgets: "Limits by category",
+        goals: "Financial planning",
+        ritualWeekly: "Weekly review",
+        ritualMonthly: "Monthly review"
+      }
+    }
+  }
+};
+
+export const loginCopy = {
+  tagline: {
+    "pt-BR": "Gestão Financeira Inteligente",
+    "de-DE": "Intelligentes Finanzmanagement",
+    "en-US": "Smart financial management"
+  },
+  welcomeTitle: {
+    "pt-BR": "Bem-vindo de volta",
+    "de-DE": "Willkommen zurück",
+    "en-US": "Welcome back"
+  },
+  welcomeSubtitle: {
+    "pt-BR": "Gerencie suas finanças com clareza e simplicidade",
+    "de-DE": "Verwalten Sie Ihre Finanzen klar und einfach",
+    "en-US": "Manage your finances with clarity and simplicity"
+  },
+  demoTitle: {
+    "pt-BR": "Modo Demo Ativo",
+    "de-DE": "Demo-Modus aktiv",
+    "en-US": "Demo mode active"
+  },
+  demoBody: {
+    "pt-BR": "Clique em qualquer botão para entrar. Sem necessidade de credenciais.",
+    "de-DE": "Klicken Sie auf eine Schaltfläche, um sich anzumelden. Keine Zugangsdaten erforderlich.",
+    "en-US": "Click any button to sign in. No credentials needed."
+  },
+  googleContinue: {
+    "pt-BR": "Continuar com Google",
+    "de-DE": "Mit Google fortfahren",
+    "en-US": "Continue with Google"
+  },
+  googleSuccess: {
+    "pt-BR": "Conectado! Redirecionando...",
+    "de-DE": "Verbunden! Weiterleitung...",
+    "en-US": "Connected! Redirecting..."
+  },
+  divider: {
+    "pt-BR": "ou continue com email",
+    "de-DE": "oder weiter mit E-Mail",
+    "en-US": "or continue with email"
+  },
+  emailLabel: {
+    "pt-BR": "Email",
+    "de-DE": "E-Mail",
+    "en-US": "Email"
+  },
+  emailPlaceholder: {
+    "pt-BR": "seu@email.com",
+    "de-DE": "dein@email.com",
+    "en-US": "you@email.com"
+  },
+  passwordLabel: {
+    "pt-BR": "Senha",
+    "de-DE": "Passwort",
+    "en-US": "Password"
+  },
+  passwordPlaceholder: {
+    "pt-BR": "Digite sua senha",
+    "de-DE": "Passwort eingeben",
+    "en-US": "Enter your password"
+  },
+  forgot: {
+    "pt-BR": "Esqueceu?",
+    "de-DE": "Vergessen?",
+    "en-US": "Forgot?"
+  },
+  loginAction: {
+    "pt-BR": "Entrar",
+    "de-DE": "Anmelden",
+    "en-US": "Sign in"
+  },
+  loginLoading: {
+    "pt-BR": "Entrando...",
+    "de-DE": "Anmeldung...",
+    "en-US": "Signing in..."
+  },
+  loginSuccess: {
+    "pt-BR": "Sucesso!",
+    "de-DE": "Erfolg!",
+    "en-US": "Success!"
+  },
+  signupPrompt: {
+    "pt-BR": "Não tem uma conta?",
+    "de-DE": "Sie haben noch kein Konto?",
+    "en-US": "Don't have an account?"
+  },
+  signupCta: {
+    "pt-BR": "Cadastre-se gratuitamente",
+    "de-DE": "Kostenlos registrieren",
+    "en-US": "Sign up for free"
+  },
+  footer: {
+    "pt-BR": "Feito com ❤️ para simplificar suas finanças.",
+    "de-DE": "Mit ❤️ gebaut, um Ihre Finanzen zu vereinfachen.",
+    "en-US": "Made with ❤️ to simplify your finances."
+  }
+};
+
+export const insightsCopy = {
+  title: {
+    "pt-BR": "Insights",
+    "de-DE": "Insights",
+    "en-US": "Insights"
+  },
+  subtitle: {
+    "pt-BR": "Leituras automáticas para {month}.",
+    "de-DE": "Automatische Einblicke für {month}.",
+    "en-US": "Automated insights for {month}."
+  },
+  savedTitle: {
+    "pt-BR": "Economia em {category}",
+    "de-DE": "Ersparnis bei {category}",
+    "en-US": "Savings in {category}"
+  },
+  savedDescription: {
+    "pt-BR": "Você economizou {percent}% em {category} comparado ao mês anterior.",
+    "de-DE": "Sie haben {percent}% bei {category} gegenüber dem Vormonat gespart.",
+    "en-US": "You saved {percent}% on {category} compared to last month."
+  },
+  warningTitle: {
+    "pt-BR": "Atenção com {category}",
+    "de-DE": "Achtung bei {category}",
+    "en-US": "Watch out for {category}"
+  },
+  warningDescription: {
+    "pt-BR": "Seus gastos em {category} aumentaram {percent}% este mês.",
+    "de-DE": "Ihre Ausgaben für {category} sind diesen Monat um {percent}% gestiegen.",
+    "en-US": "Your spending on {category} increased {percent}% this month."
+  },
+  neutralTitle: {
+    "pt-BR": "Gastos estáveis no período",
+    "de-DE": "Ausgaben im Zeitraum stabil",
+    "en-US": "Spending steady for the period"
+  },
+  neutralDescription: {
+    "pt-BR": "Continue acompanhando para manter o controle financeiro.",
+    "de-DE": "Behalten Sie den Überblick, um die Finanzen im Griff zu behalten.",
+    "en-US": "Keep tracking to maintain financial control."
+  }
+};
+
 export const confirmCopy = {
   title: {
     "pt-BR": "Fila de Confirmação",
@@ -2847,10 +3473,45 @@ export const confirmCopy = {
     "de-DE": "Die KI hat Transaktionen voranalysiert. Bitte prüfen und bestätigen.",
     "en-US": "AI pre-analyzed each transaction. Review and confirm."
   },
+  toastConfirmed: {
+    "pt-BR": "{count} transação(ões) confirmada(s)",
+    "de-DE": "{count} Transaktion(en) bestätigt",
+    "en-US": "{count} transaction(s) confirmed"
+  },
+  statusSuccessTitle: {
+    "pt-BR": "Confirmação concluída",
+    "de-DE": "Bestätigung abgeschlossen",
+    "en-US": "Confirmation completed"
+  },
+  statusSuccessBody: {
+    "pt-BR": "{count} transação(ões) confirmada(s).",
+    "de-DE": "{count} Transaktion(en) bestätigt.",
+    "en-US": "{count} transaction(s) confirmed."
+  },
+  statusErrorTitle: {
+    "pt-BR": "Falha ao confirmar transações",
+    "de-DE": "Bestätigung fehlgeschlagen",
+    "en-US": "Failed to confirm transactions"
+  },
+  statusErrorBody: {
+    "pt-BR": "Não foi possível concluir a confirmação.",
+    "de-DE": "Bestätigung konnte nicht abgeschlossen werden.",
+    "en-US": "Confirmation could not be completed."
+  },
   acceptHigh: {
     "pt-BR": "Aceitar alta confiança",
     "de-DE": "Hohe Zuversicht akzeptieren",
     "en-US": "Accept high confidence"
+  },
+  autoBadge: {
+    "pt-BR": "Auto",
+    "de-DE": "Auto",
+    "en-US": "Auto"
+  },
+  aiBadge: {
+    "pt-BR": "IA",
+    "de-DE": "KI",
+    "en-US": "AI"
   },
   totalPending: {
     "pt-BR": "Total Pendente",
@@ -3140,6 +3801,11 @@ export const rulesCopy = {
     "de-DE": "Regeln konnten nicht erneut angewendet werden",
     "en-US": "Failed to reapply rules"
   },
+  statusReapplyFailedBody: {
+    "pt-BR": "Não foi possível reaplicar as regras.",
+    "de-DE": "Die Regeln konnten nicht erneut angewendet werden.",
+    "en-US": "Could not reapply rules."
+  },
   statusAiAdded: {
     "pt-BR": "Regras IA adicionadas",
     "de-DE": "KI-Regeln hinzugefügt",
@@ -3179,6 +3845,424 @@ export const rulesCopy = {
     "pt-BR": "Erro ao processar arquivo",
     "de-DE": "Fehler beim Verarbeiten der Datei",
     "en-US": "Error processing file"
+  },
+  aiBadge: {
+    "pt-BR": "IA",
+    "de-DE": "KI",
+    "en-US": "AI"
+  },
+  categoriesLabel: {
+    "pt-BR": "Categorias",
+    "de-DE": "Kategorien",
+    "en-US": "Categories"
+  },
+  searchPlaceholder: {
+    "pt-BR": "Buscar regras por palavra-chave...",
+    "de-DE": "Regeln nach Stichwort suchen...",
+    "en-US": "Search rules by keyword..."
+  },
+  filterCategoryPlaceholder: {
+    "pt-BR": "Categoria",
+    "de-DE": "Kategorie",
+    "en-US": "Category"
+  },
+  filterAllCategories: {
+    "pt-BR": "Todas Categorias",
+    "de-DE": "Alle Kategorien",
+    "en-US": "All categories"
+  },
+  createManual: {
+    "pt-BR": "Criar Manualmente",
+    "de-DE": "Manuell erstellen",
+    "en-US": "Create manually"
+  },
+  strictBadge: {
+    "pt-BR": "Estrita",
+    "de-DE": "Strikt",
+    "en-US": "Strict"
+  },
+  dialogEditTitle: {
+    "pt-BR": "Editar Regra",
+    "de-DE": "Regel bearbeiten",
+    "en-US": "Edit rule"
+  },
+  dialogNewTitle: {
+    "pt-BR": "Nova Regra",
+    "de-DE": "Neue Regel",
+    "en-US": "New rule"
+  },
+  fieldNameLabel: {
+    "pt-BR": "Nome",
+    "de-DE": "Name",
+    "en-US": "Name"
+  },
+  fieldNamePlaceholder: {
+    "pt-BR": "Ex: Supermercado LIDL",
+    "de-DE": "z. B. Supermarkt LIDL",
+    "en-US": "e.g. Supermarket LIDL"
+  },
+  fieldCategory1Label: {
+    "pt-BR": "Categoria (Nível 1)",
+    "de-DE": "Kategorie (Ebene 1)",
+    "en-US": "Category (Level 1)"
+  },
+  fieldCategory2Label: {
+    "pt-BR": "Subcategoria (Nível 2)",
+    "de-DE": "Unterkategorie (Ebene 2)",
+    "en-US": "Subcategory (Level 2)"
+  },
+  fieldCategory3Label: {
+    "pt-BR": "Especificação (Nível 3)",
+    "de-DE": "Spezifizierung (Ebene 3)",
+    "en-US": "Specification (Level 3)"
+  },
+  fieldCategory2Placeholder: {
+    "pt-BR": "Ex: Supermercado",
+    "de-DE": "z. B. Supermarkt",
+    "en-US": "e.g. Supermarket"
+  },
+  fieldCategory3Placeholder: {
+    "pt-BR": "Ex: LIDL",
+    "de-DE": "z. B. LIDL",
+    "en-US": "e.g. LIDL"
+  },
+  fieldKeywordsLabel: {
+    "pt-BR": "Palavras-chave",
+    "de-DE": "Schlüsselwörter",
+    "en-US": "Keywords"
+  },
+  fieldKeywordsPlaceholder: {
+    "pt-BR": "REWE;EDEKA;ALDI (separar com ;)",
+    "de-DE": "REWE;EDEKA;ALDI (mit ; trennen)",
+    "en-US": "REWE;EDEKA;ALDI (separate with ;)"
+  },
+  fieldKeywordsHelper: {
+    "pt-BR": "Separe múltiplas palavras com ponto e vírgula (;)",
+    "de-DE": "Mehrere Wörter mit Semikolon (;) trennen",
+    "en-US": "Separate multiple words with semicolons (;)"
+  },
+  fieldTypeLabel: {
+    "pt-BR": "Tipo",
+    "de-DE": "Typ",
+    "en-US": "Type"
+  },
+  fieldTypeExpense: {
+    "pt-BR": "Despesa",
+    "de-DE": "Ausgabe",
+    "en-US": "Expense"
+  },
+  fieldTypeIncome: {
+    "pt-BR": "Receita",
+    "de-DE": "Einnahme",
+    "en-US": "Income"
+  },
+  fieldVariationLabel: {
+    "pt-BR": "Variação",
+    "de-DE": "Variation",
+    "en-US": "Variation"
+  },
+  fieldVariationFixed: {
+    "pt-BR": "Fixo",
+    "de-DE": "Fix",
+    "en-US": "Fixed"
+  },
+  fieldVariationVariable: {
+    "pt-BR": "Variável",
+    "de-DE": "Variabel",
+    "en-US": "Variable"
+  },
+  strictTitle: {
+    "pt-BR": "Regra Estrita",
+    "de-DE": "Strikte Regel",
+    "en-US": "Strict rule"
+  },
+  strictDescription: {
+    "pt-BR": "Aplicar automaticamente com 100% confiança",
+    "de-DE": "Automatisch mit 100 % Vertrauen anwenden",
+    "en-US": "Apply automatically with 100% confidence"
+  },
+  cancel: {
+    "pt-BR": "Cancelar",
+    "de-DE": "Abbrechen",
+    "en-US": "Cancel"
+  },
+  save: {
+    "pt-BR": "Salvar",
+    "de-DE": "Speichern",
+    "en-US": "Save"
+  },
+  create: {
+    "pt-BR": "Criar",
+    "de-DE": "Erstellen",
+    "en-US": "Create"
+  },
+  exportLabel: {
+    "pt-BR": "Exportar",
+    "de-DE": "Exportieren",
+    "en-US": "Export"
+  },
+  exportSuccessTitle: {
+    "pt-BR": "{count} regras exportadas com sucesso",
+    "de-DE": "{count} Regeln erfolgreich exportiert",
+    "en-US": "{count} rules exported successfully"
+  },
+  exportSuccessBody: {
+    "pt-BR": "Inclui categorias disponíveis e instruções",
+    "de-DE": "Enthält verfügbare Kategorien und Anweisungen",
+    "en-US": "Includes available categories and instructions"
+  },
+  statusRuleCreatedBody: {
+    "pt-BR": "A nova regra foi adicionada com sucesso.",
+    "de-DE": "Die neue Regel wurde erfolgreich hinzugefügt.",
+    "en-US": "The new rule was added successfully."
+  },
+  statusRuleUpdatedBody: {
+    "pt-BR": "As alterações foram salvas.",
+    "de-DE": "Die Änderungen wurden gespeichert.",
+    "en-US": "Changes have been saved."
+  },
+  statusRuleRemovedBody: {
+    "pt-BR": "A regra foi excluída com sucesso.",
+    "de-DE": "Die Regel wurde erfolgreich gelöscht.",
+    "en-US": "The rule was deleted successfully."
+  },
+  statusRuleCreateFailedBody: {
+    "pt-BR": "Não foi possível criar a regra.",
+    "de-DE": "Die Regel konnte nicht erstellt werden.",
+    "en-US": "Could not create the rule."
+  },
+  statusRuleUpdateFailedBody: {
+    "pt-BR": "Não foi possível atualizar a regra.",
+    "de-DE": "Die Regel konnte nicht aktualisiert werden.",
+    "en-US": "Could not update the rule."
+  },
+  statusRuleRemoveFailedBody: {
+    "pt-BR": "Não foi possível remover a regra.",
+    "de-DE": "Die Regel konnte nicht entfernt werden.",
+    "en-US": "Could not remove the rule."
+  },
+  reapplyToastTitle: {
+    "pt-BR": "Regras reaplicadas",
+    "de-DE": "Regeln erneut angewendet",
+    "en-US": "Rules reapplied"
+  },
+  reapplyToastBody: {
+    "pt-BR": "{categorized} categorizadas automaticamente, {pending} pendentes",
+    "de-DE": "{categorized} automatisch kategorisiert, {pending} ausstehend",
+    "en-US": "{categorized} auto-categorized, {pending} pending"
+  },
+  aiAddedToastTitle: {
+    "pt-BR": "{count} regras IA adicionadas",
+    "de-DE": "{count} KI-Regeln hinzugefügt",
+    "en-US": "{count} AI rules added"
+  },
+  aiAddedToastBody: {
+    "pt-BR": "{count} regras importadas pela IA.",
+    "de-DE": "{count} Regeln wurden von der KI importiert.",
+    "en-US": "{count} rules imported by AI."
+  },
+  importEmptyBody: {
+    "pt-BR": "O arquivo está vazio.",
+    "de-DE": "Die Datei ist leer.",
+    "en-US": "The file is empty."
+  },
+  importErrorsTitle: {
+    "pt-BR": "Erros encontrados no arquivo",
+    "de-DE": "Fehler in der Datei gefunden",
+    "en-US": "Errors found in file"
+  },
+  importNoValidBody: {
+    "pt-BR": "Nenhuma regra válida encontrada no arquivo.",
+    "de-DE": "Keine gültigen Regeln in der Datei gefunden.",
+    "en-US": "No valid rules found in the file."
+  },
+  importSuccessBody: {
+    "pt-BR": "{count} regras importadas com sucesso.",
+    "de-DE": "{count} Regeln erfolgreich importiert.",
+    "en-US": "{count} rules imported successfully."
+  },
+  importPartialTitle: {
+    "pt-BR": "Importação concluída com erros",
+    "de-DE": "Import abgeschlossen mit Fehlern",
+    "en-US": "Import completed with errors"
+  },
+  importPartialBody: {
+    "pt-BR": "{success} importadas, {fail} falharam",
+    "de-DE": "{success} importiert, {fail} fehlgeschlagen",
+    "en-US": "{success} imported, {fail} failed"
+  },
+  importProcessErrorTitle: {
+    "pt-BR": "Erro ao processar arquivo",
+    "de-DE": "Fehler beim Verarbeiten der Datei",
+    "en-US": "Error processing file"
+  },
+  importProcessErrorBody: {
+    "pt-BR": "Não foi possível processar o arquivo.",
+    "de-DE": "Die Datei konnte nicht verarbeitet werden.",
+    "en-US": "Could not process the file."
+  },
+  importRowNameError: {
+    "pt-BR": "Linha {row}: Nome é obrigatório",
+    "de-DE": "Zeile {row}: Name ist erforderlich",
+    "en-US": "Row {row}: Name is required"
+  },
+  importRowKeywordsError: {
+    "pt-BR": "Linha {row}: Palavras-chave é obrigatório",
+    "de-DE": "Zeile {row}: Schlüsselwörter sind erforderlich",
+    "en-US": "Row {row}: Keywords are required"
+  },
+  importRowTypeError: {
+    "pt-BR": "Linha {row}: Tipo deve ser \"Despesa\" ou \"Receita\"",
+    "de-DE": "Zeile {row}: Typ muss \"Ausgabe\" oder \"Einnahme\" sein",
+    "en-US": "Row {row}: Type must be \"Expense\" or \"Income\""
+  },
+  importRowFixVarError: {
+    "pt-BR": "Linha {row}: Deve ser \"Fixo\" ou \"Variável\"",
+    "de-DE": "Zeile {row}: Muss \"Fix\" oder \"Variabel\" sein",
+    "en-US": "Row {row}: Must be \"Fixed\" or \"Variable\""
+  },
+  importRowCategoryError: {
+    "pt-BR": "Linha {row}: Categoria 1 é obrigatória",
+    "de-DE": "Zeile {row}: Kategorie 1 ist erforderlich",
+    "en-US": "Row {row}: Category 1 is required"
+  },
+  exportSheetRules: {
+    "pt-BR": "Regras",
+    "de-DE": "Regeln",
+    "en-US": "Rules"
+  },
+  exportSheetCategories: {
+    "pt-BR": "Categorias Disponíveis",
+    "de-DE": "Verfügbare Kategorien",
+    "en-US": "Available Categories"
+  },
+  exportSheetInstructions: {
+    "pt-BR": "Instruções",
+    "de-DE": "Anweisungen",
+    "en-US": "Instructions"
+  },
+  exportInstructionHeader: {
+    "pt-BR": "INSTRUÇÕES",
+    "de-DE": "ANWEISUNGEN",
+    "en-US": "INSTRUCTIONS"
+  },
+  exportColumns: {
+    "pt-BR": {
+      name: "Nome",
+      type: "Tipo (Despesa/Receita)",
+      fixVar: "Fixo/Variável",
+      category1: "Categoria 1",
+      category2: "Categoria 2",
+      category3: "Categoria 3",
+      keywords: "Palavras-chave",
+      priority: "Prioridade",
+      strict: "Regra Estrita",
+      system: "Sistema"
+    },
+    "de-DE": {
+      name: "Name",
+      type: "Typ (Ausgabe/Einnahme)",
+      fixVar: "Fix/Variabel",
+      category1: "Kategorie 1",
+      category2: "Kategorie 2",
+      category3: "Kategorie 3",
+      keywords: "Schlüsselwörter",
+      priority: "Priorität",
+      strict: "Strikte Regel",
+      system: "System"
+    },
+    "en-US": {
+      name: "Name",
+      type: "Type (Expense/Income)",
+      fixVar: "Fixed/Variable",
+      category1: "Category 1",
+      category2: "Category 2",
+      category3: "Category 3",
+      keywords: "Keywords",
+      priority: "Priority",
+      strict: "Strict Rule",
+      system: "System"
+    }
+  },
+  exportCategoryHeaders: {
+    "pt-BR": {
+      level1: "Categoria Nível 1",
+      level2: "Exemplos Nível 2",
+      level3: "Exemplos Nível 3"
+    },
+    "de-DE": {
+      level1: "Kategorie Ebene 1",
+      level2: "Beispiele Ebene 2",
+      level3: "Beispiele Ebene 3"
+    },
+    "en-US": {
+      level1: "Category Level 1",
+      level2: "Level 2 Examples",
+      level3: "Level 3 Examples"
+    }
+  },
+  exportInstructions: {
+    "pt-BR": [
+      "Como usar este arquivo de regras",
+      "",
+      "1. Aba \"Regras\": Suas regras de categorização atuais",
+      "2. Aba \"Categorias Disponíveis\": Lista completa de categorias e exemplos",
+      "",
+      "Para importar regras:",
+      "- Edite a aba \"Regras\" com suas alterações",
+      "- Use categorias da aba \"Categorias Disponíveis\"",
+      "- Categorias 2 e 3 são opcionais",
+      "- Salve e importe de volta no RitualFin",
+      "",
+      "Hierarquia de Categorias:",
+      "- Nível 1: Categoria principal (obrigatório)",
+      "- Nível 2: Subcategoria (opcional, texto livre)",
+      "- Nível 3: Especificação (opcional, texto livre)"
+    ],
+    "de-DE": [
+      "So verwenden Sie diese Regeldatei",
+      "",
+      "1. Tab \"Regeln\": Ihre aktuellen Kategorisierungsregeln",
+      "2. Tab \"Verfügbare Kategorien\": Vollständige Kategorienliste mit Beispielen",
+      "",
+      "Regeln importieren:",
+      "- Bearbeiten Sie den Tab \"Regeln\" mit Ihren Änderungen",
+      "- Verwenden Sie Kategorien aus \"Verfügbare Kategorien\"",
+      "- Kategorien 2 und 3 sind optional",
+      "- Speichern und in RitualFin erneut importieren",
+      "",
+      "Kategorienhierarchie:",
+      "- Ebene 1: Hauptkategorie (erforderlich)",
+      "- Ebene 2: Unterkategorie (optional, Freitext)",
+      "- Ebene 3: Spezifizierung (optional, Freitext)"
+    ],
+    "en-US": [
+      "How to use this rules file",
+      "",
+      "1. Tab \"Rules\": Your current categorization rules",
+      "2. Tab \"Available Categories\": Full list of categories and examples",
+      "",
+      "To import rules:",
+      "- Edit the \"Rules\" tab with your changes",
+      "- Use categories from \"Available Categories\"",
+      "- Categories 2 and 3 are optional",
+      "- Save and import back into RitualFin",
+      "",
+      "Category hierarchy:",
+      "- Level 1: Primary category (required)",
+      "- Level 2: Subcategory (optional, free text)",
+      "- Level 3: Specification (optional, free text)"
+    ]
+  },
+  yes: {
+    "pt-BR": "Sim",
+    "de-DE": "Ja",
+    "en-US": "Yes"
+  },
+  no: {
+    "pt-BR": "Não",
+    "de-DE": "Nein",
+    "en-US": "No"
   }
 };
 
@@ -3742,6 +4826,325 @@ export const settingsCopy = {
     "pt-BR": "Fechar",
     "de-DE": "Schließen",
     "en-US": "Close"
+  },
+  auditActionLabels: {
+    "pt-BR": {
+      importacao_csv: "Importação CSV",
+      importacao_classificacao: "Importação de categorias",
+      importacao_aliases: "Importação de aliases",
+      importacao_logos: "Importação de logos",
+      importacao_dados: "Importação de dados",
+      regra_criada: "Regra criada",
+      regra_atualizada: "Regra atualizada",
+      regra_excluida: "Regra excluída",
+      regra_keywords_add: "KeyWords adicionadas",
+      regra_keywords_create: "Regra por KeyWords",
+      regra_keywords_negative_add: "Negativas adicionadas",
+      regra_keywords_negative_create: "Regra com negativas",
+      fila_revisao_classificacao: "Fila de revisão",
+      alias_import_apply: "Aliases aplicados",
+      logos_import: "Logos importados",
+      logos_refresh: "Logos atualizados",
+      zona_de_perigo_delete: "Zona de perigo"
+    },
+    "de-DE": {
+      importacao_csv: "CSV-Import",
+      importacao_classificacao: "Kategorieimport",
+      importacao_aliases: "Alias-Import",
+      importacao_logos: "Logo-Import",
+      importacao_dados: "Datenimport",
+      regra_criada: "Regel erstellt",
+      regra_atualizada: "Regel aktualisiert",
+      regra_excluida: "Regel gelöscht",
+      regra_keywords_add: "Keywords hinzugefügt",
+      regra_keywords_create: "Keyword-Regel",
+      regra_keywords_negative_add: "Negative Keywords hinzugefügt",
+      regra_keywords_negative_create: "Regel mit negativen Keywords",
+      fila_revisao_classificacao: "Review-Queue",
+      alias_import_apply: "Aliases angewendet",
+      logos_import: "Logos importiert",
+      logos_refresh: "Logos aktualisiert",
+      zona_de_perigo_delete: "Gefahrenzone"
+    },
+    "en-US": {
+      importacao_csv: "CSV import",
+      importacao_classificacao: "Category import",
+      importacao_aliases: "Alias import",
+      importacao_logos: "Logo import",
+      importacao_dados: "Data import",
+      regra_criada: "Rule created",
+      regra_atualizada: "Rule updated",
+      regra_excluida: "Rule deleted",
+      regra_keywords_add: "Keywords added",
+      regra_keywords_create: "Keyword rule",
+      regra_keywords_negative_add: "Negative keywords added",
+      regra_keywords_negative_create: "Rule with negatives",
+      fila_revisao_classificacao: "Review queue",
+      alias_import_apply: "Aliases applied",
+      logos_import: "Logos imported",
+      logos_refresh: "Logos refreshed",
+      zona_de_perigo_delete: "Danger zone"
+    }
+  },
+  integrationProviders: {
+    "pt-BR": [
+      {
+        id: "miles_and_more",
+        name: "Miles & More",
+        logo: "/providers/miles-and-more.svg",
+        status: "Ativo",
+        csv: {
+          delimiter: ";",
+          encoding: "UTF-8 com BOM (Excel) ou ISO-8859-1",
+          dateFormat: "dd.mm.yyyy",
+          requiredHeaders: ["Authorised on", "Amount", "Currency", "Description", "Payment type", "Status"],
+          previewColumns: [
+            "Fonte",
+            "Data (bookingDate)",
+            "Valor",
+            "Moeda",
+            "Descrição (simpleDesc)",
+            "Key Desc",
+            "Conta",
+            "Key"
+          ],
+          keyFields: "key_desc + bookingDate + amount (+ processed on como referência)",
+          failureReasons: [
+            "Colunas obrigatórias ausentes (baixe o template e não renomeie colunas).",
+            "Delimitador inconsistente (exporte com ';' como separador).",
+            "Codificação inválida (salve como CSV UTF-8 com BOM)."
+          ]
+        }
+      },
+      {
+        id: "amex",
+        name: "American Express",
+        logo: "/providers/american-express.svg",
+        status: "Ativo",
+        csv: {
+          delimiter: ",",
+          encoding: "UTF-8 com BOM (Excel) ou ISO-8859-1",
+          dateFormat: "dd/mm/yyyy",
+          requiredHeaders: ["Datum", "Beschreibung", "Karteninhaber", "Betrag"],
+          previewColumns: [
+            "Fonte",
+            "Data (bookingDate)",
+            "Valor",
+            "Moeda",
+            "Descrição (simpleDesc)",
+            "Key Desc",
+            "Conta",
+            "Key"
+          ],
+          keyFields: "key_desc + bookingDate + amount (+ Betreff como referência)",
+          failureReasons: [
+            "Cabeçalhos Amex ausentes (Datum, Beschreibung, Karteninhaber, Betrag).",
+            "Arquivo não está em CSV ou está com delimitador errado (use ',').",
+            "Caracteres corrompidos (reexporte em UTF-8 com BOM)."
+          ]
+        }
+      },
+      {
+        id: "sparkasse",
+        name: "Sparkasse",
+        logo: "/providers/sparkasse.svg",
+        status: "Ativo",
+        csv: {
+          delimiter: ";",
+          encoding: "UTF-8 com BOM (Excel) ou ISO-8859-1",
+          dateFormat: "dd.mm.yyyy",
+          requiredHeaders: ["Auftragskonto", "Buchungstag", "Verwendungszweck", "Betrag"],
+          previewColumns: [
+            "Fonte",
+            "Data (bookingDate)",
+            "Valor",
+            "Moeda",
+            "Descrição (simpleDesc)",
+            "Key Desc",
+            "Conta",
+            "Key"
+          ],
+          keyFields: "key_desc + bookingDate + amount (+ referência/IBAN quando disponível)",
+          failureReasons: [
+            "Colunas obrigatórias Sparkasse ausentes (reexporte o CSV original).",
+            "Delimitador diferente de ';' (ajuste o separador no Excel).",
+            "Data inválida no formato dd.mm.yyyy (verifique a coluna Buchungstag)."
+          ]
+        }
+      }
+    ],
+    "de-DE": [
+      {
+        id: "miles_and_more",
+        name: "Miles & More",
+        logo: "/providers/miles-and-more.svg",
+        status: "Aktiv",
+        csv: {
+          delimiter: ";",
+          encoding: "UTF-8 mit BOM (Excel) oder ISO-8859-1",
+          dateFormat: "dd.mm.yyyy",
+          requiredHeaders: ["Authorised on", "Amount", "Currency", "Description", "Payment type", "Status"],
+          previewColumns: [
+            "Quelle",
+            "Datum (bookingDate)",
+            "Betrag",
+            "Währung",
+            "Beschreibung (simpleDesc)",
+            "Key Desc",
+            "Konto",
+            "Key"
+          ],
+          keyFields: "key_desc + bookingDate + amount (+ processed on als Referenz)",
+          failureReasons: [
+            "Pflichtspalten fehlen (Template herunterladen und Spalten nicht umbenennen).",
+            "Inkonsistentes Trennzeichen (mit ';' exportieren).",
+            "Ungültige Kodierung (als CSV UTF-8 mit BOM speichern)."
+          ]
+        }
+      },
+      {
+        id: "amex",
+        name: "American Express",
+        logo: "/providers/american-express.svg",
+        status: "Aktiv",
+        csv: {
+          delimiter: ",",
+          encoding: "UTF-8 mit BOM (Excel) oder ISO-8859-1",
+          dateFormat: "dd/mm/yyyy",
+          requiredHeaders: ["Datum", "Beschreibung", "Karteninhaber", "Betrag"],
+          previewColumns: [
+            "Quelle",
+            "Datum (bookingDate)",
+            "Betrag",
+            "Währung",
+            "Beschreibung (simpleDesc)",
+            "Key Desc",
+            "Konto",
+            "Key"
+          ],
+          keyFields: "key_desc + bookingDate + amount (+ Betreff als Referenz)",
+          failureReasons: [
+            "Amex-Header fehlen (Datum, Beschreibung, Karteninhaber, Betrag).",
+            "Datei ist kein CSV oder falsches Trennzeichen (verwenden Sie ',').",
+            "Zeichen beschädigt (als UTF-8 mit BOM erneut exportieren)."
+          ]
+        }
+      },
+      {
+        id: "sparkasse",
+        name: "Sparkasse",
+        logo: "/providers/sparkasse.svg",
+        status: "Aktiv",
+        csv: {
+          delimiter: ";",
+          encoding: "UTF-8 mit BOM (Excel) oder ISO-8859-1",
+          dateFormat: "dd.mm.yyyy",
+          requiredHeaders: ["Auftragskonto", "Buchungstag", "Verwendungszweck", "Betrag"],
+          previewColumns: [
+            "Quelle",
+            "Datum (bookingDate)",
+            "Betrag",
+            "Währung",
+            "Beschreibung (simpleDesc)",
+            "Key Desc",
+            "Konto",
+            "Key"
+          ],
+          keyFields: "key_desc + bookingDate + amount (+ Referenz/IBAN wenn verfügbar)",
+          failureReasons: [
+            "Pflichtspalten der Sparkasse fehlen (CSV erneut exportieren).",
+            "Trennzeichen ungleich ';' (Separator in Excel anpassen).",
+            "Ungültiges Datum im Format dd.mm.yyyy (Spalte Buchungstag prüfen)."
+          ]
+        }
+      }
+    ],
+    "en-US": [
+      {
+        id: "miles_and_more",
+        name: "Miles & More",
+        logo: "/providers/miles-and-more.svg",
+        status: "Active",
+        csv: {
+          delimiter: ";",
+          encoding: "UTF-8 with BOM (Excel) or ISO-8859-1",
+          dateFormat: "dd.mm.yyyy",
+          requiredHeaders: ["Authorised on", "Amount", "Currency", "Description", "Payment type", "Status"],
+          previewColumns: [
+            "Source",
+            "Date (bookingDate)",
+            "Amount",
+            "Currency",
+            "Description (simpleDesc)",
+            "Key Desc",
+            "Account",
+            "Key"
+          ],
+          keyFields: "key_desc + bookingDate + amount (+ processed on as reference)",
+          failureReasons: [
+            "Missing required columns (download the template and do not rename columns).",
+            "Inconsistent delimiter (export with ';' as separator).",
+            "Invalid encoding (save as CSV UTF-8 with BOM)."
+          ]
+        }
+      },
+      {
+        id: "amex",
+        name: "American Express",
+        logo: "/providers/american-express.svg",
+        status: "Active",
+        csv: {
+          delimiter: ",",
+          encoding: "UTF-8 with BOM (Excel) or ISO-8859-1",
+          dateFormat: "dd/mm/yyyy",
+          requiredHeaders: ["Datum", "Beschreibung", "Karteninhaber", "Betrag"],
+          previewColumns: [
+            "Source",
+            "Date (bookingDate)",
+            "Amount",
+            "Currency",
+            "Description (simpleDesc)",
+            "Key Desc",
+            "Account",
+            "Key"
+          ],
+          keyFields: "key_desc + bookingDate + amount (+ Betreff as reference)",
+          failureReasons: [
+            "Missing Amex headers (Datum, Beschreibung, Karteninhaber, Betrag).",
+            "File is not CSV or has wrong delimiter (use ',').",
+            "Corrupted characters (re-export as UTF-8 with BOM)."
+          ]
+        }
+      },
+      {
+        id: "sparkasse",
+        name: "Sparkasse",
+        logo: "/providers/sparkasse.svg",
+        status: "Active",
+        csv: {
+          delimiter: ";",
+          encoding: "UTF-8 with BOM (Excel) or ISO-8859-1",
+          dateFormat: "dd.mm.yyyy",
+          requiredHeaders: ["Auftragskonto", "Buchungstag", "Verwendungszweck", "Betrag"],
+          previewColumns: [
+            "Source",
+            "Date (bookingDate)",
+            "Amount",
+            "Currency",
+            "Description (simpleDesc)",
+            "Key Desc",
+            "Account",
+            "Key"
+          ],
+          keyFields: "key_desc + bookingDate + amount (+ reference/IBAN when available)",
+          failureReasons: [
+            "Missing Sparkasse required columns (re-export the original CSV).",
+            "Delimiter differs from ';' (adjust separator in Excel).",
+            "Invalid date in dd.mm.yyyy format (check Buchungstag column)."
+          ]
+        }
+      }
+    ]
   }
 };
 

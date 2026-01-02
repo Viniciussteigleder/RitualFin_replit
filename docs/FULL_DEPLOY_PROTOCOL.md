@@ -157,3 +157,6 @@ This script runs preflight checks, verifies version endpoints, and writes a depl
 - `VERCEL_PROD_URL`: Vercel production URL (required to verify `/version.json`).
 - `SUPABASE_PROJECT_REF`: Optional explicit Supabase project ref (non-secret).
 - `VERCEL_TOKEN`: Required for Vercel CLI deploys in CI (store as a CI secret, never commit).
+
+**Notes**
+- Use the production URL (not a preview/`git-main` URL). Preview URLs often return 401 for `/version.json`.

@@ -23,6 +23,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
+import { onboardingCopy, t as translate } from "@/lib/i18n";
+import { useLocale } from "@/hooks/use-locale";
 
 const ONBOARDING_KEY = "ritualfin_onboarding_completed";
 
@@ -35,6 +37,8 @@ export function OnboardingModal({ forceShow = false }: OnboardingModalProps) {
   const [, navigate] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+  const locale = useLocale();
+  const t = (key: keyof typeof onboardingCopy) => translate(locale, onboardingCopy[key]);
 
   useEffect(() => {
     // Check if user has completed onboarding
@@ -64,41 +68,40 @@ export function OnboardingModal({ forceShow = false }: OnboardingModalProps) {
     {
       icon: Sparkles,
       iconColor: "#10b981",
-      title: "Bem-vindo ao RitualFin",
-      description: "Sua vida financeira organizada em minutos, não horas.",
+      title: t("step1Title"),
+      description: t("step1Description"),
       content: (
         <div className="space-y-4">
           <p className="text-muted-foreground">
-            RitualFin usa inteligência artificial para categorizar suas transações automaticamente.
-            Você só precisa revisar e confirmar.
+            {t("step1Body")}
           </p>
           <div className="grid grid-cols-3 gap-3 py-4">
             <div className="text-center">
               <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-2">
                 <Upload className="h-6 w-6 text-primary" />
               </div>
-              <p className="text-sm font-medium">Importe CSV</p>
+              <p className="text-sm font-medium">{t("step1CardImport")}</p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center mx-auto mb-2">
                 <Zap className="h-6 w-6 text-emerald-600" />
               </div>
-              <p className="text-sm font-medium">IA Categoriza</p>
+              <p className="text-sm font-medium">{t("step1CardAi")}</p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center mx-auto mb-2">
                 <CheckCircle2 className="h-6 w-6 text-amber-600" />
               </div>
-              <p className="text-sm font-medium">Você Confirma</p>
+              <p className="text-sm font-medium">{t("step1CardConfirm")}</p>
             </div>
           </div>
           <div className="bg-primary/5 rounded-lg p-4 border border-primary/20">
             <div className="flex items-start gap-3">
               <Sparkles className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-medium text-sm mb-1">Modo Lazy Ativado</p>
+                <p className="font-medium text-sm mb-1">{t("step1BadgeTitle")}</p>
                 <p className="text-xs text-muted-foreground">
-                  O sistema aprende com suas confirmações e melhora a cada mês.
+                  {t("step1BadgeBody")}
                 </p>
               </div>
             </div>
@@ -109,12 +112,12 @@ export function OnboardingModal({ forceShow = false }: OnboardingModalProps) {
     {
       icon: FileSpreadsheet,
       iconColor: "#3b82f6",
-      title: "Bancos Suportados",
-      description: "Importe extratos de múltiplos bancos e cartões.",
+      title: t("step2Title"),
+      description: t("step2Description"),
       content: (
         <div className="space-y-4">
           <p className="text-muted-foreground">
-            RitualFin detecta automaticamente o formato do seu CSV e extrai todas as informações.
+            {t("step2Body")}
           </p>
           <div className="space-y-2">
             <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
@@ -123,9 +126,9 @@ export function OnboardingModal({ forceShow = false }: OnboardingModalProps) {
               </div>
               <div className="flex-1">
                 <p className="font-medium text-sm">Miles & More</p>
-                <p className="text-xs text-muted-foreground">Cartão de crédito Lufthansa</p>
+                <p className="text-xs text-muted-foreground">{t("step2MilesDesc")}</p>
               </div>
-              <Badge className="bg-primary/10 text-primary border-0 text-xs">Ativo</Badge>
+              <Badge className="bg-primary/10 text-primary border-0 text-xs">{t("statusActive")}</Badge>
             </div>
             <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
               <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
@@ -133,9 +136,9 @@ export function OnboardingModal({ forceShow = false }: OnboardingModalProps) {
               </div>
               <div className="flex-1">
                 <p className="font-medium text-sm">American Express</p>
-                <p className="text-xs text-muted-foreground">Multi-cartões suportado</p>
+                <p className="text-xs text-muted-foreground">{t("step2AmexDesc")}</p>
               </div>
-              <Badge className="bg-primary/10 text-primary border-0 text-xs">Ativo</Badge>
+              <Badge className="bg-primary/10 text-primary border-0 text-xs">{t("statusActive")}</Badge>
             </div>
             <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
               <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
@@ -143,13 +146,13 @@ export function OnboardingModal({ forceShow = false }: OnboardingModalProps) {
               </div>
               <div className="flex-1">
                 <p className="font-medium text-sm">Sparkasse</p>
-                <p className="text-xs text-muted-foreground">Conta bancária IBAN</p>
+                <p className="text-xs text-muted-foreground">{t("step2SparkasseDesc")}</p>
               </div>
-              <Badge className="bg-primary/10 text-primary border-0 text-xs">Ativo</Badge>
+              <Badge className="bg-primary/10 text-primary border-0 text-xs">{t("statusActive")}</Badge>
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            <strong>Em breve:</strong> Nubank, Revolut, N26, Wise
+            {t("step2ComingSoon")}
           </p>
         </div>
       )
@@ -157,12 +160,12 @@ export function OnboardingModal({ forceShow = false }: OnboardingModalProps) {
     {
       icon: TrendingUp,
       iconColor: "#10b981",
-      title: "Pronto para começar!",
-      description: "Vamos importar seu primeiro arquivo CSV.",
+      title: t("step3Title"),
+      description: t("step3Description"),
       content: (
         <div className="space-y-4">
           <p className="text-muted-foreground">
-            Depois de importar, você poderá:
+            {t("step3Body")}
           </p>
           <div className="space-y-3">
             <div className="flex items-start gap-3">
@@ -170,9 +173,9 @@ export function OnboardingModal({ forceShow = false }: OnboardingModalProps) {
                 <CheckCircle2 className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <p className="font-medium text-sm">Revisar transações pendentes</p>
+                <p className="font-medium text-sm">{t("step3BulletReviewTitle")}</p>
                 <p className="text-xs text-muted-foreground">
-                  Confirme as categorizações sugeridas pela IA
+                  {t("step3BulletReviewBody")}
                 </p>
               </div>
             </div>
@@ -181,9 +184,9 @@ export function OnboardingModal({ forceShow = false }: OnboardingModalProps) {
                 <CheckCircle2 className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <p className="font-medium text-sm">Criar regras de categorização</p>
+                <p className="font-medium text-sm">{t("step3BulletRulesTitle")}</p>
                 <p className="text-xs text-muted-foreground">
-                  Ensine o sistema a reconhecer suas despesas recorrentes
+                  {t("step3BulletRulesBody")}
                 </p>
               </div>
             </div>
@@ -192,16 +195,16 @@ export function OnboardingModal({ forceShow = false }: OnboardingModalProps) {
                 <CheckCircle2 className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <p className="font-medium text-sm">Visualizar insights financeiros</p>
+                <p className="font-medium text-sm">{t("step3BulletInsightsTitle")}</p>
                 <p className="text-xs text-muted-foreground">
-                  Dashboard com gastos por categoria e projeções
+                  {t("step3BulletInsightsBody")}
                 </p>
               </div>
             </div>
           </div>
           <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
             <p className="text-sm text-emerald-800">
-              <strong>Dica:</strong> Comece importando o último mês para ver o RitualFin em ação!
+              {t("step3Tip")}
             </p>
           </div>
         </div>
@@ -258,11 +261,11 @@ export function OnboardingModal({ forceShow = false }: OnboardingModalProps) {
               className="gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
-              Voltar
+              {t("back")}
             </Button>
           ) : (
             <Button variant="ghost" onClick={handleSkip}>
-              Pular introdução
+              {t("skipIntro")}
             </Button>
           )}
 
@@ -271,7 +274,7 @@ export function OnboardingModal({ forceShow = false }: OnboardingModalProps) {
               onClick={() => setCurrentStep(currentStep + 1)}
               className="bg-primary hover:bg-primary/90 gap-2"
             >
-              Próximo
+              {t("next")}
               <ArrowRight className="h-4 w-4" />
             </Button>
           ) : (
@@ -279,7 +282,7 @@ export function OnboardingModal({ forceShow = false }: OnboardingModalProps) {
               onClick={handleComplete}
               className="bg-emerald-600 hover:bg-emerald-700 gap-2"
             >
-              Começar
+              {t("start")}
               <Upload className="h-4 w-4" />
             </Button>
           )}

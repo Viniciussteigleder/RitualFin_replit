@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, TrendingDown, TrendingUp, ShieldCheck } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useMonth } from "@/lib/month-context";
+import { useLocale } from "@/hooks/use-locale";
+import { insightsCopy, t as translate } from "@/lib/i18n";
 
 type Insight = {
   id: string;
@@ -43,6 +45,10 @@ function getPreviousMonth(m: string) {
 export default function InsightsPage() {
   const { month, formatMonth } = useMonth();
   const previousMonth = getPreviousMonth(month);
+  const locale = useLocale();
+  const formatMessage = (template: string, vars: Record<string, string>) =>
+    Object.entries(vars).reduce((result, [key, value]) => result.replace(`{${key}}`, value), template);
+  const percentFormatter = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
 
   const { data: dashboard, isLoading } = useQuery({
     queryKey: ["dashboard", month],
@@ -74,8 +80,11 @@ export default function InsightsPage() {
               insights.push({
                 id: `save-${cat.category}`,
                 type: "positive",
-                title: `Economia em ${cat.category}`,
-                description: `Você economizou ${Math.abs(change).toFixed(0)}% em ${cat.category} comparado ao mês anterior.`,
+                title: formatMessage(translate(locale, insightsCopy.savedTitle), { category: cat.category }),
+                description: formatMessage(translate(locale, insightsCopy.savedDescription), {
+                  percent: percentFormatter.format(Math.abs(change)),
+                  category: cat.category
+                }),
                 category: cat.category,
                 percentage: Math.abs(change)
               });
@@ -83,8 +92,11 @@ export default function InsightsPage() {
               insights.push({
                 id: `warn-${cat.category}`,
                 type: "warning",
-                title: `Atenção com ${cat.category}`,
-                description: `Seus gastos em ${cat.category} aumentaram ${change.toFixed(0)}% este mês.`,
+                title: formatMessage(translate(locale, insightsCopy.warningTitle), { category: cat.category }),
+                description: formatMessage(translate(locale, insightsCopy.warningDescription), {
+                  percent: percentFormatter.format(change),
+                  category: cat.category
+                }),
                 category: cat.category,
                 percentage: change
               });
@@ -98,8 +110,8 @@ export default function InsightsPage() {
       insights.push({
         id: "default",
         type: "neutral",
-        title: "Gastos estáveis no período",
-        description: "Continue acompanhando para manter o controle financeiro."
+        title: translate(locale, insightsCopy.neutralTitle),
+        description: translate(locale, insightsCopy.neutralDescription)
       });
     }
 
@@ -122,9 +134,9 @@ export default function InsightsPage() {
     <AppLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">Insights</h1>
+          <h1 className="text-2xl font-bold">{translate(locale, insightsCopy.title)}</h1>
           <p className="text-muted-foreground mt-1">
-            Leituras automáticas para {formatMonth(month)}.
+            {formatMessage(translate(locale, insightsCopy.subtitle), { month: formatMonth(month) })}
           </p>
         </div>
 

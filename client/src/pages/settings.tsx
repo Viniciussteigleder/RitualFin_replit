@@ -26,113 +26,6 @@ import { formatDateTime } from "@/lib/format";
 import { useLocale } from "@/hooks/use-locale";
 import { settingsCopy, t } from "@/lib/i18n";
 
-const INTEGRATION_PROVIDERS = [
-  {
-    id: "miles_and_more",
-    name: "Miles & More",
-    logo: "/providers/miles-and-more.svg",
-    status: "Ativo",
-    csv: {
-      delimiter: ";",
-      encoding: "UTF-8 com BOM (Excel) ou ISO-8859-1",
-      dateFormat: "dd.mm.yyyy",
-      requiredHeaders: ["Authorised on", "Amount", "Currency", "Description", "Payment type", "Status"],
-      previewColumns: [
-        "Fonte",
-        "Data (bookingDate)",
-        "Valor",
-        "Moeda",
-        "Descrição (simpleDesc)",
-        "Key Desc",
-        "Conta",
-        "Key"
-      ],
-      keyFields: "key_desc + bookingDate + amount (+ processed on como referência)",
-      failureReasons: [
-        "Colunas obrigatórias ausentes (baixe o template e não renomeie colunas).",
-        "Delimitador inconsistente (exporte com ';' como separador).",
-        "Codificação inválida (salve como CSV UTF-8 com BOM)."
-      ]
-    }
-  },
-  {
-    id: "amex",
-    name: "American Express",
-    logo: "/providers/american-express.svg",
-    status: "Ativo",
-    csv: {
-      delimiter: ",",
-      encoding: "UTF-8 com BOM (Excel) ou ISO-8859-1",
-      dateFormat: "dd/mm/yyyy",
-      requiredHeaders: ["Datum", "Beschreibung", "Karteninhaber", "Betrag"],
-      previewColumns: [
-        "Fonte",
-        "Data (bookingDate)",
-        "Valor",
-        "Moeda",
-        "Descrição (simpleDesc)",
-        "Key Desc",
-        "Conta",
-        "Key"
-      ],
-      keyFields: "key_desc + bookingDate + amount (+ Betreff como referência)",
-      failureReasons: [
-        "Cabeçalhos Amex ausentes (Datum, Beschreibung, Karteninhaber, Betrag).",
-        "Arquivo não está em CSV ou está com delimitador errado (use ',').",
-        "Caracteres corrompidos (reexporte em UTF-8 com BOM)."
-      ]
-    }
-  },
-  {
-    id: "sparkasse",
-    name: "Sparkasse",
-    logo: "/providers/sparkasse.svg",
-    status: "Ativo",
-    csv: {
-      delimiter: ";",
-      encoding: "UTF-8 com BOM (Excel) ou ISO-8859-1",
-      dateFormat: "dd.mm.yyyy",
-      requiredHeaders: ["Auftragskonto", "Buchungstag", "Verwendungszweck", "Betrag"],
-      previewColumns: [
-        "Fonte",
-        "Data (bookingDate)",
-        "Valor",
-        "Moeda",
-        "Descrição (simpleDesc)",
-        "Key Desc",
-        "Conta",
-        "Key"
-      ],
-      keyFields: "key_desc + bookingDate + amount (+ referência/IBAN quando disponível)",
-      failureReasons: [
-        "Colunas obrigatórias Sparkasse ausentes (reexporte o CSV original).",
-        "Delimitador diferente de ';' (ajuste o separador no Excel).",
-        "Data inválida no formato dd.mm.yyyy (verifique a coluna Buchungstag)."
-      ]
-    }
-  }
-];
-
-const AUDIT_ACTION_LABELS: Record<string, string> = {
-  importacao_csv: "Importação CSV",
-  importacao_classificacao: "Importação de categorias",
-  importacao_aliases: "Importação de aliases",
-  importacao_logos: "Importação de logos",
-  importacao_dados: "Importação de dados",
-  regra_criada: "Regra criada",
-  regra_atualizada: "Regra atualizada",
-  regra_excluida: "Regra excluída",
-  regra_keywords_add: "KeyWords adicionadas",
-  regra_keywords_create: "Regra por KeyWords",
-  regra_keywords_negative_add: "Negativas adicionadas",
-  regra_keywords_negative_create: "Regra com negativas",
-  fila_revisao_classificacao: "Fila de revisão",
-  alias_import_apply: "Aliases aplicados",
-  logos_import: "Logos importados",
-  logos_refresh: "Logos atualizados",
-  zona_de_perigo_delete: "Zona de perigo"
-};
-
 export default function SettingsPage() {
   const locale = useLocale();
   const [activeTab, setActiveTab] = useState("conta");
@@ -188,6 +81,8 @@ export default function SettingsPage() {
   } | null>(null);
   const [auditFilter, setAuditFilter] = useState("all");
   const { toast } = useToast();
+  const integrationProviders = useMemo(() => t(locale, settingsCopy.integrationProviders), [locale]);
+  const auditActionLabels = useMemo(() => t(locale, settingsCopy.auditActionLabels), [locale]);
   const tabs = useMemo(() => ([
     { id: "conta", label: t(locale, settingsCopy.tabAccount), icon: User, description: t(locale, settingsCopy.tabAccountDesc) },
     { id: "preferencias-regionais", label: t(locale, settingsCopy.tabRegional), icon: Globe, description: t(locale, settingsCopy.tabRegionalDesc) },
@@ -764,7 +659,7 @@ export default function SettingsPage() {
     };
   }, [taxonomyLeaves]);
 
-  const activeMapping = INTEGRATION_PROVIDERS.find((provider) => provider.id === mappingProvider) || null;
+  const activeMapping = integrationProviders.find((provider: any) => provider.id === mappingProvider) || null;
 
   return (
     <AppLayout>
@@ -1990,7 +1885,7 @@ export default function SettingsPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-3">
-                    {INTEGRATION_PROVIDERS.map((provider) => (
+                    {integrationProviders.map((provider: any) => (
                       <div key={provider.id} className="p-4 bg-primary/5 rounded-xl border border-primary/20 space-y-3">
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-3">
@@ -2152,7 +2047,7 @@ export default function SettingsPage() {
                                 : log.status === "warning"
                                   ? "bg-amber-100 text-amber-700"
                                   : "bg-emerald-100 text-emerald-700";
-                            const actionLabel = AUDIT_ACTION_LABELS[log.action] || log.action;
+                            const actionLabel = auditActionLabels[log.action] || log.action;
                             return (
                             <tr key={log.id} className="border-t">
                               <td className="px-3 py-2 whitespace-nowrap">

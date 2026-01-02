@@ -82,6 +82,65 @@ export default function RulesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [statusInfo, setStatusInfo] = useState<{ variant: "success" | "warning" | "error"; title: string; description: string; payload?: Record<string, unknown> } | null>(null);
   const locale = useLocale();
+  const formatMessage = (template: string, vars: Record<string, string | number>) =>
+    Object.entries(vars).reduce((result, [key, value]) => result.replace(`{${key}}`, String(value)), template);
+  const columnLabels = t(locale, rulesCopy.exportColumns);
+  const categoryHeaders = t(locale, rulesCopy.exportCategoryHeaders);
+  const instructionHeader = t(locale, rulesCopy.exportInstructionHeader);
+  const instructionLines = rulesCopy.exportInstructions[locale];
+  const typeLabelMap: Record<string, string> = {
+    Despesa: t(locale, rulesCopy.fieldTypeExpense),
+    Receita: t(locale, rulesCopy.fieldTypeIncome)
+  };
+  const fixVarLabelMap: Record<string, string> = {
+    Fixo: t(locale, rulesCopy.fieldVariationFixed),
+    Variável: t(locale, rulesCopy.fieldVariationVariable)
+  };
+  const normalize = (value: unknown) => String(value ?? "").trim().toLowerCase();
+  const typeValueMap = new Map<string, RuleFormData["type"]>([
+    ["despesa", "Despesa"],
+    ["receita", "Receita"],
+    [normalize(t(locale, rulesCopy.fieldTypeExpense)), "Despesa"],
+    [normalize(t(locale, rulesCopy.fieldTypeIncome)), "Receita"],
+    ["expense", "Despesa"],
+    ["income", "Receita"],
+    ["ausgabe", "Despesa"],
+    ["einnahme", "Receita"]
+  ]);
+  const fixVarValueMap = new Map<string, RuleFormData["fixVar"]>([
+    ["fixo", "Fixo"],
+    ["variável", "Variável"],
+    ["variavel", "Variável"],
+    [normalize(t(locale, rulesCopy.fieldVariationFixed)), "Fixo"],
+    [normalize(t(locale, rulesCopy.fieldVariationVariable)), "Variável"],
+    ["fixed", "Fixo"],
+    ["variable", "Variável"],
+    ["variabel", "Variável"]
+  ]);
+  const yesValues = new Set([
+    "sim",
+    "yes",
+    "ja",
+    "true",
+    "1",
+    normalize(t(locale, rulesCopy.yes))
+  ]);
+  const columnKeys = {
+    name: [columnLabels.name, "Nome"],
+    type: [columnLabels.type, "Tipo (Despesa/Receita)"],
+    fixVar: [columnLabels.fixVar, "Fixo/Variável"],
+    category1: [columnLabels.category1, "Categoria 1"],
+    category2: [columnLabels.category2, "Categoria 2"],
+    category3: [columnLabels.category3, "Categoria 3"],
+    keywords: [columnLabels.keywords, "Palavras-chave"],
+    priority: [columnLabels.priority, "Prioridade"],
+    strict: [columnLabels.strict, "Regra Estrita"],
+    system: [columnLabels.system, "Sistema"]
+  };
+  const getRowValue = (row: Record<string, any>, keys: string[]) => {
+    const key = keys.find((k) => Object.prototype.hasOwnProperty.call(row, k));
+    return key ? row[key] : undefined;
+  };
 
   const { data: rules = [], isLoading } = useQuery({
     queryKey: ["rules"],
@@ -97,7 +156,7 @@ export default function RulesPage() {
       setStatusInfo({
         variant: "success",
         title: t(locale, rulesCopy.statusRuleCreated),
-        description: "A nova regra foi adicionada com sucesso."
+        description: t(locale, rulesCopy.statusRuleCreatedBody)
       });
     },
     onError: (error: any) => {
@@ -105,7 +164,7 @@ export default function RulesPage() {
       setStatusInfo({
         variant: "error",
         title: t(locale, rulesCopy.statusRuleCreateFailed),
-        description: error.message || "Não foi possível criar a regra.",
+        description: error.message || t(locale, rulesCopy.statusRuleCreateFailedBody),
         payload: error?.details || null
       });
     }
@@ -120,14 +179,14 @@ export default function RulesPage() {
       setStatusInfo({
         variant: "success",
         title: t(locale, rulesCopy.statusRuleUpdated),
-        description: "As alterações foram salvas."
+        description: t(locale, rulesCopy.statusRuleUpdatedBody)
       });
     },
     onError: (error: any) => {
       setStatusInfo({
         variant: "error",
         title: t(locale, rulesCopy.statusRuleUpdateFailed),
-        description: error.message || "Não foi possível atualizar a regra.",
+        description: error.message || t(locale, rulesCopy.statusRuleUpdateFailedBody),
         payload: error?.details || null
       });
     }
@@ -141,14 +200,14 @@ export default function RulesPage() {
       setStatusInfo({
         variant: "success",
         title: t(locale, rulesCopy.statusRuleRemoved),
-        description: "A regra foi excluída com sucesso."
+        description: t(locale, rulesCopy.statusRuleRemovedBody)
       });
     },
     onError: (error: any) => {
       setStatusInfo({
         variant: "error",
         title: t(locale, rulesCopy.statusRuleRemoveFailed),
-        description: error.message || "Não foi possível remover a regra.",
+        description: error.message || t(locale, rulesCopy.statusRuleRemoveFailedBody),
         payload: error?.details || null
       });
     }
@@ -160,14 +219,20 @@ export default function RulesPage() {
       queryClient.invalidateQueries({ queryKey: ["confirm-queue"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      toast({ 
-        title: "Regras reaplicadas", 
-        description: `${result.categorized} categorizadas automaticamente, ${result.stillPending} pendentes`
+      toast({
+        title: t(locale, rulesCopy.reapplyToastTitle),
+        description: formatMessage(t(locale, rulesCopy.reapplyToastBody), {
+          categorized: result.categorized,
+          pending: result.stillPending
+        })
       });
       setStatusInfo({
         variant: "success",
         title: t(locale, rulesCopy.statusReapplyDone),
-        description: `${result.categorized} categorizadas automaticamente, ${result.stillPending} pendentes`,
+        description: formatMessage(t(locale, rulesCopy.reapplyToastBody), {
+          categorized: result.categorized,
+          pending: result.stillPending
+        }),
         payload: result
       });
     },
@@ -175,7 +240,7 @@ export default function RulesPage() {
       setStatusInfo({
         variant: "error",
         title: t(locale, rulesCopy.statusReapplyFailed),
-        description: error.message || "Não foi possível reaplicar as regras.",
+        description: error.message || t(locale, rulesCopy.statusReapplyFailedBody),
         payload: error?.details || null
       });
     }
@@ -185,11 +250,11 @@ export default function RulesPage() {
     mutationFn: rulesApi.seed,
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["rules"] });
-      toast({ title: `${result.count} regras IA adicionadas` });
+      toast({ title: formatMessage(t(locale, rulesCopy.aiAddedToastTitle), { count: result.count }) });
       setStatusInfo({
         variant: "success",
         title: t(locale, rulesCopy.statusAiAdded),
-        description: `${result.count} regras importadas pela IA.`,
+        description: formatMessage(t(locale, rulesCopy.aiAddedToastBody), { count: result.count }),
         payload: result
       });
     },
@@ -197,7 +262,7 @@ export default function RulesPage() {
       setStatusInfo({
         variant: "error",
         title: t(locale, rulesCopy.statusAiFailed),
-        description: error.message || "Não foi possível gerar regras.",
+        description: error.message || t(locale, rulesCopy.statusRuleCreateFailedBody),
         payload: error?.details || null
       });
     }
@@ -223,16 +288,16 @@ export default function RulesPage() {
 
     // Prepare data for Excel
     const excelData = rules.map((rule: any) => ({
-      'Nome': rule.name,
-      'Tipo (Despesa/Receita)': rule.type,
-      'Fixo/Variável': rule.fixVar,
-      'Categoria 1': rule.category1,
-      'Categoria 2': rule.category2 || '',
-      'Categoria 3': rule.category3 || '',
-      'Palavras-chave': rule.keywords,
-      'Prioridade': rule.priority,
-      'Regra Estrita': rule.strict ? 'Sim' : 'Não',
-      'Sistema': rule.isSystem ? 'Sim' : 'Não'
+      [columnLabels.name]: rule.name,
+      [columnLabels.type]: typeLabelMap[rule.type] || rule.type,
+      [columnLabels.fixVar]: fixVarLabelMap[rule.fixVar] || rule.fixVar,
+      [columnLabels.category1]: rule.category1,
+      [columnLabels.category2]: rule.category2 || "",
+      [columnLabels.category3]: rule.category3 || "",
+      [columnLabels.keywords]: rule.keywords,
+      [columnLabels.priority]: rule.priority,
+      [columnLabels.strict]: rule.strict ? t(locale, rulesCopy.yes) : t(locale, rulesCopy.no),
+      [columnLabels.system]: rule.isSystem ? t(locale, rulesCopy.yes) : t(locale, rulesCopy.no)
     }));
 
     // Create worksheet
@@ -254,20 +319,20 @@ export default function RulesPage() {
 
     // Create workbook
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Regras');
+    XLSX.utils.book_append_sheet(wb, ws, t(locale, rulesCopy.exportSheetRules));
 
     // Add reference sheet with all available categories
     const categoryReference = [
-      { 'Categoria Nível 1': 'Mercado', 'Exemplos Nível 2': 'Supermercado, Padaria, Feira', 'Exemplos Nível 3': 'LIDL, REWE, EDEKA' },
-      { 'Categoria Nível 1': 'Lazer', 'Exemplos Nível 2': 'Streaming, Cinema, Restaurante', 'Exemplos Nível 3': 'Netflix, Spotify, McDonald\'s' },
-      { 'Categoria Nível 1': 'Transporte', 'Exemplos Nível 2': 'Combustível, Transporte Público, Taxi', 'Exemplos Nível 3': 'Shell, Uber, DB' },
-      { 'Categoria Nível 1': 'Moradia', 'Exemplos Nível 2': 'Aluguel, Condomínio, Utilidades', 'Exemplos Nível 3': 'Água, Luz, Gás' },
-      { 'Categoria Nível 1': 'Saúde', 'Exemplos Nível 2': 'Farmácia, Médico, Academia', 'Exemplos Nível 3': 'Plano de Saúde, Dentista' },
-      { 'Categoria Nível 1': 'Educação', 'Exemplos Nível 2': 'Cursos, Livros, Material', 'Exemplos Nível 3': 'Udemy, Coursera' },
-      { 'Categoria Nível 1': 'Compras Online', 'Exemplos Nível 2': 'E-commerce, Marketplace', 'Exemplos Nível 3': 'Amazon, eBay, Zalando' },
-      { 'Categoria Nível 1': 'Receitas', 'Exemplos Nível 2': 'Salário, Freelance, Investimentos', 'Exemplos Nível 3': 'Empresa, Cliente A' },
-      { 'Categoria Nível 1': 'Interno', 'Exemplos Nível 2': 'Transferências entre contas', 'Exemplos Nível 3': 'Poupança, Investimento' },
-      { 'Categoria Nível 1': 'Outros', 'Exemplos Nível 2': 'Diversos', 'Exemplos Nível 3': 'Não categorizado' }
+      { [categoryHeaders.level1]: "Mercado", [categoryHeaders.level2]: "Supermercado, Padaria, Feira", [categoryHeaders.level3]: "LIDL, REWE, EDEKA" },
+      { [categoryHeaders.level1]: "Lazer", [categoryHeaders.level2]: "Streaming, Cinema, Restaurante", [categoryHeaders.level3]: "Netflix, Spotify, McDonald's" },
+      { [categoryHeaders.level1]: "Transporte", [categoryHeaders.level2]: "Combustível, Transporte Público, Taxi", [categoryHeaders.level3]: "Shell, Uber, DB" },
+      { [categoryHeaders.level1]: "Moradia", [categoryHeaders.level2]: "Aluguel, Condomínio, Utilidades", [categoryHeaders.level3]: "Água, Luz, Gás" },
+      { [categoryHeaders.level1]: "Saúde", [categoryHeaders.level2]: "Farmácia, Médico, Academia", [categoryHeaders.level3]: "Plano de Saúde, Dentista" },
+      { [categoryHeaders.level1]: "Educação", [categoryHeaders.level2]: "Cursos, Livros, Material", [categoryHeaders.level3]: "Udemy, Coursera" },
+      { [categoryHeaders.level1]: "Compras Online", [categoryHeaders.level2]: "E-commerce, Marketplace", [categoryHeaders.level3]: "Amazon, eBay, Zalando" },
+      { [categoryHeaders.level1]: "Receitas", [categoryHeaders.level2]: "Salário, Freelance, Investimentos", [categoryHeaders.level3]: "Empresa, Cliente A" },
+      { [categoryHeaders.level1]: "Interno", [categoryHeaders.level2]: "Transferências entre contas", [categoryHeaders.level3]: "Poupança, Investimento" },
+      { [categoryHeaders.level1]: "Outros", [categoryHeaders.level2]: "Diversos", [categoryHeaders.level3]: "Não categorizado" }
     ];
 
     const wsReference = XLSX.utils.json_to_sheet(categoryReference);
@@ -276,41 +341,27 @@ export default function RulesPage() {
       { wch: 40 }, // Exemplos Nível 2
       { wch: 40 }  // Exemplos Nível 3
     ];
-    XLSX.utils.book_append_sheet(wb, wsReference, 'Categorias Disponíveis');
+    XLSX.utils.book_append_sheet(wb, wsReference, t(locale, rulesCopy.exportSheetCategories));
 
     // Add instructions sheet
-    const instructions = [
-      { 'INSTRUÇÕES': 'Como usar este arquivo de regras' },
-      { 'INSTRUÇÕES': '' },
-      { 'INSTRUÇÕES': '1. Aba "Regras": Suas regras de categorização atuais' },
-      { 'INSTRUÇÕES': '2. Aba "Categorias Disponíveis": Lista completa de categorias e exemplos' },
-      { 'INSTRUÇÕES': '' },
-      { 'INSTRUÇÕES': 'Para importar regras:' },
-      { 'INSTRUÇÕES': '- Edite a aba "Regras" com suas alterações' },
-      { 'INSTRUÇÕES': '- Use categorias da aba "Categorias Disponíveis"' },
-      { 'INSTRUÇÕES': '- Categorias 2 e 3 são opcionais' },
-      { 'INSTRUÇÕES': '- Salve e importe de volta no RitualFin' },
-      { 'INSTRUÇÕES': '' },
-      { 'INSTRUÇÕES': 'Hierarquia de Categorias:' },
-      { 'INSTRUÇÕES': '- Nível 1: Categoria principal (obrigatório)' },
-      { 'INSTRUÇÕES': '- Nível 2: Subcategoria (opcional, texto livre)' },
-      { 'INSTRUÇÕES': '- Nível 3: Especificação (opcional, texto livre)' }
-    ];
+    const instructions = instructionLines.map((line) => ({
+      [instructionHeader]: line
+    }));
 
     const wsInstructions = XLSX.utils.json_to_sheet(instructions);
     wsInstructions['!cols'] = [{ wch: 80 }];
-    XLSX.utils.book_append_sheet(wb, wsInstructions, 'Instruções');
+    XLSX.utils.book_append_sheet(wb, wsInstructions, t(locale, rulesCopy.exportSheetInstructions));
 
     // Generate filename with current date
     const date = new Date().toISOString().split('T')[0];
-    const filename = `ritualfin_regras_${date}.xlsx`;
+    const filename = `ritualfin_rules_${date}.xlsx`;
 
     // Download file
     XLSX.writeFile(wb, filename);
 
     toast({
-      title: `${rules.length} regras exportadas com sucesso`,
-      description: "Inclui categorias disponíveis e instruções"
+      title: formatMessage(t(locale, rulesCopy.exportSuccessTitle), { count: rules.length }),
+      description: t(locale, rulesCopy.exportSuccessBody)
     });
   };
 
@@ -332,7 +383,7 @@ export default function RulesPage() {
           setStatusInfo({
             variant: "error",
             title: t(locale, rulesCopy.statusImportFailed),
-            description: "O arquivo está vazio."
+            description: t(locale, rulesCopy.importEmptyBody)
           });
           return;
         }
@@ -343,50 +394,62 @@ export default function RulesPage() {
 
         jsonData.forEach((row: any, index: number) => {
           const rowNum = index + 2; // +2 because Excel is 1-indexed and has header row
+          const nameValue = getRowValue(row, columnKeys.name);
+          const keywordsValue = getRowValue(row, columnKeys.keywords);
+          const typeRaw = getRowValue(row, columnKeys.type);
+          const fixVarRaw = getRowValue(row, columnKeys.fixVar);
+          const category1Value = getRowValue(row, columnKeys.category1);
+          const category2Value = getRowValue(row, columnKeys.category2);
+          const category3Value = getRowValue(row, columnKeys.category3);
+          const priorityValue = getRowValue(row, columnKeys.priority);
+          const strictValue = getRowValue(row, columnKeys.strict);
+          const systemValue = getRowValue(row, columnKeys.system);
 
           // Validate required fields
-          if (!row['Nome']) {
-            errors.push(`Linha ${rowNum}: Nome é obrigatório`);
+          if (!nameValue) {
+            errors.push(formatMessage(t(locale, rulesCopy.importRowNameError), { row: rowNum }));
             return;
           }
-          if (!row['Palavras-chave']) {
-            errors.push(`Linha ${rowNum}: Palavras-chave é obrigatório`);
+          if (!keywordsValue) {
+            errors.push(formatMessage(t(locale, rulesCopy.importRowKeywordsError), { row: rowNum }));
             return;
           }
-          if (!row['Tipo (Despesa/Receita)'] || !['Despesa', 'Receita'].includes(row['Tipo (Despesa/Receita)'])) {
-            errors.push(`Linha ${rowNum}: Tipo deve ser "Despesa" ou "Receita"`);
+          const typeValue = typeValueMap.get(normalize(typeRaw));
+          if (!typeValue) {
+            errors.push(formatMessage(t(locale, rulesCopy.importRowTypeError), { row: rowNum }));
             return;
           }
-          if (!row['Fixo/Variável'] || !['Fixo', 'Variável'].includes(row['Fixo/Variável'])) {
-            errors.push(`Linha ${rowNum}: Deve ser "Fixo" ou "Variável"`);
+          const fixVarValue = fixVarValueMap.get(normalize(fixVarRaw));
+          if (!fixVarValue) {
+            errors.push(formatMessage(t(locale, rulesCopy.importRowFixVarError), { row: rowNum }));
             return;
           }
-          if (!row['Categoria 1']) {
-            errors.push(`Linha ${rowNum}: Categoria 1 é obrigatória`);
+          if (!category1Value) {
+            errors.push(formatMessage(t(locale, rulesCopy.importRowCategoryError), { row: rowNum }));
             return;
           }
 
           // Skip system rules (don't allow importing/overwriting system rules)
-          if (row['Sistema'] === 'Sim') {
+          if (yesValues.has(normalize(systemValue))) {
             return;
           }
 
           rulesToImport.push({
-            name: row['Nome'],
-            keywords: row['Palavras-chave'],
-            type: row['Tipo (Despesa/Receita)'],
-            fixVar: row['Fixo/Variável'],
-            category1: row['Categoria 1'],
-            category2: row['Categoria 2'] || '',
-            category3: row['Categoria 3'] || '',
-            priority: row['Prioridade'] || 500,
-            strict: row['Regra Estrita'] === 'Sim'
+            name: nameValue,
+            keywords: keywordsValue,
+            type: typeValue,
+            fixVar: fixVarValue,
+            category1: category1Value,
+            category2: category2Value || "",
+            category3: category3Value || "",
+            priority: priorityValue || 500,
+            strict: yesValues.has(normalize(strictValue))
           });
         });
 
         if (errors.length > 0) {
           toast({
-            title: "Erros encontrados no arquivo",
+            title: t(locale, rulesCopy.importErrorsTitle),
             description: errors.slice(0, 3).join('; '),
             variant: "destructive"
           });
@@ -404,7 +467,7 @@ export default function RulesPage() {
           setStatusInfo({
             variant: "warning",
             title: t(locale, rulesCopy.statusImportIgnored),
-            description: "Nenhuma regra válida encontrada no arquivo."
+            description: t(locale, rulesCopy.importNoValidBody)
           });
           return;
         }
@@ -430,31 +493,31 @@ export default function RulesPage() {
           setStatusInfo({
             variant: "success",
             title: t(locale, rulesCopy.statusImportDone),
-            description: `${successCount} regras importadas com sucesso.`
+            description: formatMessage(t(locale, rulesCopy.importSuccessBody), { count: successCount })
           });
         } else {
           toast({
-            title: "Importação concluída com erros",
-            description: `${successCount} importadas, ${failCount} falharam`
+            title: t(locale, rulesCopy.importPartialTitle),
+            description: formatMessage(t(locale, rulesCopy.importPartialBody), { success: successCount, fail: failCount })
           });
           setStatusInfo({
             variant: "warning",
             title: t(locale, rulesCopy.statusImportDoneErrors),
-            description: `${successCount} importadas, ${failCount} falharam`,
+            description: formatMessage(t(locale, rulesCopy.importPartialBody), { success: successCount, fail: failCount }),
             payload: { successCount, failCount }
           });
         }
 
       } catch (error: any) {
         toast({
-          title: "Erro ao processar arquivo",
+          title: t(locale, rulesCopy.importProcessErrorTitle),
           description: error.message,
           variant: "destructive"
         });
         setStatusInfo({
           variant: "error",
           title: t(locale, rulesCopy.statusFileProcessError),
-          description: error.message || "Não foi possível processar o arquivo.",
+          description: error.message || t(locale, rulesCopy.importProcessErrorBody),
           payload: error?.details || null
         });
       }
@@ -529,7 +592,7 @@ export default function RulesPage() {
               <h1 className="text-2xl font-bold">{t(locale, rulesCopy.title)}</h1>
               <Badge variant="secondary" className="bg-primary/10 text-primary text-xs gap-1">
                 <Sparkles className="h-3 w-3" />
-                IA
+                {t(locale, rulesCopy.aiBadge)}
               </Badge>
             </div>
             <p className="text-muted-foreground">{t(locale, rulesCopy.subtitle)}</p>
@@ -569,7 +632,7 @@ export default function RulesPage() {
               disabled={rules.length === 0}
             >
               <Download className="h-4 w-4" />
-              Excel
+              {t(locale, rulesCopy.exportLabel)}
             </Button>
 
             <Button
@@ -652,7 +715,9 @@ export default function RulesPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Categorias</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    {t(locale, rulesCopy.categoriesLabel)}
+                  </p>
                   <p className="text-3xl font-bold mt-1">{categories.length}</p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
@@ -667,7 +732,7 @@ export default function RulesPage() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Buscar regras por palavra-chave..." 
+              placeholder={t(locale, rulesCopy.searchPlaceholder)}
               className="pl-9 bg-white border-0 shadow-sm"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -677,10 +742,10 @@ export default function RulesPage() {
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger className="w-[180px] bg-white border-0 shadow-sm">
               <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
-              <SelectValue placeholder="Categoria" />
+              <SelectValue placeholder={t(locale, rulesCopy.filterCategoryPlaceholder)} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas Categorias</SelectItem>
+              <SelectItem value="all">{t(locale, rulesCopy.filterAllCategories)}</SelectItem>
               {categories.map((cat) => (
                 <SelectItem key={cat} value={cat}>{cat}</SelectItem>
               ))}
@@ -710,7 +775,7 @@ export default function RulesPage() {
                 </Button>
                 <Button className="gap-2" onClick={openNewDialog}>
                   <Plus className="h-4 w-4" />
-                  Criar Manualmente
+                  {t(locale, rulesCopy.createManual)}
                 </Button>
               </div>
             </CardContent>
@@ -743,7 +808,9 @@ export default function RulesPage() {
                           <div className="flex items-center gap-2">
                             <h3 className="font-semibold">{rule.name}</h3>
                             {rule.isSystem && (
-                              <Badge className="text-[10px] bg-primary/10 text-primary border-0">IA</Badge>
+                              <Badge className="text-[10px] bg-primary/10 text-primary border-0">
+                                {t(locale, rulesCopy.aiBadge)}
+                              </Badge>
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground">
@@ -802,7 +869,7 @@ export default function RulesPage() {
                       {rule.strict && (
                         <Badge variant="outline" className="text-[10px] border-amber-300 text-amber-700">
                           <Zap className="h-2.5 w-2.5 mr-1" />
-                          Estrita
+                          {t(locale, rulesCopy.strictBadge)}
                         </Badge>
                       )}
                     </div>
@@ -818,16 +885,16 @@ export default function RulesPage() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5 text-primary" />
-                {editingRule ? "Editar Regra" : "Nova Regra"}
+                {editingRule ? t(locale, rulesCopy.dialogEditTitle) : t(locale, rulesCopy.dialogNewTitle)}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Nome</Label>
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide">{t(locale, rulesCopy.fieldNameLabel)}</Label>
                 <Input
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Ex: Supermercado LIDL"
+                  placeholder={t(locale, rulesCopy.fieldNamePlaceholder)}
                   className="bg-muted/30 border-0"
                   data-testid="input-rule-name"
                 />
@@ -835,7 +902,7 @@ export default function RulesPage() {
 
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-                  Categoria (Nível 1) <span className="text-rose-500">*</span>
+                  {t(locale, rulesCopy.fieldCategory1Label)} <span className="text-rose-500">*</span>
                 </Label>
                 <Select
                   value={formData.category1}
@@ -848,7 +915,7 @@ export default function RulesPage() {
                     <SelectItem value="Mercado">Mercado</SelectItem>
                     <SelectItem value="Moradia">Moradia</SelectItem>
                     <SelectItem value="Transporte">Transporte</SelectItem>
-                    <SelectItem value="Saúde">Saude</SelectItem>
+                    <SelectItem value="Saúde">Saúde</SelectItem>
                     <SelectItem value="Lazer">Lazer</SelectItem>
                     <SelectItem value="Compras Online">Compras Online</SelectItem>
                     <SelectItem value="Receitas">Receitas</SelectItem>
@@ -861,24 +928,24 @@ export default function RulesPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-                    Subcategoria (Nível 2)
+                    {t(locale, rulesCopy.fieldCategory2Label)}
                   </Label>
                   <Input
                     value={formData.category2}
                     onChange={(e) => setFormData({ ...formData, category2: e.target.value })}
-                    placeholder="Ex: Supermercado"
+                    placeholder={t(locale, rulesCopy.fieldCategory2Placeholder)}
                     className="bg-muted/30 border-0"
                     data-testid="input-rule-category2"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-                    Especificação (Nível 3)
+                    {t(locale, rulesCopy.fieldCategory3Label)}
                   </Label>
                   <Input
                     value={formData.category3}
                     onChange={(e) => setFormData({ ...formData, category3: e.target.value })}
-                    placeholder="Ex: LIDL"
+                    placeholder={t(locale, rulesCopy.fieldCategory3Placeholder)}
                     className="bg-muted/30 border-0"
                     data-testid="input-rule-category3"
                   />
@@ -886,20 +953,22 @@ export default function RulesPage() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Palavras-chave</Label>
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+                  {t(locale, rulesCopy.fieldKeywordsLabel)}
+                </Label>
                 <Input
                   value={formData.keywords}
                   onChange={(e) => setFormData({ ...formData, keywords: e.target.value })}
-                  placeholder="REWE;EDEKA;ALDI (separar com ;)"
+                  placeholder={t(locale, rulesCopy.fieldKeywordsPlaceholder)}
                   className="bg-muted/30 border-0"
                   data-testid="input-rule-keywords"
                 />
-                <p className="text-xs text-muted-foreground">Separe multiplas palavras com ponto e virgula (;)</p>
+                <p className="text-xs text-muted-foreground">{t(locale, rulesCopy.fieldKeywordsHelper)}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Tipo</Label>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">{t(locale, rulesCopy.fieldTypeLabel)}</Label>
                   <div className="flex gap-2">
                     <Button
                       type="button"
@@ -911,7 +980,7 @@ export default function RulesPage() {
                       )}
                       onClick={() => setFormData({ ...formData, type: "Despesa" })}
                     >
-                      Despesa
+                      {t(locale, rulesCopy.fieldTypeExpense)}
                     </Button>
                     <Button
                       type="button"
@@ -923,12 +992,12 @@ export default function RulesPage() {
                       )}
                       onClick={() => setFormData({ ...formData, type: "Receita" })}
                     >
-                      Receita
+                      {t(locale, rulesCopy.fieldTypeIncome)}
                     </Button>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Variação</Label>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">{t(locale, rulesCopy.fieldVariationLabel)}</Label>
                   <div className="flex gap-2">
                     <Button
                       type="button"
@@ -937,7 +1006,7 @@ export default function RulesPage() {
                       className="flex-1"
                       onClick={() => setFormData({ ...formData, fixVar: "Fixo" })}
                     >
-                      Fixo
+                      {t(locale, rulesCopy.fieldVariationFixed)}
                     </Button>
                     <Button
                       type="button"
@@ -946,7 +1015,7 @@ export default function RulesPage() {
                       className="flex-1"
                       onClick={() => setFormData({ ...formData, fixVar: "Variável" })}
                     >
-                      Variavel
+                      {t(locale, rulesCopy.fieldVariationVariable)}
                     </Button>
                   </div>
                 </div>
@@ -954,8 +1023,8 @@ export default function RulesPage() {
 
               <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
                 <div>
-                  <p className="font-medium text-sm">Regra Estrita</p>
-                  <p className="text-xs text-muted-foreground">Aplicar automaticamente com 100% confianca</p>
+                  <p className="font-medium text-sm">{t(locale, rulesCopy.strictTitle)}</p>
+                  <p className="text-xs text-muted-foreground">{t(locale, rulesCopy.strictDescription)}</p>
                 </div>
                 <Switch
                   checked={formData.strict}
@@ -965,7 +1034,7 @@ export default function RulesPage() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={closeDialog}>
-                Cancelar
+                {t(locale, rulesCopy.cancel)}
               </Button>
               <Button 
                 className="bg-primary hover:bg-primary/90 gap-2"
@@ -977,7 +1046,7 @@ export default function RulesPage() {
                   <Loader2 className="h-4 w-4 animate-spin" />
                 )}
                 <Check className="h-4 w-4" />
-                {editingRule ? "Salvar" : "Criar"}
+                {editingRule ? t(locale, rulesCopy.save) : t(locale, rulesCopy.create)}
               </Button>
             </DialogFooter>
           </DialogContent>
