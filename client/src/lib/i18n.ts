@@ -1225,6 +1225,587 @@ export const notificationsCopy = {
   }
 };
 
+export const ritualsCopy = {
+  title: {
+    "pt-BR": "Rituais Financeiros",
+    "de-DE": "Finanzrituale",
+    "en-US": "Financial rituals"
+  },
+  subtitle: {
+    "pt-BR": "Revisões guiadas para manter suas finanças sob controle",
+    "de-DE": "Geführte Reviews, um Ihre Finanzen im Griff zu behalten",
+    "en-US": "Guided reviews to keep your finances on track"
+  },
+  tabWeekly: {
+    "pt-BR": "Semanal",
+    "de-DE": "Wöchentlich",
+    "en-US": "Weekly"
+  },
+  tabMonthly: {
+    "pt-BR": "Mensal",
+    "de-DE": "Monatlich",
+    "en-US": "Monthly"
+  },
+  weeklyDone: {
+    "pt-BR": "Revisão Semanal Concluída",
+    "de-DE": "Wöchentliche Review abgeschlossen",
+    "en-US": "Weekly review completed"
+  },
+  weeklyTitle: {
+    "pt-BR": "Revisão Semanal",
+    "de-DE": "Wöchentliche Review",
+    "en-US": "Weekly review"
+  },
+  weekRange: {
+    "pt-BR": "Semana de {start} a {end}",
+    "de-DE": "Woche von {start} bis {end}",
+    "en-US": "Week of {start} to {end}"
+  },
+  startReview: {
+    "pt-BR": "Iniciar Revisão",
+    "de-DE": "Review starten",
+    "en-US": "Start review"
+  },
+  weeklySpend: {
+    "pt-BR": "Gasto esta Semana",
+    "de-DE": "Ausgaben diese Woche",
+    "en-US": "Spend this week"
+  },
+  dailyAverage: {
+    "pt-BR": "Média diária: {amount}",
+    "de-DE": "Tagesdurchschnitt: {amount}",
+    "en-US": "Daily average: {amount}"
+  },
+  weeklyTransactions: {
+    "pt-BR": "Transações",
+    "de-DE": "Transaktionen",
+    "en-US": "Transactions"
+  },
+  weeklyAutoCategorized: {
+    "pt-BR": "{count} categorizadas automaticamente",
+    "de-DE": "{count} automatisch kategorisiert",
+    "en-US": "{count} auto-categorized"
+  },
+  weeklyGoal: {
+    "pt-BR": "Objetivo",
+    "de-DE": "Ziel",
+    "en-US": "Goal"
+  },
+  weeklyBudget: {
+    "pt-BR": "do orçamento semanal",
+    "de-DE": "des Wochenbudgets",
+    "en-US": "of weekly budget"
+  },
+  reflectionsTitle: {
+    "pt-BR": "Reflexões da Semana",
+    "de-DE": "Wochenreflexionen",
+    "en-US": "Weekly reflections"
+  },
+  reflectionPrompt: {
+    "pt-BR": "O que funcionou bem esta semana?",
+    "de-DE": "Was lief diese Woche gut?",
+    "en-US": "What went well this week?"
+  },
+  reflectionPlaceholder: {
+    "pt-BR": "Ex: Consegui evitar compras por impulso...",
+    "de-DE": "z. B. Ich habe Impulskäufe vermieden...",
+    "en-US": "e.g., I avoided impulse purchases..."
+  },
+  completedAt: {
+    "pt-BR": "Concluído em {date}",
+    "de-DE": "Abgeschlossen am {date}",
+    "en-US": "Completed on {date}"
+  },
+  saving: {
+    "pt-BR": "Salvando...",
+    "de-DE": "Speichern...",
+    "en-US": "Saving..."
+  },
+  completeReview: {
+    "pt-BR": "Concluir Revisão",
+    "de-DE": "Review abschließen",
+    "en-US": "Complete review"
+  },
+  stepLabel: {
+    "pt-BR": "Passo {step} de {total}: {label}",
+    "de-DE": "Schritt {step} von {total}: {label}",
+    "en-US": "Step {step} of {total}: {label}"
+  },
+  stepReview: {
+    "pt-BR": "Revisão",
+    "de-DE": "Review",
+    "en-US": "Review"
+  },
+  stepAnalysis: {
+    "pt-BR": "Análise",
+    "de-DE": "Analyse",
+    "en-US": "Analysis"
+  },
+  stepPlanning: {
+    "pt-BR": "Planejamento",
+    "de-DE": "Planung",
+    "en-US": "Planning"
+  },
+  stepConfirm: {
+    "pt-BR": "Confirmação",
+    "de-DE": "Bestätigung",
+    "en-US": "Confirmation"
+  },
+  percentComplete: {
+    "pt-BR": "{percent}% Concluído",
+    "de-DE": "{percent}% abgeschlossen",
+    "en-US": "{percent}% complete"
+  },
+  keepRhythmTitle: {
+    "pt-BR": "Quer manter o ritmo?",
+    "de-DE": "Den Rhythmus beibehalten?",
+    "en-US": "Keep the momentum?"
+  },
+  keepRhythmBody: {
+    "pt-BR": "Copie as metas de {month} e ajuste apenas o necessário.",
+    "de-DE": "Kopieren Sie die Ziele von {month} und passen Sie nur das Nötige an.",
+    "en-US": "Copy goals from {month} and adjust only what you need."
+  },
+  copyGoals: {
+    "pt-BR": "Copiar Metas de {month}",
+    "de-DE": "Ziele von {month} kopieren",
+    "en-US": "Copy goals from {month}"
+  },
+  filterAll: {
+    "pt-BR": "Todas",
+    "de-DE": "Alle",
+    "en-US": "All"
+  },
+  filterEssentials: {
+    "pt-BR": "Essenciais",
+    "de-DE": "Essenziell",
+    "en-US": "Essentials"
+  },
+  filterLifestyle: {
+    "pt-BR": "Estilo de Vida",
+    "de-DE": "Lebensstil",
+    "en-US": "Lifestyle"
+  },
+  filterInvestments: {
+    "pt-BR": "Investimentos",
+    "de-DE": "Investitionen",
+    "en-US": "Investments"
+  },
+  actualLabel: {
+    "pt-BR": "{month} (Realizado)",
+    "de-DE": "{month} (Ist)",
+    "en-US": "{month} (Actual)"
+  },
+  plannedLabel: {
+    "pt-BR": "{month} (Planejado)",
+    "de-DE": "{month} (Geplant)",
+    "en-US": "{month} (Planned)"
+  },
+  plannedForCategory: {
+    "pt-BR": "Meta para {category}",
+    "de-DE": "Ziel für {category}",
+    "en-US": "Goal for {category}"
+  },
+  suggestionIncrease: {
+    "pt-BR": "Sugestão: Aumentar?",
+    "de-DE": "Vorschlag: Erhöhen?",
+    "en-US": "Suggestion: Increase?"
+  },
+  plannedTotal: {
+    "pt-BR": "Total Planejado para {month}",
+    "de-DE": "Geplantes Gesamt für {month}",
+    "en-US": "Planned total for {month}"
+  },
+  changeVs: {
+    "pt-BR": "{value}% vs {month}",
+    "de-DE": "{value}% vs {month}",
+    "en-US": "{value}% vs {month}"
+  },
+  back: {
+    "pt-BR": "Voltar",
+    "de-DE": "Zurück",
+    "en-US": "Back"
+  },
+  next: {
+    "pt-BR": "Próximo",
+    "de-DE": "Weiter",
+    "en-US": "Next"
+  },
+  confirm: {
+    "pt-BR": "Confirmar",
+    "de-DE": "Bestätigen",
+    "en-US": "Confirm"
+  },
+  toastWeeklyStarted: {
+    "pt-BR": "Revisão Semanal iniciada",
+    "de-DE": "Wöchentliche Review gestartet",
+    "en-US": "Weekly review started"
+  },
+  toastMonthlyStarted: {
+    "pt-BR": "Revisão Mensal iniciada",
+    "de-DE": "Monatliche Review gestartet",
+    "en-US": "Monthly review started"
+  },
+  toastCompletedTitle: {
+    "pt-BR": "Ritual concluído!",
+    "de-DE": "Ritual abgeschlossen!",
+    "en-US": "Ritual completed!"
+  },
+  toastCompletedBody: {
+    "pt-BR": "Suas reflexões foram salvas.",
+    "de-DE": "Ihre Reflexionen wurden gespeichert.",
+    "en-US": "Your reflections were saved."
+  },
+  toastCopyGoals: {
+    "pt-BR": "Metas de {prev} copiadas para {next}",
+    "de-DE": "Ziele von {prev} nach {next} kopiert",
+    "en-US": "Goals copied from {prev} to {next}"
+  },
+  statusExceeded: {
+    "pt-BR": "Ultrapassou {amount}",
+    "de-DE": "Überschritten um {amount}",
+    "en-US": "Exceeded by {amount}"
+  },
+  statusWithin: {
+    "pt-BR": "Dentro da meta!",
+    "de-DE": "Im Zielbereich!",
+    "en-US": "Within target!"
+  },
+  statusWarning: {
+    "pt-BR": "Atenção",
+    "de-DE": "Achtung",
+    "en-US": "Warning"
+  }
+};
+
+export const calendarCopy = {
+  title: {
+    "pt-BR": "Calendário",
+    "de-DE": "Kalender",
+    "en-US": "Calendar"
+  },
+  subtitle: {
+    "pt-BR": "Visualize suas transações por dia ou semana",
+    "de-DE": "Transaktionen nach Tag oder Woche anzeigen",
+    "en-US": "View your transactions by day or week"
+  },
+  viewMonth: {
+    "pt-BR": "Mês",
+    "de-DE": "Monat",
+    "en-US": "Month"
+  },
+  viewWeek: {
+    "pt-BR": "4 Semanas",
+    "de-DE": "4 Wochen",
+    "en-US": "4 weeks"
+  },
+  loading: {
+    "pt-BR": "Carregando...",
+    "de-DE": "Laden...",
+    "en-US": "Loading..."
+  }
+};
+
+export const calendarMonthCopy = {
+  weekDays: {
+    "pt-BR": ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"],
+    "de-DE": ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
+    "en-US": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+  },
+  projected: {
+    "pt-BR": "Proj",
+    "de-DE": "Proj",
+    "en-US": "Proj"
+  }
+};
+
+export const calendarWeekCopy = {
+  weekLabel: {
+    "pt-BR": "Semana {index}",
+    "de-DE": "Woche {index}",
+    "en-US": "Week {index}"
+  },
+  projected: {
+    "pt-BR": "Projetado",
+    "de-DE": "Prognostiziert",
+    "en-US": "Projected"
+  },
+  income: {
+    "pt-BR": "Receitas",
+    "de-DE": "Einnahmen",
+    "en-US": "Income"
+  },
+  expense: {
+    "pt-BR": "Despesas",
+    "de-DE": "Ausgaben",
+    "en-US": "Expenses"
+  },
+  balance: {
+    "pt-BR": "Saldo",
+    "de-DE": "Saldo",
+    "en-US": "Balance"
+  },
+  capacityNote: {
+    "pt-BR": "Capacidade de gasto disponível",
+    "de-DE": "Verfügbare Ausgabenkapazität",
+    "en-US": "Available spending capacity"
+  }
+};
+
+export const calendarDetailCopy = {
+  emptyPrompt: {
+    "pt-BR": "Selecione um dia ou semana para ver detalhes",
+    "de-DE": "Wählen Sie einen Tag oder eine Woche, um Details zu sehen",
+    "en-US": "Select a day or week to see details"
+  },
+  titleDay: {
+    "pt-BR": "Detalhes do Dia",
+    "de-DE": "Tagesdetails",
+    "en-US": "Day details"
+  },
+  titleWeek: {
+    "pt-BR": "Resumo da Semana",
+    "de-DE": "Wochenübersicht",
+    "en-US": "Week summary"
+  },
+  income: {
+    "pt-BR": "Receitas",
+    "de-DE": "Einnahmen",
+    "en-US": "Income"
+  },
+  expense: {
+    "pt-BR": "Despesas",
+    "de-DE": "Ausgaben",
+    "en-US": "Expenses"
+  },
+  emptyList: {
+    "pt-BR": "Nenhuma transação neste período",
+    "de-DE": "Keine Transaktionen in diesem Zeitraum",
+    "en-US": "No transactions in this period"
+  }
+};
+
+export const eventDetailCopy = {
+  breadcrumbCalendar: {
+    "pt-BR": "Calendário",
+    "de-DE": "Kalender",
+    "en-US": "Calendar"
+  },
+  breadcrumbEvents: {
+    "pt-BR": "Eventos",
+    "de-DE": "Ereignisse",
+    "en-US": "Events"
+  },
+  title: {
+    "pt-BR": "Detalhes do Evento",
+    "de-DE": "Ereignisdetails",
+    "en-US": "Event details"
+  },
+  back: {
+    "pt-BR": "Voltar",
+    "de-DE": "Zurück",
+    "en-US": "Back"
+  },
+  active: {
+    "pt-BR": "Ativo",
+    "de-DE": "Aktiv",
+    "en-US": "Active"
+  },
+  inactive: {
+    "pt-BR": "Inativo",
+    "de-DE": "Inaktiv",
+    "en-US": "Inactive"
+  },
+  nextDue: {
+    "pt-BR": "Próximo vencimento: {date}",
+    "de-DE": "Nächste Fälligkeit: {date}",
+    "en-US": "Next due: {date}"
+  },
+  recurrencePer: {
+    "pt-BR": "/ {label}",
+    "de-DE": "/ {label}",
+    "en-US": "/ {label}"
+  },
+  editEvent: {
+    "pt-BR": "Editar Evento",
+    "de-DE": "Ereignis bearbeiten",
+    "en-US": "Edit event"
+  },
+  delete: {
+    "pt-BR": "Excluir",
+    "de-DE": "Löschen",
+    "en-US": "Delete"
+  },
+  deleteTitle: {
+    "pt-BR": "Confirmar Exclusão",
+    "de-DE": "Löschung bestätigen",
+    "en-US": "Confirm deletion"
+  },
+  deleteBody: {
+    "pt-BR": "Tem certeza que deseja excluir o evento \"{name}\"? Esta ação não pode ser desfeita.",
+    "de-DE": "Möchten Sie das Ereignis \"{name}\" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "en-US": "Are you sure you want to delete \"{name}\"? This action cannot be undone."
+  },
+  cancel: {
+    "pt-BR": "Cancelar",
+    "de-DE": "Abbrechen",
+    "en-US": "Cancel"
+  },
+  detailsTitle: {
+    "pt-BR": "Informações Detalhadas",
+    "de-DE": "Detailinformationen",
+    "en-US": "Detailed information"
+  },
+  category: {
+    "pt-BR": "Categoria",
+    "de-DE": "Kategorie",
+    "en-US": "Category"
+  },
+  recurrence: {
+    "pt-BR": "Recorrência",
+    "de-DE": "Wiederholung",
+    "en-US": "Recurrence"
+  },
+  paymentMethod: {
+    "pt-BR": "Método de Pagamento",
+    "de-DE": "Zahlungsmethode",
+    "en-US": "Payment method"
+  },
+  historyTitle: {
+    "pt-BR": "Histórico de Ocorrências",
+    "de-DE": "Vorkommnisse",
+    "en-US": "Occurrence history"
+  },
+  viewAll: {
+    "pt-BR": "Ver tudo",
+    "de-DE": "Alle anzeigen",
+    "en-US": "View all"
+  },
+  historyEmptyTitle: {
+    "pt-BR": "Nenhum histórico de pagamentos",
+    "de-DE": "Kein Zahlungshistorie",
+    "en-US": "No payment history"
+  },
+  historyEmptyBody: {
+    "pt-BR": "O histórico será criado conforme os pagamentos forem registrados",
+    "de-DE": "Der Verlauf wird erstellt, sobald Zahlungen erfasst werden",
+    "en-US": "History will be created as payments are recorded"
+  },
+  tableDate: {
+    "pt-BR": "Data",
+    "de-DE": "Datum",
+    "en-US": "Date"
+  },
+  tableAmount: {
+    "pt-BR": "Valor",
+    "de-DE": "Betrag",
+    "en-US": "Amount"
+  },
+  tableStatus: {
+    "pt-BR": "Status",
+    "de-DE": "Status",
+    "en-US": "Status"
+  },
+  tableAction: {
+    "pt-BR": "Ação",
+    "de-DE": "Aktion",
+    "en-US": "Action"
+  },
+  statusPaid: {
+    "pt-BR": "Pago",
+    "de-DE": "Bezahlt",
+    "en-US": "Paid"
+  },
+  statusPending: {
+    "pt-BR": "Pendente",
+    "de-DE": "Ausstehend",
+    "en-US": "Pending"
+  },
+  markPending: {
+    "pt-BR": "Marcar pendente",
+    "de-DE": "Als ausstehend markieren",
+    "en-US": "Mark pending"
+  },
+  markPaid: {
+    "pt-BR": "Marcar pago",
+    "de-DE": "Als bezahlt markieren",
+    "en-US": "Mark paid"
+  },
+  insightsTitle: {
+    "pt-BR": "Insights Relacionados",
+    "de-DE": "Zugehörige Insights",
+    "en-US": "Related insights"
+  },
+  insightAboveAvgTitle: {
+    "pt-BR": "Gasto acima da média",
+    "de-DE": "Ausgaben über dem Durchschnitt",
+    "en-US": "Spending above average"
+  },
+  insightAboveAvgBody: {
+    "pt-BR": "Este evento representou {percent}% dos gastos totais do último mês. Considere revisar.",
+    "de-DE": "Dieses Ereignis machte {percent}% der Gesamtausgaben des letzten Monats aus. Bitte prüfen.",
+    "en-US": "This event accounted for {percent}% of last month's total spend. Consider reviewing."
+  },
+  trendTitle: {
+    "pt-BR": "Tendência de Gastos",
+    "de-DE": "Ausgabentrend",
+    "en-US": "Spending trend"
+  },
+  average: {
+    "pt-BR": "Média",
+    "de-DE": "Durchschnitt",
+    "en-US": "Average"
+  },
+  noData: {
+    "pt-BR": "Sem dados suficientes",
+    "de-DE": "Nicht genügend Daten",
+    "en-US": "Not enough data"
+  },
+  errorNotFound: {
+    "pt-BR": "Evento não encontrado",
+    "de-DE": "Ereignis nicht gefunden",
+    "en-US": "Event not found"
+  },
+  errorDelete: {
+    "pt-BR": "Erro ao excluir evento",
+    "de-DE": "Fehler beim Löschen des Ereignisses",
+    "en-US": "Failed to delete event"
+  },
+  toastDeleted: {
+    "pt-BR": "Evento excluído com sucesso",
+    "de-DE": "Ereignis erfolgreich gelöscht",
+    "en-US": "Event deleted successfully"
+  },
+  toastStatusUpdated: {
+    "pt-BR": "Status atualizado",
+    "de-DE": "Status aktualisiert",
+    "en-US": "Status updated"
+  },
+  recurrenceLabels: {
+    "pt-BR": {
+      none: "Único",
+      weekly: "Toda semana",
+      biweekly: "Quinzenal",
+      monthly: "Todo mês",
+      yearly: "Todo ano"
+    },
+    "de-DE": {
+      none: "Einmalig",
+      weekly: "Wöchentlich",
+      biweekly: "Alle zwei Wochen",
+      monthly: "Monatlich",
+      yearly: "Jährlich"
+    },
+    "en-US": {
+      none: "One-time",
+      weekly: "Weekly",
+      biweekly: "Biweekly",
+      monthly: "Monthly",
+      yearly: "Yearly"
+    }
+  }
+};
+
 export const confirmCopy = {
   title: {
     "pt-BR": "Fila de Confirmação",

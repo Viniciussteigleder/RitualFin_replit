@@ -20,11 +20,13 @@ import { transactionsApi } from "@/lib/api";
 import { MonthView } from "@/components/calendar/month-view";
 import { WeekBlocksView } from "@/components/calendar/week-blocks-view";
 import { DetailPanel } from "@/components/calendar/detail-panel";
-import { format, addMonths, subMonths } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { addMonths, subMonths } from "date-fns";
+import { calendarCopy, t as translate } from "@/lib/i18n";
+import { useLocale } from "@/hooks/use-locale";
 
 export default function CalendarPage() {
   const { month, setMonth, formatMonth } = useMonth();
+  const locale = useLocale();
   const [view, setView] = useState<"month" | "week">("month");
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [selectedWeek, setSelectedWeek] = useState<Date | null>(null);
@@ -55,9 +57,9 @@ export default function CalendarPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Calendário</h1>
+            <h1 className="text-3xl font-bold">{translate(locale, calendarCopy.title)}</h1>
             <p className="text-muted-foreground">
-              Visualize suas transações por dia ou semana
+              {translate(locale, calendarCopy.subtitle)}
             </p>
           </div>
 
@@ -78,8 +80,8 @@ export default function CalendarPage() {
         {/* View Toggle */}
         <Tabs value={view} onValueChange={(v) => setView(v as "month" | "week")}>
           <TabsList className="grid w-full max-w-[400px] grid-cols-2">
-            <TabsTrigger value="month">Mês</TabsTrigger>
-            <TabsTrigger value="week">4 Semanas</TabsTrigger>
+            <TabsTrigger value="month">{translate(locale, calendarCopy.viewMonth)}</TabsTrigger>
+            <TabsTrigger value="week">{translate(locale, calendarCopy.viewWeek)}</TabsTrigger>
           </TabsList>
 
           {/* Month View + Detail Panel */}
@@ -88,7 +90,7 @@ export default function CalendarPage() {
               <div className="lg:col-span-2">
                 {isLoading ? (
                   <div className="bg-white rounded-lg border p-12 text-center">
-                    <p className="text-muted-foreground">Carregando...</p>
+                    <p className="text-muted-foreground">{translate(locale, calendarCopy.loading)}</p>
                   </div>
                 ) : (
                   <MonthView
@@ -114,7 +116,7 @@ export default function CalendarPage() {
             <div className="space-y-6">
               {isLoading ? (
                 <div className="bg-white rounded-lg border p-12 text-center">
-                  <p className="text-muted-foreground">Carregando...</p>
+                  <p className="text-muted-foreground">{translate(locale, calendarCopy.loading)}</p>
                 </div>
               ) : (
                 <WeekBlocksView
