@@ -3820,6 +3820,10 @@ Retorne APENAS um array JSON válido, sem markdown ou texto adicional.`;
         storage.getTaxonomyLevel1(user.id)
       ]);
 
+      if (leaves.length === 0) {
+        return res.status(400).json({ error: "Taxonomia não configurada. Importe as categorias antes de aplicar sugestões." });
+      }
+
       const level1ById = new Map(levels1.map(level => [level.level1Id, level.nivel1Pt || ""]));
       const level2ById = new Map(levels2.map(level => [level.level2Id, level]));
       const normalizeKey = (value: string) => normalizeForMatch(value || "");
