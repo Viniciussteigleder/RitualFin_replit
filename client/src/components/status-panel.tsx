@@ -1,6 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/hooks/use-locale";
+import { statusPanelCopy, t as translate } from "@/lib/i18n";
 import type { ReactNode } from "react";
 
 type StatusVariant = "info" | "success" | "warning" | "error";
@@ -31,7 +33,9 @@ export function StatusPanel({
   children,
   className,
 }: StatusPanelProps) {
+  const locale = useLocale();
   const styles = VARIANT_STYLES[variant];
+  const variantLabels = statusPanelCopy.labels[variant] || statusPanelCopy.labels.info;
 
   return (
     <Card className={cn("border shadow-sm", styles.panel, className)}>
@@ -41,7 +45,7 @@ export function StatusPanel({
             <p className="font-semibold">{title}</p>
             {description ? <p className="text-xs text-muted-foreground">{description}</p> : null}
           </div>
-          <Badge className={styles.badge}>{variant === "error" ? "Erro" : variant === "warning" ? "Aviso" : variant === "success" ? "Sucesso" : "Info"}</Badge>
+          <Badge className={styles.badge}>{translate(locale, variantLabels)}</Badge>
         </div>
 
         {meta?.length ? (

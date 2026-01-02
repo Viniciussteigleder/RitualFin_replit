@@ -10,10 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AIChatModal } from "@/components/ai-chat-modal";
+import { useLocale } from "@/hooks/use-locale";
+import { aiAssistantButtonCopy, t as translate } from "@/lib/i18n";
 
 export function AIAssistantButton() {
   const [isOpen, setIsOpen] = useState(false);
   const [isPulsing, setIsPulsing] = useState(true);
+  const locale = useLocale();
 
   const handleOpen = () => {
     setIsOpen(true);
@@ -30,7 +33,7 @@ export function AIAssistantButton() {
           "transition-all duration-300 hover:scale-110",
           isPulsing && "animate-pulse"
         )}
-        title="Assistente IA"
+        title={translate(locale, aiAssistantButtonCopy.title)}
       >
         <Sparkles className="h-6 w-6 text-white" />
         {isPulsing && (

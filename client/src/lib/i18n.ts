@@ -18,6 +18,78 @@ export const accountBadgeCopy = {
   }
 };
 
+export const statusPanelCopy = {
+  labels: {
+    info: {
+      "pt-BR": "Info",
+      "de-DE": "Info",
+      "en-US": "Info"
+    },
+    success: {
+      "pt-BR": "Sucesso",
+      "de-DE": "Erfolg",
+      "en-US": "Success"
+    },
+    warning: {
+      "pt-BR": "Aviso",
+      "de-DE": "Warnung",
+      "en-US": "Warning"
+    },
+    error: {
+      "pt-BR": "Erro",
+      "de-DE": "Fehler",
+      "en-US": "Error"
+    }
+  }
+};
+
+export const aiAssistantButtonCopy = {
+  title: {
+    "pt-BR": "Assistente IA",
+    "de-DE": "KI-Assistent",
+    "en-US": "AI Assistant"
+  }
+};
+
+export const sidebarCopy = {
+  toggleLabel: {
+    "pt-BR": "Alternar sidebar",
+    "de-DE": "Seitenleiste umschalten",
+    "en-US": "Toggle sidebar"
+  }
+};
+
+export const spinnerCopy = {
+  loading: {
+    "pt-BR": "Carregando",
+    "de-DE": "Lädt",
+    "en-US": "Loading"
+  }
+};
+
+export const paginationCopy = {
+  previous: {
+    "pt-BR": "Anterior",
+    "de-DE": "Zurück",
+    "en-US": "Previous"
+  },
+  next: {
+    "pt-BR": "Próximo",
+    "de-DE": "Weiter",
+    "en-US": "Next"
+  },
+  previousAria: {
+    "pt-BR": "Ir para a página anterior",
+    "de-DE": "Zur vorherigen Seite",
+    "en-US": "Go to previous page"
+  },
+  nextAria: {
+    "pt-BR": "Ir para a próxima página",
+    "de-DE": "Zur nächsten Seite",
+    "en-US": "Go to next page"
+  }
+};
+
 export const iconCopy = {
   accountDefault: {
     "pt-BR": "Conta",
