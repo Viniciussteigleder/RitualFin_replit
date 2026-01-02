@@ -220,7 +220,7 @@ export default function SettingsPage() {
 
   const { data: auditLogs = [], isLoading: auditLogsLoading } = useQuery({
     queryKey: ["audit-logs"],
-    queryFn: auditLogsApi.list,
+    queryFn: () => auditLogsApi.list(),
   });
 
 

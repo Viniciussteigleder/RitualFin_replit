@@ -79,10 +79,25 @@ export const settingsApi = {
     userId: string;
     autoConfirmHighConfidence: boolean;
     confidenceThreshold: number;
+    language?: string | null;
+    currency?: string | null;
+    fiscalRegion?: string | null;
+    notifyImportStatus?: boolean | null;
+    notifyReviewQueue?: boolean | null;
+    notifyMonthlyReport?: boolean | null;
     createdAt: string;
     updatedAt: string;
   }>("/settings"),
-  update: (data: { autoConfirmHighConfidence?: boolean; confidenceThreshold?: number }) =>
+  update: (data: {
+    autoConfirmHighConfidence?: boolean;
+    confidenceThreshold?: number;
+    language?: string;
+    currency?: string;
+    fiscalRegion?: string;
+    notifyImportStatus?: boolean;
+    notifyReviewQueue?: boolean;
+    notifyMonthlyReport?: boolean;
+  }) =>
     fetchApi<any>("/settings", {
       method: "PATCH",
       body: JSON.stringify(data),
