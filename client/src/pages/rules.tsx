@@ -544,7 +544,7 @@ export default function RulesPage() {
                 className="gap-2"
               >
                 <Zap className="h-4 w-4" />
-                {seedMutation.isPending ? "Gerando..." : "Criar Regras Padrao"}
+                {seedMutation.isPending ? "Gerando..." : t(locale, rulesCopy.createDefault)}
               </Button>
             )}
 
@@ -610,7 +610,7 @@ export default function RulesPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total Regras</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(locale, rulesCopy.totalRules)}</p>
                   <p className="text-3xl font-bold mt-1">{rules.length}</p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -624,7 +624,7 @@ export default function RulesPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Regras IA</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(locale, rulesCopy.aiRules)}</p>
                   <p className="text-3xl font-bold mt-1 text-primary">{systemRules.length}</p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
@@ -638,7 +638,7 @@ export default function RulesPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Suas Regras</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(locale, rulesCopy.userRules)}</p>
                   <p className="text-3xl font-bold mt-1">{userRules.length}</p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">

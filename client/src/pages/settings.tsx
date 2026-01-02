@@ -2124,9 +2124,9 @@ export default function SettingsPage() {
                   )}
 
                   {auditLogsLoading ? (
-                    <p className="text-sm text-muted-foreground">Carregando registros...</p>
+                    <p className="text-sm text-muted-foreground">{t(locale, settingsCopy.auditLoading)}</p>
                   ) : filteredAuditLogs.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Nenhum evento registrado.</p>
+                    <p className="text-sm text-muted-foreground">{t(locale, settingsCopy.auditEmpty)}</p>
                   ) : (
                     <div className="overflow-x-auto rounded-lg border">
                       <table className="min-w-full text-sm">

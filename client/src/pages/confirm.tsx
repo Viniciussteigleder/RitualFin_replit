@@ -312,15 +312,27 @@ export default function ConfirmPage() {
                         data-testid="checkbox-select-all"
                       />
                     </th>
-                    <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">Data</th>
-                    <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">Conta</th>
-                    <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">Descricao</th>
-                    <th className="px-5 py-3 text-right font-medium text-xs uppercase tracking-wide">Valor</th>
+                    <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">
+                      {t(locale, confirmCopy.tableDate)}
+                    </th>
+                    <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">
+                      {t(locale, confirmCopy.tableAccount)}
+                    </th>
+                    <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">
+                      {t(locale, confirmCopy.tableDescription)}
+                    </th>
+                    <th className="px-5 py-3 text-right font-medium text-xs uppercase tracking-wide">
+                      {t(locale, confirmCopy.tableAmount)}
+                    </th>
                     <th className="px-5 py-3 text-center font-medium text-xs uppercase tracking-wide">
                       {t(locale, confirmCopy.tableConfidence)}
                     </th>
-                    <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">Categoria</th>
-                    <th className="px-5 py-3 text-center font-medium text-xs uppercase tracking-wide">Acao</th>
+                    <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">
+                      {t(locale, confirmCopy.tableCategory)}
+                    </th>
+                    <th className="px-5 py-3 text-center font-medium text-xs uppercase tracking-wide">
+                      {t(locale, confirmCopy.tableAction)}
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/50">

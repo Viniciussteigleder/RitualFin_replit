@@ -573,6 +573,36 @@ export const confirmCopy = {
     "pt-BR": "Confiança",
     "de-DE": "Zuversicht",
     "en-US": "Confidence"
+  },
+  tableDate: {
+    "pt-BR": "Data",
+    "de-DE": "Datum",
+    "en-US": "Date"
+  },
+  tableAccount: {
+    "pt-BR": "Conta",
+    "de-DE": "Konto",
+    "en-US": "Account"
+  },
+  tableDescription: {
+    "pt-BR": "Descrição",
+    "de-DE": "Beschreibung",
+    "en-US": "Description"
+  },
+  tableAmount: {
+    "pt-BR": "Valor",
+    "de-DE": "Betrag",
+    "en-US": "Amount"
+  },
+  tableCategory: {
+    "pt-BR": "Categoria",
+    "de-DE": "Kategorie",
+    "en-US": "Category"
+  },
+  tableAction: {
+    "pt-BR": "Ação",
+    "de-DE": "Aktion",
+    "en-US": "Action"
   }
 };
 
@@ -601,6 +631,26 @@ export const rulesCopy = {
     "pt-BR": "Importar",
     "de-DE": "Importieren",
     "en-US": "Import"
+  },
+  totalRules: {
+    "pt-BR": "Total Regras",
+    "de-DE": "Regeln gesamt",
+    "en-US": "Total Rules"
+  },
+  aiRules: {
+    "pt-BR": "Regras IA",
+    "de-DE": "KI-Regeln",
+    "en-US": "AI Rules"
+  },
+  userRules: {
+    "pt-BR": "Suas Regras",
+    "de-DE": "Ihre Regeln",
+    "en-US": "Your Rules"
+  },
+  createDefault: {
+    "pt-BR": "Criar Regras Padrao",
+    "de-DE": "Standardregeln erstellen",
+    "en-US": "Create Default Rules"
   }
 };
 
@@ -644,6 +694,16 @@ export const settingsCopy = {
     "pt-BR": "Zona de Perigo",
     "de-DE": "Gefahrenzone",
     "en-US": "Danger Zone"
+  },
+  auditLoading: {
+    "pt-BR": "Carregando registros...",
+    "de-DE": "Einträge werden geladen...",
+    "en-US": "Loading records..."
+  },
+  auditEmpty: {
+    "pt-BR": "Nenhum evento registrado.",
+    "de-DE": "Keine Ereignisse gefunden.",
+    "en-US": "No events recorded."
   }
 };
 
