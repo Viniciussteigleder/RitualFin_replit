@@ -651,6 +651,11 @@ export const rulesCopy = {
     "pt-BR": "Criar Regras Padrao",
     "de-DE": "Standardregeln erstellen",
     "en-US": "Create Default Rules"
+  },
+  generating: {
+    "pt-BR": "Gerando...",
+    "de-DE": "Wird erzeugt...",
+    "en-US": "Generating..."
   }
 };
 
@@ -704,6 +709,26 @@ export const settingsCopy = {
     "pt-BR": "Nenhum evento registrado.",
     "de-DE": "Keine Ereignisse gefunden.",
     "en-US": "No events recorded."
+  },
+  auditHeaderDate: {
+    "pt-BR": "Data",
+    "de-DE": "Datum",
+    "en-US": "Date"
+  },
+  auditHeaderAction: {
+    "pt-BR": "Ação",
+    "de-DE": "Aktion",
+    "en-US": "Action"
+  },
+  auditHeaderStatus: {
+    "pt-BR": "Status",
+    "de-DE": "Status",
+    "en-US": "Status"
+  },
+  auditHeaderSummary: {
+    "pt-BR": "Resumo",
+    "de-DE": "Zusammenfassung",
+    "en-US": "Summary"
   }
 };
 

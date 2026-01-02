@@ -2132,10 +2132,10 @@ export default function SettingsPage() {
                       <table className="min-w-full text-sm">
                         <thead className="bg-muted/30">
                           <tr>
-                            <th className="px-3 py-2 text-left">Data</th>
-                            <th className="px-3 py-2 text-left">Ação</th>
-                            <th className="px-3 py-2 text-left">Status</th>
-                            <th className="px-3 py-2 text-left">Resumo</th>
+                            <th className="px-3 py-2 text-left">{t(locale, settingsCopy.auditHeaderDate)}</th>
+                            <th className="px-3 py-2 text-left">{t(locale, settingsCopy.auditHeaderAction)}</th>
+                            <th className="px-3 py-2 text-left">{t(locale, settingsCopy.auditHeaderStatus)}</th>
+                            <th className="px-3 py-2 text-left">{t(locale, settingsCopy.auditHeaderSummary)}</th>
                           </tr>
                         </thead>
                         <tbody>

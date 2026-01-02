@@ -544,7 +544,7 @@ export default function RulesPage() {
                 className="gap-2"
               >
                 <Zap className="h-4 w-4" />
-                {seedMutation.isPending ? "Gerando..." : t(locale, rulesCopy.createDefault)}
+                {seedMutation.isPending ? t(locale, rulesCopy.generating) : t(locale, rulesCopy.createDefault)}
               </Button>
             )}
 
