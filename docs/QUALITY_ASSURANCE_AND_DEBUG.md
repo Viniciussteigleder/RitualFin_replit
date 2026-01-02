@@ -21,6 +21,9 @@ psql --version        # PostgreSQL client installed
 # API smoke tests (requires backend running)
 scripts/qa/run_api_smoke.sh
 
+# API contract tests (requires backend running)
+scripts/qa/run_api_contracts.sh
+
 # DB invariants (scripted runner)
 scripts/qa/run_db_invariants.sh
 

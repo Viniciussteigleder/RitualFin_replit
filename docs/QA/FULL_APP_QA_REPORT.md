@@ -33,6 +33,7 @@
 - `npm run build`: Pass (tsx script/build.ts)
 - P0 smoke checklist: Partial (API-driven checks executed; UI manual pending)
 - API smoke tests: Pass (`scripts/qa/run_api_smoke.sh` against `http://localhost:5050/api` on 2026-01-02)
+- API contract tests: Pass (`scripts/qa/run_api_contracts.sh` against `http://localhost:5050/api` on 2026-01-02)
 - DB invariants: Pass (`scripts/qa/run_db_invariants.sh`)
 - DB dedupe cleanup: Applied via `scripts/qa/dedupe_transactions.ts --apply` (341 rows deleted)
 - Playwright E2E: Pass (12 tests, mocked API fixtures; 2026-01-02)
@@ -81,6 +82,7 @@
 - Typecheck: `npm run check`
 - Build: `npm run build`
 - API smoke: `scripts/qa/run_api_smoke.sh`
+- API contracts: `scripts/qa/run_api_contracts.sh`
 - DB invariants: `scripts/qa/run_db_invariants.sh`
 - DB dedupe (optional): `DATABASE_URL=... npx --no-install tsx scripts/qa/dedupe_transactions.ts --apply`
 - E2E: `scripts/qa/run_e2e.sh` (defaults to Vite dev server on `http://127.0.0.1:5173`)

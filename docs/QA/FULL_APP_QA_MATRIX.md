@@ -166,11 +166,11 @@ This matrix inventories every screen/route/action and records expected behavior,
 | API-06 | API | /api/transactions | Schema valid | Pass (Live) | `scripts/qa/run_api_smoke.sh` |
 | API-07 | API | /api/classification/review-queue | Queue items valid | Pass (Live) | `scripts/qa/run_api_smoke.sh` |
 | API-08 | API | /api/rules/reapply-all | success + counts valid | Pending | TBD |
-| API-CON-01 | Contract | /api/health schema | Types/keys valid | Pending | TBD |
-| API-CON-02 | Contract | /api/version schema | Types/keys valid | Pending | TBD |
-| API-CON-03 | Contract | /api/uploads/process schema | Types/keys valid | Pending | TBD |
-| API-CON-04 | Contract | /api/transactions schema | Types/keys valid | Pending | TBD |
-| API-CON-05 | Contract | /api/settings schema | Types/keys valid | Pending | TBD |
+| API-CON-01 | Contract | /api/health schema | Types/keys valid | Pass (Live) | `scripts/qa/run_api_contracts.sh` |
+| API-CON-02 | Contract | /api/version schema | Types/keys valid | Pass (Live) | `scripts/qa/run_api_contracts.sh` |
+| API-CON-03 | Contract | /api/uploads/process schema | Types/keys valid | Pass (Live) | `scripts/qa/run_api_contracts.sh` |
+| API-CON-04 | Contract | /api/transactions schema | Types/keys valid | Pass (Live) | `scripts/qa/run_api_contracts.sh` |
+| API-CON-05 | Contract | /api/settings schema | Types/keys valid | Pass (Live) | `scripts/qa/run_api_contracts.sh` |
 | DEP-01 | Deploy | Frontend API base | Requests to Render domain | Pending | TBD |
 | DEP-02 | Deploy | Bundle check | No Vercel-origin /api | Pending | TBD |
 | DEP-03 | Deploy | SPA rewrites | Direct route loads | Pending | TBD |
