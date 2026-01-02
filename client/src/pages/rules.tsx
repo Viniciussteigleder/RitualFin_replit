@@ -15,6 +15,8 @@ import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { StatusPanel } from "@/components/status-panel";
 import * as XLSX from 'xlsx';
+import { useLocale } from "@/hooks/use-locale";
+import { rulesCopy, t } from "@/lib/i18n";
 
 const TYPE_COLORS: Record<string, string> = {
   "Despesa": "bg-rose-100 text-rose-700",
@@ -79,6 +81,7 @@ export default function RulesPage() {
   const [formData, setFormData] = useState<RuleFormData>(EMPTY_RULE);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [statusInfo, setStatusInfo] = useState<{ variant: "success" | "warning" | "error"; title: string; description: string; payload?: Record<string, unknown> } | null>(null);
+  const locale = useLocale();
 
   const { data: rules = [], isLoading } = useQuery({
     queryKey: ["rules"],
@@ -523,15 +526,13 @@ export default function RulesPage() {
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-2xl font-bold">Motor de Regras</h1>
+              <h1 className="text-2xl font-bold">{t(locale, rulesCopy.title)}</h1>
               <Badge variant="secondary" className="bg-primary/10 text-primary text-xs gap-1">
                 <Sparkles className="h-3 w-3" />
                 IA
               </Badge>
             </div>
-            <p className="text-muted-foreground">
-              Categorize transacoes automaticamente com regras baseadas em palavras-chave.
-            </p>
+            <p className="text-muted-foreground">{t(locale, rulesCopy.subtitle)}</p>
           </div>
           
           <div className="flex gap-2">
@@ -558,7 +559,7 @@ export default function RulesPage() {
               ) : (
                 <RefreshCw className="h-4 w-4" />
               )}
-              Reaplicar Regras
+              {t(locale, rulesCopy.reapply)}
             </Button>
 
             <Button
@@ -577,7 +578,7 @@ export default function RulesPage() {
               onClick={() => fileInputRef.current?.click()}
             >
               <Upload className="h-4 w-4" />
-              Importar
+              {t(locale, rulesCopy.importLabel)}
             </Button>
 
             <input
@@ -590,7 +591,7 @@ export default function RulesPage() {
 
             <Button className="bg-primary hover:bg-primary/90 gap-2" onClick={openNewDialog} data-testid="btn-new-rule">
               <Plus className="h-4 w-4" />
-              Nova Regra
+              {t(locale, rulesCopy.newRule)}
             </Button>
           </div>
         </div>

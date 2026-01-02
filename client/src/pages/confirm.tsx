@@ -16,6 +16,8 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AliasLogo } from "@/components/alias-logo";
 import { StatusPanel } from "@/components/status-panel";
+import { useLocale } from "@/hooks/use-locale";
+import { confirmCopy, t } from "@/lib/i18n";
 
 interface TransactionForm {
   type: string;
@@ -43,6 +45,7 @@ export default function ConfirmPage() {
   const [formData, setFormData] = useState<Record<string, TransactionForm>>({});
   const [activeTab, setActiveTab] = useState("all");
   const [statusPayload, setStatusPayload] = useState<{ variant: "success" | "warning" | "error"; title: string; description: string; payload?: Record<string, unknown> } | null>(null);
+  const locale = useLocale();
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["confirm-queue"],
@@ -178,16 +181,14 @@ export default function ConfirmPage() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-2xl font-bold">Fila de Confirmação</h1>
+              <h1 className="text-2xl font-bold">{t(locale, confirmCopy.title)}</h1>
               {items.length > 0 && (
                 <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-amber-100 text-amber-700 text-sm font-bold">
                   {items.length}
                 </span>
               )}
             </div>
-            <p className="text-muted-foreground">
-              A IA pré-analisou cada transação. Revise as sugestões e confirme.
-            </p>
+            <p className="text-muted-foreground">{t(locale, confirmCopy.subtitle)}</p>
           </div>
           
           {highConfidenceCount > 0 && (
@@ -197,7 +198,7 @@ export default function ConfirmPage() {
               className="bg-emerald-500 hover:bg-emerald-600 gap-2 shadow-lg shadow-emerald-500/20"
             >
               <Zap className="h-4 w-4" />
-              Aceitar {highConfidenceCount} com alta confianca
+              {t(locale, confirmCopy.acceptHigh)} {highConfidenceCount}
             </Button>
           )}
         </div>
@@ -207,7 +208,7 @@ export default function ConfirmPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total Pendente</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(locale, confirmCopy.totalPending)}</p>
                   <p className="text-3xl font-bold mt-1">{items.length}</p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-muted/50 flex items-center justify-center">
@@ -221,7 +222,7 @@ export default function ConfirmPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Alta Confianca</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(locale, confirmCopy.highConfidence)}</p>
                   <p className="text-3xl font-bold mt-1 text-emerald-600">{highConfidenceCount}</p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
@@ -235,7 +236,7 @@ export default function ConfirmPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Media Confianca</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(locale, confirmCopy.mediumConfidence)}</p>
                   <p className="text-3xl font-bold mt-1 text-amber-600">{mediumConfidenceCount}</p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
@@ -249,7 +250,7 @@ export default function ConfirmPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Sem Categoria</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(locale, confirmCopy.noCategory)}</p>
                   <p className="text-3xl font-bold mt-1 text-rose-600">{lowConfidenceCount}</p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center">
@@ -275,25 +276,25 @@ export default function ConfirmPage() {
               value="all" 
               className="data-[state=active]:bg-primary data-[state=active]:text-white px-4 py-2"
             >
-              Todas ({items.length})
+              {t(locale, confirmCopy.tabAll)} ({items.length})
             </TabsTrigger>
             <TabsTrigger 
               value="high"
               className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white px-4 py-2"
             >
-              Alta ({highConfidenceCount})
+              {t(locale, confirmCopy.tabHigh)} ({highConfidenceCount})
             </TabsTrigger>
             <TabsTrigger 
               value="medium"
               className="data-[state=active]:bg-amber-500 data-[state=active]:text-white px-4 py-2"
             >
-              Media ({mediumConfidenceCount})
+              {t(locale, confirmCopy.tabMedium)} ({mediumConfidenceCount})
             </TabsTrigger>
             <TabsTrigger 
               value="low"
               className="data-[state=active]:bg-rose-500 data-[state=active]:text-white px-4 py-2"
             >
-              Baixa ({lowConfidenceCount})
+              {t(locale, confirmCopy.tabLow)} ({lowConfidenceCount})
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -315,7 +316,9 @@ export default function ConfirmPage() {
                     <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">Conta</th>
                     <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">Descricao</th>
                     <th className="px-5 py-3 text-right font-medium text-xs uppercase tracking-wide">Valor</th>
-                    <th className="px-5 py-3 text-center font-medium text-xs uppercase tracking-wide">Confianca</th>
+                    <th className="px-5 py-3 text-center font-medium text-xs uppercase tracking-wide">
+                      {t(locale, confirmCopy.tableConfidence)}
+                    </th>
                     <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">Categoria</th>
                     <th className="px-5 py-3 text-center font-medium text-xs uppercase tracking-wide">Acao</th>
                   </tr>
@@ -444,7 +447,7 @@ export default function ConfirmPage() {
                             data-testid={`btn-confirm-${t.id}`}
                           >
                             <Check className="h-3.5 w-3.5" />
-                            {confidence >= 80 ? "Aceitar" : "Confirmar"}
+                            {confidence >= 80 ? t(locale, confirmCopy.accept) : t(locale, confirmCopy.confirm)}
                           </Button>
                         </td>
                       </tr>
@@ -493,8 +496,8 @@ export default function ConfirmPage() {
               data-testid="btn-confirm-selected"
             >
               <Check className="h-4 w-4" />
-              Confirmar Selecionados
-            </Button>
+            {t(locale, confirmCopy.confirmSelected)}
+          </Button>
           </div>
         )}
       </div>

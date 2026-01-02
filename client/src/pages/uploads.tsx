@@ -5,7 +5,7 @@ import { UploadCloud, FileSpreadsheet, CheckCircle2, XCircle, AlertCircle, Loade
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { settingsApi, uploadsApi } from "@/lib/api";
+import { importConflictsApi, uploadsApi } from "@/lib/api";
 import { useRef, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { StatusPanel } from "@/components/status-panel";
 import { Locale, t, uploadsCopy } from "@/lib/i18n";
+import { useLocale } from "@/hooks/use-locale";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -44,16 +45,19 @@ export default function UploadsPage() {
   const [errorsLoading, setErrorsLoading] = useState(false);
   const [errorsPayload, setErrorsPayload] = useState<{ uploadId: string; count: number; errors: Array<{ rowNumber: number; errorMessage: string }> } | null>(null);
   const [errorsFilename, setErrorsFilename] = useState<string | null>(null);
+  const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
+  const [conflictAction, setConflictAction] = useState<"keep" | "replace">("keep");
+  const [conflictStatus, setConflictStatus] = useState<{ variant: "success" | "error"; message: string } | null>(null);
+  const [diagnosticsDialogOpen, setDiagnosticsDialogOpen] = useState(false);
+  const [diagnosticsLoading, setDiagnosticsLoading] = useState(false);
+  const [diagnosticsPayload, setDiagnosticsPayload] = useState<any | null>(null);
+  const [diagnosticsFilename, setDiagnosticsFilename] = useState<string | null>(null);
 
   const { data: uploads = [], isLoading } = useQuery({
     queryKey: ["uploads"],
     queryFn: uploadsApi.list,
   });
-  const { data: settings } = useQuery({
-    queryKey: ["settings"],
-    queryFn: settingsApi.get,
-  });
-  const locale = (settings?.language || "pt-BR") as Locale;
+  const locale = useLocale() as Locale;
 
   const uploadMutation = useMutation({
     mutationFn: async ({ file, importDate }: { file: File; importDate: string }) => {
@@ -241,6 +245,49 @@ export default function UploadsPage() {
       });
     } finally {
       setErrorsLoading(false);
+    }
+  };
+
+  const handleViewDiagnostics = async (upload: any) => {
+    setDiagnosticsDialogOpen(true);
+    setDiagnosticsLoading(true);
+    setDiagnosticsFilename(upload.filename || "upload.csv");
+    setDiagnosticsPayload(null);
+    try {
+      const payload = await uploadsApi.diagnostics(upload.id);
+      setDiagnosticsPayload(payload);
+    } catch (error: any) {
+      toast({
+        title: t(locale, uploadsCopy.importErrorTitle),
+        description: error.message || t(locale, uploadsCopy.importErrorDesc),
+        variant: "destructive"
+      });
+    } finally {
+      setDiagnosticsLoading(false);
+    }
+  };
+
+  const handleResolveConflicts = async () => {
+    if (!lastUploadId || !lastSummary?.duplicates) {
+      setConflictDialogOpen(false);
+      return;
+    }
+    try {
+      const result = await importConflictsApi.resolve({
+        uploadId: lastUploadId,
+        action: conflictAction,
+        duplicateCount: lastSummary.duplicates
+      });
+      setConflictStatus({
+        variant: "success",
+        message: `Resolução aplicada: ${result.action} (${result.duplicateCount} duplicadas)`
+      });
+      setConflictDialogOpen(false);
+    } catch (error: any) {
+      setConflictStatus({
+        variant: "error",
+        message: error.message || t(locale, uploadsCopy.importErrorDesc)
+      });
     }
   };
 
@@ -550,13 +597,21 @@ export default function UploadsPage() {
                 <p className="text-sm font-semibold">{t(locale, uploadsCopy.conflictTitle)}</p>
                 <p className="text-xs text-muted-foreground">{t(locale, uploadsCopy.conflictDescription)}</p>
               </div>
-              <Button variant="outline" disabled className="gap-2">
+              <Button variant="outline" className="gap-2" onClick={() => setConflictDialogOpen(true)}>
                 <Filter className="h-4 w-4" />
                 {t(locale, uploadsCopy.conflictAction)}
               </Button>
             </CardContent>
           </Card>
         ) : null}
+
+        {conflictStatus && (
+          <StatusPanel
+            title={t(locale, uploadsCopy.conflictTitle)}
+            description={conflictStatus.message}
+            variant={conflictStatus.variant}
+          />
+        )}
 
         {lastDiagnostics && (
           <Card className="bg-white border border-gray-200 shadow-sm">
@@ -790,6 +845,14 @@ export default function UploadsPage() {
                       </div>
                       
                       <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs"
+                          onClick={() => void handleViewDiagnostics(upload)}
+                        >
+                          {t(locale, uploadsCopy.parsingReport)}
+                        </Button>
                         {upload.status === "error" && (
                           <Button
                             variant="outline"
@@ -839,6 +902,81 @@ export default function UploadsPage() {
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">{t(locale, uploadsCopy.errorsNone)}</p>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={conflictDialogOpen} onOpenChange={setConflictDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t(locale, uploadsCopy.conflictTitle)}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            <p className="text-muted-foreground">{t(locale, uploadsCopy.conflictDescription)}</p>
+            <Select value={conflictAction} onValueChange={(value) => setConflictAction(value as "keep" | "replace")}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="keep">{t(locale, uploadsCopy.conflictKeep)}</SelectItem>
+                <SelectItem value="replace">{t(locale, uploadsCopy.conflictReplace)}</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setConflictDialogOpen(false)}>
+                {t(locale, uploadsCopy.conflictCancel)}
+              </Button>
+              <Button onClick={handleResolveConflicts}>
+                {t(locale, uploadsCopy.conflictApply)}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={diagnosticsDialogOpen} onOpenChange={setDiagnosticsDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{t(locale, uploadsCopy.parsingReport)} {diagnosticsFilename ? `• ${diagnosticsFilename}` : ""}</DialogTitle>
+          </DialogHeader>
+          {diagnosticsLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              {t(locale, uploadsCopy.diagnosticsLoading)}
+            </div>
+          ) : diagnosticsPayload ? (
+            <div className="space-y-3 text-xs">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="rounded-md border border-muted bg-muted/30 p-2">
+                  <p className="text-muted-foreground">{t(locale, uploadsCopy.labelEncoding)}</p>
+                  <p className="font-medium">{diagnosticsPayload.encodingUsed || "-"}</p>
+                </div>
+                <div className="rounded-md border border-muted bg-muted/30 p-2">
+                  <p className="text-muted-foreground">{t(locale, uploadsCopy.previewDelimiter)}</p>
+                  <p className="font-medium">{diagnosticsPayload.delimiterUsed || "-"}</p>
+                </div>
+                <div className="rounded-md border border-muted bg-muted/30 p-2">
+                  <p className="text-muted-foreground">{t(locale, uploadsCopy.labelLines)}</p>
+                  <p className="font-medium">{diagnosticsPayload.rowsTotal || 0}</p>
+                </div>
+              </div>
+              {diagnosticsPayload.requiredMissing?.length ? (
+                <div className="rounded-md border border-rose-200 bg-rose-50 p-2 text-rose-700">
+                  <p className="font-semibold">{t(locale, uploadsCopy.labelMissingColumns)}</p>
+                  <p>{diagnosticsPayload.requiredMissing.join(", ")}</p>
+                </div>
+              ) : null}
+              {diagnosticsPayload.rowsPreview?.length ? (
+                <div className="rounded-md border border-muted bg-muted/20 p-2">
+                  <p className="font-semibold">{t(locale, uploadsCopy.detailsPreview)}</p>
+                  <pre className="whitespace-pre-wrap text-[11px]">
+                    {JSON.stringify(diagnosticsPayload.rowsPreview, null, 2)}
+                  </pre>
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">{t(locale, uploadsCopy.diagnosticsNone)}</p>
           )}
         </DialogContent>
       </Dialog>

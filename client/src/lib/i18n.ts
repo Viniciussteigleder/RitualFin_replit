@@ -396,6 +396,26 @@ export const uploadsCopy = {
     "de-DE": "Duplikate lösen",
     "en-US": "Resolve duplicates"
   },
+  conflictKeep: {
+    "pt-BR": "Manter existentes",
+    "de-DE": "Vorhandene behalten",
+    "en-US": "Keep existing"
+  },
+  conflictReplace: {
+    "pt-BR": "Substituir por novas",
+    "de-DE": "Durch neue ersetzen",
+    "en-US": "Replace with new"
+  },
+  conflictApply: {
+    "pt-BR": "Aplicar resolução",
+    "de-DE": "Lösung anwenden",
+    "en-US": "Apply resolution"
+  },
+  conflictCancel: {
+    "pt-BR": "Cancelar",
+    "de-DE": "Abbrechen",
+    "en-US": "Cancel"
+  },
   statusProcessed: {
     "pt-BR": "Processado",
     "de-DE": "Verarbeitet",
@@ -431,6 +451,16 @@ export const uploadsCopy = {
     "de-DE": "Keine Fehler verfügbar.",
     "en-US": "No errors available."
   },
+  diagnosticsLoading: {
+    "pt-BR": "Carregando diagnóstico...",
+    "de-DE": "Diagnose wird geladen...",
+    "en-US": "Loading diagnostics..."
+  },
+  diagnosticsNone: {
+    "pt-BR": "Nenhum diagnóstico disponível.",
+    "de-DE": "Keine Diagnose verfügbar.",
+    "en-US": "No diagnostics available."
+  },
   rowLabel: {
     "pt-BR": "Linha",
     "de-DE": "Zeile",
@@ -460,5 +490,182 @@ export const uploadsCopy = {
     "pt-BR": "Arraste um arquivo CSV acima para começar a organizar suas finanças.",
     "de-DE": "Ziehen Sie oben eine CSV-Datei, um zu starten.",
     "en-US": "Drop a CSV file above to start organizing your finances."
+  }
+};
+
+export const confirmCopy = {
+  title: {
+    "pt-BR": "Fila de Confirmação",
+    "de-DE": "Bestätigungswarteschlange",
+    "en-US": "Confirmation Queue"
+  },
+  subtitle: {
+    "pt-BR": "A IA pré-analisou cada transação. Revise as sugestões e confirme.",
+    "de-DE": "Die KI hat Transaktionen voranalysiert. Bitte prüfen und bestätigen.",
+    "en-US": "AI pre-analyzed each transaction. Review and confirm."
+  },
+  acceptHigh: {
+    "pt-BR": "Aceitar alta confiança",
+    "de-DE": "Hohe Zuversicht akzeptieren",
+    "en-US": "Accept high confidence"
+  },
+  totalPending: {
+    "pt-BR": "Total Pendente",
+    "de-DE": "Offen insgesamt",
+    "en-US": "Total Pending"
+  },
+  highConfidence: {
+    "pt-BR": "Alta Confiança",
+    "de-DE": "Hohe Zuversicht",
+    "en-US": "High Confidence"
+  },
+  mediumConfidence: {
+    "pt-BR": "Média Confiança",
+    "de-DE": "Mittlere Zuversicht",
+    "en-US": "Medium Confidence"
+  },
+  lowConfidence: {
+    "pt-BR": "Baixa Confiança",
+    "de-DE": "Niedrige Zuversicht",
+    "en-US": "Low Confidence"
+  },
+  noCategory: {
+    "pt-BR": "Sem Categoria",
+    "de-DE": "Ohne Kategorie",
+    "en-US": "No Category"
+  },
+  confirmSelected: {
+    "pt-BR": "Confirmar Selecionados",
+    "de-DE": "Ausgewählte bestätigen",
+    "en-US": "Confirm Selected"
+  },
+  accept: {
+    "pt-BR": "Aceitar",
+    "de-DE": "Akzeptieren",
+    "en-US": "Accept"
+  },
+  confirm: {
+    "pt-BR": "Confirmar",
+    "de-DE": "Bestätigen",
+    "en-US": "Confirm"
+  },
+  tabAll: {
+    "pt-BR": "Todas",
+    "de-DE": "Alle",
+    "en-US": "All"
+  },
+  tabHigh: {
+    "pt-BR": "Alta",
+    "de-DE": "Hoch",
+    "en-US": "High"
+  },
+  tabMedium: {
+    "pt-BR": "Média",
+    "de-DE": "Mittel",
+    "en-US": "Medium"
+  },
+  tabLow: {
+    "pt-BR": "Baixa",
+    "de-DE": "Niedrig",
+    "en-US": "Low"
+  },
+  tableConfidence: {
+    "pt-BR": "Confiança",
+    "de-DE": "Zuversicht",
+    "en-US": "Confidence"
+  }
+};
+
+export const rulesCopy = {
+  title: {
+    "pt-BR": "Motor de Regras",
+    "de-DE": "Regel-Engine",
+    "en-US": "Rules Engine"
+  },
+  subtitle: {
+    "pt-BR": "Categorize transações automaticamente com regras baseadas em palavras-chave.",
+    "de-DE": "Transaktionen automatisch mit keywordbasierten Regeln kategorisieren.",
+    "en-US": "Automatically categorize transactions with keyword-based rules."
+  },
+  newRule: {
+    "pt-BR": "Nova Regra",
+    "de-DE": "Neue Regel",
+    "en-US": "New Rule"
+  },
+  reapply: {
+    "pt-BR": "Reaplicar Regras",
+    "de-DE": "Regeln erneut anwenden",
+    "en-US": "Reapply Rules"
+  },
+  importLabel: {
+    "pt-BR": "Importar",
+    "de-DE": "Importieren",
+    "en-US": "Import"
+  }
+};
+
+export const settingsCopy = {
+  auditTitle: {
+    "pt-BR": "Log de Auditoria",
+    "de-DE": "Audit-Protokoll",
+    "en-US": "Audit Log"
+  },
+  auditExport: {
+    "pt-BR": "Exportar CSV (UTF-8 com BOM)",
+    "de-DE": "CSV exportieren (UTF-8 mit BOM)",
+    "en-US": "Export CSV (UTF-8 with BOM)"
+  },
+  auditFilterStatus: {
+    "pt-BR": "Status",
+    "de-DE": "Status",
+    "en-US": "Status"
+  },
+  auditFilterAll: {
+    "pt-BR": "Todos",
+    "de-DE": "Alle",
+    "en-US": "All"
+  },
+  auditFilterSuccess: {
+    "pt-BR": "Sucesso",
+    "de-DE": "Erfolg",
+    "en-US": "Success"
+  },
+  auditFilterWarning: {
+    "pt-BR": "Atenção",
+    "de-DE": "Warnung",
+    "en-US": "Warning"
+  },
+  auditFilterError: {
+    "pt-BR": "Falha",
+    "de-DE": "Fehler",
+    "en-US": "Failure"
+  },
+  dangerTitle: {
+    "pt-BR": "Zona de Perigo",
+    "de-DE": "Gefahrenzone",
+    "en-US": "Danger Zone"
+  }
+};
+
+export const forecastCopy = {
+  title: {
+    "pt-BR": "Previsão & Recorrência",
+    "de-DE": "Prognose & Wiederkehrend",
+    "en-US": "Forecast & Recurrence"
+  },
+  subtitle: {
+    "pt-BR": "Veja pagamentos recorrentes previstos, confiança e variações esperadas.",
+    "de-DE": "Sehen Sie wiederkehrende Zahlungen mit Zuversicht und Abweichung.",
+    "en-US": "See predicted recurring payments with confidence and variance."
+  },
+  preparing: {
+    "pt-BR": "Em preparação",
+    "de-DE": "In Vorbereitung",
+    "en-US": "In preparation"
+  },
+  preparingBody: {
+    "pt-BR": "Esta tela exibirá o calendário de previsões com razões e níveis de confiança.",
+    "de-DE": "Diese Ansicht zeigt den Prognosekalender mit Begründungen und Zuversicht.",
+    "en-US": "This view will show the forecast calendar with rationale and confidence."
   }
 };

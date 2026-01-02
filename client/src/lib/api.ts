@@ -128,6 +128,7 @@ export const accountsApi = {
 export const uploadsApi = {
   list: () => fetchApi<any[]>("/uploads"),
   errors: (id: string) => fetchApi<{ uploadId: string; errors: Array<{ rowNumber: number; errorMessage: string }>; count: number }>(`/uploads/${id}/errors`),
+  diagnostics: (id: string) => fetchApi<any>(`/uploads/${id}/diagnostics`),
   preview: async (
     filename: string,
     csvContent: string,
@@ -276,6 +277,14 @@ export const dataImportsApi = {
       body: JSON.stringify(payload),
     }),
   last: (dataset: string) => fetchApi<any>(`/data-imports/last?dataset=${encodeURIComponent(dataset)}`),
+};
+
+export const importConflictsApi = {
+  resolve: (payload: { uploadId: string; action: "keep" | "replace"; duplicateCount?: number }) =>
+    fetchApi<any>("/imports/conflicts/resolve", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 };
 
 export const resetApi = {

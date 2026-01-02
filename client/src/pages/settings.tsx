@@ -22,6 +22,8 @@ import { settingsApi, classificationApi, aliasApi, resetApi, dataImportsApi, aud
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { useLocale } from "@/hooks/use-locale";
+import { settingsCopy, t } from "@/lib/i18n";
 
 const TABS = [
   { id: "conta", label: "Conta", icon: User, description: "Perfil e informações pessoais" },
@@ -142,6 +144,7 @@ const AUDIT_ACTION_LABELS: Record<string, string> = {
 };
 
 export default function SettingsPage() {
+  const locale = useLocale();
   const [activeTab, setActiveTab] = useState("conta");
   const [classificationPreview, setClassificationPreview] = useState<any | null>(null);
   const [classificationImportId, setClassificationImportId] = useState<string | null>(null);
@@ -2086,7 +2089,7 @@ export default function SettingsPage() {
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
                     <FileText className="h-4 w-4 text-primary" />
-                    Log de Auditoria
+                    {t(locale, settingsCopy.auditTitle)}
                   </CardTitle>
                   <CardDescription>
                     Registro de importações, alterações e exclusões críticas.
@@ -2096,17 +2099,17 @@ export default function SettingsPage() {
                   <div className="flex flex-wrap items-center gap-3">
                     <Button variant="outline" className="gap-2" onClick={handleExportAuditCsv}>
                       <Download className="h-4 w-4" />
-                      Exportar CSV (UTF-8 com BOM)
+                      {t(locale, settingsCopy.auditExport)}
                     </Button>
                     <Select value={auditFilter} onValueChange={setAuditFilter}>
                       <SelectTrigger className="w-[180px] text-xs">
-                        <SelectValue placeholder="Status" />
+                        <SelectValue placeholder={t(locale, settingsCopy.auditFilterStatus)} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Todos</SelectItem>
-                        <SelectItem value="success">Sucesso</SelectItem>
-                        <SelectItem value="warning">Atenção</SelectItem>
-                        <SelectItem value="error">Falha</SelectItem>
+                        <SelectItem value="all">{t(locale, settingsCopy.auditFilterAll)}</SelectItem>
+                        <SelectItem value="success">{t(locale, settingsCopy.auditFilterSuccess)}</SelectItem>
+                        <SelectItem value="warning">{t(locale, settingsCopy.auditFilterWarning)}</SelectItem>
+                        <SelectItem value="error">{t(locale, settingsCopy.auditFilterError)}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -2137,8 +2140,12 @@ export default function SettingsPage() {
                         </thead>
                         <tbody>
                           {filteredAuditLogs.map((log: any) => {
-                            const statusLabel =
-                              log.status === "error" ? "Falha" : log.status === "warning" ? "Atenção" : "Sucesso";
+                    const statusLabel =
+                              log.status === "error"
+                                ? t(locale, settingsCopy.auditFilterError)
+                                : log.status === "warning"
+                                  ? t(locale, settingsCopy.auditFilterWarning)
+                                  : t(locale, settingsCopy.auditFilterSuccess);
                             const statusClass =
                               log.status === "error"
                                 ? "bg-rose-100 text-rose-700"
@@ -2174,7 +2181,7 @@ export default function SettingsPage() {
               <>
                 <Card className="border border-rose-200 bg-rose-50">
                   <CardContent className="p-4 space-y-3">
-                    <h3 className="font-semibold text-rose-800">Zona de Perigo</h3>
+                    <h3 className="font-semibold text-rose-800">{t(locale, settingsCopy.dangerTitle)}</h3>
                     <p className="text-sm text-rose-700">
                       Remova transações, categorias, regras, aliases e logos com confirmação em etapas.
                     </p>
