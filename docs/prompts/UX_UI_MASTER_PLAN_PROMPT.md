@@ -1,6 +1,6 @@
 # How to run
 1. Open Codex CLI in the RitualFin repo.
-2. Paste the prompt below verbatim and run.
+2. Copy/paste the prompt below verbatim and run.
 
 ---
 
@@ -259,3 +259,7 @@ NOW EXECUTE
 4) Save the reusable prompt files as specified.
 
 Work autonomosly
+
+then:
+1. consolidate and re-organize the md files under docs, especially (but not limited to) about UI UX, features and implementation plan. If some are no longer valied, rename to *_OLD and move to another folder
+2. implement changes and features according to UX UI Master Plan. For this create implementation packages with own tests, debug, commit,merge and main -> orign (Think, plan, act)

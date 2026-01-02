@@ -16,6 +16,7 @@ import { UploadHistorySkeleton } from "@/components/skeletons/upload-history-ske
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function UploadsPage() {
   const queryClient = useQueryClient();
@@ -32,6 +33,8 @@ export default function UploadsPage() {
   const [previewEncoding, setPreviewEncoding] = useState<string | undefined>();
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [importDate, setImportDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [isPreviewConfirmed, setIsPreviewConfirmed] = useState(false);
+  const [lastUploadId, setLastUploadId] = useState<string | null>(null);
 
   const { data: uploads = [], isLoading } = useQuery({
     queryKey: ["uploads"],
@@ -81,6 +84,8 @@ export default function UploadsPage() {
       setLastDiagnostics(result.diagnostics || null);
       setLastError(result.error || null);
       setLastSummary({ rowsImported: result.rowsImported, duplicates: result.duplicates });
+      setLastUploadId(result.uploadId || null);
+      setIsPreviewConfirmed(false);
       
       if (result.rowsImported > 0) {
         toast({
@@ -100,6 +105,7 @@ export default function UploadsPage() {
       setLastDiagnostics(error?.details?.diagnostics || null);
       setLastError(error?.details?.error || { message: error.message, code: "UNKNOWN" });
       setLastSummary(null);
+      setLastUploadId(error?.details?.uploadId || null);
       toast({
         title: "Erro na importação",
         description: error.message || "Falha ao processar o arquivo",
@@ -134,6 +140,7 @@ export default function UploadsPage() {
     try {
       setIsPreviewing(true);
       setPreviewError(null);
+      setIsPreviewConfirmed(false);
       const { content, encoding, buffer } = await readCsvWithEncoding(file);
       setPreviewEncoding(encoding);
       const fileBase64 = readFileBase64(buffer);
@@ -166,9 +173,11 @@ export default function UploadsPage() {
     setSelectedFile(file);
     setPreviewData(null);
     setPreviewError(null);
+    setIsPreviewConfirmed(false);
     setLastDiagnostics(null);
     setLastError(null);
     setLastSummary(null);
+    setLastUploadId(null);
     void handlePreview(file);
   };
 
@@ -182,6 +191,14 @@ export default function UploadsPage() {
   const handleImport = () => {
     if (!selectedFile) {
       toast({ title: "Selecione um arquivo primeiro", variant: "destructive" });
+      return;
+    }
+    if (!previewData?.success) {
+      toast({ title: "Faça a pré-visualização antes de importar", variant: "destructive" });
+      return;
+    }
+    if (!isPreviewConfirmed) {
+      toast({ title: "Confirme a pré-visualização antes de importar", variant: "destructive" });
       return;
     }
     uploadMutation.mutate({ file: selectedFile, importDate });
@@ -355,7 +372,11 @@ export default function UploadsPage() {
                       {isPreviewing ? <Loader2 className="h-4 w-4 animate-spin" /> : <AlertCircle className="h-4 w-4" />}
                       Pré-visualizar
                     </Button>
-                    <Button onClick={handleImport} disabled={uploadMutation.isPending} className="gap-2">
+                    <Button
+                      onClick={handleImport}
+                      disabled={uploadMutation.isPending || !previewData?.success || !isPreviewConfirmed}
+                      className="gap-2"
+                    >
                       {uploadMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                       Importar
                     </Button>
@@ -398,6 +419,16 @@ export default function UploadsPage() {
                       </p>
                     </div>
                   ) : null}
+                  {previewData.meta?.warnings?.length ? (
+                    <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
+                      <p className="font-semibold">Avisos encontrados</p>
+                      <ul className="mt-1 space-y-1">
+                        {previewData.meta.warnings.map((warning: string, index: number) => (
+                          <li key={`${warning}-${index}`}>• {warning}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
 
                   <div className="overflow-x-auto rounded-lg border">
                     <table className="min-w-full text-xs">
@@ -432,6 +463,57 @@ export default function UploadsPage() {
                   <p className="text-xs text-muted-foreground">
                     A pré-visualização mostra exatamente o que será importado. Ajuste a data de importação se necessário.
                   </p>
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Checkbox
+                      checked={isPreviewConfirmed}
+                      onCheckedChange={(checked) => setIsPreviewConfirmed(Boolean(checked))}
+                    />
+                    Confirmo que revisei a pré-visualização e desejo importar.
+                  </label>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {(previewError || lastError || lastSummary || lastDiagnostics) && (
+          <Card className="bg-white border border-gray-200 shadow-sm">
+            <CardContent className="p-5 space-y-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-semibold">Status da importação</p>
+                  <p className="text-xs text-muted-foreground">
+                    {lastUploadId ? `Upload ID: ${lastUploadId}` : "Sem upload recente"}
+                  </p>
+                </div>
+                {previewError || lastError ? (
+                  <Badge variant="destructive">Erro</Badge>
+                ) : lastSummary ? (
+                  <Badge className="bg-emerald-100 text-emerald-700">Sucesso</Badge>
+                ) : (
+                  <Badge className="bg-amber-100 text-amber-700">Em revisão</Badge>
+                )}
+              </div>
+
+              {previewError && (
+                <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
+                  <p className="font-semibold">Pré-visualização falhou</p>
+                  <p>{previewError}</p>
+                </div>
+              )}
+
+              {lastSummary && !lastError && (
+                <div className="rounded-md border border-emerald-100 bg-emerald-50 p-3 text-xs text-emerald-700">
+                  <p className="font-semibold">Resumo da importação</p>
+                  <p>Inseridas: {lastSummary.rowsImported}</p>
+                  <p>Duplicadas: {lastSummary.duplicates}</p>
+                </div>
+              )}
+
+              {lastError && (
+                <div className="rounded-md border border-red-100 bg-red-50 p-3 text-xs text-red-700">
+                  <p className="font-semibold">{lastError.message || "Falha ao importar"}</p>
+                  {lastError.hint && <p>{lastError.hint}</p>}
                 </div>
               )}
             </CardContent>

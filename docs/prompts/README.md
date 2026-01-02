@@ -1,7 +1,7 @@
 # Prompt Library
 
 Available prompts:
-- `docs/prompts/UX_UI_MASTER_PLAN_PROMPT.md` — Regenerate the UX/UI master plan and related prompt files.
+- `docs/prompts/UX_UI_MASTER_PLAN_PROMPT.md` — Regenerate the UX/UI master plan, including repo audit, screen contracts, and roadmap.
 
 How to use:
 1. Open Codex CLI in the RitualFin repo.
