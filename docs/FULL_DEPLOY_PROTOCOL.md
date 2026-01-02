@@ -16,7 +16,7 @@
 - Render service is connected to GitHub main and auto-deploy is enabled.
 - Vercel project is connected to GitHub main (fallback: Vercel CLI).
 - Required environment variables are configured:
-  - Render: `DATABASE_URL`, `NODE_ENV=production`, `SESSION_SECRET`, `CORS_ORIGIN`
+  - Render: `DATABASE_URL`, `NODE_ENV=production`, `SESSION_SECRET`, `CORS_ORIGIN`, `ALLOW_DEMO_AUTH_IN_PROD` (demo-only bypass)
   - Vercel: `VITE_API_URL` is the full Render base URL, no trailing slash, no `/api`
 - Version reporting is enabled:
   - Backend: `GET /api/version` returns `{ gitSha, buildTime, env }`

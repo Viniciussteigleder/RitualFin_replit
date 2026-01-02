@@ -20,3 +20,4 @@
 - Updated QA fix plan baseline to current main SHA: `docs/QA/FULL_APP_FIX_PLAN.md`.
 - Recorded input validation checks in security audit/baseline: `docs/SECURITY/SECURITY_AUDIT_REPORT.md`, `docs/SECURITY/SECURITY_BASELINE.md`.
 - Updated security status in QA matrix based on completed checks: `docs/QA/FULL_APP_QA_MATRIX.md`.
+- Documented demo-auth production guardrail and new env var across security/QA/deployment docs: `SECURITY.md`, `docs/SECURITY/SECURITY_AUDIT_REPORT.md`, `docs/SECURITY/SECURITY_BASELINE.md`, `docs/FULL_DEPLOY_PROTOCOL.md`, `docs/DEPLOYMENT_INSTRUCTIONS.md`, `docs/DEPLOYMENT_CONNECTIVITY_FIX.md`, `docs/QA/FULL_APP_QA_REPORT.md`.

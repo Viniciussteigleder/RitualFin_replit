@@ -7,7 +7,7 @@
 
 ## Environment
 - Branch: main
-- Git SHA: 7a11d5cc60a4bfcc3e1089a6e32f5f4f7c7cfdf3
+- Git SHA: ed7df00d2427315469171df888f1cdf9cea4b273
 - Node: v24.4.0
 - npm: 11.4.2
 
@@ -15,7 +15,7 @@
 | Severity | ID | Area | Description | Evidence | Remediation | Status |
 | --- | --- | --- | --- | --- | --- | --- |
 | High | SEC-LOCAL-001 | Secrets hygiene | Local `.env.local` contains multiple secrets/tokens; must remain uncommitted and credentials rotated if ever shared. | Local file inspection | Ensure `.env.local` remains in `.gitignore`; rotate any exposed credentials. | Open |
-| High | SEC-PROD-001 | Auth posture | Demo-only auth, no multi-user isolation or RLS; production blocker until Phase D. | SECURITY.md | Keep explicit warnings, add gating for production builds. | Open |
+| High | SEC-PROD-001 | Auth posture | Demo-only auth, no multi-user isolation or RLS; production blocker until Phase D. | SECURITY.md | Guardrail added: production API blocked unless `ALLOW_DEMO_AUTH_IN_PROD=true`. | Mitigated (Guardrail) |
 | High | SEC-DEP-002 | Dependencies | `xlsx` prototype pollution + ReDoS; no fix available in current version. | `npm audit` 2026-01-02 | Evaluate alternative library or isolate usage; document risk. | Open |
 | Moderate | SEC-DEP-004 | Dependencies | `esbuild` dev-server request exposure via `drizzle-kit` chain. | `npm audit` 2026-01-02 | Update `drizzle-kit` if compatible or accept dev-only risk. | Open |
 

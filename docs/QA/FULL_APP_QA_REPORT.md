@@ -27,6 +27,7 @@
 - `RENDER_API_KEY`
 - `RENDER_DEPLOY_HOOK`
 - `RENDER_SERVICE_ID`
+- `ALLOW_DEMO_AUTH_IN_PROD`
 
 ## Test execution log
 - `npm run check`: Pass (tsc)

@@ -303,6 +303,25 @@ export async function registerRoutes(
     });
   });
 
+  const demoAuthBlocked =
+    process.env.NODE_ENV === "production" &&
+    process.env.ALLOW_DEMO_AUTH_IN_PROD !== "true";
+
+  app.use("/api", (req: Request, res: Response, next) => {
+    if (!demoAuthBlocked) {
+      return next();
+    }
+
+    const allowedPaths = new Set(["/health", "/version"]);
+    if (allowedPaths.has(req.path)) {
+      return next();
+    }
+
+    return res.status(403).json({
+      error: "Demo auth is disabled in production. Set ALLOW_DEMO_AUTH_IN_PROD=true to bypass for demo-only use.",
+    });
+  });
+
   // ===== AUTH / USER =====
   app.post("/api/auth/login", async (req: Request, res: Response) => {
     try {
