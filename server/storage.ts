@@ -1,5 +1,5 @@
 import {
-  users, accounts, uploads, uploadErrors, uploadDiagnostics, merchantMetadata, transactions, rules, budgets, calendarEvents, eventOccurrences, goals, categoryGoals, rituals, settings,
+  users, accounts, uploads, uploadErrors, uploadDiagnostics, importRuns, merchantMetadata, transactions, rules, budgets, calendarEvents, eventOccurrences, goals, categoryGoals, rituals, settings,
   aiUsageLogs, notifications, merchantDescriptions, merchantIcons,
   taxonomyLevel1, taxonomyLevel2, taxonomyLeaf, appCategory, appCategoryLeaf, keyDescMap, aliasAssets,
   type User, type InsertUser,
@@ -7,6 +7,7 @@ import {
   type Upload, type InsertUpload,
   type UploadError, type InsertUploadError,
   type UploadDiagnostics, type InsertUploadDiagnostics,
+  type ImportRun, type InsertImportRun,
   type MerchantMetadata, type InsertMerchantMetadata,
   type Transaction, type InsertTransaction,
   type Rule, type InsertRule,
@@ -73,6 +74,12 @@ export interface IStorage {
 
   // Upload Diagnostics
   createUploadDiagnostics(row: InsertUploadDiagnostics): Promise<UploadDiagnostics>;
+
+  // Import Runs
+  createImportRun(row: InsertImportRun): Promise<ImportRun>;
+  updateImportRun(id: string, data: Partial<ImportRun>): Promise<ImportRun | undefined>;
+  getImportRun(id: string): Promise<ImportRun | undefined>;
+  getLastImportRunByDataset(userId: string, datasetName: string): Promise<ImportRun | undefined>;
 
   // Merchant Metadata
   getMerchantMetadata(userId: string): Promise<MerchantMetadata[]>;
@@ -403,6 +410,35 @@ export class DatabaseStorage implements IStorage {
   async createUploadDiagnostics(row: InsertUploadDiagnostics): Promise<UploadDiagnostics> {
     const [created] = await db.insert(uploadDiagnostics).values(row).returning();
     return created;
+  }
+
+  async createImportRun(row: InsertImportRun): Promise<ImportRun> {
+    const [created] = await db.insert(importRuns).values(row).returning();
+    return created;
+  }
+
+  async updateImportRun(id: string, data: Partial<ImportRun>): Promise<ImportRun | undefined> {
+    const [updated] = await db
+      .update(importRuns)
+      .set(data)
+      .where(eq(importRuns.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getImportRun(id: string): Promise<ImportRun | undefined> {
+    const [run] = await db.select().from(importRuns).where(eq(importRuns.id, id));
+    return run;
+  }
+
+  async getLastImportRunByDataset(userId: string, datasetName: string): Promise<ImportRun | undefined> {
+    const [run] = await db
+      .select()
+      .from(importRuns)
+      .where(and(eq(importRuns.userId, userId), eq(importRuns.datasetName, datasetName)))
+      .orderBy(desc(importRuns.createdAt))
+      .limit(1);
+    return run;
   }
 
   // Merchant Metadata

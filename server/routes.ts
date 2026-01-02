@@ -31,6 +31,9 @@ import {
 import { z } from "zod";
 import * as XLSX from "xlsx";
 import { parseCSV, previewCSV } from "./csv-parser";
+import { csvContracts, type CsvDataset } from "./csv-contracts";
+import { buildCsvFromRows } from "./csv-export";
+import { parseCanonicalCsv, previewCsvImport } from "./csv-imports";
 import { categorizeTransaction, suggestKeyword, AI_SEED_RULES, classifyByKeyDesc } from "./rules-engine";
 import { evaluateAliasMatch, normalizeForMatch } from "./classification-utils";
 import { downloadLogoForAlias } from "./logo-downloader";
@@ -78,23 +81,6 @@ function readWorkbookFromBase64(base64: string) {
 function sheetToRows(sheet?: XLSX.Sheet) {
   if (!sheet) return [];
   return XLSX.utils.sheet_to_json<Record<string, string>>(sheet, { defval: "" });
-}
-
-function buildCsv(headers: string[], rows: Record<string, string>[]) {
-  const escapeValue = (value: string) => {
-    const stringValue = String(value ?? "");
-    if (/[",\n]/.test(stringValue)) {
-      return `"${stringValue.replace(/"/g, "\"\"")}"`;
-    }
-    return stringValue;
-  };
-
-  const lines = [
-    headers.map(escapeValue).join(","),
-    ...rows.map((row) => headers.map((header) => escapeValue(row[header] || "")).join(","))
-  ];
-
-  return `\uFEFF${lines.join("\n")}`;
 }
 
 const CLASSIFICATION_COLUMN_ALIASES = {
@@ -1057,6 +1043,342 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/data-imports/preview", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const { dataset, filename, fileBase64, confirmRemap } = req.body as {
+        dataset: CsvDataset;
+        filename?: string;
+        fileBase64?: string;
+        confirmRemap?: boolean;
+      };
+
+      if (!dataset || !csvContracts[dataset]) {
+        return res.status(400).json({ error: "Dataset inválido" });
+      }
+      if (!fileBase64) {
+        return res.status(400).json({ error: "Arquivo CSV obrigatório" });
+      }
+
+      const buffer = Buffer.from(fileBase64, "base64");
+      const preview = previewCsvImport(dataset, buffer, filename || `${dataset}.csv`);
+
+      const importRun = await storage.createImportRun({
+        userId: user.id,
+        datasetName: dataset,
+        filename: filename || `${dataset}.csv`,
+        status: preview.success ? "previewed" : "failed",
+        reasonCodes: preview.reasonCodes,
+        errorMessage: preview.message || null,
+        detectedEncoding: preview.detectedEncoding || null,
+        detectedDelimiter: preview.detectedDelimiter || null,
+        headerFound: preview.headerFound,
+        headerDiff: preview.headerDiff ?? null,
+        rowErrorSamples: preview.rowErrorSamples,
+        rowsTotal: preview.rowsTotal,
+        rowsValid: preview.rowsValid,
+        canonicalCsv: preview.canonicalCsv || null
+      });
+
+      if (!preview.success) {
+        return res.status(400).json({
+          success: false,
+          importId: importRun.id,
+          dataset,
+          detectedEncoding: preview.detectedEncoding,
+          detectedDelimiter: preview.detectedDelimiter,
+          headerFound: preview.headerFound,
+          headerDiff: preview.headerDiff,
+          rowsTotal: preview.rowsTotal,
+          rowsValid: preview.rowsValid,
+          previewRows: preview.previewRows,
+          rowErrorSamples: preview.rowErrorSamples,
+          reasonCodes: preview.reasonCodes,
+          message: preview.message,
+          fixes: preview.fixes
+        });
+      }
+
+      let extra: Record<string, unknown> = {};
+      if (dataset === "classification") {
+        const rows = parseCanonicalCsv(preview.contract, preview.canonicalCsv || "");
+        const diff = await buildClassificationDiff(user.id, rows);
+        const incomingAppCats = Array.from(
+          new Set(rows.map((row) => String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.appClass) || "").trim()).filter(Boolean))
+        );
+        const existingAppCats = (await storage.getAppCategories(user.id)).map((c) => c.name);
+        const requiresRemap = incomingAppCats.sort().join("|") !== existingAppCats.sort().join("|");
+        extra = {
+          diff: {
+            newLeavesCount: diff.newLeaves.length,
+            removedLeavesCount: diff.removedLeaves.length,
+            updatedRulesCount: diff.updatedRules.length,
+            newLeavesSample: diff.newLeaves.slice(0, 5),
+            removedLeavesSample: diff.removedLeaves.slice(0, 5),
+            updatedRulesSample: diff.updatedRules.slice(0, 5)
+          },
+          requiresRemap,
+          confirmRemap: Boolean(confirmRemap)
+        };
+      }
+
+      res.json({
+        success: true,
+        importId: importRun.id,
+        dataset,
+        detectedEncoding: preview.detectedEncoding,
+        detectedDelimiter: preview.detectedDelimiter,
+        headerFound: preview.headerFound,
+        headerDiff: preview.headerDiff,
+        rowsTotal: preview.rowsTotal,
+        rowsValid: preview.rowsValid,
+        previewRows: preview.previewRows,
+        reasonCodes: preview.reasonCodes,
+        ...extra
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/data-imports/confirm", async (req: Request, res: Response) => {
+    let importRun;
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const { importId, confirmRemap } = req.body as { importId?: string; confirmRemap?: boolean };
+      if (!importId) return res.status(400).json({ error: "importId obrigatório" });
+
+      importRun = await storage.getImportRun(importId);
+      if (!importRun || importRun.userId !== user.id) {
+        return res.status(404).json({ error: "Importação não encontrada" });
+      }
+
+      const dataset = importRun.datasetName as CsvDataset;
+      const contract = csvContracts[dataset];
+      if (!contract || !importRun.canonicalCsv) {
+        return res.status(400).json({ error: "Importação inválida para confirmação" });
+      }
+
+      const rows = parseCanonicalCsv(contract, importRun.canonicalCsv);
+
+      if (dataset === "classification") {
+        const incomingAppCats = Array.from(
+          new Set(rows.map((row) => String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.appClass) || "").trim()).filter(Boolean))
+        );
+        const existingAppCats = (await storage.getAppCategories(user.id)).map((c) => c.name);
+        const requiresRemap = incomingAppCats.sort().join("|") !== existingAppCats.sort().join("|");
+        if (requiresRemap && !confirmRemap) {
+          return res.status(400).json({ error: "Mudança de categorias requer confirmação", requiresRemap: true });
+        }
+
+        const diff = await buildClassificationDiff(user.id, rows);
+        await storage.deleteTaxonomyForUser(user.id);
+
+        const appCatMap = new Map<string, string>();
+        let orderIndex = 0;
+        for (const name of incomingAppCats) {
+          const created = await storage.createAppCategory({
+            userId: user.id,
+            name,
+            active: true,
+            orderIndex: orderIndex++
+          });
+          appCatMap.set(name, created.appCatId);
+        }
+
+        const level1Map = new Map<string, string>();
+        const level2Map = new Map<string, string>();
+        const leafMap = new Map<string, string>();
+
+        for (const row of rows) {
+          const nivel1 = String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.level1) || "").trim();
+          const nivel2 = String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.level2) || "").trim();
+          const nivel3 = String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.level3) || "").trim();
+          const appCat = String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.appClass) || "").trim();
+          if (!nivel1 || !nivel2 || !nivel3) continue;
+
+          if (!level1Map.has(nivel1)) {
+            const created = await storage.createTaxonomyLevel1({
+              userId: user.id,
+              nivel1Pt: nivel1
+            });
+            level1Map.set(nivel1, created.level1Id);
+          }
+
+          const level1Id = level1Map.get(nivel1)!;
+          const level2Key = `${nivel1}__${nivel2}`;
+          if (!level2Map.has(level2Key)) {
+            const created = await storage.createTaxonomyLevel2({
+              userId: user.id,
+              level1Id,
+              nivel2Pt: nivel2,
+              recorrenteDefault: String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.recorrente) || "").trim() || null,
+              fixoVariavelDefault: String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.fixoVariavel) || "").trim() || null,
+              receitaDespesaDefault: String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.receitaDespesa) || "").trim() || null
+            });
+            level2Map.set(level2Key, created.level2Id);
+          }
+
+          const level2Id = level2Map.get(level2Key)!;
+          const leafKey = `${level2Key}__${nivel3}`;
+          if (!leafMap.has(leafKey)) {
+            const created = await storage.createTaxonomyLeaf({
+              userId: user.id,
+              level2Id,
+              nivel3Pt: nivel3,
+              recorrenteDefault: String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.recorrente) || "").trim() || null,
+              fixoVariavelDefault: String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.fixoVariavel) || "").trim() || null,
+              receitaDespesaDefault: String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.receitaDespesa) || "").trim() || null
+            });
+            leafMap.set(leafKey, created.leafId);
+          }
+
+          const leafId = leafMap.get(leafKey)!;
+          const appCatId = appCatMap.get(appCat);
+          if (appCatId) {
+            await storage.createAppCategoryLeaf({
+              userId: user.id,
+              appCatId,
+              leafId
+            });
+          }
+
+          const keyWords = String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.keyWords) || "").trim();
+          const keyWordsNegative = String(getRowValue(row, CLASSIFICATION_COLUMN_ALIASES.keyWordsNegative) || "").trim();
+          if (keyWords || keyWordsNegative) {
+            await storage.createRule({
+              userId: user.id,
+              leafId,
+              keyWords,
+              keyWordsNegative,
+              active: true
+            });
+          }
+        }
+
+        await storage.updateImportRun(importRun.id, {
+          status: "confirmed",
+          confirmedAt: new Date()
+        });
+
+        return res.json({
+          success: true,
+          dataset,
+          rows: rows.length,
+          diff: {
+            newLeavesCount: diff.newLeaves.length,
+            removedLeavesCount: diff.removedLeaves.length,
+            updatedRulesCount: diff.updatedRules.length
+          }
+        });
+      }
+
+      if (dataset === "aliases_key_desc") {
+        for (const row of rows) {
+          const keyDesc = String(row["key_desc"] || "").trim();
+          const simpleDesc = String(row["simple_desc"] || "").trim();
+          const aliasDesc = String(row["alias_desc"] || "").trim();
+          if (!keyDesc) continue;
+
+          await storage.upsertKeyDescMapping({
+            userId: user.id,
+            keyDesc,
+            simpleDesc: simpleDesc || keyDesc,
+            aliasDesc: aliasDesc || null
+          });
+          if (aliasDesc) {
+            await storage.updateTransactionsAliasByKeyDesc(user.id, keyDesc, aliasDesc);
+          }
+        }
+
+        await storage.updateImportRun(importRun.id, {
+          status: "confirmed",
+          confirmedAt: new Date()
+        });
+
+        return res.json({ success: true, dataset, rows: rows.length });
+      }
+
+      if (dataset === "aliases_assets") {
+        const results: Array<{ aliasDesc: string; status: string; logoLocalPath?: string; error?: string }> = [];
+        for (const row of rows) {
+          const aliasDesc = String(row["Alias_Desc"] || "").trim();
+          const keyWordsAlias = String(row["Key_words_alias"] || "").trim();
+          const urlLogoInternet = String(row["URL_icon_internet"] || "").trim();
+          if (!aliasDesc) continue;
+
+          await storage.upsertAliasAsset({
+            userId: user.id,
+            aliasDesc,
+            keyWordsAlias: keyWordsAlias || "",
+            urlLogoInternet: urlLogoInternet || null
+          });
+
+          if (!urlLogoInternet) {
+            results.push({ aliasDesc, status: "error", error: "URL_icon_internet vazio" });
+            continue;
+          }
+
+          try {
+            const stored = await downloadLogoForAlias({
+              userId: user.id,
+              aliasDesc,
+              url: urlLogoInternet
+            });
+
+            await storage.updateAliasAsset(user.id, aliasDesc, {
+              logoLocalPath: stored.logoLocalPath,
+              logoMimeType: stored.logoMimeType,
+              logoUpdatedAt: new Date()
+            });
+
+            results.push({ aliasDesc, status: "ok", logoLocalPath: stored.logoLocalPath });
+          } catch (err: any) {
+            results.push({ aliasDesc, status: "error", error: err.message });
+          }
+        }
+
+        await storage.updateImportRun(importRun.id, {
+          status: "confirmed",
+          confirmedAt: new Date()
+        });
+
+        return res.json({ success: true, dataset, processed: results.length, results });
+      }
+
+      return res.status(400).json({ error: "Dataset não suportado" });
+    } catch (error: any) {
+      if (importRun) {
+        await storage.updateImportRun(importRun.id, {
+          status: "failed",
+          errorMessage: error.message
+        });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/data-imports/last", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const dataset = String(req.query.dataset || "");
+      if (!dataset || !csvContracts[dataset as CsvDataset]) {
+        return res.status(400).json({ error: "Dataset inválido" });
+      }
+
+      const last = await storage.getLastImportRunByDataset(user.id, dataset);
+      res.json(last || null);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Get errors for a specific upload
   app.get("/api/uploads/:id/errors", async (req: Request, res: Response) => {
     try {
@@ -1171,21 +1493,21 @@ export async function registerRoutes(
         };
       });
 
-      const headers = [
-        "App classificação",
-        "Nível_1_PT",
-        "Nível_2_PT",
-        "Nível_3_PT",
-        "Key_words",
-        "Key_words_negative",
-        "Receita/Despesa",
-        "Fixo/Variável",
-        "Recorrente"
-      ];
-      const csvContent = buildCsv(headers, rows);
+      const csvContent = buildCsvFromRows(csvContracts.classification, rows);
 
       res.setHeader("Content-Type", "text/csv; charset=utf-8");
       res.setHeader("Content-Disposition", "attachment; filename=\"categorias.csv\"");
+      res.send(csvContent);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/classification/template-csv", async (_req: Request, res: Response) => {
+    try {
+      const csvContent = buildCsvFromRows(csvContracts.classification, []);
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", "attachment; filename=\"categorias_template.csv\"");
       res.send(csvContent);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -1558,6 +1880,71 @@ export async function registerRoutes(
       res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
       res.setHeader("Content-Disposition", "attachment; filename=ritualfin_aliases.xlsx");
       res.send(buffer);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/aliases/key-desc/export-csv", async (_req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const keyDescRows = await storage.getKeyDescMap(user.id);
+      const rows = keyDescRows.map((row) => ({
+        key_desc: row.keyDesc,
+        simple_desc: row.simpleDesc,
+        alias_desc: row.aliasDesc || ""
+      }));
+
+      const csvContent = buildCsvFromRows(csvContracts.aliases_key_desc, rows);
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", "attachment; filename=\"ritualfin_aliases_key_desc.csv\"");
+      res.send(csvContent);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/aliases/key-desc/template-csv", async (_req: Request, res: Response) => {
+    try {
+      const csvContent = buildCsvFromRows(csvContracts.aliases_key_desc, []);
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", "attachment; filename=\"ritualfin_aliases_key_desc_template.csv\"");
+      res.send(csvContent);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/aliases/assets/export-csv", async (_req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const aliasRows = await storage.getAliasAssets(user.id);
+      const rows = aliasRows.map((row) => ({
+        Alias_Desc: row.aliasDesc,
+        Key_words_alias: row.keyWordsAlias,
+        URL_icon_internet: row.urlLogoInternet || "",
+        Logo_local_path: row.logoLocalPath || ""
+      }));
+
+      const csvContent = buildCsvFromRows(csvContracts.aliases_assets, rows);
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", "attachment; filename=\"ritualfin_aliases_assets.csv\"");
+      res.send(csvContent);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/aliases/assets/template-csv", async (_req: Request, res: Response) => {
+    try {
+      const csvContent = buildCsvFromRows(csvContracts.aliases_assets, []);
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", "attachment; filename=\"ritualfin_aliases_assets_template.csv\"");
+      res.send(csvContent);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

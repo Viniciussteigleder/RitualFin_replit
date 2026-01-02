@@ -192,6 +192,35 @@ export const insertUploadDiagnosticsSchema = createInsertSchema(uploadDiagnostic
 export type InsertUploadDiagnostics = z.infer<typeof insertUploadDiagnosticsSchema>;
 export type UploadDiagnostics = typeof uploadDiagnostics.$inferSelect;
 
+// Import runs (CSV contract imports)
+export const importRuns = pgTable("import_runs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  datasetName: text("dataset_name").notNull(),
+  filename: text("filename").notNull(),
+  status: text("status").notNull().default("previewed"),
+  reasonCodes: jsonb("reason_codes").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  errorMessage: text("error_message"),
+  detectedEncoding: text("detected_encoding"),
+  detectedDelimiter: text("detected_delimiter"),
+  headerFound: jsonb("header_found").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  headerDiff: jsonb("header_diff"),
+  rowErrorSamples: jsonb("row_error_samples").$type<Record<string, unknown>[]>().notNull().default(sql`'[]'::jsonb`),
+  rowsTotal: integer("rows_total").notNull().default(0),
+  rowsValid: integer("rows_valid").notNull().default(0),
+  canonicalCsv: text("canonical_csv"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  confirmedAt: timestamp("confirmed_at")
+});
+
+export const importRunsRelations = relations(importRuns, ({ one }) => ({
+  user: one(users, { fields: [importRuns.userId], references: [users.id] })
+}));
+
+export const insertImportRunSchema = createInsertSchema(importRuns).omit({ createdAt: true });
+export type InsertImportRun = z.infer<typeof insertImportRunSchema>;
+export type ImportRun = typeof importRuns.$inferSelect;
+
 // Merchant Metadata table (icon/color/name for merchants)
 export const merchantMetadata = pgTable("merchant_metadata", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
