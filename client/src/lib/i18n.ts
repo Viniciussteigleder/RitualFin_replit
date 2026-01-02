@@ -676,6 +676,304 @@ export const dashboardCopy = {
   }
 };
 
+export const transactionsCopy = {
+  title: {
+    "pt-BR": "Transações",
+    "de-DE": "Transaktionen",
+    "en-US": "Transactions"
+  },
+  subtitle: {
+    "pt-BR": "Visualize e edite todas as suas transações",
+    "de-DE": "Alle Transaktionen anzeigen und bearbeiten",
+    "en-US": "View and edit all your transactions"
+  },
+  exportCsv: {
+    "pt-BR": "Exportar CSV",
+    "de-DE": "CSV exportieren",
+    "en-US": "Export CSV"
+  },
+  toastUpdated: {
+    "pt-BR": "Transação atualizada",
+    "de-DE": "Transaktion aktualisiert",
+    "en-US": "Transaction updated"
+  },
+  toastUpdateError: {
+    "pt-BR": "Erro ao atualizar transação",
+    "de-DE": "Fehler beim Aktualisieren der Transaktion",
+    "en-US": "Failed to update transaction"
+  },
+  exportSuccess: {
+    "pt-BR": "CSV exportado com sucesso",
+    "de-DE": "CSV erfolgreich exportiert",
+    "en-US": "CSV exported successfully"
+  },
+  statsTotal: {
+    "pt-BR": "Total de Transações",
+    "de-DE": "Transaktionen gesamt",
+    "en-US": "Total transactions"
+  },
+  statsIncome: {
+    "pt-BR": "Receitas",
+    "de-DE": "Einnahmen",
+    "en-US": "Income"
+  },
+  statsExpense: {
+    "pt-BR": "Despesas",
+    "de-DE": "Ausgaben",
+    "en-US": "Expenses"
+  },
+  statsBalance: {
+    "pt-BR": "Saldo",
+    "de-DE": "Saldo",
+    "en-US": "Balance"
+  },
+  searchPlaceholder: {
+    "pt-BR": "Buscar por descrição...",
+    "de-DE": "Nach Beschreibung suchen...",
+    "en-US": "Search by description..."
+  },
+  filters: {
+    "pt-BR": "Filtros",
+    "de-DE": "Filter",
+    "en-US": "Filters"
+  },
+  clearFilters: {
+    "pt-BR": "Limpar",
+    "de-DE": "Zurücksetzen",
+    "en-US": "Clear"
+  },
+  filterAccountLabel: {
+    "pt-BR": "Conta",
+    "de-DE": "Konto",
+    "en-US": "Account"
+  },
+  filterAccountAll: {
+    "pt-BR": "Todas as contas",
+    "de-DE": "Alle Konten",
+    "en-US": "All accounts"
+  },
+  filterCategoryLabel: {
+    "pt-BR": "Categoria",
+    "de-DE": "Kategorie",
+    "en-US": "Category"
+  },
+  filterCategoryAll: {
+    "pt-BR": "Todas as categorias",
+    "de-DE": "Alle Kategorien",
+    "en-US": "All categories"
+  },
+  filterTypeLabel: {
+    "pt-BR": "Tipo",
+    "de-DE": "Typ",
+    "en-US": "Type"
+  },
+  filterTypeAll: {
+    "pt-BR": "Todos os tipos",
+    "de-DE": "Alle Typen",
+    "en-US": "All types"
+  },
+  typeExpense: {
+    "pt-BR": "Despesa",
+    "de-DE": "Ausgabe",
+    "en-US": "Expense"
+  },
+  typeExpensePlural: {
+    "pt-BR": "Despesas",
+    "de-DE": "Ausgaben",
+    "en-US": "Expenses"
+  },
+  typeIncome: {
+    "pt-BR": "Receita",
+    "de-DE": "Einnahme",
+    "en-US": "Income"
+  },
+  typeIncomePlural: {
+    "pt-BR": "Receitas",
+    "de-DE": "Einnahmen",
+    "en-US": "Income"
+  },
+  emptyWithFilters: {
+    "pt-BR": "Nenhuma transação encontrada com os filtros aplicados",
+    "de-DE": "Keine Transaktionen mit diesen Filtern gefunden",
+    "en-US": "No transactions found with current filters"
+  },
+  emptyPeriod: {
+    "pt-BR": "Nenhuma transação neste período",
+    "de-DE": "Keine Transaktionen in diesem Zeitraum",
+    "en-US": "No transactions in this period"
+  },
+  tableDate: {
+    "pt-BR": "Data",
+    "de-DE": "Datum",
+    "en-US": "Date"
+  },
+  tableAccount: {
+    "pt-BR": "Conta",
+    "de-DE": "Konto",
+    "en-US": "Account"
+  },
+  tableDescription: {
+    "pt-BR": "Descrição",
+    "de-DE": "Beschreibung",
+    "en-US": "Description"
+  },
+  tableSignals: {
+    "pt-BR": "Sinais",
+    "de-DE": "Signale",
+    "en-US": "Signals"
+  },
+  tableAmount: {
+    "pt-BR": "Valor",
+    "de-DE": "Betrag",
+    "en-US": "Amount"
+  },
+  tableCategory: {
+    "pt-BR": "Categoria",
+    "de-DE": "Kategorie",
+    "en-US": "Category"
+  },
+  tableStatus: {
+    "pt-BR": "Status",
+    "de-DE": "Status",
+    "en-US": "Status"
+  },
+  tableActions: {
+    "pt-BR": "Ações",
+    "de-DE": "Aktionen",
+    "en-US": "Actions"
+  },
+  viewDetails: {
+    "pt-BR": "Ver detalhes",
+    "de-DE": "Details ansehen",
+    "en-US": "View details"
+  },
+  editAction: {
+    "pt-BR": "Editar",
+    "de-DE": "Bearbeiten",
+    "en-US": "Edit"
+  },
+  editTitle: {
+    "pt-BR": "Editar Transação",
+    "de-DE": "Transaktion bearbeiten",
+    "en-US": "Edit transaction"
+  },
+  typeLabel: {
+    "pt-BR": "Tipo",
+    "de-DE": "Typ",
+    "en-US": "Type"
+  },
+  fixVarLabel: {
+    "pt-BR": "Fixo/Variável",
+    "de-DE": "Fix/Variabel",
+    "en-US": "Fixed/Variable"
+  },
+  fixedOption: {
+    "pt-BR": "Fixo",
+    "de-DE": "Fix",
+    "en-US": "Fixed"
+  },
+  variableOption: {
+    "pt-BR": "Variável",
+    "de-DE": "Variabel",
+    "en-US": "Variable"
+  },
+  categoryMainLabel: {
+    "pt-BR": "Categoria Principal",
+    "de-DE": "Hauptkategorie",
+    "en-US": "Primary category"
+  },
+  subcategoryLabel: {
+    "pt-BR": "Subcategoria (opcional)",
+    "de-DE": "Unterkategorie (optional)",
+    "en-US": "Subcategory (optional)"
+  },
+  subcategoryPlaceholder: {
+    "pt-BR": "Ex: Supermercado, Gasolina...",
+    "de-DE": "z. B. Supermarkt, Benzin...",
+    "en-US": "e.g., Supermarket, Fuel..."
+  },
+  detailLabel: {
+    "pt-BR": "Detalhamento (opcional)",
+    "de-DE": "Detail (optional)",
+    "en-US": "Detail (optional)"
+  },
+  detailPlaceholder: {
+    "pt-BR": "Ex: Pão de Açúcar, Shell...",
+    "de-DE": "z. B. Shell, Aldi...",
+    "en-US": "e.g., Shell, Aldi..."
+  },
+  excludeBudget: {
+    "pt-BR": "Excluir do orçamento",
+    "de-DE": "Vom Budget ausschließen",
+    "en-US": "Exclude from budget"
+  },
+  internalTransfer: {
+    "pt-BR": "Transferência interna",
+    "de-DE": "Interne Überweisung",
+    "en-US": "Internal transfer"
+  },
+  cancel: {
+    "pt-BR": "Cancelar",
+    "de-DE": "Abbrechen",
+    "en-US": "Cancel"
+  },
+  save: {
+    "pt-BR": "Salvar",
+    "de-DE": "Speichern",
+    "en-US": "Save"
+  },
+  saving: {
+    "pt-BR": "Salvando...",
+    "de-DE": "Speichern...",
+    "en-US": "Saving..."
+  },
+  excludeBadge: {
+    "pt-BR": "Exc",
+    "de-DE": "Exkl.",
+    "en-US": "Excl."
+  },
+  csvHeaderDate: {
+    "pt-BR": "Data",
+    "de-DE": "Datum",
+    "en-US": "Date"
+  },
+  csvHeaderAccount: {
+    "pt-BR": "Conta",
+    "de-DE": "Konto",
+    "en-US": "Account"
+  },
+  csvHeaderDescription: {
+    "pt-BR": "Descrição",
+    "de-DE": "Beschreibung",
+    "en-US": "Description"
+  },
+  csvHeaderAmount: {
+    "pt-BR": "Valor",
+    "de-DE": "Betrag",
+    "en-US": "Amount"
+  },
+  csvHeaderCategory: {
+    "pt-BR": "Categoria",
+    "de-DE": "Kategorie",
+    "en-US": "Category"
+  },
+  csvHeaderType: {
+    "pt-BR": "Tipo",
+    "de-DE": "Typ",
+    "en-US": "Type"
+  },
+  csvHeaderFixVar: {
+    "pt-BR": "Fix/Var",
+    "de-DE": "Fix/Var",
+    "en-US": "Fixed/Var"
+  },
+  csvFilename: {
+    "pt-BR": "transacoes_{month}.csv",
+    "de-DE": "transaktionen_{month}.csv",
+    "en-US": "transactions_{month}.csv"
+  }
+};
+
 export const confirmCopy = {
   title: {
     "pt-BR": "Fila de Confirmação",
