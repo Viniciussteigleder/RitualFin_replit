@@ -6,14 +6,17 @@ import { useLocale } from "@/hooks/use-locale"
 import { paginationCopy, t as translate } from "@/lib/i18n"
 import { ButtonProps, buttonVariants } from "@/components/ui/button"
 
-const Pagination = ({ className, ...props }: React.ComponentProps<"nav">) => (
-  <nav
-    role="navigation"
-    aria-label="pagination"
-    className={cn("mx-auto flex w-full justify-center", className)}
-    {...props}
-  />
-)
+const Pagination = ({ className, ...props }: React.ComponentProps<"nav">) => {
+  const locale = useLocale()
+  return (
+    <nav
+      role="navigation"
+      aria-label={translate(locale, paginationCopy.label)}
+      className={cn("mx-auto flex w-full justify-center", className)}
+      {...props}
+    />
+  )
+}
 Pagination.displayName = "Pagination"
 
 const PaginationContent = React.forwardRef<

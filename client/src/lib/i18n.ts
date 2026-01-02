@@ -68,6 +68,11 @@ export const spinnerCopy = {
 };
 
 export const paginationCopy = {
+  label: {
+    "pt-BR": "Paginação",
+    "de-DE": "Seitennavigation",
+    "en-US": "Pagination"
+  },
   previous: {
     "pt-BR": "Anterior",
     "de-DE": "Zurück",
@@ -87,6 +92,14 @@ export const paginationCopy = {
     "pt-BR": "Ir para a próxima página",
     "de-DE": "Zur nächsten Seite",
     "en-US": "Go to next page"
+  }
+};
+
+export const breadcrumbCopy = {
+  label: {
+    "pt-BR": "Navegação estrutural",
+    "de-DE": "Breadcrumb-Navigation",
+    "en-US": "Breadcrumb navigation"
   }
 };
 
