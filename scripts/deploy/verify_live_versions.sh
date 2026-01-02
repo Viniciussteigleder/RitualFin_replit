@@ -59,16 +59,16 @@ echo "- Supabase project ref: ${supabase_ref:-unknown}"
 
 echo ""
 echo "### Render /api/health"
-echo "```json"
+printf '%s\n' '```json'
 echo "$backend_health_json"
-echo "```"
+printf '%s\n' '```'
 
 echo "### Render /api/version"
-echo "```json"
+printf '%s\n' '```json'
 echo "$backend_version_json"
-echo "```"
+printf '%s\n' '```'
 
 echo "### Vercel /version.json"
-echo "```json"
+printf '%s\n' '```json'
 echo "$frontend_version_json"
-echo "```"
+printf '%s\n' '```'
