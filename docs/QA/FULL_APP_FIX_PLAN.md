@@ -6,8 +6,8 @@ This plan captures discovered issues, root cause, fix approach, and validation. 
 - Status: Pending | In progress | Fixed | Deferred (Shell) | Blocked
 
 ## Baseline
-- Branch: fix/full-app-e2e-qa-security-2026-01-02
-- Baseline git SHA: 576033f4ba5ecb692f35c87c099c8bcd83f7fb30
+- Branch: main
+- Baseline git SHA: 0d895780658090444a1802e5aeedfaa83d510ef7
 
 ## P0 issues (Release blockers)
 | Issue ID | Test ID(s) | Summary | Proof/Evidence | Root cause | Fix approach | Validation | Status |

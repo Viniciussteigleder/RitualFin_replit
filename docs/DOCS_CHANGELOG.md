@@ -17,3 +17,4 @@
 - Updated QA report with latest API smoke and Playwright results: `docs/QA/FULL_APP_QA_REPORT.md`.
 - Added manual P0 UI smoke evidence placeholders and pending markers: `docs/QA/FULL_APP_QA_REPORT.md`, `docs/QA/FULL_APP_QA_MATRIX.md`.
 - Added API contract test runner and updated QA docs with latest contract results: `scripts/qa/run_api_contracts.ts`, `scripts/qa/run_api_contracts.sh`, `docs/QA/FULL_APP_QA_REPORT.md`, `docs/QA/FULL_APP_QA_MATRIX.md`, `docs/QUALITY_ASSURANCE_AND_DEBUG.md`.
+- Updated QA fix plan baseline to current main SHA: `docs/QA/FULL_APP_FIX_PLAN.md`.
