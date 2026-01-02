@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { merchantDictionaryCopy, t as translate } from "@/lib/i18n";
 import { useLocale } from "@/hooks/use-locale";
-import * as XLSX from 'xlsx';
+import { parseCsv, toCsv } from "@/lib/csv";
 
 export default function MerchantDictionaryPage() {
   const queryClient = useQueryClient();
@@ -140,7 +140,7 @@ export default function MerchantDictionaryPage() {
       return;
     }
 
-    const excelData = descriptions.map((d: any) => ({
+    const csvData = descriptions.map((d: any) => ({
       [translate(locale, merchantDictionaryCopy.sourceLabel)]: d.source,
       [translate(locale, merchantDictionaryCopy.keyDescLabel)]: d.keyDesc,
       [translate(locale, merchantDictionaryCopy.aliasLabel)]: d.aliasDesc,
@@ -149,21 +149,17 @@ export default function MerchantDictionaryPage() {
       [translate(locale, merchantDictionaryCopy.updatedAt)]: dateTimeFormatter.format(new Date(d.updatedAt))
     }));
 
-    const ws = XLSX.utils.json_to_sheet(excelData);
-    ws['!cols'] = [
-      { wch: 15 }, // Fonte
-      { wch: 50 }, // Descrição Chave
-      { wch: 30 }, // Alias
-      { wch: 10 }, // Manual
-      { wch: 20 }, // Criado em
-      { wch: 20 }  // Atualizado em
-    ];
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Merchant Aliases');
-
+    const headers = Object.keys(csvData[0] || {});
+    const csvContent = toCsv(csvData, headers);
     const date = new Date().toISOString().split('T')[0];
-    XLSX.writeFile(wb, `ritualfin_merchant_aliases_${date}.xlsx`);
+    const filename = `ritualfin_merchant_aliases_${date}.csv`;
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
 
     toast({ title: formatMessage(translate(locale, merchantDictionaryCopy.exportCount), { count: descriptions.length }) });
   };
@@ -175,11 +171,14 @@ export default function MerchantDictionaryPage() {
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
-        const data = e.target?.result;
-        const workbook = XLSX.read(data, { type: 'binary' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        const data = String(e.target?.result || "");
+        const { headers, rows } = parseCsv(data);
+        const jsonData = rows.map((row) =>
+          headers.reduce<Record<string, string>>((acc, header, index) => {
+            acc[header] = row[index] ?? "";
+            return acc;
+          }, {})
+        );
 
         if (jsonData.length === 0) {
           toast({ title: translate(locale, merchantDictionaryCopy.importEmpty), variant: "destructive" });
@@ -265,7 +264,7 @@ export default function MerchantDictionaryPage() {
       }
     };
 
-    reader.readAsBinaryString(file);
+    reader.readAsText(file);
 
     // Reset input
     if (fileInputRef.current) {
@@ -325,7 +324,7 @@ export default function MerchantDictionaryPage() {
               type="file"
               ref={fileInputRef}
               onChange={handleUploadExcel}
-              accept=".xlsx,.xls"
+              accept=".csv"
               className="hidden"
             />
           </div>

@@ -70,6 +70,9 @@ export default function CategoriesPage() {
       toast({ title: "Categoria criada" });
       closeDialog();
     },
+    onError: (error: any) => {
+      toast({ title: "Categorias indisponíveis", description: error.message, variant: "destructive" });
+    }
   });
 
   const updateMutation = useMutation({
@@ -79,6 +82,9 @@ export default function CategoriesPage() {
       toast({ title: "Categoria atualizada" });
       closeDialog();
     },
+    onError: (error: any) => {
+      toast({ title: "Categorias indisponíveis", description: error.message, variant: "destructive" });
+    }
   });
 
   const deleteMutation = useMutation({
@@ -87,6 +93,9 @@ export default function CategoriesPage() {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
       toast({ title: "Categoria removida" });
     },
+    onError: (error: any) => {
+      toast({ title: "Categorias indisponíveis", description: error.message, variant: "destructive" });
+    }
   });
 
   const grouped = useMemo(() => {

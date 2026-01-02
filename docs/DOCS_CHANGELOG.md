@@ -25,3 +25,4 @@
 - Documented dependency remediation strategy for `xlsx` and `drizzle-kit`: `docs/SECURITY/SECURITY_AUDIT_REPORT.md`.
 - Made API contract tests tolerate empty transactions arrays with warning: `scripts/qa/run_api_contracts.ts`.
 - Updated dependency remediation note to reflect client-side `xlsx` usage: `docs/SECURITY/SECURITY_AUDIT_REPORT.md`, `docs/SECURITY/SECURITY_BASELINE.md`.
+- Removed client-side `xlsx` usage by switching rules and merchant dictionary workflows to CSV: `client/src/lib/csv.ts`, `client/src/pages/rules.tsx`, `client/src/pages/merchant-dictionary.tsx`, `docs/SECURITY/SECURITY_AUDIT_REPORT.md`, `docs/SECURITY/SECURITY_BASELINE.md`.

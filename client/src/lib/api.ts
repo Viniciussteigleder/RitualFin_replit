@@ -224,6 +224,60 @@ export const classificationApi = {
     }),
 };
 
+// AI Keywords
+export type AiKeywordSuggestion = {
+  keyword: string;
+  suggestedCategory: string;
+  suggestedCategory2?: string;
+  suggestedCategory3?: string;
+  suggestedType: "Despesa" | "Receita";
+  suggestedFixVar: "Fixo" | "Variável";
+  confidence: number;
+  reason: string;
+  count?: number;
+  total?: number;
+  samples?: string[];
+  leafId?: string;
+};
+
+export const aiKeywordsApi = {
+  analyze: () =>
+    fetchApi<{ suggestions: AiKeywordSuggestion[]; total?: number; message?: string }>(
+      "/ai/analyze-keywords",
+      { method: "POST", body: JSON.stringify({}) }
+    ),
+  apply: (suggestions: AiKeywordSuggestion[]) =>
+    fetchApi<{ rulesCreated: number; transactionsUpdated: number }>("/ai/apply-suggestions", {
+      method: "POST",
+      body: JSON.stringify({ suggestions }),
+    }),
+};
+
+// Categories (shell-only)
+export const categoriesApi = {
+  list: async () => [] as Array<{ id: string; category1: string; category2: string; category3?: string | null }>,
+  create: async (_data: { category1: string; category2: string; category3?: string | null }) => {
+    throw new Error("Categorias indisponíveis nesta versão.");
+  },
+  update: async (_id: string, _data: { category1: string; category2: string; category3?: string | null }) => {
+    throw new Error("Categorias indisponíveis nesta versão.");
+  },
+  delete: async (_id: string) => {
+    throw new Error("Categorias indisponíveis nesta versão.");
+  },
+};
+
+// Merchant metadata
+export const merchantMetadataApi = {
+  list: () => fetchApi<any[]>("/merchant-metadata"),
+  create: (data: { pattern: string; friendlyName: string; icon: string; color: string }) =>
+    fetchApi<any>("/merchant-metadata", { method: "POST", body: JSON.stringify(data) }),
+  update: (id: string, data: { pattern: string; friendlyName: string; icon: string; color: string }) =>
+    fetchApi<any>(`/merchant-metadata/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  delete: (id: string) =>
+    fetchApi<void>(`/merchant-metadata/${id}`, { method: "DELETE" }),
+};
+
 export const aliasApi = {
   exportExcel: () => fetchBlob("/aliases/export"),
   exportKeyDescCsv: () => fetchBlob("/aliases/key-desc/export-csv"),

@@ -14,7 +14,7 @@ import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { StatusPanel } from "@/components/status-panel";
-import * as XLSX from 'xlsx';
+import { parseCsv, toCsv } from "@/lib/csv";
 import { useLocale } from "@/hooks/use-locale";
 import { rulesCopy, translateCategory, t } from "@/lib/i18n";
 
@@ -85,9 +85,6 @@ export default function RulesPage() {
   const formatMessage = (template: string, vars: Record<string, string | number>) =>
     Object.entries(vars).reduce((result, [key, value]) => result.replace(`{${key}}`, String(value)), template);
   const columnLabels = t(locale, rulesCopy.exportColumns);
-  const categoryHeaders = t(locale, rulesCopy.exportCategoryHeaders);
-  const instructionHeader = t(locale, rulesCopy.exportInstructionHeader);
-  const instructionLines = rulesCopy.exportInstructions[locale];
   const typeLabelMap: Record<string, string> = {
     Despesa: t(locale, rulesCopy.fieldTypeExpense),
     Receita: t(locale, rulesCopy.fieldTypeIncome)
@@ -286,8 +283,7 @@ export default function RulesPage() {
       return;
     }
 
-    // Prepare data for Excel
-    const excelData = rules.map((rule: any) => ({
+    const csvData = rules.map((rule: any) => ({
       [columnLabels.name]: rule.name,
       [columnLabels.type]: typeLabelMap[rule.type] || rule.type,
       [columnLabels.fixVar]: fixVarLabelMap[rule.fixVar] || rule.fixVar,
@@ -295,69 +291,23 @@ export default function RulesPage() {
       [columnLabels.category2]: rule.category2 || "",
       [columnLabels.category3]: rule.category3 || "",
       [columnLabels.keywords]: rule.keywords,
-      [columnLabels.priority]: rule.priority,
+      [columnLabels.priority]: String(rule.priority ?? ""),
       [columnLabels.strict]: rule.strict ? t(locale, rulesCopy.yes) : t(locale, rulesCopy.no),
       [columnLabels.system]: rule.isSystem ? t(locale, rulesCopy.yes) : t(locale, rulesCopy.no)
     }));
 
-    // Create worksheet
-    const ws = XLSX.utils.json_to_sheet(excelData);
-
-    // Set column widths
-    ws['!cols'] = [
-      { wch: 25 }, // Nome
-      { wch: 20 }, // Tipo
-      { wch: 15 }, // Fixo/Variável
-      { wch: 20 }, // Categoria 1
-      { wch: 25 }, // Categoria 2
-      { wch: 25 }, // Categoria 3
-      { wch: 50 }, // Palavras-chave
-      { wch: 12 }, // Prioridade
-      { wch: 12 }, // Regra Estrita
-      { wch: 10 }  // Sistema
-    ];
-
-    // Create workbook
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, t(locale, rulesCopy.exportSheetRules));
-
-    // Add reference sheet with all available categories
-    const categoryReference = [
-      { [categoryHeaders.level1]: "Mercado", [categoryHeaders.level2]: "Supermercado, Padaria, Feira", [categoryHeaders.level3]: "LIDL, REWE, EDEKA" },
-      { [categoryHeaders.level1]: "Lazer", [categoryHeaders.level2]: "Streaming, Cinema, Restaurante", [categoryHeaders.level3]: "Netflix, Spotify, McDonald's" },
-      { [categoryHeaders.level1]: "Transporte", [categoryHeaders.level2]: "Combustível, Transporte Público, Taxi", [categoryHeaders.level3]: "Shell, Uber, DB" },
-      { [categoryHeaders.level1]: "Moradia", [categoryHeaders.level2]: "Aluguel, Condomínio, Utilidades", [categoryHeaders.level3]: "Água, Luz, Gás" },
-      { [categoryHeaders.level1]: "Saúde", [categoryHeaders.level2]: "Farmácia, Médico, Academia", [categoryHeaders.level3]: "Plano de Saúde, Dentista" },
-      { [categoryHeaders.level1]: "Educação", [categoryHeaders.level2]: "Cursos, Livros, Material", [categoryHeaders.level3]: "Udemy, Coursera" },
-      { [categoryHeaders.level1]: "Compras Online", [categoryHeaders.level2]: "E-commerce, Marketplace", [categoryHeaders.level3]: "Amazon, eBay, Zalando" },
-      { [categoryHeaders.level1]: "Receitas", [categoryHeaders.level2]: "Salário, Freelance, Investimentos", [categoryHeaders.level3]: "Empresa, Cliente A" },
-      { [categoryHeaders.level1]: "Interno", [categoryHeaders.level2]: "Transferências entre contas", [categoryHeaders.level3]: "Poupança, Investimento" },
-      { [categoryHeaders.level1]: "Outros", [categoryHeaders.level2]: "Diversos", [categoryHeaders.level3]: "Não categorizado" }
-    ];
-
-    const wsReference = XLSX.utils.json_to_sheet(categoryReference);
-    wsReference['!cols'] = [
-      { wch: 25 }, // Categoria Nível 1
-      { wch: 40 }, // Exemplos Nível 2
-      { wch: 40 }  // Exemplos Nível 3
-    ];
-    XLSX.utils.book_append_sheet(wb, wsReference, t(locale, rulesCopy.exportSheetCategories));
-
-    // Add instructions sheet
-    const instructions = instructionLines.map((line) => ({
-      [instructionHeader]: line
-    }));
-
-    const wsInstructions = XLSX.utils.json_to_sheet(instructions);
-    wsInstructions['!cols'] = [{ wch: 80 }];
-    XLSX.utils.book_append_sheet(wb, wsInstructions, t(locale, rulesCopy.exportSheetInstructions));
-
-    // Generate filename with current date
+    const headers = Object.values(columnLabels);
+    const csvContent = toCsv(csvData, headers);
     const date = new Date().toISOString().split('T')[0];
-    const filename = `ritualfin_rules_${date}.xlsx`;
+    const filename = `ritualfin_rules_${date}.csv`;
 
-    // Download file
-    XLSX.writeFile(wb, filename);
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
 
     toast({
       title: formatMessage(t(locale, rulesCopy.exportSuccessTitle), { count: rules.length }),
@@ -372,11 +322,14 @@ export default function RulesPage() {
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
-        const data = e.target?.result;
-        const workbook = XLSX.read(data, { type: 'binary' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        const data = String(e.target?.result || "");
+        const { headers, rows } = parseCsv(data);
+        const jsonData = rows.map((row) =>
+          headers.reduce<Record<string, string>>((acc, header, index) => {
+            acc[header] = row[index] ?? "";
+            return acc;
+          }, {})
+        );
 
         if (jsonData.length === 0) {
           toast({ title: t(locale, rulesCopy.toastFileEmpty), variant: "destructive" });
@@ -523,7 +476,7 @@ export default function RulesPage() {
       }
     };
 
-    reader.readAsBinaryString(file);
+    reader.readAsText(file);
 
     // Reset input so the same file can be uploaded again
     if (fileInputRef.current) {
@@ -648,7 +601,7 @@ export default function RulesPage() {
               type="file"
               ref={fileInputRef}
               onChange={handleUploadExcel}
-              accept=".xlsx,.xls"
+              accept=".csv"
               className="hidden"
             />
 

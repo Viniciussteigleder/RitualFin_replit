@@ -16,7 +16,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | High | SEC-LOCAL-001 | Secrets hygiene | Local `.env.local` contains multiple secrets/tokens; must remain uncommitted and credentials rotated if ever shared. | Local file inspection | Ensure `.env.local` remains in `.gitignore`; rotate any exposed credentials. | Open |
 | High | SEC-PROD-001 | Auth posture | Demo-only auth, no multi-user isolation or RLS; production blocker until Phase D. | SECURITY.md | Guardrail added: production API blocked unless `ALLOW_DEMO_AUTH_IN_PROD=true`. | Mitigated (Guardrail) |
-| High | SEC-DEP-002 | Dependencies | `xlsx` prototype pollution + ReDoS; no fix available in current version. | `npm audit` 2026-01-02; client pages import `xlsx`. | Client currently bundles `xlsx` for template export/import. Accept risk short-term; plan to move to server-side export/import and replace library in Phase D. | Open |
+| High | SEC-DEP-002 | Dependencies | `xlsx` prototype pollution + ReDoS; no fix available in current version. | `npm audit` 2026-01-02; server uses `xlsx`. | Client bundle no longer imports `xlsx`; server-only usage remains. Plan to replace library in Phase D. | Mitigated (Client) |
 | Moderate | SEC-DEP-004 | Dependencies | `esbuild` dev-server request exposure via `drizzle-kit` chain. | `npm audit` 2026-01-02 | Accept dev-only risk; monitor `drizzle-kit` updates weekly and upgrade when compatible. | Open |
 
 ## Checks executed

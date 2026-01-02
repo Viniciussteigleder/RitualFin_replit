@@ -32,7 +32,7 @@ This document defines the minimum security checks and acceptable posture for the
 - Local `.env.local` contains multiple secrets/tokens and must remain uncommitted; rotate any credentials that were shared outside the local machine.
 - Demo-only auth posture remains a production blocker until Phase D security work is completed.
 - Production guardrail blocks demo auth unless `ALLOW_DEMO_AUTH_IN_PROD=true`.
-- `npm audit` after `npm audit fix` reports 5 vulnerabilities (4 moderate, 1 high). High item: `xlsx` (no fix available; currently bundled in client for template workflows).
+- `npm audit` after `npm audit fix` reports 5 vulnerabilities (4 moderate, 1 high). High item: `xlsx` (no fix available; server-only usage after client removal).
 - Repo/bundle secrets scans found no secrets in `dist/public`; doc references only.
 - Local CORS check: allowed `http://localhost:5173`, disallowed origin not echoed.
 

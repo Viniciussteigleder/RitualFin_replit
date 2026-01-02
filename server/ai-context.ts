@@ -16,11 +16,10 @@ export async function assembleChatContext(userId: string): Promise<ChatContext> 
   const monthStart = startOfMonth(now);
 
   // Fetch recent transactions
-  const transactions = await storage.getTransactions({
-    userId,
-    startDate: thirtyDaysAgo.toISOString().split("T")[0],
-    limit: 50,
-  });
+  const transactions = (await storage.getTransactions(userId))
+    .filter(t => t.paymentDate >= thirtyDaysAgo)
+    .sort((a, b) => b.paymentDate.getTime() - a.paymentDate.getTime())
+    .slice(0, 50);
 
   // Fetch current month goal
   const goals = await storage.getGoals(userId);
