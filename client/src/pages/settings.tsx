@@ -2,17 +2,14 @@ import AppLayout from "@/components/layout/app-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Shield, Settings, Bell, Eye, Check, Globe, Palette, Database, Trash2, Download, Key, CreditCard, Mail, Moon, Sun, Sparkles, BookOpen, ArrowRight, Upload, RefreshCw, ChevronsUpDown, CheckCircle2, XCircle } from "lucide-react";
+import { User, Settings, Bell, Check, Globe, Database, Trash2, Download, CreditCard, BookOpen, ArrowRight, Upload, RefreshCw, CheckCircle2, XCircle, FileText, ShieldAlert, Image } from "lucide-react";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { useMemo, useState } from "react";
@@ -20,40 +17,131 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { AliasLogo } from "@/components/alias-logo";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { settingsApi, uploadsApi, classificationApi, aliasApi, resetApi, dataImportsApi } from "@/lib/api";
+import { settingsApi, classificationApi, aliasApi, resetApi, dataImportsApi, auditLogsApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 
 const TABS = [
   { id: "conta", label: "Conta", icon: User, description: "Perfil e informações pessoais" },
-  { id: "preferencias", label: "Preferências", icon: Settings, description: "Aparência e comportamento" },
-  { id: "classificacao", label: "Classificação & Dados", icon: Database, description: "Importações, categorias, aliases e logos" },
-  { id: "dicionarios", label: "Dicionários", icon: Database, description: "Comerciantes e categorias" },
-  { id: "integracoes", label: "Integrações", icon: Database, description: "Conexões com outros serviços" },
-  { id: "seguranca", label: "Segurança", icon: Shield, description: "Senha e autenticação" },
+  { id: "preferencias-regionais", label: "Preferências Regionais", icon: Globe, description: "Idioma, moeda e região fiscal" },
+  { id: "notificacoes", label: "Notificações", icon: Bell, description: "Alertas e comunicações" },
+  { id: "integracoes", label: "Integrações", icon: CreditCard, description: "Fontes de dados via CSV" },
+  { id: "classificacao", label: "Classificação & Dados", icon: Database, description: "Categorias, regras e fila de revisão" },
+  { id: "dicionario", label: "Dicionário de Comerciantes", icon: BookOpen, description: "Aliases e logos de comerciantes" },
+  { id: "auditoria", label: "Log de Auditoria", icon: FileText, description: "Registros críticos do sistema" },
+  { id: "danger", label: "Zona de Perigo", icon: ShieldAlert, description: "Exclusões com confirmação reforçada" },
 ];
+
+const INTEGRATION_PROVIDERS = [
+  {
+    id: "miles_and_more",
+    name: "Miles & More",
+    logo: "/providers/miles-and-more.svg",
+    status: "Ativo",
+    csv: {
+      delimiter: ";",
+      encoding: "UTF-8 com BOM (Excel) ou ISO-8859-1",
+      dateFormat: "dd.mm.yyyy",
+      requiredHeaders: ["Authorised on", "Amount", "Currency", "Description", "Payment type", "Status"],
+      previewColumns: [
+        "Fonte",
+        "Data (bookingDate)",
+        "Valor",
+        "Moeda",
+        "Descrição (simpleDesc)",
+        "Key Desc",
+        "Conta",
+        "Key"
+      ],
+      keyFields: "key_desc + bookingDate + amount (+ processed on como referência)",
+      failureReasons: [
+        "Colunas obrigatórias ausentes (baixe o template e não renomeie colunas).",
+        "Delimitador inconsistente (exporte com ';' como separador).",
+        "Codificação inválida (salve como CSV UTF-8 com BOM)."
+      ]
+    }
+  },
+  {
+    id: "amex",
+    name: "American Express",
+    logo: "/providers/american-express.svg",
+    status: "Ativo",
+    csv: {
+      delimiter: ",",
+      encoding: "UTF-8 com BOM (Excel) ou ISO-8859-1",
+      dateFormat: "dd/mm/yyyy",
+      requiredHeaders: ["Datum", "Beschreibung", "Karteninhaber", "Betrag"],
+      previewColumns: [
+        "Fonte",
+        "Data (bookingDate)",
+        "Valor",
+        "Moeda",
+        "Descrição (simpleDesc)",
+        "Key Desc",
+        "Conta",
+        "Key"
+      ],
+      keyFields: "key_desc + bookingDate + amount (+ Betreff como referência)",
+      failureReasons: [
+        "Cabeçalhos Amex ausentes (Datum, Beschreibung, Karteninhaber, Betrag).",
+        "Arquivo não está em CSV ou está com delimitador errado (use ',').",
+        "Caracteres corrompidos (reexporte em UTF-8 com BOM)."
+      ]
+    }
+  },
+  {
+    id: "sparkasse",
+    name: "Sparkasse",
+    logo: "/providers/sparkasse.svg",
+    status: "Ativo",
+    csv: {
+      delimiter: ";",
+      encoding: "UTF-8 com BOM (Excel) ou ISO-8859-1",
+      dateFormat: "dd.mm.yyyy",
+      requiredHeaders: ["Auftragskonto", "Buchungstag", "Verwendungszweck", "Betrag"],
+      previewColumns: [
+        "Fonte",
+        "Data (bookingDate)",
+        "Valor",
+        "Moeda",
+        "Descrição (simpleDesc)",
+        "Key Desc",
+        "Conta",
+        "Key"
+      ],
+      keyFields: "key_desc + bookingDate + amount (+ referência/IBAN quando disponível)",
+      failureReasons: [
+        "Colunas obrigatórias Sparkasse ausentes (reexporte o CSV original).",
+        "Delimitador diferente de ';' (ajuste o separador no Excel).",
+        "Data inválida no formato dd.mm.yyyy (verifique a coluna Buchungstag)."
+      ]
+    }
+  }
+];
+
+const AUDIT_ACTION_LABELS: Record<string, string> = {
+  importacao_csv: "Importação CSV",
+  importacao_classificacao: "Importação de categorias",
+  importacao_aliases: "Importação de aliases",
+  importacao_logos: "Importação de logos",
+  importacao_dados: "Importação de dados",
+  regra_criada: "Regra criada",
+  regra_atualizada: "Regra atualizada",
+  regra_excluida: "Regra excluída",
+  regra_keywords_add: "KeyWords adicionadas",
+  regra_keywords_create: "Regra por KeyWords",
+  regra_keywords_negative_add: "Negativas adicionadas",
+  regra_keywords_negative_create: "Regra com negativas",
+  fila_revisao_classificacao: "Fila de revisão",
+  alias_import_apply: "Aliases aplicados",
+  logos_import: "Logos importados",
+  logos_refresh: "Logos atualizados",
+  zona_de_perigo_delete: "Zona de perigo"
+};
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("conta");
-  const [showCents, setShowCents] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
-  const [monthlyReports, setMonthlyReports] = useState(true);
-  const [lazyMode, setLazyMode] = useState(true);
-  const [importPreview, setImportPreview] = useState<any | null>(null);
-  const [importEncoding, setImportEncoding] = useState<string | undefined>();
-  const [importFile, setImportFile] = useState<File | null>(null);
-  const [importSource, setImportSource] = useState("auto");
-  const [importPreviewError, setImportPreviewError] = useState<string | null>(null);
-  const [importStatus, setImportStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
-  const [uploadDialog, setUploadDialog] = useState<{
-    open: boolean;
-    status: "success" | "error";
-    title: string;
-    rowsProcessed?: number;
-    newRows?: number;
-    updatedRows?: number;
-    errors?: string[];
-  } | null>(null);
   const [classificationPreview, setClassificationPreview] = useState<any | null>(null);
   const [classificationImportId, setClassificationImportId] = useState<string | null>(null);
   const [classificationPreviewError, setClassificationPreviewError] = useState<string | null>(null);
@@ -76,7 +164,11 @@ export default function SettingsPage() {
   const [reviewSelections, setReviewSelections] = useState<Record<string, string>>({});
   const [reviewExpressions, setReviewExpressions] = useState<Record<string, string>>({});
   const [reviewKeywordDrafts, setReviewKeywordDrafts] = useState<Record<string, string>>({});
-  const [reviewCategoryOpen, setReviewCategoryOpen] = useState<string | null>(null);
+  const [reviewNegativeDrafts, setReviewNegativeDrafts] = useState<Record<string, string>>({});
+  const [reviewLevelSelections, setReviewLevelSelections] = useState<
+    Record<string, { level1?: string; level2?: string; level3?: string }>
+  >({});
+  const [mappingProvider, setMappingProvider] = useState<string | null>(null);
   const [dangerDialogOpen, setDangerDialogOpen] = useState(false);
   const [dangerStep, setDangerStep] = useState<"select" | "confirm" | "done">("select");
   const [dangerSelections, setDangerSelections] = useState({
@@ -87,6 +179,7 @@ export default function SettingsPage() {
   });
   const [dangerConfirmText, setDangerConfirmText] = useState("");
   const [dangerLastDeletedAt, setDangerLastDeletedAt] = useState<string | null>(null);
+  const [dangerDeletedSummary, setDangerDeletedSummary] = useState<string[]>([]);
   const { toast } = useToast();
 
   // Fetch settings from API
@@ -125,6 +218,11 @@ export default function SettingsPage() {
     queryFn: () => dataImportsApi.last("aliases_assets"),
   });
 
+  const { data: auditLogs = [], isLoading: auditLogsLoading } = useQuery({
+    queryKey: ["audit-logs"],
+    queryFn: auditLogsApi.list,
+  });
+
 
   // Mutation for updating settings
   const updateSettingsMutation = useMutation({
@@ -145,19 +243,6 @@ export default function SettingsPage() {
     },
   });
 
-  const readCsvWithEncoding = async (file: File) => {
-    const buffer = await file.arrayBuffer();
-    let encoding = "utf-8";
-    let text = "";
-    try {
-      text = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
-    } catch {
-      encoding = "iso-8859-1";
-      text = new TextDecoder("iso-8859-1").decode(buffer);
-    }
-    return { text, encoding };
-  };
-
   const readFileBase64 = (file: File) =>
     new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
@@ -174,63 +259,6 @@ export default function SettingsPage() {
     if (status === "confirmed") return "Sucesso";
     if (status === "previewed") return "Prévia";
     return "Falha";
-  };
-
-  const handlePreviewImport = async () => {
-    if (!importFile) return;
-    try {
-      const { text, encoding } = await readCsvWithEncoding(importFile);
-      setImportEncoding(encoding);
-      const fileBase64 = await readFileBase64(importFile);
-      setImportPreviewError(null);
-      setImportStatus(null);
-      const preview = await uploadsApi.preview(importFile.name, text, encoding, fileBase64, importFile.type);
-      setImportPreview(preview);
-      if (!preview?.success) {
-        setImportPreviewError("Falha na leitura do arquivo (verifique delimitador ou codificação).");
-      }
-    } catch (err: any) {
-      setImportPreviewError("Falha na leitura do arquivo (verifique delimitador ou codificação).");
-      toast({ title: "Erro na pré-visualização", description: err.message, variant: "destructive" });
-    }
-  };
-
-  const handleProcessImport = async () => {
-    if (!importFile) return;
-    try {
-      const { text, encoding } = await readCsvWithEncoding(importFile);
-      setImportEncoding(encoding);
-      const fileBase64 = await readFileBase64(importFile);
-      const result = await uploadsApi.process(importFile.name, text, encoding, fileBase64, importFile.type);
-      setImportStatus({
-        type: "success",
-        message: `Importação concluída: ${result.rowsImported} registros adicionados, ${result.duplicates} ignorados (duplicados).`
-      });
-      setUploadDialog({
-        open: true,
-        status: "success",
-        title: "Upload concluído com sucesso",
-        rowsProcessed: result.rowsTotal,
-        newRows: result.rowsImported,
-        updatedRows: 0
-      });
-      toast({
-        title: "Importação concluída",
-        description: `Inseridas: ${result.rowsImported}, duplicadas: ${result.duplicates}, auto: ${result.autoClassified || 0}, abertas: ${result.openCount || 0}`
-      });
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["uploads"] });
-      queryClient.invalidateQueries({ queryKey: ["classification-review-queue"] });
-    } catch (err: any) {
-      setImportStatus({ type: "error", message: `Falha na importação: ${err.message}` });
-      setUploadDialog({
-        open: true,
-        status: "error",
-        title: "Falha no upload",
-        errors: [err.message]
-      });
-      toast({ title: "Erro na importação", description: err.message, variant: "destructive" });
-    }
   };
 
   const handleClassificationPreview = async (file: File) => {
@@ -396,6 +424,16 @@ export default function SettingsPage() {
     URL.revokeObjectURL(url);
   };
 
+  const handleExportAuditCsv = async () => {
+    const blob = await auditLogsApi.exportCsv();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "ritualfin_audit_log.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleLogosPreview = async (file: File) => {
     setLogosPreview(null);
     setLogosImportResults(null);
@@ -465,6 +503,7 @@ export default function SettingsPage() {
       createRule: Boolean(newExpression)
     });
     toast({ title: "Classificação atualizada" });
+    setReviewExpressions((prev) => ({ ...prev, [transactionId]: "" }));
     queryClient.invalidateQueries({ queryKey: ["classification-review-queue"] });
   };
 
@@ -489,10 +528,32 @@ export default function SettingsPage() {
     }
   };
 
+  const handleAppendNegativeKeywords = async (transactionId: string) => {
+    const leafId = reviewSelections[transactionId];
+    if (!leafId) {
+      toast({ title: "Selecione uma categoria", variant: "destructive" });
+      return;
+    }
+    const expressions = reviewNegativeDrafts[transactionId]?.trim() || "";
+    if (!expressions) {
+      toast({ title: "Informe ao menos uma expressão negativa", variant: "destructive" });
+      return;
+    }
+    try {
+      await classificationApi.appendRuleNegativeKeywords({ leafId, expressions });
+      toast({ title: "Palavras-chave negativas atualizadas" });
+      setReviewNegativeDrafts((prev) => ({ ...prev, [transactionId]: "" }));
+      queryClient.invalidateQueries({ queryKey: ["classification-rules"] });
+    } catch (err: any) {
+      toast({ title: "Erro ao salvar negativas", description: err.message, variant: "destructive" });
+    }
+  };
+
   const resetDangerState = () => {
     setDangerStep("select");
     setDangerSelections({ transactions: false, categories: false, aliases: false, all: false });
     setDangerConfirmText("");
+    setDangerDeletedSummary([]);
   };
 
   const handleDangerDialogChange = (open: boolean) => {
@@ -510,7 +571,16 @@ export default function SettingsPage() {
         deleteAliases: dangerSelections.aliases,
         deleteAll: dangerSelections.all
       });
+      const summary: string[] = [];
+      if (dangerSelections.all) {
+        summary.push("Tudo (reset total)");
+      } else {
+        if (dangerSelections.transactions) summary.push("Transações");
+        if (dangerSelections.categories) summary.push("Categorias e Regras");
+        if (dangerSelections.aliases) summary.push("Aliases e Logos");
+      }
       setDangerLastDeletedAt(result.deletedAt);
+      setDangerDeletedSummary(summary);
       setDangerStep("done");
       toast({ title: "Os dados selecionados foram apagados com sucesso." });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
@@ -534,85 +604,38 @@ export default function SettingsPage() {
     return map;
   }, [classificationRules]);
 
-  const taxonomyOptions = useMemo(() => {
-    return taxonomyLeaves.map((leaf: any) => {
-      const path = [leaf.nivel1Pt, leaf.nivel2Pt, leaf.nivel3Pt].filter(Boolean).join(" › ");
-      const rules = rulesByLeafId.get(leaf.leafId);
-      const searchText = [path, rules?.keyWords, rules?.keyWordsNegative].filter(Boolean).join(" ").toLowerCase();
-      return {
-        leafId: leaf.leafId,
-        label: path || leaf.nivel3Pt,
-        searchText
-      };
+  const taxonomyLevels = useMemo(() => {
+    const level1Set = new Set<string>();
+    const level2Map = new Map<string, Set<string>>();
+    const level3Map = new Map<string, Set<string>>();
+    const leafByLevels = new Map<string, string>();
+
+    taxonomyLeaves.forEach((leaf: any) => {
+      const level1 = leaf.nivel1Pt || "";
+      const level2 = leaf.nivel2Pt || "";
+      const level3 = leaf.nivel3Pt || "";
+      if (!level1 || !level2 || !level3) return;
+      level1Set.add(level1);
+      if (!level2Map.has(level1)) level2Map.set(level1, new Set());
+      level2Map.get(level1)?.add(level2);
+      const levelKey = `${level1}||${level2}`;
+      if (!level3Map.has(levelKey)) level3Map.set(levelKey, new Set());
+      level3Map.get(levelKey)?.add(level3);
+      leafByLevels.set(`${levelKey}||${level3}`, leaf.leafId);
     });
-  }, [taxonomyLeaves, rulesByLeafId]);
 
-  const taxonomyLabelByLeafId = useMemo(() => {
-    return new Map(taxonomyOptions.map((option) => [option.leafId, option.label]));
-  }, [taxonomyOptions]);
+    return {
+      level1Options: Array.from(level1Set).sort(),
+      level2Map,
+      level3Map,
+      leafByLevels
+    };
+  }, [taxonomyLeaves]);
 
-  const sourceMismatch = importPreview && importSource !== "auto" && (
-    (importSource === "sparkasse" && importPreview.format !== "sparkasse") ||
-    (importSource === "amex" && importPreview.format !== "amex") ||
-    (importSource === "mm" && importPreview.format !== "miles_and_more")
-  );
+  const activeMapping = INTEGRATION_PROVIDERS.find((provider) => provider.id === mappingProvider) || null;
 
   return (
     <AppLayout>
-      <Dialog
-        open={Boolean(uploadDialog?.open)}
-        onOpenChange={(open) =>
-          setUploadDialog((prev) => (prev ? { ...prev, open } : null))
-        }
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {uploadDialog?.status === "success" ? (
-                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-              ) : (
-                <XCircle className="h-5 w-5 text-rose-600" />
-              )}
-              {uploadDialog?.title || ""}
-            </DialogTitle>
-            <DialogDescription>
-              {uploadDialog?.status === "success"
-                ? "Resumo do processamento do arquivo."
-                : "Revise os erros detectados e tente novamente."}
-            </DialogDescription>
-          </DialogHeader>
-
-          {uploadDialog?.status === "success" ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-              <div className="rounded-md border border-muted bg-muted/20 p-3">
-                <p className="text-xs text-muted-foreground">Linhas processadas</p>
-                <p className="text-lg font-semibold">{uploadDialog.rowsProcessed ?? "-"}</p>
-              </div>
-              <div className="rounded-md border border-muted bg-muted/20 p-3">
-                <p className="text-xs text-muted-foreground">Novas linhas</p>
-                <p className="text-lg font-semibold">{uploadDialog.newRows ?? "-"}</p>
-              </div>
-              <div className="rounded-md border border-muted bg-muted/20 p-3">
-                <p className="text-xs text-muted-foreground">Atualizadas</p>
-                <p className="text-lg font-semibold">{uploadDialog.updatedRows ?? "-"}</p>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-2 text-sm text-rose-700">
-              {uploadDialog?.errors?.map((error, idx) => (
-                <p key={`${error}-${idx}`}>{error}</p>
-              ))}
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button onClick={() => setUploadDialog((prev) => (prev ? { ...prev, open: false } : null))}>
-              Fechar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold">Configurações</h1>
@@ -665,7 +688,7 @@ export default function SettingsPage() {
                         </div>
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-bold text-xl">Usuario RitualFin</h3>
+                        <h3 className="font-bold text-xl">Usuário RitualFin</h3>
                         <p className="text-sm text-muted-foreground">Membro desde 2024</p>
                         <div className="flex items-center gap-2 mt-2">
                           <Badge className="bg-primary text-white">Plano Starter</Badge>
@@ -678,7 +701,7 @@ export default function SettingsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label className="text-muted-foreground text-xs uppercase tracking-wide">Nome</Label>
-                        <Input defaultValue="Usuario" className="bg-muted/30 border-0" />
+                        <Input defaultValue="Usuário" className="bg-muted/30 border-0" />
                       </div>
                       <div className="space-y-2">
                         <Label className="text-muted-foreground text-xs uppercase tracking-wide">Email</Label>
@@ -686,7 +709,7 @@ export default function SettingsPage() {
                       </div>
                     </div>
                     <div className="flex justify-end">
-                      <Button className="bg-primary hover:bg-primary/90">Salvar Alteracoes</Button>
+                      <Button className="bg-primary hover:bg-primary/90">Salvar Alterações</Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -698,7 +721,7 @@ export default function SettingsPage() {
                       Exportar Dados
                     </CardTitle>
                     <CardDescription>
-                      Baixe todas as suas transacoes e configuracoes.
+                      Baixe todas as suas transações e configurações.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -717,132 +740,122 @@ export default function SettingsPage() {
               </>
             )}
 
-            {activeTab === "preferencias" && (
-              <>
-                <Card className="bg-white border-0 shadow-sm">
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Globe className="h-4 w-4 text-primary" />
-                      Regional
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-muted-foreground text-xs uppercase tracking-wide">Idioma</Label>
-                        <Select defaultValue="pt-br">
-                          <SelectTrigger className="bg-muted/30 border-0">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pt-br">Portugues (Brasil)</SelectItem>
-                            <SelectItem value="en">English</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-muted-foreground text-xs uppercase tracking-wide">Moeda</Label>
-                        <Select defaultValue="eur">
-                          <SelectTrigger className="bg-muted/30 border-0">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="eur">Euro (EUR)</SelectItem>
-                            <SelectItem value="brl">Real (BRL)</SelectItem>
-                            <SelectItem value="usd">Dollar (USD)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+            {activeTab === "preferencias-regionais" && (
+              <Card className="bg-white border-0 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Globe className="h-4 w-4 text-primary" />
+                    Preferências Regionais
+                  </CardTitle>
+                  <CardDescription>
+                    Defina idioma, moeda e região fiscal padrão.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground text-xs uppercase tracking-wide">Idioma</Label>
+                      <Select
+                        value={settings?.language || "pt-BR"}
+                        onValueChange={(value) => updateSettingsMutation.mutate({ language: value })}
+                      >
+                        <SelectTrigger className="bg-muted/30 border-0">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pt-BR">Português (Brasil)</SelectItem>
+                          <SelectItem value="pt-PT">Português (Portugal)</SelectItem>
+                          <SelectItem value="en">English</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                  </CardContent>
-                </Card>
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground text-xs uppercase tracking-wide">Moeda</Label>
+                      <Select
+                        value={settings?.currency || "EUR"}
+                        onValueChange={(value) => updateSettingsMutation.mutate({ currency: value })}
+                      >
+                        <SelectTrigger className="bg-muted/30 border-0">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="EUR">Euro (EUR)</SelectItem>
+                          <SelectItem value="BRL">Real (BRL)</SelectItem>
+                          <SelectItem value="USD">Dólar (USD)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground text-xs uppercase tracking-wide">Região Fiscal</Label>
+                      <Select
+                        value={settings?.fiscalRegion || "Portugal/PT"}
+                        onValueChange={(value) => updateSettingsMutation.mutate({ fiscalRegion: value })}
+                      >
+                        <SelectTrigger className="bg-muted/30 border-0">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Portugal/PT">Portugal (PT)</SelectItem>
+                          <SelectItem value="União Europeia">União Europeia</SelectItem>
+                          <SelectItem value="Outros">Outros</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Exportações CSV usam UTF-8 com BOM para preservar acentos.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
-                <Card className="bg-white border-0 shadow-sm">
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Palette className="h-4 w-4 text-primary" />
-                      Aparencia
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
-                      <div className="flex items-center gap-3">
-                        {darkMode ? <Moon className="h-5 w-5 text-primary" /> : <Sun className="h-5 w-5 text-amber-500" />}
-                        <div>
-                          <p className="font-medium">Tema Escuro</p>
-                          <p className="text-sm text-muted-foreground">Ativar modo noturno</p>
-                        </div>
-                      </div>
-                      <Switch checked={darkMode} onCheckedChange={setDarkMode} />
+            {activeTab === "notificacoes" && (
+              <Card className="bg-white border-0 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Bell className="h-4 w-4 text-primary" />
+                    Notificações
+                  </CardTitle>
+                  <CardDescription>
+                    Defina quando deseja receber alertas do RitualFin.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
+                    <div>
+                      <p className="font-medium">Importações concluídas</p>
+                      <p className="text-sm text-muted-foreground">Resumo após cada upload</p>
                     </div>
-                    <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
-                      <div>
-                        <p className="font-medium">Mostrar Centavos</p>
-                        <p className="text-sm text-muted-foreground">Exibir valores decimais</p>
-                      </div>
-                      <Switch checked={showCents} onCheckedChange={setShowCents} />
+                    <Switch
+                      checked={settings?.notifyImportStatus ?? true}
+                      onCheckedChange={(checked) => updateSettingsMutation.mutate({ notifyImportStatus: checked })}
+                      disabled={isLoading || updateSettingsMutation.isPending}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
+                    <div>
+                      <p className="font-medium">Fila de revisão</p>
+                      <p className="text-sm text-muted-foreground">Lembretes para classificar pendências</p>
                     </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-white border-0 shadow-sm">
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-primary" />
-                      Assistência IA
-                    </CardTitle>
-                    <CardDescription>
-                      Configure como a IA ajuda na categorização.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-primary/5 rounded-xl border border-primary/20">
-                      <div>
-                        <p className="font-medium">Categorização Automática</p>
-                        <p className="text-sm text-muted-foreground">IA pré-analisa e sugere categorias</p>
-                      </div>
-                      <Switch checked={lazyMode} onCheckedChange={setLazyMode} />
+                    <Switch
+                      checked={settings?.notifyReviewQueue ?? true}
+                      onCheckedChange={(checked) => updateSettingsMutation.mutate({ notifyReviewQueue: checked })}
+                      disabled={isLoading || updateSettingsMutation.isPending}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
+                    <div>
+                      <p className="font-medium">Resumo mensal</p>
+                      <p className="text-sm text-muted-foreground">Fechamento e insights do mês</p>
                     </div>
-                    <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
-                      <div>
-                        <p className="font-medium">Auto-confirmar Alta Confiança</p>
-                        <p className="text-sm text-muted-foreground">
-                          Aceitar automaticamente sugestões com {settings?.confidenceThreshold || 80}%+ de confiança
-                        </p>
-                      </div>
-                      <Switch
-                        checked={settings?.autoConfirmHighConfidence || false}
-                        onCheckedChange={(checked) => {
-                          updateSettingsMutation.mutate({ autoConfirmHighConfidence: checked });
-                        }}
-                        disabled={isLoading || updateSettingsMutation.isPending}
-                      />
-                    </div>
-                    {settings?.autoConfirmHighConfidence && (
-                      <div className="p-4 bg-muted/30 rounded-xl space-y-3">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-sm font-medium">Limite de Confianca</Label>
-                          <span className="text-sm font-bold text-primary">{settings?.confidenceThreshold || 80}%</span>
-                        </div>
-                        <Slider
-                          value={[settings?.confidenceThreshold || 80]}
-                          onValueChange={(values) => {
-                            updateSettingsMutation.mutate({ confidenceThreshold: values[0] });
-                          }}
-                          min={50}
-                          max={100}
-                          step={5}
-                          disabled={isLoading || updateSettingsMutation.isPending}
-                          className="w-full"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Transacoes com confianca acima deste limite serao confirmadas automaticamente
-                        </p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </>
+                    <Switch
+                      checked={settings?.notifyMonthlyReport ?? true}
+                      onCheckedChange={(checked) => updateSettingsMutation.mutate({ notifyMonthlyReport: checked })}
+                      disabled={isLoading || updateSettingsMutation.isPending}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
             )}
 
             {activeTab === "classificacao" && (
@@ -857,153 +870,20 @@ export default function SettingsPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Tabs defaultValue="imports">
-                    <TabsList className="grid grid-cols-6 w-full">
-                      <TabsTrigger value="imports">Importações</TabsTrigger>
+                  <Tabs defaultValue="categorias">
+                    <TabsList className="grid grid-cols-3 w-full">
                       <TabsTrigger value="categorias">Categorias</TabsTrigger>
-                      <TabsTrigger value="aliases">Aliases</TabsTrigger>
-                      <TabsTrigger value="logos">Logos</TabsTrigger>
+                      <TabsTrigger value="regras">Regras KeyWords</TabsTrigger>
                       <TabsTrigger value="revisao">Fila de Revisão</TabsTrigger>
-                      <TabsTrigger value="reset">Danger Zone</TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="imports" className="mt-6 space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-muted-foreground text-xs uppercase tracking-wide">Fonte</Label>
-                          <Select value={importSource} onValueChange={setImportSource}>
-                            <SelectTrigger className="bg-muted/30 border-0">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="auto">Auto-detectar</SelectItem>
-                              <SelectItem value="sparkasse">Sparkasse</SelectItem>
-                              <SelectItem value="amex">Amex</SelectItem>
-                              <SelectItem value="mm">M&M</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-muted-foreground text-xs uppercase tracking-wide">Arquivo CSV</Label>
-                          <Input
-                            type="file"
-                            accept=".csv"
-                            onChange={(e) => {
-                              const nextFile = e.target.files?.[0] || null;
-                              setImportFile(nextFile);
-                              setImportPreview(null);
-                              setImportPreviewError(null);
-                              setImportStatus(null);
-                            }}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-3">
-                        <Button variant="outline" className="gap-2" onClick={handlePreviewImport} disabled={!importFile}>
-                          <Upload className="h-4 w-4" />
-                          Pré-visualizar
-                        </Button>
-                        <div className="flex flex-wrap items-center gap-3">
-                          <Button className="gap-2" onClick={handleProcessImport} disabled={!importFile}>
-                            <Upload className="h-4 w-4" />
-                            Importar
-                          </Button>
-                          {importStatus && (
-                            <div
-                              className={cn(
-                                "flex items-center gap-2 rounded-md border px-3 py-2 text-xs",
-                                importStatus.type === "success"
-                                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                                  : "border-rose-200 bg-rose-50 text-rose-700"
-                              )}
-                            >
-                              {importStatus.type === "success" ? (
-                                <CheckCircle2 className="h-4 w-4" />
-                              ) : (
-                                <XCircle className="h-4 w-4" />
-                              )}
-                              <span>{importStatus.message}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {importPreviewError ? (
-                        <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
-                          {importPreviewError}
-                        </div>
-                      ) : null}
-
-                      {importPreview && (
-                        <div className="space-y-3">
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            <Card className="bg-muted/20 border-0">
-                              <CardContent className="p-3">
-                                <p className="text-xs text-muted-foreground">Formato</p>
-                                <p className="text-sm font-semibold">{importPreview.format || "-"}</p>
-                              </CardContent>
-                            </Card>
-                            <Card className="bg-muted/20 border-0">
-                              <CardContent className="p-3">
-                                <p className="text-xs text-muted-foreground">Delimiter</p>
-                                <p className="text-sm font-semibold">{importPreview.meta?.delimiter || "-"}</p>
-                              </CardContent>
-                            </Card>
-                            <Card className="bg-muted/20 border-0">
-                              <CardContent className="p-3">
-                                <p className="text-xs text-muted-foreground">Encoding</p>
-                                <p className="text-sm font-semibold">{importEncoding || "-"}</p>
-                              </CardContent>
-                            </Card>
-                            <Card className="bg-muted/20 border-0">
-                              <CardContent className="p-3">
-                                <p className="text-xs text-muted-foreground">Data</p>
-                                <p className="text-sm font-semibold">{importPreview.meta?.dateFormat || "-"}</p>
-                              </CardContent>
-                            </Card>
-                          </div>
-
-                          {sourceMismatch ? (
-                            <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
-                              A fonte selecionada não corresponde ao formato detectado.
-                            </div>
-                          ) : null}
-                          {importPreview.meta?.warnings?.length ? (
-                            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-                              {importPreview.meta.warnings.join(" | ")}
-                            </div>
-                          ) : null}
-
-                          <div className="overflow-x-auto rounded-lg border">
-                            <table className="min-w-full text-sm">
-                              <thead className="bg-muted/30">
-                                <tr>
-                                  <th className="px-3 py-2 text-left">Fonte</th>
-                                  <th className="px-3 py-2 text-left">Data</th>
-                                  <th className="px-3 py-2 text-left">Valor</th>
-                                  <th className="px-3 py-2 text-left">Descrição</th>
-                                  <th className="px-3 py-2 text-left">Key Desc</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {importPreview.rows?.map((row: any, idx: number) => (
-                                  <tr key={idx} className="border-t">
-                                    <td className="px-3 py-2">{row.source}</td>
-                                    <td className="px-3 py-2">{row.bookingDate}</td>
-                                    <td className="px-3 py-2">{row.amount}</td>
-                                    <td className="px-3 py-2">{row.simpleDesc}</td>
-                                    <td className="px-3 py-2">{row.keyDesc}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      )}
-                    </TabsContent>
-
                     <TabsContent value="categorias" className="mt-6 space-y-4">
+                      <div className="rounded-lg border border-muted bg-muted/10 p-3 text-sm">
+                        <p className="font-medium">Importações de transações</p>
+                        <p className="text-muted-foreground">
+                          Os arquivos de extrato ficam em <Link href="/uploads" className="text-primary underline">Operações → Upload</Link>.
+                        </p>
+                      </div>
                       <div className="flex flex-wrap gap-3">
                         <Button variant="outline" className="gap-2" onClick={handleDownloadClassificationTemplateCsv}>
                           <Download className="h-4 w-4" />
@@ -1033,6 +913,9 @@ export default function SettingsPage() {
                           </Button>
                         </label>
                       </div>
+                      <p className="text-xs text-muted-foreground">
+                        Downloads em CSV são gerados em UTF-8 com BOM para preservar acentos.
+                      </p>
 
                       <div className="rounded-lg border border-muted bg-muted/10 p-3 text-sm">
                         <p className="font-medium">Última importação</p>
@@ -1208,380 +1091,110 @@ export default function SettingsPage() {
                         </DialogContent>
                       </Dialog>
 
-                      <Separator />
-
-                      <div className="space-y-2">
-                        <Label>Teste de regra (key_desc)</Label>
-                        <div className="flex gap-2">
-                          <Input value={ruleTestKeyDesc} onChange={(e) => setRuleTestKeyDesc(e.target.value)} />
-                          <Button variant="outline" onClick={handleRuleTest}>Testar</Button>
-                        </div>
-                        {ruleTestResult && (
-                          <p className="text-sm text-muted-foreground">
-                            Leaf: {ruleTestResult.leafId || "nenhuma"} | Regra: {ruleTestResult.ruleId || "-"}
-                          </p>
-                        )}
-                      </div>
                     </TabsContent>
 
-                    <TabsContent value="aliases" className="mt-6 space-y-4">
-                      <div className="flex flex-wrap gap-3">
-                        <Button variant="outline" className="gap-2" onClick={handleDownloadAliasesTemplateCsv}>
-                          <Download className="h-4 w-4" />
-                          Baixar template CSV
-                        </Button>
-                        <Button variant="outline" className="gap-2" onClick={handleDownloadAliasesCsv}>
-                          <Download className="h-4 w-4" />
-                          Baixar dados CSV
-                        </Button>
-                        <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
-                          <Input
-                            type="file"
-                            accept=".csv"
-                            className="hidden"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) handleAliasPreview(file);
-                            }}
-                          />
-                          <Button variant="outline" className="gap-2">
-                            <Upload className="h-4 w-4" />
-                            Pré-visualizar upload
-                          </Button>
-                        </label>
-                      </div>
-
-                      <div className="rounded-lg border border-muted bg-muted/10 p-3 text-sm">
-                        <p className="font-medium">Última importação</p>
-                        {aliasesLastImport ? (
-                          <p className="text-muted-foreground">
-                            {format(new Date(aliasesLastImport.createdAt), "dd/MM/yyyy HH:mm")} ·{" "}
-                            {formatImportStatus(aliasesLastImport.status)} ·{" "}
-                            {aliasesLastImport.rowsValid || 0}/{aliasesLastImport.rowsTotal || 0} linhas válidas
-                          </p>
-                        ) : (
-                          <p className="text-muted-foreground">Sem importações anteriores.</p>
-                        )}
-                      </div>
-
-                      {aliasStatus && (
-                        <div
-                          className={cn(
-                            "flex items-center gap-2 rounded-md border px-3 py-2 text-xs",
-                            aliasStatus.type === "success"
-                              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                              : "border-rose-200 bg-rose-50 text-rose-700"
-                          )}
-                        >
-                          {aliasStatus.type === "success" ? (
-                            <CheckCircle2 className="h-4 w-4" />
-                          ) : (
-                            <XCircle className="h-4 w-4" />
-                          )}
-                          <span>{aliasStatus.message}</span>
-                        </div>
-                      )}
-
-                      {aliasPreviewError ? (
-                        <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 space-y-2">
-                          <p className="font-medium">{aliasPreviewError}</p>
-                          {aliasPreview?.fixes?.length ? (
-                            <div className="text-xs text-rose-700">
-                              {aliasPreview.fixes.map((fix: string) => (
-                                <div key={fix}>• {fix}</div>
-                              ))}
-                            </div>
-                          ) : null}
-                          {aliasPreview?.reasonCodes?.length ? (
-                            <p className="text-xs">Código: {aliasPreview.reasonCodes.join(", ")}</p>
-                          ) : null}
-                        </div>
-                      ) : null}
-
-                      {aliasPreview?.success && (
-                        <div className="space-y-3">
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            <Card className="bg-muted/20 border-0">
-                              <CardContent className="p-3">
-                                <p className="text-xs text-muted-foreground">Encoding</p>
-                                <p className="text-sm font-semibold">{aliasPreview.detectedEncoding || "-"}</p>
-                              </CardContent>
-                            </Card>
-                            <Card className="bg-muted/20 border-0">
-                              <CardContent className="p-3">
-                                <p className="text-xs text-muted-foreground">Delimiter</p>
-                                <p className="text-sm font-semibold">{aliasPreview.detectedDelimiter || "-"}</p>
-                              </CardContent>
-                            </Card>
-                            <Card className="bg-muted/20 border-0">
-                              <CardContent className="p-3">
-                                <p className="text-xs text-muted-foreground">Linhas</p>
-                                <p className="text-sm font-semibold">{aliasPreview.rowsTotal || 0}</p>
-                              </CardContent>
-                            </Card>
-                            <Card className="bg-muted/20 border-0">
-                              <CardContent className="p-3">
-                                <p className="text-xs text-muted-foreground">Colunas</p>
-                                <p className="text-sm font-semibold">{aliasPreview.headerFound?.length || 0}</p>
-                              </CardContent>
-                            </Card>
-                          </div>
-
-                          <div className="rounded-lg border border-muted bg-muted/20 p-3 text-sm">
-                            <p className="font-medium">Colunas detectadas</p>
+                    <TabsContent value="regras" className="mt-6 space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Card className="bg-muted/20 border-0">
+                          <CardContent className="p-4 space-y-2">
+                            <p className="text-sm font-semibold">Editor de Regras</p>
                             <p className="text-xs text-muted-foreground">
-                              {aliasPreview.headerFound?.join(" · ") || "-"}
+                              Gerencie regras de classificação baseadas em KeyWords.
                             </p>
-                          </div>
-
-                          <div className="overflow-x-auto rounded-lg border">
-                            <table className="min-w-full text-sm">
-                              <thead className="bg-muted/30">
-                                <tr>
-                                  {(aliasPreview.headerFound || []).map((header: string) => (
-                                    <th key={header} className="px-3 py-2 text-left">
-                                      {header}
-                                    </th>
-                                  ))}
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {aliasPreview.previewRows?.map((row: any, idx: number) => (
-                                  <tr key={idx} className="border-t">
-                                    {(aliasPreview.headerFound || []).map((header: string) => (
-                                      <td key={`${header}-${idx}`} className="px-3 py-2">
-                                        {row[header]}
-                                      </td>
-                                    ))}
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-
-                          <Button className="gap-2" onClick={handleAliasApply} disabled={!aliasPreview?.success}>
-                            Confirmar importação
-                          </Button>
-                        </div>
-                      )}
-
-                      <Separator />
-
-                      <div className="space-y-2">
-                        <Label>Teste de alias (key_desc)</Label>
-                        <div className="flex gap-2">
-                          <Input value={aliasTestKeyDesc} onChange={(e) => setAliasTestKeyDesc(e.target.value)} />
-                          <Button variant="outline" onClick={handleAliasTest}>Testar</Button>
-                        </div>
-                        {aliasTestResult && (
-                          <p className="text-sm text-muted-foreground">
-                            Alias: {aliasTestResult.aliasDesc || "nenhum"}
-                          </p>
-                        )}
-                      </div>
-                    </TabsContent>
-
-                    <TabsContent value="logos" className="mt-6 space-y-4">
-                      <div className="flex flex-wrap gap-3">
-                        <Button variant="outline" className="gap-2" onClick={handleDownloadAssetsTemplateCsv}>
-                          <Download className="h-4 w-4" />
-                          Baixar template CSV
-                        </Button>
-                        <Button variant="outline" className="gap-2" onClick={handleDownloadAssetsCsv}>
-                          <Download className="h-4 w-4" />
-                          Baixar dados CSV
-                        </Button>
-                        <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
-                          <Input
-                            type="file"
-                            accept=".csv"
-                            className="hidden"
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (!file) return;
-                              await handleLogosPreview(file);
-                            }}
-                          />
-                          <Button variant="outline" className="gap-2">
-                            <Upload className="h-4 w-4" />
-                            Pré-visualizar upload
-                          </Button>
-                        </label>
-                        <Button variant="outline" className="gap-2" onClick={handleRefreshLogos}>
-                          <RefreshCw className="h-4 w-4" />
-                          Atualizar logos
-                        </Button>
-                      </div>
-
-                      <div className="rounded-lg border border-muted bg-muted/10 p-3 text-sm">
-                        <p className="font-medium">Última importação</p>
-                        {logosLastImport ? (
-                          <p className="text-muted-foreground">
-                            {format(new Date(logosLastImport.createdAt), "dd/MM/yyyy HH:mm")} ·{" "}
-                            {formatImportStatus(logosLastImport.status)} ·{" "}
-                            {logosLastImport.rowsValid || 0}/{logosLastImport.rowsTotal || 0} linhas válidas
-                          </p>
-                        ) : (
-                          <p className="text-muted-foreground">Sem importações anteriores.</p>
-                        )}
-                      </div>
-
-                      {logosStatus && (
-                        <div
-                          className={cn(
-                            "flex items-center gap-2 rounded-md border px-3 py-2 text-xs",
-                            logosStatus.type === "success"
-                              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                              : "border-rose-200 bg-rose-50 text-rose-700"
-                          )}
-                        >
-                          {logosStatus.type === "success" ? (
-                            <CheckCircle2 className="h-4 w-4" />
-                          ) : (
-                            <XCircle className="h-4 w-4" />
-                          )}
-                          <span>{logosStatus.message}</span>
-                        </div>
-                      )}
-
-                      {logosPreviewError ? (
-                        <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 space-y-2">
-                          <p className="font-medium">{logosPreviewError}</p>
-                          {logosPreview?.fixes?.length ? (
-                            <div className="text-xs text-rose-700">
-                              {logosPreview.fixes.map((fix: string) => (
-                                <div key={fix}>• {fix}</div>
-                              ))}
-                            </div>
-                          ) : null}
-                          {logosPreview?.reasonCodes?.length ? (
-                            <p className="text-xs">Código: {logosPreview.reasonCodes.join(", ")}</p>
-                          ) : null}
-                        </div>
-                      ) : null}
-
-                      {logosPreview?.success && (
-                        <div className="space-y-3">
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            <Card className="bg-muted/20 border-0">
-                              <CardContent className="p-3">
-                                <p className="text-xs text-muted-foreground">Encoding</p>
-                                <p className="text-sm font-semibold">{logosPreview.detectedEncoding || "-"}</p>
-                              </CardContent>
-                            </Card>
-                            <Card className="bg-muted/20 border-0">
-                              <CardContent className="p-3">
-                                <p className="text-xs text-muted-foreground">Delimiter</p>
-                                <p className="text-sm font-semibold">{logosPreview.detectedDelimiter || "-"}</p>
-                              </CardContent>
-                            </Card>
-                            <Card className="bg-muted/20 border-0">
-                              <CardContent className="p-3">
-                                <p className="text-xs text-muted-foreground">Linhas</p>
-                                <p className="text-sm font-semibold">{logosPreview.rowsTotal || 0}</p>
-                              </CardContent>
-                            </Card>
-                            <Card className="bg-muted/20 border-0">
-                              <CardContent className="p-3">
-                                <p className="text-xs text-muted-foreground">Colunas</p>
-                                <p className="text-sm font-semibold">{logosPreview.headerFound?.length || 0}</p>
-                              </CardContent>
-                            </Card>
-                          </div>
-
-                          <div className="rounded-lg border border-muted bg-muted/20 p-3 text-sm">
-                            <p className="font-medium">Colunas detectadas</p>
+                            <Link href="/rules">
+                              <Button variant="outline" size="sm">Abrir Regras</Button>
+                            </Link>
+                          </CardContent>
+                        </Card>
+                        <Card className="bg-muted/20 border-0">
+                          <CardContent className="p-4 space-y-2">
+                            <p className="text-sm font-semibold">AI Keywords</p>
                             <p className="text-xs text-muted-foreground">
-                              {logosPreview.headerFound?.join(" · ") || "-"}
+                              Revisão de sugestões automáticas de palavras-chave.
                             </p>
+                            <Link href="/ai-keywords">
+                              <Button variant="outline" size="sm">Ver sugestões</Button>
+                            </Link>
+                          </CardContent>
+                        </Card>
+                      </div>
+
+                      <Card className="bg-white border-0 shadow-sm">
+                        <CardHeader>
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <Settings className="h-4 w-4 text-primary" />
+                            Assistência de Classificação
+                          </CardTitle>
+                          <CardDescription>
+                            Ajuste o nível de confiança para auto-confirmação.
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
+                            <div>
+                              <p className="font-medium">Auto-confirmar Alta Confiança</p>
+                              <p className="text-sm text-muted-foreground">
+                                Aceitar automaticamente sugestões acima do limite.
+                              </p>
+                            </div>
+                            <Switch
+                              checked={settings?.autoConfirmHighConfidence || false}
+                              onCheckedChange={(checked) => {
+                                updateSettingsMutation.mutate({ autoConfirmHighConfidence: checked });
+                              }}
+                              disabled={isLoading || updateSettingsMutation.isPending}
+                            />
                           </div>
+                          {settings?.autoConfirmHighConfidence && (
+                            <div className="p-4 bg-muted/30 rounded-xl space-y-3">
+                              <div className="flex items-center justify-between">
+                                <Label className="text-sm font-medium">Limite de Confiança</Label>
+                                <span className="text-sm font-bold text-primary">{settings?.confidenceThreshold || 80}%</span>
+                              </div>
+                              <Slider
+                                value={[settings?.confidenceThreshold || 80]}
+                                onValueChange={(values) => {
+                                  updateSettingsMutation.mutate({ confidenceThreshold: values[0] });
+                                }}
+                                min={50}
+                                max={100}
+                                step={5}
+                                disabled={isLoading || updateSettingsMutation.isPending}
+                                className="w-full"
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                Transações acima desse limite serão confirmadas automaticamente.
+                              </p>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
 
-                          <div className="overflow-x-auto rounded-lg border">
-                            <table className="min-w-full text-sm">
-                              <thead className="bg-muted/30">
-                                <tr>
-                                  {(logosPreview.headerFound || []).map((header: string) => (
-                                    <th key={header} className="px-3 py-2 text-left">
-                                      {header}
-                                    </th>
-                                  ))}
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {logosPreview.previewRows?.map((row: any, idx: number) => (
-                                  <tr key={idx} className="border-t">
-                                    {(logosPreview.headerFound || []).map((header: string) => (
-                                      <td key={`${header}-${idx}`} className="px-3 py-2">
-                                        {row[header]}
-                                      </td>
-                                    ))}
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
+                      <Card className="bg-white border-0 shadow-sm">
+                        <CardHeader>
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <Check className="h-4 w-4 text-primary" />
+                            Teste de Regra (key_desc)
+                          </CardTitle>
+                          <CardDescription>
+                            Valide o comportamento de regras e expressões.
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div className="flex gap-2">
+                            <Input value={ruleTestKeyDesc} onChange={(e) => setRuleTestKeyDesc(e.target.value)} />
+                            <Button variant="outline" onClick={handleRuleTest}>Testar</Button>
                           </div>
-
-                          <Button className="gap-2" onClick={handleLogosApply} disabled={!logosPreview?.success}>
-                            Confirmar importação
-                          </Button>
-                        </div>
-                      )}
-
-                      {logosImportResults && (
-                        <div className="space-y-2">
-                          <p className="text-sm text-muted-foreground">
-                            Processados: {logosImportResults.length}
+                          {ruleTestResult && (
+                            <p className="text-sm text-muted-foreground">
+                              Leaf: {ruleTestResult.leafId || "nenhuma"} | Regra: {ruleTestResult.ruleId || "-"}
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            Expressões são separadas apenas por “;”. Espaços dentro da expressão não são divididos.
                           </p>
-                          <div className="overflow-x-auto rounded-lg border">
-                            <table className="min-w-full text-sm">
-                              <thead className="bg-muted/30">
-                                <tr>
-                                  <th className="px-3 py-2 text-left">Alias</th>
-                                  <th className="px-3 py-2 text-left">Status</th>
-                                  <th className="px-3 py-2 text-left">Pré-visualizar</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {logosImportResults.map((row: any, idx: number) => (
-                                  <tr key={`${row.aliasDesc}-${idx}`} className="border-t">
-                                    <td className="px-3 py-2">
-                                      <div className="flex items-center gap-2">
-                                        <AliasLogo
-                                          aliasDesc={row.aliasDesc}
-                                          fallbackDesc={row.aliasDesc}
-                                          logoUrl={row.logoLocalPath}
-                                          size={24}
-                                          showText={false}
-                                        />
-                                        <span className="truncate">{row.aliasDesc}</span>
-                                      </div>
-                                    </td>
-                                    <td className="px-3 py-2">
-                                      <span
-                                        className={cn(
-                                          "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs",
-                                          row.status === "ok"
-                                            ? "bg-emerald-100 text-emerald-700"
-                                            : "bg-rose-100 text-rose-700"
-                                        )}
-                                      >
-                                        {row.status === "ok" ? "OK" : "Falha"}
-                                      </span>
-                                    </td>
-                                    <td className="px-3 py-2">
-                                      {row.status === "ok" ? (
-                                        <span className="text-xs text-emerald-700">Logo salva</span>
-                                      ) : (
-                                        <span className="text-xs text-rose-700">{row.error}</span>
-                                      )}
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      )}
+                        </CardContent>
+                      </Card>
                     </TabsContent>
 
                     <TabsContent value="revisao" className="mt-6 space-y-3">
@@ -1598,7 +1211,21 @@ export default function SettingsPage() {
                             const existingNegative = selectedRule?.keyWordsNegative
                               ? selectedRule.keyWordsNegative.split(";").map((value) => value.trim()).filter(Boolean)
                               : [];
-                            const selectedLabel = selectedLeafId ? taxonomyLabelByLeafId.get(selectedLeafId) : "";
+                            const selectedLeaf = selectedLeafId
+                              ? taxonomyLeaves.find((leaf: any) => leaf.leafId === selectedLeafId)
+                              : undefined;
+                            const selection = reviewLevelSelections[tx.id] || {
+                              level1: selectedLeaf?.nivel1Pt,
+                              level2: selectedLeaf?.nivel2Pt,
+                              level3: selectedLeaf?.nivel3Pt
+                            };
+                            const level2Options = selection.level1
+                              ? Array.from(taxonomyLevels.level2Map.get(selection.level1) || [])
+                              : [];
+                            const level3Options =
+                              selection.level1 && selection.level2
+                                ? Array.from(taxonomyLevels.level3Map.get(`${selection.level1}||${selection.level2}`) || [])
+                                : [];
 
                             return (
                               <Card key={tx.id} className="border border-muted">
@@ -1612,54 +1239,91 @@ export default function SettingsPage() {
                                       showText={false}
                                     />
                                     <div className="flex-1 min-w-0">
-                                      <p className="font-medium truncate capitalize leading-snug">{tx.aliasDesc || tx.simpleDesc || tx.descRaw}</p>
-                                      <p className="text-xs text-muted-foreground leading-snug">{tx.keyDesc}</p>
+                                      <p className="font-medium leading-snug break-words">
+                                        {tx.aliasDesc || tx.simpleDesc || tx.descRaw}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground leading-snug break-words">{tx.keyDesc}</p>
                                     </div>
                                     <span className="text-sm font-semibold">
                                       {tx.amount?.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
                                     </span>
                                   </div>
-                                  <div className="flex flex-col md:flex-row md:items-center gap-3">
-                                    <Popover
-                                      open={reviewCategoryOpen === tx.id}
-                                      onOpenChange={(open) => setReviewCategoryOpen(open ? tx.id : null)}
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    <Select
+                                      value={selection.level1 || ""}
+                                      onValueChange={(value) => {
+                                        setReviewLevelSelections((prev) => ({
+                                          ...prev,
+                                          [tx.id]: { level1: value }
+                                        }));
+                                        setReviewSelections((prev) => ({ ...prev, [tx.id]: "" }));
+                                      }}
                                     >
-                                      <PopoverTrigger asChild>
-                                        <Button
-                                          variant="outline"
-                                          role="combobox"
-                                          className="w-full md:w-[320px] justify-between bg-muted/30"
-                                        >
-                                          {selectedLabel || "Selecione a categoria"}
-                                          <ChevronsUpDown className="h-4 w-4 opacity-60" />
-                                        </Button>
-                                      </PopoverTrigger>
-                                      <PopoverContent className="p-0" align="start">
-                                        <Command>
-                                          <CommandInput placeholder="Buscar por palavra-chave ou categoria" />
-                                          <CommandList>
-                                            <CommandEmpty>Nenhuma categoria encontrada.</CommandEmpty>
-                                            <CommandGroup>
-                                              {taxonomyOptions.map((option) => (
-                                                <CommandItem
-                                                  key={option.leafId}
-                                                  value={`${option.label} ${option.searchText}`}
-                                                  onSelect={() => {
-                                                    setReviewSelections((prev) => ({ ...prev, [tx.id]: option.leafId }));
-                                                    setReviewCategoryOpen(null);
-                                                  }}
-                                                >
-                                                  <Check className={cn("mr-2 h-4 w-4", selectedLeafId === option.leafId ? "opacity-100" : "opacity-0")} />
-                                                  <span>{option.label}</span>
-                                                </CommandItem>
-                                              ))}
-                                            </CommandGroup>
-                                          </CommandList>
-                                        </Command>
-                                      </PopoverContent>
-                                    </Popover>
+                                      <SelectTrigger className="bg-muted/30">
+                                        <SelectValue placeholder="Nível 1" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {taxonomyLevels.level1Options.map((level1) => (
+                                          <SelectItem key={level1} value={level1}>
+                                            {level1}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <Select
+                                      value={selection.level2 || ""}
+                                      onValueChange={(value) => {
+                                        setReviewLevelSelections((prev) => ({
+                                          ...prev,
+                                          [tx.id]: { level1: selection.level1, level2: value }
+                                        }));
+                                        setReviewSelections((prev) => ({ ...prev, [tx.id]: "" }));
+                                      }}
+                                      disabled={!selection.level1}
+                                    >
+                                      <SelectTrigger className="bg-muted/30">
+                                        <SelectValue placeholder="Nível 2" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {level2Options.map((level2) => (
+                                          <SelectItem key={level2} value={level2}>
+                                            {level2}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <Select
+                                      value={selection.level3 || ""}
+                                      onValueChange={(value) => {
+                                        const leafId = taxonomyLevels.leafByLevels.get(
+                                          `${selection.level1}||${selection.level2}||${value}`
+                                        );
+                                        setReviewLevelSelections((prev) => ({
+                                          ...prev,
+                                          [tx.id]: { level1: selection.level1, level2: selection.level2, level3: value }
+                                        }));
+                                        if (leafId) {
+                                          setReviewSelections((prev) => ({ ...prev, [tx.id]: leafId }));
+                                        }
+                                      }}
+                                      disabled={!selection.level1 || !selection.level2}
+                                    >
+                                      <SelectTrigger className="bg-muted/30">
+                                        <SelectValue placeholder="Nível 3 (folha)" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {level3Options.map((level3) => (
+                                          <SelectItem key={level3} value={level3}>
+                                            {level3}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+
+                                  <div className="flex flex-col md:flex-row md:items-center gap-3">
                                     <Input
-                                      placeholder="Nova expressão (opcional)"
+                                      placeholder="Nova expressão (opcional, uma por vez)"
                                       value={reviewExpressions[tx.id] || ""}
                                       onChange={(e) => setReviewExpressions(prev => ({ ...prev, [tx.id]: e.target.value }))}
                                       className="flex-1"
@@ -1704,15 +1368,27 @@ export default function SettingsPage() {
                                     <Label className="text-xs text-muted-foreground uppercase tracking-wide">
                                       Adicionar novas expressões
                                     </Label>
-                                    <div className="flex flex-col md:flex-row gap-2">
-                                      <Input
-                                        placeholder="Adicionar nova expressão (use ';' para separar expressões)"
-                                        value={reviewKeywordDrafts[tx.id] || ""}
-                                        onChange={(e) => setReviewKeywordDrafts(prev => ({ ...prev, [tx.id]: e.target.value }))}
-                                      />
-                                      <Button variant="outline" className="shrink-0" onClick={() => handleAppendKeywords(tx.id)}>
-                                        Salvar
-                                      </Button>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                      <div className="flex flex-col md:flex-row gap-2">
+                                        <Input
+                                          placeholder="Palavras-chave (use ';' entre expressões)"
+                                          value={reviewKeywordDrafts[tx.id] || ""}
+                                          onChange={(e) => setReviewKeywordDrafts(prev => ({ ...prev, [tx.id]: e.target.value }))}
+                                        />
+                                        <Button variant="outline" className="shrink-0" onClick={() => handleAppendKeywords(tx.id)}>
+                                          Salvar +
+                                        </Button>
+                                      </div>
+                                      <div className="flex flex-col md:flex-row gap-2">
+                                        <Input
+                                          placeholder="Palavras-chave negativas (use ';')"
+                                          value={reviewNegativeDrafts[tx.id] || ""}
+                                          onChange={(e) => setReviewNegativeDrafts(prev => ({ ...prev, [tx.id]: e.target.value }))}
+                                        />
+                                        <Button variant="outline" className="shrink-0" onClick={() => handleAppendNegativeKeywords(tx.id)}>
+                                          Salvar -
+                                        </Button>
+                                      </div>
                                     </div>
                                     <p className="text-xs text-muted-foreground">
                                       Cada expressão deve ser separada por ponto e vírgula (;). Ex: 'Farmácia Müller; Apotheke'.
@@ -1726,156 +1402,12 @@ export default function SettingsPage() {
                       )}
                     </TabsContent>
 
-                    <TabsContent value="reset" className="mt-6 space-y-4">
-                      <Card className="border border-rose-200 bg-rose-50">
-                        <CardContent className="p-4 space-y-3">
-                          <h3 className="font-semibold text-rose-800">Zona de Perigo</h3>
-                          <p className="text-sm text-rose-700">
-                            Remova transações, categorias, regras, aliases e logos com confirmação em etapas.
-                          </p>
-                          <div className="space-y-2">
-                            <Button variant="destructive" className="gap-2" onClick={() => setDangerDialogOpen(true)}>
-                              <Trash2 className="h-4 w-4" />
-                              Apagar dados
-                            </Button>
-                            {dangerLastDeletedAt ? (
-                              <p className="text-xs text-rose-700">
-                                Última exclusão: {new Date(dangerLastDeletedAt).toLocaleString("pt-BR")}
-                              </p>
-                            ) : null}
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      <Dialog open={dangerDialogOpen} onOpenChange={handleDangerDialogChange}>
-                        <DialogContent>
-                          {dangerStep === "select" && (
-                            <>
-                              <DialogHeader>
-                                <DialogTitle>Tem certeza que deseja apagar dados?</DialogTitle>
-                                <DialogDescription>Selecione quais dados deseja remover:</DialogDescription>
-                              </DialogHeader>
-                              <div className="space-y-3 text-sm">
-                                <label className="flex items-center gap-2">
-                                  <Checkbox
-                                    checked={dangerSelections.transactions}
-                                    onCheckedChange={(checked) =>
-                                      setDangerSelections((prev) => ({
-                                        ...prev,
-                                        transactions: Boolean(checked),
-                                        all: false
-                                      }))
-                                    }
-                                  />
-                                  Transações
-                                </label>
-                                <label className="flex items-center gap-2">
-                                  <Checkbox
-                                    checked={dangerSelections.categories}
-                                    onCheckedChange={(checked) =>
-                                      setDangerSelections((prev) => ({
-                                        ...prev,
-                                        categories: Boolean(checked),
-                                        all: false
-                                      }))
-                                    }
-                                  />
-                                  Categorias e Regras
-                                </label>
-                                <label className="flex items-center gap-2">
-                                  <Checkbox
-                                    checked={dangerSelections.aliases}
-                                    onCheckedChange={(checked) =>
-                                      setDangerSelections((prev) => ({
-                                        ...prev,
-                                        aliases: Boolean(checked),
-                                        all: false
-                                      }))
-                                    }
-                                  />
-                                  Aliases e Logos
-                                </label>
-                                <label className="flex items-center gap-2">
-                                  <Checkbox
-                                    checked={dangerSelections.all}
-                                    onCheckedChange={(checked) =>
-                                      setDangerSelections({
-                                        transactions: false,
-                                        categories: false,
-                                        aliases: false,
-                                        all: Boolean(checked)
-                                      })
-                                    }
-                                  />
-                                  Tudo (Reset total)
-                                </label>
-                              </div>
-                              <DialogFooter>
-                                <Button
-                                  onClick={() => setDangerStep("confirm")}
-                                  disabled={
-                                    !(
-                                      dangerSelections.all ||
-                                      dangerSelections.transactions ||
-                                      dangerSelections.categories ||
-                                      dangerSelections.aliases
-                                    )
-                                  }
-                                >
-                                  Avançar
-                                </Button>
-                              </DialogFooter>
-                            </>
-                          )}
-
-                          {dangerStep === "confirm" && (
-                            <>
-                              <DialogHeader>
-                                <DialogTitle>Confirma exclusão permanente?</DialogTitle>
-                                <DialogDescription>
-                                  Essa ação não pode ser desfeita. Confirme digitando &quot;APAGAR&quot;.
-                                </DialogDescription>
-                              </DialogHeader>
-                              <Input
-                                value={dangerConfirmText}
-                                onChange={(e) => setDangerConfirmText(e.target.value)}
-                                placeholder="Digite APAGAR"
-                              />
-                              <DialogFooter>
-                                <Button variant="outline" onClick={() => setDangerStep("select")}>
-                                  Voltar
-                                </Button>
-                                <Button
-                                  variant="destructive"
-                                  onClick={handleDangerDelete}
-                                  disabled={dangerConfirmText !== "APAGAR"}
-                                >
-                                  Confirmar
-                                </Button>
-                              </DialogFooter>
-                            </>
-                          )}
-
-                          {dangerStep === "done" && (
-                            <>
-                              <DialogHeader>
-                                <DialogTitle>Exclusão concluída</DialogTitle>
-                                <DialogDescription>Os dados selecionados foram apagados com sucesso.</DialogDescription>
-                              </DialogHeader>
-                              <DialogFooter>
-                                <Button onClick={() => setDangerDialogOpen(false)}>Fechar</Button>
-                              </DialogFooter>
-                            </>
-                          )}
-                        </DialogContent>
-                      </Dialog>
-                    </TabsContent>
                   </Tabs>
                 </CardContent>
               </Card>
             )}
 
-            {activeTab === "dicionarios" && (
+            {activeTab === "dicionario" && (
               <>
                 <Card className="bg-white border-0 shadow-sm">
                   <CardHeader>
@@ -1909,26 +1441,387 @@ export default function SettingsPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="p-4 bg-muted/30 rounded-xl">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-2 h-2 rounded-full bg-primary"></div>
-                          <p className="font-medium text-sm">Importação em Massa</p>
+                    <Card className="bg-white border-0 shadow-sm">
+                      <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <BookOpen className="h-4 w-4 text-primary" />
+                          Aliases (CSV UTF-8 com BOM)
+                        </CardTitle>
+                        <CardDescription>
+                          Importe e exporte aliases com acentos preservados.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="flex flex-wrap gap-3">
+                          <Button variant="outline" className="gap-2" onClick={handleDownloadAliasesTemplateCsv}>
+                            <Download className="h-4 w-4" />
+                            Baixar template CSV
+                          </Button>
+                          <Button variant="outline" className="gap-2" onClick={handleDownloadAliasesCsv}>
+                            <Download className="h-4 w-4" />
+                            Baixar dados CSV
+                          </Button>
+                          <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
+                            <Input
+                              type="file"
+                              accept=".csv"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleAliasPreview(file);
+                              }}
+                            />
+                            <Button variant="outline" className="gap-2">
+                              <Upload className="h-4 w-4" />
+                              Pré-visualizar upload
+                            </Button>
+                          </label>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          Importe e exporte aliases via Excel para gerenciamento em lote
-                        </p>
-                      </div>
-                      <div className="p-4 bg-muted/30 rounded-xl">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-2 h-2 rounded-full bg-primary"></div>
-                          <p className="font-medium text-sm">Geração Automática</p>
+
+                        <div className="rounded-lg border border-muted bg-muted/10 p-3 text-sm">
+                          <p className="font-medium">Última importação</p>
+                          {aliasesLastImport ? (
+                            <p className="text-muted-foreground">
+                              {format(new Date(aliasesLastImport.createdAt), "dd/MM/yyyy HH:mm")} ·{" "}
+                              {formatImportStatus(aliasesLastImport.status)} ·{" "}
+                              {aliasesLastImport.rowsValid || 0}/{aliasesLastImport.rowsTotal || 0} linhas válidas
+                            </p>
+                          ) : (
+                            <p className="text-muted-foreground">Sem importações anteriores.</p>
+                          )}
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          Cria automaticamente chaves únicas baseadas nas transações
-                        </p>
-                      </div>
-                    </div>
+
+                        {aliasStatus && (
+                          <div
+                            className={cn(
+                              "flex items-center gap-2 rounded-md border px-3 py-2 text-xs",
+                              aliasStatus.type === "success"
+                                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                : "border-rose-200 bg-rose-50 text-rose-700"
+                            )}
+                          >
+                            {aliasStatus.type === "success" ? (
+                              <CheckCircle2 className="h-4 w-4" />
+                            ) : (
+                              <XCircle className="h-4 w-4" />
+                            )}
+                            <span>{aliasStatus.message}</span>
+                          </div>
+                        )}
+
+                        {aliasPreviewError ? (
+                          <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 space-y-2">
+                            <p className="font-medium">{aliasPreviewError}</p>
+                            {aliasPreview?.fixes?.length ? (
+                              <div className="text-xs text-rose-700">
+                                {aliasPreview.fixes.map((fix: string) => (
+                                  <div key={fix}>• {fix}</div>
+                                ))}
+                              </div>
+                            ) : null}
+                            {aliasPreview?.reasonCodes?.length ? (
+                              <p className="text-xs">Código: {aliasPreview.reasonCodes.join(", ")}</p>
+                            ) : null}
+                          </div>
+                        ) : null}
+
+                        {aliasPreview?.success && (
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                              <Card className="bg-muted/20 border-0">
+                                <CardContent className="p-3">
+                                  <p className="text-xs text-muted-foreground">Encoding</p>
+                                  <p className="text-sm font-semibold">{aliasPreview.detectedEncoding || "-"}</p>
+                                </CardContent>
+                              </Card>
+                              <Card className="bg-muted/20 border-0">
+                                <CardContent className="p-3">
+                                  <p className="text-xs text-muted-foreground">Delimiter</p>
+                                  <p className="text-sm font-semibold">{aliasPreview.detectedDelimiter || "-"}</p>
+                                </CardContent>
+                              </Card>
+                              <Card className="bg-muted/20 border-0">
+                                <CardContent className="p-3">
+                                  <p className="text-xs text-muted-foreground">Linhas</p>
+                                  <p className="text-sm font-semibold">{aliasPreview.rowsTotal || 0}</p>
+                                </CardContent>
+                              </Card>
+                              <Card className="bg-muted/20 border-0">
+                                <CardContent className="p-3">
+                                  <p className="text-xs text-muted-foreground">Colunas</p>
+                                  <p className="text-sm font-semibold">{aliasPreview.headerFound?.length || 0}</p>
+                                </CardContent>
+                              </Card>
+                            </div>
+
+                            <div className="rounded-lg border border-muted bg-muted/20 p-3 text-sm">
+                              <p className="font-medium">Colunas detectadas</p>
+                              <p className="text-xs text-muted-foreground">
+                                {aliasPreview.headerFound?.join(" · ") || "-"}
+                              </p>
+                            </div>
+
+                            <div className="overflow-x-auto rounded-lg border">
+                              <table className="min-w-full text-sm">
+                                <thead className="bg-muted/30">
+                                  <tr>
+                                    {(aliasPreview.headerFound || []).map((header: string) => (
+                                      <th key={header} className="px-3 py-2 text-left">
+                                        {header}
+                                      </th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {aliasPreview.previewRows?.map((row: any, idx: number) => (
+                                    <tr key={idx} className="border-t">
+                                      {(aliasPreview.headerFound || []).map((header: string) => (
+                                        <td key={`${header}-${idx}`} className="px-3 py-2">
+                                          {row[header]}
+                                        </td>
+                                      ))}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+
+                            <Button className="gap-2" onClick={handleAliasApply} disabled={!aliasPreview?.success}>
+                              Confirmar importação
+                            </Button>
+                          </div>
+                        )}
+
+                        <Separator />
+
+                        <div className="space-y-2">
+                          <Label>Teste de alias (key_desc)</Label>
+                          <div className="flex gap-2">
+                            <Input value={aliasTestKeyDesc} onChange={(e) => setAliasTestKeyDesc(e.target.value)} />
+                            <Button variant="outline" onClick={handleAliasTest}>Testar</Button>
+                          </div>
+                          {aliasTestResult && (
+                            <p className="text-sm text-muted-foreground">
+                              Alias: {aliasTestResult.aliasDesc || "nenhum"}
+                            </p>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="bg-white border-0 shadow-sm">
+                      <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Image className="h-4 w-4 text-primary" />
+                          Logos (download + upload)
+                        </CardTitle>
+                        <CardDescription>
+                          Colunas obrigatórias: Alias_Desc · Key_words_alias · URL_icon_internet
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="flex flex-wrap gap-3">
+                          <Button variant="outline" className="gap-2" onClick={handleDownloadAssetsTemplateCsv}>
+                            <Download className="h-4 w-4" />
+                            Baixar template CSV
+                          </Button>
+                          <Button variant="outline" className="gap-2" onClick={handleDownloadAssetsCsv}>
+                            <Download className="h-4 w-4" />
+                            Baixar dados CSV
+                          </Button>
+                          <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
+                            <Input
+                              type="file"
+                              accept=".csv"
+                              className="hidden"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                await handleLogosPreview(file);
+                              }}
+                            />
+                            <Button variant="outline" className="gap-2">
+                              <Upload className="h-4 w-4" />
+                              Pré-visualizar upload
+                            </Button>
+                          </label>
+                          <Button variant="outline" className="gap-2" onClick={handleRefreshLogos}>
+                            <RefreshCw className="h-4 w-4" />
+                            Atualizar logos
+                          </Button>
+                        </div>
+
+                        <div className="rounded-lg border border-muted bg-muted/10 p-3 text-sm">
+                          <p className="font-medium">Última importação</p>
+                          {logosLastImport ? (
+                            <p className="text-muted-foreground">
+                              {format(new Date(logosLastImport.createdAt), "dd/MM/yyyy HH:mm")} ·{" "}
+                              {formatImportStatus(logosLastImport.status)} ·{" "}
+                              {logosLastImport.rowsValid || 0}/{logosLastImport.rowsTotal || 0} linhas válidas
+                            </p>
+                          ) : (
+                            <p className="text-muted-foreground">Sem importações anteriores.</p>
+                          )}
+                        </div>
+
+                        {logosStatus && (
+                          <div
+                            className={cn(
+                              "flex items-center gap-2 rounded-md border px-3 py-2 text-xs",
+                              logosStatus.type === "success"
+                                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                : "border-rose-200 bg-rose-50 text-rose-700"
+                            )}
+                          >
+                            {logosStatus.type === "success" ? (
+                              <CheckCircle2 className="h-4 w-4" />
+                            ) : (
+                              <XCircle className="h-4 w-4" />
+                            )}
+                            <span>{logosStatus.message}</span>
+                          </div>
+                        )}
+
+                        {logosPreviewError ? (
+                          <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 space-y-2">
+                            <p className="font-medium">{logosPreviewError}</p>
+                            {logosPreview?.fixes?.length ? (
+                              <div className="text-xs text-rose-700">
+                                {logosPreview.fixes.map((fix: string) => (
+                                  <div key={fix}>• {fix}</div>
+                                ))}
+                              </div>
+                            ) : null}
+                            {logosPreview?.reasonCodes?.length ? (
+                              <p className="text-xs">Código: {logosPreview.reasonCodes.join(", ")}</p>
+                            ) : null}
+                          </div>
+                        ) : null}
+
+                        {logosPreview?.success && (
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                              <Card className="bg-muted/20 border-0">
+                                <CardContent className="p-3">
+                                  <p className="text-xs text-muted-foreground">Encoding</p>
+                                  <p className="text-sm font-semibold">{logosPreview.detectedEncoding || "-"}</p>
+                                </CardContent>
+                              </Card>
+                              <Card className="bg-muted/20 border-0">
+                                <CardContent className="p-3">
+                                  <p className="text-xs text-muted-foreground">Delimiter</p>
+                                  <p className="text-sm font-semibold">{logosPreview.detectedDelimiter || "-"}</p>
+                                </CardContent>
+                              </Card>
+                              <Card className="bg-muted/20 border-0">
+                                <CardContent className="p-3">
+                                  <p className="text-xs text-muted-foreground">Linhas</p>
+                                  <p className="text-sm font-semibold">{logosPreview.rowsTotal || 0}</p>
+                                </CardContent>
+                              </Card>
+                              <Card className="bg-muted/20 border-0">
+                                <CardContent className="p-3">
+                                  <p className="text-xs text-muted-foreground">Colunas</p>
+                                  <p className="text-sm font-semibold">{logosPreview.headerFound?.length || 0}</p>
+                                </CardContent>
+                              </Card>
+                            </div>
+
+                            <div className="rounded-lg border border-muted bg-muted/20 p-3 text-sm">
+                              <p className="font-medium">Colunas detectadas</p>
+                              <p className="text-xs text-muted-foreground">
+                                {logosPreview.headerFound?.join(" · ") || "-"}
+                              </p>
+                            </div>
+
+                            <div className="overflow-x-auto rounded-lg border">
+                              <table className="min-w-full text-sm">
+                                <thead className="bg-muted/30">
+                                  <tr>
+                                    {(logosPreview.headerFound || []).map((header: string) => (
+                                      <th key={header} className="px-3 py-2 text-left">
+                                        {header}
+                                      </th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {logosPreview.previewRows?.map((row: any, idx: number) => (
+                                    <tr key={idx} className="border-t">
+                                      {(logosPreview.headerFound || []).map((header: string) => (
+                                        <td key={`${header}-${idx}`} className="px-3 py-2">
+                                          {row[header]}
+                                        </td>
+                                      ))}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+
+                            <Button className="gap-2" onClick={handleLogosApply} disabled={!logosPreview?.success}>
+                              Confirmar importação
+                            </Button>
+                          </div>
+                        )}
+
+                        {logosImportResults && (
+                          <div className="space-y-2">
+                            <p className="text-sm text-muted-foreground">
+                              Processados: {logosImportResults.length}
+                            </p>
+                            <div className="overflow-x-auto rounded-lg border">
+                              <table className="min-w-full text-sm">
+                                <thead className="bg-muted/30">
+                                  <tr>
+                                    <th className="px-3 py-2 text-left">Alias</th>
+                                    <th className="px-3 py-2 text-left">Status</th>
+                                    <th className="px-3 py-2 text-left">Pré-visualizar</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {logosImportResults.map((row: any, idx: number) => (
+                                    <tr key={`${row.aliasDesc}-${idx}`} className="border-t">
+                                      <td className="px-3 py-2">
+                                        <div className="flex items-center gap-2">
+                                          <AliasLogo
+                                            aliasDesc={row.aliasDesc}
+                                            fallbackDesc={row.aliasDesc}
+                                            logoUrl={row.logoLocalPath}
+                                            size={24}
+                                            showText={false}
+                                          />
+                                          <span className="truncate">{row.aliasDesc}</span>
+                                        </div>
+                                      </td>
+                                      <td className="px-3 py-2">
+                                        <span
+                                          className={cn(
+                                            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs",
+                                            row.status === "ok"
+                                              ? "bg-emerald-100 text-emerald-700"
+                                              : "bg-rose-100 text-rose-700"
+                                          )}
+                                        >
+                                          {row.status === "ok" ? "OK" : "Falha"}
+                                        </span>
+                                      </td>
+                                      <td className="px-3 py-2">
+                                        {row.status === "ok" ? (
+                                          <span className="text-xs text-emerald-700">Logo salva</span>
+                                        ) : (
+                                          <span className="text-xs text-rose-700">{row.error}</span>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
                   </CardContent>
                 </Card>
               </>
@@ -1938,7 +1831,7 @@ export default function SettingsPage() {
               <Card className="bg-white border-0 shadow-sm">
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Database className="h-4 w-4 text-primary" />
+                    <CreditCard className="h-4 w-4 text-primary" />
                     Fontes de Dados
                   </CardTitle>
                   <CardDescription>
@@ -1946,100 +1839,326 @@ export default function SettingsPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-primary/5 rounded-xl border border-primary/20">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                        <CreditCard className="h-5 w-5 text-blue-600" />
+                  <div className="space-y-3">
+                    {INTEGRATION_PROVIDERS.map((provider) => (
+                      <div key={provider.id} className="p-4 bg-primary/5 rounded-xl border border-primary/20 space-y-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-lg bg-white flex items-center justify-center border border-muted">
+                              <img
+                                src={provider.logo}
+                                alt={provider.name}
+                                className="h-8 w-8 object-contain"
+                              />
+                            </div>
+                            <div>
+                              <p className="font-medium">{provider.name}</p>
+                              <p className="text-sm text-muted-foreground">Integração via CSV</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-primary/10 text-primary border-0">{provider.status}</Badge>
+                            <Button variant="outline" size="sm" onClick={() => setMappingProvider(provider.id)}>
+                              Ver mapeamento CSV
+                            </Button>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Em breve: importação de capturas/fotos de extrato (documentado, não implementado).
+                        </p>
                       </div>
-                      <div>
-                        <p className="font-medium">Miles & More</p>
-                        <p className="text-sm text-muted-foreground">Importação CSV ativa</p>
-                      </div>
-                    </div>
-                    <Badge className="bg-primary/10 text-primary border-0">Ativo</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-primary/5 rounded-xl border border-primary/20">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                        <CreditCard className="h-5 w-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium">American Express</p>
-                        <p className="text-sm text-muted-foreground">Multi-cartoes suportado</p>
-                      </div>
-                    </div>
-                    <Badge className="bg-primary/10 text-primary border-0">Ativo</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-primary/5 rounded-xl border border-primary/20">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
-                        <CreditCard className="h-5 w-5 text-red-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium">Sparkasse</p>
-                        <p className="text-sm text-muted-foreground">Conta bancaria IBAN</p>
-                      </div>
-                    </div>
-                    <Badge className="bg-primary/10 text-primary border-0">Ativo</Badge>
+                    ))}
                   </div>
                   <div className="p-4 bg-muted/20 rounded-xl border-2 border-dashed">
                     <p className="text-sm text-muted-foreground">
-                      <strong>Proximas integracoes:</strong> Nubank, Revolut, N26, Wise
+                      <strong>Próximas integrações:</strong> Nubank, Revolut, N26, Wise
                     </p>
                   </div>
+
+                  <Dialog open={Boolean(activeMapping)} onOpenChange={(open) => !open && setMappingProvider(null)}>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Mapeamento CSV · {activeMapping?.name}</DialogTitle>
+                        <DialogDescription>
+                          Regras de importação e contratos esperados.
+                        </DialogDescription>
+                      </DialogHeader>
+                      {activeMapping && (
+                        <div className="space-y-3 text-sm">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div className="rounded-md border border-muted bg-muted/20 p-3">
+                              <p className="text-xs text-muted-foreground">Delimiter</p>
+                              <p className="font-semibold">{activeMapping.csv.delimiter}</p>
+                            </div>
+                            <div className="rounded-md border border-muted bg-muted/20 p-3">
+                              <p className="text-xs text-muted-foreground">Codificação</p>
+                              <p className="font-semibold">{activeMapping.csv.encoding}</p>
+                            </div>
+                            <div className="rounded-md border border-muted bg-muted/20 p-3">
+                              <p className="text-xs text-muted-foreground">Formato de Data</p>
+                              <p className="font-semibold">{activeMapping.csv.dateFormat}</p>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="font-semibold">Cabeçalhos obrigatórios</p>
+                            <p className="text-muted-foreground">
+                              {activeMapping.csv.requiredHeaders.join(" · ")}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="font-semibold">Colunas do preview</p>
+                            <p className="text-muted-foreground">
+                              {activeMapping.csv.previewColumns.join(" · ")}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="font-semibold">Campos-chave usados pelo pipeline</p>
+                            <p className="text-muted-foreground">{activeMapping.csv.keyFields}</p>
+                          </div>
+                          <div>
+                            <p className="font-semibold">Falhas comuns (com ações)</p>
+                            <ul className="list-disc pl-5 text-muted-foreground">
+                              {activeMapping.csv.failureReasons.map((reason) => (
+                                <li key={reason}>{reason}</li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+                            Em breve: importação de fotos/prints de extrato diretamente pelo app.
+                          </div>
+                        </div>
+                      )}
+                    </DialogContent>
+                  </Dialog>
                 </CardContent>
               </Card>
             )}
 
-            {activeTab === "seguranca" && (
+            {activeTab === "auditoria" && (
+              <Card className="bg-white border-0 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-primary" />
+                    Log de Auditoria
+                  </CardTitle>
+                  <CardDescription>
+                    Registro de importações, alterações e exclusões críticas.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Button variant="outline" className="gap-2" onClick={handleExportAuditCsv}>
+                      <Download className="h-4 w-4" />
+                      Exportar CSV (UTF-8 com BOM)
+                    </Button>
+                  </div>
+
+                  {auditLogsLoading ? (
+                    <p className="text-sm text-muted-foreground">Carregando registros...</p>
+                  ) : auditLogs.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Nenhum evento registrado.</p>
+                  ) : (
+                    <div className="overflow-x-auto rounded-lg border">
+                      <table className="min-w-full text-sm">
+                        <thead className="bg-muted/30">
+                          <tr>
+                            <th className="px-3 py-2 text-left">Data</th>
+                            <th className="px-3 py-2 text-left">Ação</th>
+                            <th className="px-3 py-2 text-left">Status</th>
+                            <th className="px-3 py-2 text-left">Resumo</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {auditLogs.map((log: any) => {
+                            const statusLabel =
+                              log.status === "error" ? "Falha" : log.status === "warning" ? "Atenção" : "Sucesso";
+                            const statusClass =
+                              log.status === "error"
+                                ? "bg-rose-100 text-rose-700"
+                                : log.status === "warning"
+                                  ? "bg-amber-100 text-amber-700"
+                                  : "bg-emerald-100 text-emerald-700";
+                            const actionLabel = AUDIT_ACTION_LABELS[log.action] || log.action;
+                            return (
+                            <tr key={log.id} className="border-t">
+                              <td className="px-3 py-2 whitespace-nowrap">
+                                {new Date(log.createdAt).toLocaleString("pt-BR")}
+                              </td>
+                              <td className="px-3 py-2">{actionLabel}</td>
+                              <td className="px-3 py-2">
+                                <span
+                                  className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-xs", statusClass)}
+                                >
+                                  {statusLabel}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2">{log.message || "-"}</td>
+                            </tr>
+                          )})}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {activeTab === "danger" && (
               <>
-                <Card className="bg-white border-0 shadow-sm">
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Key className="h-4 w-4 text-primary" />
-                      Alterar Senha
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+                <Card className="border border-rose-200 bg-rose-50">
+                  <CardContent className="p-4 space-y-3">
+                    <h3 className="font-semibold text-rose-800">Zona de Perigo</h3>
+                    <p className="text-sm text-rose-700">
+                      Remova transações, categorias, regras, aliases e logos com confirmação em etapas.
+                    </p>
                     <div className="space-y-2">
-                      <Label className="text-muted-foreground text-xs uppercase tracking-wide">Senha Atual</Label>
-                      <Input type="password" className="bg-muted/30 border-0" />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-muted-foreground text-xs uppercase tracking-wide">Nova Senha</Label>
-                        <Input type="password" className="bg-muted/30 border-0" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-muted-foreground text-xs uppercase tracking-wide">Confirmar</Label>
-                        <Input type="password" className="bg-muted/30 border-0" />
-                      </div>
-                    </div>
-                    <div className="flex justify-end">
-                      <Button className="bg-primary hover:bg-primary/90">Atualizar Senha</Button>
+                      <Button variant="destructive" className="gap-2" onClick={() => setDangerDialogOpen(true)}>
+                        <Trash2 className="h-4 w-4" />
+                        Apagar dados
+                      </Button>
+                      {dangerLastDeletedAt ? (
+                        <p className="text-xs text-rose-700">
+                          Última exclusão: {new Date(dangerLastDeletedAt).toLocaleString("pt-BR")}
+                        </p>
+                      ) : null}
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card className="bg-rose-50 border-rose-200/50 shadow-sm">
-                  <CardHeader>
-                    <CardTitle className="text-base font-semibold text-rose-700 flex items-center gap-2">
-                      <Trash2 className="h-4 w-4" />
-                      Zona de Perigo
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-rose-700">Excluir Conta</p>
-                        <p className="text-sm text-rose-600/80">Todos os dados serao apagados permanentemente.</p>
-                      </div>
-                      <Button variant="outline" className="border-rose-300 text-rose-700 hover:bg-rose-100">
-                        Excluir
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                <Dialog open={dangerDialogOpen} onOpenChange={handleDangerDialogChange}>
+                  <DialogContent>
+                    {dangerStep === "select" && (
+                      <>
+                        <DialogHeader>
+                          <DialogTitle>Tem certeza que deseja apagar dados?</DialogTitle>
+                          <DialogDescription>Selecione quais dados deseja remover:</DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-3 text-sm">
+                          <label className="flex items-center gap-2">
+                            <Checkbox
+                              checked={dangerSelections.transactions}
+                              onCheckedChange={(checked) =>
+                                setDangerSelections((prev) => ({
+                                  ...prev,
+                                  transactions: Boolean(checked),
+                                  all: false
+                                }))
+                              }
+                            />
+                            Transações
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <Checkbox
+                              checked={dangerSelections.categories}
+                              onCheckedChange={(checked) =>
+                                setDangerSelections((prev) => ({
+                                  ...prev,
+                                  categories: Boolean(checked),
+                                  all: false
+                                }))
+                              }
+                            />
+                            Categorias e Regras
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <Checkbox
+                              checked={dangerSelections.aliases}
+                              onCheckedChange={(checked) =>
+                                setDangerSelections((prev) => ({
+                                  ...prev,
+                                  aliases: Boolean(checked),
+                                  all: false
+                                }))
+                              }
+                            />
+                            Aliases e Logos
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <Checkbox
+                              checked={dangerSelections.all}
+                              onCheckedChange={(checked) =>
+                                setDangerSelections({
+                                  transactions: false,
+                                  categories: false,
+                                  aliases: false,
+                                  all: Boolean(checked)
+                                })
+                              }
+                            />
+                            Tudo (Reset total)
+                          </label>
+                        </div>
+                        <DialogFooter>
+                          <Button
+                            onClick={() => setDangerStep("confirm")}
+                            disabled={
+                              !(
+                                dangerSelections.all ||
+                                dangerSelections.transactions ||
+                                dangerSelections.categories ||
+                                dangerSelections.aliases
+                              )
+                            }
+                          >
+                            Avançar
+                          </Button>
+                        </DialogFooter>
+                      </>
+                    )}
+
+                    {dangerStep === "confirm" && (
+                      <>
+                        <DialogHeader>
+                          <DialogTitle>Confirma exclusão permanente?</DialogTitle>
+                          <DialogDescription>
+                            Essa ação não pode ser desfeita. Confirme digitando &quot;APAGAR&quot;.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <Input
+                          value={dangerConfirmText}
+                          onChange={(e) => setDangerConfirmText(e.target.value)}
+                          placeholder="Digite APAGAR"
+                        />
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setDangerStep("select")}>
+                            Voltar
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            onClick={handleDangerDelete}
+                            disabled={dangerConfirmText !== "APAGAR"}
+                          >
+                            Confirmar
+                          </Button>
+                        </DialogFooter>
+                      </>
+                    )}
+
+                    {dangerStep === "done" && (
+                      <>
+                        <DialogHeader>
+                          <DialogTitle>Exclusão concluída</DialogTitle>
+                          <DialogDescription>
+                            {dangerLastDeletedAt
+                              ? `Concluído em ${new Date(dangerLastDeletedAt).toLocaleString("pt-BR")}.`
+                              : "Os dados selecionados foram apagados com sucesso."}
+                          </DialogDescription>
+                        </DialogHeader>
+                        {dangerDeletedSummary.length > 0 && (
+                          <div className="rounded-md border border-muted bg-muted/20 p-3 text-sm">
+                            <p className="font-medium">Itens apagados</p>
+                            <p className="text-muted-foreground">
+                              {dangerDeletedSummary.join(" · ")}
+                            </p>
+                          </div>
+                        )}
+                        <DialogFooter>
+                          <Button onClick={() => setDangerDialogOpen(false)}>Fechar</Button>
+                        </DialogFooter>
+                      </>
+                    )}
+                  </DialogContent>
+                </Dialog>
               </>
             )}
           </div>

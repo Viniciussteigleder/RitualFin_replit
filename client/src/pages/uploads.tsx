@@ -12,9 +12,10 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Link } from "wouter";
 import { BankBadge } from "@/components/bank-badge";
-import { detectBankProvider } from "@/lib/bank-logos";
 import { UploadHistorySkeleton } from "@/components/skeletons/upload-history-skeleton";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function UploadsPage() {
   const queryClient = useQueryClient();
@@ -25,6 +26,12 @@ export default function UploadsPage() {
   const [lastDiagnostics, setLastDiagnostics] = useState<any | null>(null);
   const [lastError, setLastError] = useState<any | null>(null);
   const [lastSummary, setLastSummary] = useState<{ rowsImported: number; duplicates: number } | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewData, setPreviewData] = useState<any | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [previewEncoding, setPreviewEncoding] = useState<string | undefined>();
+  const [isPreviewing, setIsPreviewing] = useState(false);
+  const [importDate, setImportDate] = useState(() => new Date().toISOString().split("T")[0]);
 
   const { data: uploads = [], isLoading } = useQuery({
     queryKey: ["uploads"],
@@ -32,7 +39,7 @@ export default function UploadsPage() {
   });
 
   const uploadMutation = useMutation({
-    mutationFn: async (file: File) => {
+    mutationFn: async ({ file, importDate }: { file: File; importDate: string }) => {
       setUploadProgress(0);
       const interval = setInterval(() => {
         setUploadProgress(prev => Math.min(prev + 10, 90));
@@ -54,7 +61,7 @@ export default function UploadsPage() {
           binary += String.fromCharCode(bytes[i]);
         }
         const fileBase64 = btoa(binary);
-        const result = await uploadsApi.process(file.name, content, encoding, fileBase64, file.type);
+        const result = await uploadsApi.process(file.name, content, encoding, fileBase64, file.type, importDate);
         clearInterval(interval);
         setUploadProgress(100);
         return result;
@@ -101,6 +108,52 @@ export default function UploadsPage() {
     }
   });
 
+  const readCsvWithEncoding = async (file: File) => {
+    const buffer = await file.arrayBuffer();
+    let encoding = "utf-8";
+    let content = "";
+    try {
+      content = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+    } catch {
+      encoding = "iso-8859-1";
+      content = new TextDecoder("iso-8859-1").decode(buffer);
+    }
+    return { content, encoding, buffer };
+  };
+
+  const readFileBase64 = (buffer: ArrayBuffer) => {
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += 1) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+  };
+
+  const handlePreview = async (file: File) => {
+    try {
+      setIsPreviewing(true);
+      setPreviewError(null);
+      const { content, encoding, buffer } = await readCsvWithEncoding(file);
+      setPreviewEncoding(encoding);
+      const fileBase64 = readFileBase64(buffer);
+      const preview = await uploadsApi.preview(file.name, content, encoding, fileBase64, file.type, importDate);
+      setPreviewData(preview);
+      if (!preview?.success) {
+        setPreviewError("Falha na leitura do arquivo. Verifique delimitador, colunas e codificação.");
+      }
+    } catch (error: any) {
+      setPreviewError("Falha na pré-visualização. Verifique o arquivo e tente novamente.");
+      toast({
+        title: "Erro na pré-visualização",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsPreviewing(false);
+    }
+  };
+
   const handleFileSelect = (file: File) => {
     if (!file.name.endsWith(".csv")) {
       toast({
@@ -110,7 +163,13 @@ export default function UploadsPage() {
       });
       return;
     }
-    uploadMutation.mutate(file);
+    setSelectedFile(file);
+    setPreviewData(null);
+    setPreviewError(null);
+    setLastDiagnostics(null);
+    setLastError(null);
+    setLastSummary(null);
+    void handlePreview(file);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -118,6 +177,14 @@ export default function UploadsPage() {
     setIsDragging(false);
     const file = e.dataTransfer.files[0];
     if (file) handleFileSelect(file);
+  };
+
+  const handleImport = () => {
+    if (!selectedFile) {
+      toast({ title: "Selecione um arquivo primeiro", variant: "destructive" });
+      return;
+    }
+    uploadMutation.mutate({ file: selectedFile, importDate });
   };
 
   const totalImported = uploads.reduce((sum: number, u: any) => sum + (u.rowsImported || 0), 0);
@@ -175,7 +242,7 @@ export default function UploadsPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Proximo Passo</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Próximo Passo</p>
                   <p className="text-lg font-semibold mt-1">Revisar</p>
                   <Link href="/confirm" className="text-xs text-primary hover:underline flex items-center gap-1 mt-1">
                     Ver fila <ChevronRight className="h-3 w-3" />
@@ -255,12 +322,128 @@ export default function UploadsPage() {
           </CardContent>
         </Card>
 
+        {selectedFile && (
+          <Card className="bg-white border border-gray-200 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Pré-visualização & Importação</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold">{selectedFile.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {previewEncoding ? `Codificação detectada: ${previewEncoding}` : "Codificação será detectada automaticamente."}
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Data de importação</Label>
+                    <Input
+                      type="date"
+                      value={importDate}
+                      onChange={(e) => setImportDate(e.target.value)}
+                      className="w-[180px]"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => void handlePreview(selectedFile)}
+                      disabled={isPreviewing}
+                      className="gap-2"
+                    >
+                      {isPreviewing ? <Loader2 className="h-4 w-4 animate-spin" /> : <AlertCircle className="h-4 w-4" />}
+                      Pré-visualizar
+                    </Button>
+                    <Button onClick={handleImport} disabled={uploadMutation.isPending} className="gap-2">
+                      {uploadMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                      Importar
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {previewError && (
+                <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+                  {previewError}
+                </div>
+              )}
+
+              {previewData?.success && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                    <div className="rounded-md border border-gray-100 bg-gray-50 p-3">
+                      <p className="text-muted-foreground">Formato</p>
+                      <p className="font-medium">{previewData.format || "-"}</p>
+                    </div>
+                    <div className="rounded-md border border-gray-100 bg-gray-50 p-3">
+                      <p className="text-muted-foreground">Delimiter</p>
+                      <p className="font-medium">{previewData.meta?.delimiter || ";"}</p>
+                    </div>
+                    <div className="rounded-md border border-gray-100 bg-gray-50 p-3">
+                      <p className="text-muted-foreground">Data</p>
+                      <p className="font-medium">{previewData.meta?.dateFormat || "-"}</p>
+                    </div>
+                    <div className="rounded-md border border-gray-100 bg-gray-50 p-3">
+                      <p className="text-muted-foreground">Linhas</p>
+                      <p className="font-medium">{previewData.rows?.length || 0}</p>
+                    </div>
+                  </div>
+
+                  {previewData.meta?.headersFound?.length ? (
+                    <div className="rounded-md border border-gray-100 bg-gray-50 p-3 text-xs">
+                      <p className="font-semibold">Colunas detectadas</p>
+                      <p className="text-muted-foreground">
+                        {previewData.meta.headersFound.join(" · ")}
+                      </p>
+                    </div>
+                  ) : null}
+
+                  <div className="overflow-x-auto rounded-lg border">
+                    <table className="min-w-full text-xs">
+                      <thead className="bg-muted/30 text-muted-foreground">
+                        <tr>
+                          <th className="px-3 py-2 text-left">Fonte</th>
+                          <th className="px-3 py-2 text-left">Data</th>
+                          <th className="px-3 py-2 text-left">Valor</th>
+                          <th className="px-3 py-2 text-left">Moeda</th>
+                          <th className="px-3 py-2 text-left">Descrição</th>
+                          <th className="px-3 py-2 text-left">Key Desc</th>
+                          <th className="px-3 py-2 text-left">Conta</th>
+                          <th className="px-3 py-2 text-left">Key</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {previewData.rows?.map((row: any, idx: number) => (
+                          <tr key={`${row.key}-${idx}`} className="border-t">
+                            <td className="px-3 py-2">{row.source}</td>
+                            <td className="px-3 py-2">{row.bookingDate}</td>
+                            <td className="px-3 py-2">{row.amount}</td>
+                            <td className="px-3 py-2">{row.currency}</td>
+                            <td className="px-3 py-2">{row.simpleDesc}</td>
+                            <td className="px-3 py-2">{row.keyDesc}</td>
+                            <td className="px-3 py-2">{row.accountSource}</td>
+                            <td className="px-3 py-2">{row.key}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    A pré-visualização mostra exatamente o que será importado. Ajuste a data de importação se necessário.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {lastDiagnostics && (
           <Card className="bg-white border border-gray-200 shadow-sm">
             <CardContent className="p-5 space-y-3">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-semibold">Import diagnostics</p>
+                  <p className="text-sm font-semibold">Diagnóstico da importação</p>
                   <p className="text-xs text-muted-foreground">
                     {lastError
                       ? `Falha: ${lastError.code || "UNKNOWN"}`
@@ -276,7 +459,7 @@ export default function UploadsPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
                 <div className="rounded-md border border-gray-100 bg-gray-50 p-3">
-                  <p className="text-muted-foreground">Encoding</p>
+                  <p className="text-muted-foreground">Codificação</p>
                   <p className="font-medium">{lastDiagnostics.encodingUsed || "n/a"}</p>
                 </div>
                 <div className="rounded-md border border-gray-100 bg-gray-50 p-3">
@@ -284,7 +467,7 @@ export default function UploadsPage() {
                   <p className="font-medium">{lastDiagnostics.delimiterUsed || ";"}</p>
                 </div>
                 <div className="rounded-md border border-gray-100 bg-gray-50 p-3">
-                  <p className="text-muted-foreground">Rows</p>
+                  <p className="text-muted-foreground">Linhas</p>
                   <p className="font-medium">{lastDiagnostics.rowsTotal}</p>
                 </div>
               </div>
@@ -306,18 +489,18 @@ export default function UploadsPage() {
 
               <Accordion type="single" collapsible>
                 <AccordionItem value="details">
-                  <AccordionTrigger className="text-xs">Show details</AccordionTrigger>
+                  <AccordionTrigger className="text-xs">Ver detalhes</AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-2 text-xs">
                       {lastDiagnostics.requiredMissing?.length > 0 && (
                         <div>
-                          <p className="font-semibold">Missing required columns</p>
+                          <p className="font-semibold">Colunas obrigatórias faltando</p>
                           <p className="text-muted-foreground">{lastDiagnostics.requiredMissing.join(", ")}</p>
                         </div>
                       )}
                       {lastDiagnostics.rowErrors?.length > 0 && (
                         <div>
-                          <p className="font-semibold">Row errors (first 3)</p>
+                          <p className="font-semibold">Erros por linha (primeiras 3)</p>
                           <div className="space-y-1 text-muted-foreground">
                             {lastDiagnostics.rowErrors.slice(0, 3).map((row: any) => (
                               <p key={`${row.rowNumber}-${row.field}`}>
@@ -329,7 +512,7 @@ export default function UploadsPage() {
                       )}
                       {lastDiagnostics.rowsPreview?.length > 0 && (
                         <div>
-                          <p className="font-semibold">Preview (first 20)</p>
+                          <p className="font-semibold">Prévia (primeiras 20)</p>
                           <pre className="whitespace-pre-wrap rounded-md bg-gray-50 p-2 text-[11px] text-gray-700">
                             {JSON.stringify(lastDiagnostics.rowsPreview, null, 2)}
                           </pre>

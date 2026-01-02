@@ -6,7 +6,7 @@ import { useMonth } from "@/lib/month-context";
 
 const NAV_TABS = [
   { label: "Painel", href: "/dashboard" },
-  { label: "Transacoes", href: "/transactions" },
+  { label: "Transações", href: "/transactions" },
   { label: "Configurações", href: "/settings" },
 ];
 

@@ -3,7 +3,7 @@
 This plan validates UI, workflows, business rules, AI logic, and production deployment for RitualFin. It reflects current repo behavior and routing.
 
 ## 0) Current app reality (source of truth)
-- Routes /confirm, /rules, /merchant-dictionary, /ai-keywords are legacy and currently redirect to /settings (see client/src/App.tsx). Review queue, rule tests, and alias tests live in Settings > Classificacao & Dados.
+- Rotas /confirm, /rules, /merchant-dictionary, /ai-keywords são páginas ativas (Operações).
 - AI assistant modal and Notifications page are UI shells. Validate UI behavior and graceful messaging; backend integration is pending.
 - Auth is demo-only (login creates/uses user "demo").
 - CSV import supports Miles & More, Amex, Sparkasse with auto-detect (server/csv-parser.ts).
@@ -29,13 +29,13 @@ This plan validates UI, workflows, business rules, AI logic, and production depl
 - Local dev: Vite + Express on port 5000, DB via Supabase or local PG.
 - Staging/Prod: Vercel frontend, Render backend, Supabase DB.
 - Baseline reset:
-  - UI: Settings > Classificacao & Dados > Danger Zone > Resetar dados.
+  - UI: Settings > Zona de Perigo > Apagar dados.
   - API: POST /api/settings/reset.
 - Sample CSV files (repo):
   - Miles & More: attached_assets/2025-11-24_Transactions_list_Miles_&_More_Gold_Credit_Card_531_1766834531215.csv
   - Amex: attached_assets/activity_(8)_1766875792745.csv
   - Sparkasse: attached_assets/20250929-22518260-umsatz_1766876653600.CSV
-- Classification/aliases Excel: use exported templates from Settings to avoid schema drift.
+- Classification/aliases CSV: use exported templates from Settings to avoid schema drift.
 
 ## 3) Priority definitions
 - P0: Release blocking, core data integrity, auth/login, import, confirm queue, deployment routing.
@@ -82,7 +82,7 @@ Each test lists Preconditions, Steps, Expected (UI + API + DB), Pass/Fail, Evide
 ### Global shell (sidebar, layout, AI, shortcuts)
 - NAV-01 (P0): Sidebar navigation routes
   - Preconditions: Logged in, sidebar visible.
-  - Steps: Click each nav item (Dashboard, Calendar, Notifications, Budgets, Goals, Transactions, Uploads, Accounts, Rituals, Settings).
+  - Steps: Click each nav item (Dashboard, Calendário, Transações, Contas, Insights, Upload, Lista de Confirmação, Regras, AI Keywords, Notificações, Orçamento, Metas, Rituais Semanal/Mensal, Configurações).
   - Expected: URL updates, correct page header renders, no console errors, API calls succeed.
   - Pass/Fail: Pass if all routes load without errors; fail if any route breaks or errors.
   - Evidence: Screenshot per destination + console log export.
@@ -94,8 +94,8 @@ Each test lists Preconditions, Steps, Expected (UI + API + DB), Pass/Fail, Evide
   - Evidence: Screen recording or before/after screenshots.
 - NAV-03 (P1): Sidebar collapse/expand
   - Preconditions: Desktop viewport.
-  - Steps: Toggle collapse button, then expand.
-  - Expected: Sidebar width changes, tooltips visible when collapsed.
+  - Steps: Toggle group chevrons to collapse/expand; navigate; refresh page.
+  - Expected: Estado persistido, grupo da rota ativa auto-expande, layout estável.
   - Pass/Fail: Pass if layout stable and nav still works.
   - Evidence: Screenshot collapsed and expanded.
 - NAV-04 (P1): Month selector in sidebar
@@ -424,7 +424,7 @@ Each test lists Preconditions, Steps, Expected (UI + API + DB), Pass/Fail, Evide
 ### Settings
 - SET-01 (P0): Tab switching
   - Preconditions: On /settings.
-  - Steps: Click each top-level tab (Conta, Preferencias, Classificacao, Dicionarios, Integracoes, Seguranca).
+  - Steps: Click each top-level tab (Conta, Preferências Regionais, Notificações, Integrações, Classificação & Dados, Dicionário de Comerciantes, Log de Auditoria, Zona de Perigo).
   - Expected: Content switches without errors.
   - Pass/Fail: Pass if each tab renders.
   - Evidence: Screenshot of each tab.
@@ -440,79 +440,79 @@ Each test lists Preconditions, Steps, Expected (UI + API + DB), Pass/Fail, Evide
   - Expected: If download exists, file starts; otherwise no crash.
   - Pass/Fail: Pass if UI stable and any download works.
   - Evidence: Screenshot + download evidence.
-- SET-04 (P2): Preferencias - selects
-  - Preconditions: Preferencias tab.
-  - Steps: Open language and currency dropdowns and select values.
-  - Expected: UI updates selection.
-  - Pass/Fail: Pass if dropdown works without errors.
-  - Evidence: Screenshot.
-- SET-05 (P2): Preferencias - theme and cents toggles
-  - Preconditions: Preferencias tab.
-  - Steps: Toggle dark mode and show cents.
-  - Expected: Switch state toggles (UI only).
-  - Pass/Fail: Pass if toggles work and no errors.
-  - Evidence: Screenshot.
-- SET-06 (P0): Preferencias - auto-confirm high confidence
-  - Preconditions: Preferencias tab; settings loaded.
-  - Steps: Toggle autoConfirmHighConfidence on/off; adjust slider to 80, 79, 85.
-  - Expected: API /settings PATCH called; stored threshold updates.
-  - Pass/Fail: Pass if settings persist after reload.
+- SET-04 (P0): Preferências Regionais - selects
+  - Preconditions: Preferências Regionais tab.
+  - Steps: Open Idioma, Moeda, Região Fiscal and select values.
+  - Expected: UI updates selection and /settings PATCH is called.
+  - Pass/Fail: Pass if selections persist after reload.
   - Evidence: Network log + screenshot.
-- SET-07 (P0): Classificacao - import preview and process
-  - Preconditions: Classificacao & Dados > Importacoes.
-  - Steps: Choose source, select CSV, click Preview, then Import.
-  - Expected: Preview shows format/meta; import success toast; uploads/transactions updated.
-  - Pass/Fail: Pass if preview matches file format and import succeeds.
-  - Evidence: Screenshot + /api/imports/preview + /api/uploads/process responses.
-- SET-08 (P1): Classificacao - categories Excel import
-  - Preconditions: Categories tab; exported template.
-  - Steps: Upload Excel, preview, confirm remap if required, apply.
-  - Expected: Categories/rules updated; API /classification/import/apply success.
-  - Pass/Fail: Pass if categories reflect new data.
+- SET-05 (P1): Notificações - toggles
+  - Preconditions: Notificações tab.
+  - Steps: Toggle importações, fila de revisão, resumo mensal.
+  - Expected: UI toggles and /settings PATCH called.
+  - Pass/Fail: Pass if persisted.
+  - Evidence: Network log + screenshot.
+- SET-06 (P0): Classificação & Dados - categorias import preview/confirm
+  - Preconditions: Classificação & Dados > Categorias.
+  - Steps: Upload CSV template, preview, confirmar.
+  - Expected: Preview shows headers; confirm applies changes with status panel.
+  - Pass/Fail: Pass if categories/rules update and status is visible.
+  - Evidence: Screenshot + /api/imports/preview + /api/imports/confirm responses.
+- SET-07 (P1): Classificação & Dados - regras links
+  - Preconditions: Regras KeyWords tab.
+  - Steps: Open “Abrir Regras” and “Ver sugestões”.
+  - Expected: Redirects to /rules and /ai-keywords respectively.
+  - Pass/Fail: Pass if routes load without error.
+  - Evidence: URL + screenshot.
+- SET-08 (P0): Classificação & Dados - fila de revisão
+  - Preconditions: Fila de Revisão com itens.
+  - Steps: Selecionar N1/N2/N3, aplicar classificação, adicionar keywords e negativas.
+  - Expected: API /classification/review/assign e /classification/rules/append* funcionam; fila atualiza.
+  - Pass/Fail: Pass se item sai da fila e regras são atualizadas.
   - Evidence: Screenshot + API response.
-- SET-09 (P1): Aliases & logos - import/apply
-  - Preconditions: Aliases tab; exported template.
-  - Steps: Upload aliases Excel, preview, apply.
-  - Expected: alias tables update; transactions show aliasDesc.
-  - Pass/Fail: Pass if alias shown in transactions.
+- SET-09 (P1): Dicionário - aliases CSV
+  - Preconditions: Dicionário tab.
+  - Steps: Upload CSV, preview, confirmar.
+  - Expected: aliases aplicados; transações mostram Alias_Desc.
+  - Pass/Fail: Pass if alias appears in transações.
   - Evidence: Screenshot + API response.
-- SET-10 (P1): Aliases & logos - refresh logos
-  - Preconditions: Aliases tab.
-  - Steps: Click "Atualizar logos".
-  - Expected: API /aliases/refresh-logos called; logos update after refresh.
-  - Pass/Fail: Pass if response returns total and UI remains stable.
-  - Evidence: Network log.
-- SET-11 (P0): Review queue assign
-  - Preconditions: Review queue has items, taxonomy leaves loaded.
-  - Steps: Select category for a row, optionally add expression, click Apply.
-  - Expected: API /classification/review/assign succeeds; row removed; rule created if requested.
-  - Pass/Fail: Pass if transaction leaves queue and DB updates leaf_id.
-  - Evidence: Screenshot + API response + DB query.
-- SET-12 (P0): Danger zone reset
-  - Preconditions: Data exists.
-  - Steps: Click Resetar dados and confirm.
-  - Expected: Transactions, rules, aliases reset; base seed applied.
-  - Pass/Fail: Pass if DB reset verified by counts.
-  - Evidence: Screenshot + DB queries.
-- SET-13 (P2): Dicionarios tab
-  - Preconditions: Dicionarios tab visible.
-  - Steps: Click "Acessar Dicionario Completo".
-  - Expected: Redirects to /settings (legacy route), no crash.
-  - Pass/Fail: Pass if UI stable after redirect.
-  - Evidence: Screenshot + URL.
-- SET-14 (P2): Integracoes and Seguranca tabs
-  - Preconditions: Tabs visible.
-  - Steps: Toggle through cards and forms; click Update Password and Delete Account buttons.
-  - Expected: UI remains stable (placeholders); no crash.
-  - Pass/Fail: Pass if no errors.
+- SET-10 (P1): Dicionário - logos CSV + refresh
+  - Preconditions: Dicionário tab.
+  - Steps: Upload CSV de logos, preview, confirmar, clicar Atualizar logos.
+  - Expected: logos salvos e renderizados; refresh retorna total.
+  - Pass/Fail: Pass if logos render with fallback when missing.
+  - Evidence: Screenshot + API response.
+- SET-11 (P1): Integrações - cards + mapeamento
+  - Preconditions: Integrações tab.
+  - Steps: Abrir “Ver mapeamento CSV” para cada provedor.
+  - Expected: Modal mostra delimiter, encoding, formato de data, headers e falhas comuns.
+  - Pass/Fail: Pass if modal content matches contrato.
   - Evidence: Screenshot.
+- SET-12 (P1): Log de Auditoria
+  - Preconditions: Log de Auditoria tab.
+  - Steps: Validar tabela e exportação CSV.
+  - Expected: Tabela renderiza; export CSV inicia download (UTF-8 BOM).
+  - Pass/Fail: Pass if download works and no crash.
+  - Evidence: Screenshot + file download.
+- SET-13 (P0): Zona de Perigo (3 passos)
+  - Preconditions: Dados existentes.
+  - Steps: Selecionar datasets, confirmar digitando APAGAR, concluir.
+  - Expected: Fluxo em 3 passos, timestamp e resumo exibidos; log de auditoria registrado.
+  - Pass/Fail: Pass if delete only occurs after confirmação.
+  - Evidence: Screenshot + API response.
+- SET-14 (P2): Dicionário completo
+  - Preconditions: Dicionário tab.
+  - Steps: Click “Acessar Dicionário Completo”.
+  - Expected: Redirect to /merchant-dictionary.
+  - Pass/Fail: Pass if route loads without error.
+  - Evidence: Screenshot + URL.
 
 ### Legacy routes and Not Found
-- LEG-01 (P0): Legacy route redirects
+- LEG-01 (P0): Operações routes load
   - Preconditions: Logged in.
   - Steps: Navigate to /confirm, /rules, /merchant-dictionary, /ai-keywords.
-  - Expected: Redirect to /settings.
-  - Pass/Fail: Pass if each route redirects correctly.
+  - Expected: Pages load without redirect or console errors.
+  - Pass/Fail: Pass if each route renders successfully.
   - Evidence: URL + screenshot.
 - NF-01 (P1): Not found page
   - Preconditions: Logged in.
@@ -524,7 +524,7 @@ Each test lists Preconditions, Steps, Expected (UI + API + DB), Pass/Fail, Evide
 ## 7) Business rules and AI logic verification suite
 - CSV-01 (P0): Format detection
   - Preconditions: Sample CSVs available.
-  - Steps: Upload each sample file via /uploads or Settings import.
+  - Steps: Upload each sample file via /uploads.
   - Expected: Format detected correctly (miles_and_more, amex, sparkasse), delimiter and encoding correct.
   - Pass/Fail: Pass if preview format matches file.
   - Evidence: Preview screenshot + /imports/preview response.
@@ -693,7 +693,7 @@ Each test lists Preconditions, Steps, Expected (UI + API + DB), Pass/Fail, Evide
   - Expected: 0 rows.
 
 ### Baseline reset procedure
-- Use Settings > Classificacao & Dados > Danger Zone > Resetar dados.
+- Use Settings > Zona de Perigo > Apagar dados.
 - Verify seeds applied (taxonomy, aliases) by checking counts in taxonomy tables and alias_assets.
 
 ## 9) API smoke tests
@@ -958,7 +958,7 @@ For each completed test run, capture:
 - Re-upload same file, verify duplicates > 0 and no new rows.
 - Open /transactions and verify new rows present.
 - Edit one transaction and confirm manualOverride true.
-- Open /settings > Classificacao > Fila de Revisao and assign a category to one pending item.
+- Open /settings > Classificação & Dados > Fila de Revisão and assign a category to one pending item.
 - Verify dashboard totals update and Interno exclusions apply (if present).
 - Toggle autoConfirmHighConfidence and set threshold to 80.
 - Open /calendar and verify month view renders.
@@ -984,12 +984,11 @@ For each completed test run, capture:
 - NAV-01: Sidebar navigation visits all routes without console errors.
 - UP-01: Upload sample CSV and assert history entry created.
 - UP-02: Re-upload same CSV and assert duplicates reported.
-- SET-07: Settings import preview returns detected format and meta.
+- SET-06: Classificação import preview returns detected headers and meta.
 - SET-11: Review queue assign category removes row.
 - TX-06: Edit transaction sets manualOverride and persists.
 - RULE-07: Interno rule sets internalTransfer and excludeFromBudget.
 - CAL-01: Calendar month view renders with day chips.
-- LEG-01: /confirm redirects to /settings.
+- LEG-01: /confirm, /rules, /ai-keywords, /merchant-dictionary load without redirect.
 - AI-UI-01: AI assistant modal opens and quick action sends message.
 - DEP-05: /api/version and /version.json return build metadata.
-

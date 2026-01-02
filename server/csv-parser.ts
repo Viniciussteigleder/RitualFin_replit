@@ -74,6 +74,7 @@ export interface ParseMeta {
   warnings: string[];
   hasMultiline: boolean;
   missingColumns?: string[];
+  headersFound?: string[];
 }
 
 const MM_REQUIRED_COLUMNS = [
@@ -435,6 +436,7 @@ function parseMilesAndMore(lines: string[], meta: ParseMeta, fallbackDate: Date)
   headers.forEach((h, i) => {
     colIndex[h.toLowerCase()] = i;
   });
+  meta.headersFound = headers;
 
   
   const transactions: ParsedTransaction[] = [];
@@ -581,6 +583,7 @@ function parseAmex(lines: string[], meta: ParseMeta, fallbackDate: Date): ParseR
   headers.forEach((h, i) => {
     colIndex[h.toLowerCase()] = i;
   });
+  meta.headersFound = headers;
   
   const transactions: ParsedTransaction[] = [];
   const errors: string[] = [];
@@ -997,6 +1000,7 @@ export function parseCSV(
     });
     meta.encoding = sparkasseResult.diagnostics.encodingUsed || meta.encoding;
     meta.delimiter = sparkasseResult.diagnostics.delimiterUsed || meta.delimiter;
+    meta.headersFound = sparkasseResult.diagnostics.headerFound;
     if (sparkasseResult.diagnostics.requiredMissing.length > 0) {
       meta.missingColumns = sparkasseResult.diagnostics.requiredMissing;
     }

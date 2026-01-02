@@ -112,11 +112,18 @@ export const accountsApi = {
 // Uploads
 export const uploadsApi = {
   list: () => fetchApi<any[]>("/uploads"),
-  preview: async (filename: string, csvContent: string, encoding?: string, fileBase64?: string, fileType?: string) => {
+  preview: async (
+    filename: string,
+    csvContent: string,
+    encoding?: string,
+    fileBase64?: string,
+    fileType?: string,
+    importDate?: string
+  ) => {
     const res = await fetch(`${API_BASE}/imports/preview`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename, csvContent, encoding, fileBase64, fileType }),
+      body: JSON.stringify({ filename, csvContent, encoding, fileBase64, fileType, importDate }),
     });
     if (!res.ok) {
       const error = await res.json().catch(() => ({ message: "Request failed" }));
@@ -124,11 +131,18 @@ export const uploadsApi = {
     }
     return res.json();
   },
-  process: async (filename: string, csvContent: string, encoding?: string, fileBase64?: string, fileType?: string) => {
+  process: async (
+    filename: string,
+    csvContent: string,
+    encoding?: string,
+    fileBase64?: string,
+    fileType?: string,
+    importDate?: string
+  ) => {
     const res = await fetch(`${API_BASE}/uploads/process`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename, csvContent, encoding, fileBase64, fileType }),
+      body: JSON.stringify({ filename, csvContent, encoding, fileBase64, fileType, importDate }),
     });
     const payload = await res.json().catch(() => ({ message: "Request failed" }));
     if (!res.ok) {
@@ -177,6 +191,11 @@ export const classificationApi = {
   listRules: () => fetchApi<any[]>("/classification/rules"),
   appendRuleKeywords: (data: { leafId: string; expressions: string }) =>
     fetchApi<any>("/classification/rules/append", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  appendRuleNegativeKeywords: (data: { leafId: string; expressions: string }) =>
+    fetchApi<any>("/classification/rules/append-negative", {
       method: "POST",
       body: JSON.stringify(data),
     }),
@@ -250,6 +269,11 @@ export const resetApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+};
+
+export const auditLogsApi = {
+  list: (limit = 200) => fetchApi<any[]>(`/audit-logs?limit=${limit}`),
+  exportCsv: () => fetchBlob("/audit-logs/export-csv"),
 };
 
 // Transactions

@@ -1,6 +1,6 @@
 import {
   users, accounts, uploads, uploadErrors, uploadDiagnostics, importRuns, merchantMetadata, transactions, rules, budgets, calendarEvents, eventOccurrences, goals, categoryGoals, rituals, settings,
-  aiUsageLogs, notifications, merchantDescriptions, merchantIcons,
+  aiUsageLogs, auditLogs, notifications, merchantDescriptions, merchantIcons,
   taxonomyLevel1, taxonomyLevel2, taxonomyLeaf, appCategory, appCategoryLeaf, keyDescMap, aliasAssets,
   type User, type InsertUser,
   type Account, type InsertAccount,
@@ -19,6 +19,7 @@ import {
   type Ritual, type InsertRitual,
   type Settings, type InsertSettings, type UpdateSettings,
   type AiUsageLog, type InsertAiUsageLog,
+  type AuditLog, type InsertAuditLog,
   type Notification, type InsertNotification, type UpdateNotification,
   type MerchantDescription, type InsertMerchantDescription,
   type MerchantIcon, type InsertMerchantIcon,
@@ -47,6 +48,10 @@ export interface IStorage {
   // AI Usage Logs
   createAiUsageLog(log: InsertAiUsageLog): Promise<AiUsageLog>;
   getAiUsageLogs(userId: string, limit?: number): Promise<AiUsageLog[]>;
+
+  // Audit Logs
+  createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
+  getAuditLogs(userId: string, limit?: number): Promise<AuditLog[]>;
 
   // Notifications
   getNotifications(userId: string, limit?: number): Promise<Notification[]>;
@@ -273,6 +278,21 @@ export class DatabaseStorage implements IStorage {
       .from(aiUsageLogs)
       .where(eq(aiUsageLogs.userId, userId))
       .orderBy(desc(aiUsageLogs.createdAt))
+      .limit(limit);
+  }
+
+  // Audit Logs
+  async createAuditLog(log: InsertAuditLog): Promise<AuditLog> {
+    const [created] = await db.insert(auditLogs).values(log).returning();
+    return created;
+  }
+
+  async getAuditLogs(userId: string, limit = 200): Promise<AuditLog[]> {
+    return db
+      .select()
+      .from(auditLogs)
+      .where(eq(auditLogs.userId, userId))
+      .orderBy(desc(auditLogs.createdAt))
       .limit(limit);
   }
 

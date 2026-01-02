@@ -1,4 +1,4 @@
-export type CsvDataset = "classification" | "aliases_key_desc" | "aliases_assets";
+export type CsvDataset = "classification" | "aliases_key_desc" | "aliases_assets" | "audit_logs";
 
 export type CsvExportSettings = {
   bom: boolean;
@@ -109,5 +109,13 @@ export const csvContracts: Record<CsvDataset, CsvContract> = {
     delimiter: ";",
     maxSizeBytes: MAX_SIZE_BYTES,
     export: DEFAULT_EXPORT_SETTINGS
-  }
+  },
+  audit_logs: {
+    dataset: "audit_logs",
+    expectedHeaders: ["Data", "Ação", "Tipo", "Status", "Resumo", "Detalhes"],
+    strictHeaderOrder: true,
+    delimiter: ";",
+    maxSizeBytes: MAX_SIZE_BYTES,
+    export: DEFAULT_EXPORT_SETTINGS
+  },
 };

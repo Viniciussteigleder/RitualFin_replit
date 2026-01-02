@@ -9,17 +9,23 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
   Calendar,
   Target,
   Wallet,
   Receipt,
-  Bell
+  Bell,
+  Lightbulb,
+  ListChecks,
+  Filter,
+  Brain,
+  CalendarCheck
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useMonth } from "@/lib/month-context";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+const GROUP_STATE_KEY = "ritualfin_sidebar_groups";
 
 const NAV_CLUSTERS = [
   {
@@ -38,6 +44,53 @@ const NAV_CLUSTERS = [
         description: "Eventos e compromissos"
       },
       {
+        label: "Transações",
+        icon: Receipt,
+        href: "/transactions",
+        description: "Histórico completo"
+      },
+      {
+        label: "Contas",
+        icon: Wallet,
+        href: "/accounts",
+        description: "Gerenciar cartões e contas"
+      },
+      {
+        label: "Insights",
+        icon: Lightbulb,
+        href: "/insights",
+        description: "Leituras e tendências"
+      },
+    ]
+  },
+  {
+    label: "Operações",
+    items: [
+      {
+        label: "Upload",
+        icon: Upload,
+        href: "/uploads",
+        description: "Importar CSV"
+      },
+      {
+        label: "Lista de Confirmação",
+        icon: ListChecks,
+        href: "/confirm",
+        description: "Pendências para revisar"
+      },
+      {
+        label: "Regras",
+        icon: Filter,
+        href: "/rules",
+        description: "Gerenciar regras"
+      },
+      {
+        label: "AI Keywords",
+        icon: Brain,
+        href: "/ai-keywords",
+        description: "Sugestões com IA"
+      },
+      {
         label: "Notificações",
         icon: Bell,
         href: "/notifications",
@@ -49,7 +102,7 @@ const NAV_CLUSTERS = [
     label: "Planejamento",
     items: [
       {
-        label: "Orçamentos",
+        label: "Orçamento",
         icon: Wallet,
         href: "/budgets",
         description: "Limites por categoria"
@@ -63,52 +116,19 @@ const NAV_CLUSTERS = [
     ]
   },
   {
-    label: "Ações",
+    label: "Rituais",
     items: [
       {
-        label: "Transações",
-        icon: Receipt,
-        href: "/transactions",
-        description: "Histórico completo"
-      },
-    ]
-  },
-  {
-    label: "Operações",
-    items: [
-      {
-        label: "Uploads",
-        icon: Upload,
-        href: "/uploads",
-        description: "Importar CSV"
+        label: "Semanal",
+        icon: CalendarCheck,
+        href: "/rituals?type=weekly",
+        description: "Revisão semanal"
       },
       {
-        label: "Contas",
-        icon: Wallet,
-        href: "/accounts",
-        description: "Gerenciar cartões e contas"
-      },
-    ]
-  },
-  {
-    label: "Colaboração",
-    items: [
-      {
-        label: "Rituais",
-        icon: Sparkles,
-        href: "/rituals",
-        description: "Revisão semanal e mensal"
-      },
-    ]
-  },
-  {
-    label: "Sistema",
-    items: [
-      {
-        label: "Configurações",
-        icon: Settings,
-        href: "/settings",
-        description: "Preferências e integrações"
+        label: "Mensal",
+        icon: Calendar,
+        href: "/rituals?type=monthly",
+        description: "Revisão mensal"
       },
     ]
   },
@@ -116,9 +136,41 @@ const NAV_CLUSTERS = [
 
 export function Sidebar() {
   const [location] = useLocation();
+  const normalizedLocation = location.split("?")[0];
   const [isOpen, setIsOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [groupOpenState, setGroupOpenState] = useState<Record<string, boolean>>(() => {
+    if (typeof window === "undefined") {
+      return Object.fromEntries(NAV_CLUSTERS.map((cluster) => [cluster.label, true]));
+    }
+    const stored = window.localStorage.getItem(GROUP_STATE_KEY);
+    if (!stored) {
+      return Object.fromEntries(NAV_CLUSTERS.map((cluster) => [cluster.label, true]));
+    }
+    try {
+      const parsed = JSON.parse(stored) as Record<string, boolean>;
+      return Object.fromEntries(
+        NAV_CLUSTERS.map((cluster) => [cluster.label, parsed[cluster.label] ?? true])
+      );
+    } catch {
+      return Object.fromEntries(NAV_CLUSTERS.map((cluster) => [cluster.label, true]));
+    }
+  });
   const { month, setMonth, formatMonth } = useMonth();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(GROUP_STATE_KEY, JSON.stringify(groupOpenState));
+  }, [groupOpenState]);
+
+  useEffect(() => {
+    const activeCluster = NAV_CLUSTERS.find((cluster) =>
+      cluster.items.some((item) => normalizedLocation === item.href.split("?")[0])
+    );
+    if (activeCluster && !groupOpenState[activeCluster.label]) {
+      setGroupOpenState((prev) => ({ ...prev, [activeCluster.label]: true }));
+    }
+  }, [normalizedLocation, groupOpenState]);
 
   const prevMonth = () => {
     const [year, m] = month.split("-").map(Number);
@@ -143,7 +195,7 @@ export function Sidebar() {
             <img 
               src="/ritualfin-logo.png" 
               alt="RitualFin" 
-              className="w-8 h-8 rounded-lg"
+              className="h-8 w-auto object-contain"
             />
             <span className="font-semibold text-lg tracking-tight">RitualFin</span>
           </div>
@@ -179,7 +231,7 @@ export function Sidebar() {
             <img 
               src="/ritualfin-logo.png" 
               alt="RitualFin" 
-              className="w-9 h-9 rounded-xl shadow-lg"
+              className="h-9 w-auto object-contain"
             />
             {!isCollapsed && (
               <span className="font-bold text-lg text-white tracking-tight">RitualFin</span>
@@ -223,15 +275,35 @@ export function Sidebar() {
           {NAV_CLUSTERS.map((cluster, clusterIdx) => (
             <div key={cluster.label} className={clusterIdx > 0 ? "mt-6" : ""}>
               {!isCollapsed && (
-                <div className="px-3 mb-2">
+                <div className="px-3 mb-2 flex items-center justify-between">
                   <span className="text-[10px] uppercase tracking-wider text-white/40 font-bold">
                     {cluster.label}
                   </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setGroupOpenState((prev) => ({
+                        ...prev,
+                        [cluster.label]: !prev[cluster.label]
+                      }))
+                    }
+                    className="text-white/50 hover:text-white transition-colors"
+                    aria-label={`Alternar grupo ${cluster.label}`}
+                  >
+                    {groupOpenState[cluster.label] ? (
+                      <ChevronLeft className="h-3.5 w-3.5 rotate-90" />
+                    ) : (
+                      <ChevronRight className="h-3.5 w-3.5 rotate-90" />
+                    )}
+                  </button>
                 </div>
               )}
-              <div className="space-y-1">
+              {groupOpenState[cluster.label] && (
+                <div className="space-y-1">
                 {cluster.items.map((item) => {
-                  const isActive = location === item.href;
+                  const isActive = item.href.includes("?")
+                    ? location.startsWith(item.href)
+                    : normalizedLocation === item.href;
 
                   const NavLink = (
                     <Link
@@ -272,11 +344,19 @@ export function Sidebar() {
                   return NavLink;
                 })}
               </div>
+              )}
             </div>
           ))}
         </nav>
 
         <div className="p-3 border-t border-white/10 space-y-1">
+          {!isCollapsed && (
+            <div className="px-3 mb-2">
+              <span className="text-[10px] uppercase tracking-wider text-white/40 font-bold">
+                Sistema
+              </span>
+            </div>
+          )}
           {isCollapsed ? (
             <>
               <Tooltip delayDuration={0}>

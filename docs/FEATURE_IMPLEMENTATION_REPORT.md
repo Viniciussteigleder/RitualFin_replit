@@ -1,5 +1,7 @@
 # RitualFin Feature Implementation - Complete Report & Roadmap
 
+**Status**: Histórico. O estado atual de IA/Settings e o roadmap estão em `docs/UX_UI_MASTER_PLAN.md` e `docs/IMPLEMENTATION_ROADMAP.md`.
+
 **Date:** 2025-12-31
 **Branch:** `claude/access-display-app-2bTSq`
 **Status:** MVP Complete, Advanced Features Pending

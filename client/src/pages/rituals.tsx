@@ -33,8 +33,8 @@ import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-f
 import { ptBR } from "date-fns/locale";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useMonth } from "@/lib/month-context";
-import { Link } from "wouter";
-import { useState } from "react";
+import { Link, useLocation } from "wouter";
+import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { ritualsApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
@@ -80,12 +80,29 @@ function getISOWeek(date: Date): string {
 export default function RitualsPage() {
   const { month, formatMonth } = useMonth();
   const { toast } = useToast();
+  const [location, setLocation] = useLocation();
   const [ritualType, setRitualType] = useState<"weekly" | "monthly">("weekly");
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 4;
   const [filter, setFilter] = useState("all");
   const [weeklyNotes, setWeeklyNotes] = useState("");
   const [weeklyGoals, setWeeklyGoals] = useState<string[]>([]);
+
+  useEffect(() => {
+    const search = location.split("?")[1] || "";
+    const nextType = new URLSearchParams(search).get("type");
+    if (nextType === "weekly" || nextType === "monthly") {
+      setRitualType(nextType);
+    }
+  }, [location]);
+
+  useEffect(() => {
+    const search = location.split("?")[1] || "";
+    const currentType = new URLSearchParams(search).get("type");
+    if (currentType !== ritualType) {
+      setLocation(`/rituals?type=${ritualType}`);
+    }
+  }, [location, ritualType, setLocation]);
 
   const today = new Date();
   const currentWeek = getISOWeek(today);

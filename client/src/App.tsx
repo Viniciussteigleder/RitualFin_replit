@@ -1,4 +1,4 @@
-import { Switch, Route, Redirect } from "wouter";
+import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -17,8 +17,11 @@ import BudgetsPage from "@/pages/budgets";
 import AccountsPage from "@/pages/accounts";
 import TransactionsPage from "@/pages/transactions";
 import NotificationsPage from "@/pages/notifications";
-
-const LegacyRedirect = () => <Redirect to="/settings" />;
+import ConfirmPage from "@/pages/confirm";
+import RulesPage from "@/pages/rules";
+import MerchantDictionaryPage from "@/pages/merchant-dictionary";
+import AiKeywordsPage from "@/pages/ai-keywords";
+import InsightsPage from "@/pages/insights";
 
 function Router() {
   return (
@@ -33,12 +36,13 @@ function Router() {
       <Route path="/budgets" component={BudgetsPage} />
       <Route path="/rituals" component={RitualsPage} />
       <Route path="/uploads" component={UploadsPage} />
-      <Route path="/confirm" component={LegacyRedirect} />
+      <Route path="/confirm" component={ConfirmPage} />
       <Route path="/transactions" component={TransactionsPage} />
-      <Route path="/rules" component={LegacyRedirect} />
-      <Route path="/merchant-dictionary" component={LegacyRedirect} />
+      <Route path="/rules" component={RulesPage} />
+      <Route path="/merchant-dictionary" component={MerchantDictionaryPage} />
       <Route path="/accounts" component={AccountsPage} />
-      <Route path="/ai-keywords" component={LegacyRedirect} />
+      <Route path="/ai-keywords" component={AiKeywordsPage} />
+      <Route path="/insights" component={InsightsPage} />
       <Route path="/settings" component={SettingsPage} />
       <Route component={NotFound} />
     </Switch>

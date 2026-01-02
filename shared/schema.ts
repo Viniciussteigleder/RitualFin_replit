@@ -40,6 +40,12 @@ export const settings = pgTable("settings", {
   userId: varchar("user_id").notNull().unique().references(() => users.id),
   autoConfirmHighConfidence: boolean("auto_confirm_high_confidence").notNull().default(false),
   confidenceThreshold: integer("confidence_threshold").notNull().default(80),
+  language: text("language").notNull().default("pt-BR"),
+  currency: text("currency").notNull().default("EUR"),
+  fiscalRegion: text("fiscal_region").notNull().default("Portugal/PT"),
+  notifyImportStatus: boolean("notify_import_status").notNull().default(true),
+  notifyReviewQueue: boolean("notify_review_queue").notNull().default(true),
+  notifyMonthlyReport: boolean("notify_monthly_report").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -77,6 +83,27 @@ export const aiUsageLogsRelations = relations(aiUsageLogs, ({ one }) => ({
 export const insertAiUsageLogSchema = createInsertSchema(aiUsageLogs).omit({ id: true, createdAt: true });
 export type InsertAiUsageLog = z.infer<typeof insertAiUsageLogSchema>;
 export type AiUsageLog = typeof aiUsageLogs.$inferSelect;
+
+// Audit Logs
+export const auditLogs = pgTable("audit_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  action: text("action").notNull(),
+  entityType: text("entity_type"),
+  entityId: text("entity_id"),
+  status: text("status").notNull().default("success"),
+  message: text("message"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
+  user: one(users, { fields: [auditLogs.userId], references: [users.id] }),
+}));
+
+export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ id: true, createdAt: true });
+export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
+export type AuditLog = typeof auditLogs.$inferSelect;
 
 // Notifications (in-app only)
 export const notifications = pgTable("notifications", {

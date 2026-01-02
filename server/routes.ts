@@ -58,6 +58,30 @@ const buildInfo = {
   env: process.env.NODE_ENV || "unknown",
 };
 
+async function writeAuditLog(params: {
+  userId: string;
+  action: string;
+  entityType?: string;
+  entityId?: string;
+  status?: string;
+  message?: string;
+  metadata?: Record<string, unknown>;
+}) {
+  try {
+    await storage.createAuditLog({
+      userId: params.userId,
+      action: params.action,
+      entityType: params.entityType || null,
+      entityId: params.entityId || null,
+      status: params.status || "success",
+      message: params.message || null,
+      metadata: params.metadata || null
+    });
+  } catch (error: any) {
+    logger.warn("audit_log_failed", { error: error.message });
+  }
+}
+
 function readWorkbookFromBase64(base64: string) {
   const buffer = Buffer.from(base64, "base64");
   try {
@@ -414,6 +438,45 @@ export async function registerRoutes(
     }
   });
 
+  // ===== AUDIT LOGS =====
+  app.get("/api/audit-logs", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.json([]);
+
+      const limitParam = req.query.limit ? Number(req.query.limit) : undefined;
+      const limit = Number.isFinite(limitParam) && limitParam ? Math.min(Math.max(limitParam, 1), 500) : 200;
+      const logs = await storage.getAuditLogs(user.id, limit);
+      res.json(logs);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/audit-logs/export-csv", async (_req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const logs = await storage.getAuditLogs(user.id, 1000);
+      const rows = logs.map((log) => ({
+        Data: log.createdAt?.toISOString() || "",
+        "Ação": log.action,
+        Tipo: log.entityType || "",
+        Status: log.status || "",
+        Resumo: log.message || "",
+        Detalhes: log.metadata ? JSON.stringify(log.metadata) : ""
+      }));
+
+      const csvContent = buildCsvFromRows(csvContracts.audit_logs, rows);
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", "attachment; filename=\"ritualfin_audit_log.csv\"");
+      res.send(csvContent);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // ===== ACCOUNTS =====
   app.get("/api/accounts", async (_req: Request, res: Response) => {
     try {
@@ -609,7 +672,7 @@ export async function registerRoutes(
   // Process CSV upload
   app.post("/api/imports/preview", async (req: Request, res: Response) => {
     try {
-      const { filename, csvContent, encoding, fileBase64, fileType } = req.body;
+      const { filename, csvContent, encoding, fileBase64, fileType, importDate } = req.body;
       if (!csvContent) {
         return res.status(400).json({ error: "CSV content is required" });
       }
@@ -630,7 +693,7 @@ export async function registerRoutes(
         uploadAttemptId: `preview-${Date.now()}`,
         fileBuffer,
         sizeBytes,
-        importDate: new Date(),
+        importDate: importDate ? new Date(importDate) : new Date(),
         mimeType: fileType
       });
       res.json(preview);
@@ -648,7 +711,7 @@ export async function registerRoutes(
         user = await storage.createUser({ username: "demo", password: "demo" });
       }
 
-      const { filename, csvContent, encoding, fileBase64, fileType } = req.body;
+      const { filename, csvContent, encoding, fileBase64, fileType, importDate } = req.body;
 
       logger.info("upload_start", {
         userId: user.id,
@@ -681,7 +744,7 @@ export async function registerRoutes(
         uploadAttemptId: upload.id,
         fileBuffer,
         sizeBytes,
-        importDate: new Date(),
+        importDate: importDate ? new Date(importDate) : new Date(),
         mimeType: fileType
       });
 
@@ -708,6 +771,20 @@ export async function registerRoutes(
           errorMessage: parseResult.errors.join("; "),
           rowsTotal: parseResult.rowsTotal,
           rowsImported: 0
+        });
+
+        await writeAuditLog({
+          userId: user.id,
+          action: "importacao_csv",
+          entityType: "upload",
+          entityId: upload.id,
+          status: "error",
+          message: parseResult.errors.join("; "),
+          metadata: {
+            filename: filename || "upload.csv",
+            format: parseResult.format,
+            rowsTotal: parseResult.rowsTotal
+          }
         });
 
         if (parseResult.sparkasseDiagnostics) {
@@ -973,6 +1050,22 @@ export async function registerRoutes(
         rowsImported: importedCount,
         monthAffected: parseResult.monthAffected,
         errorMessage: errors.length > 0 ? errors.join("; ") : undefined
+      });
+
+      await writeAuditLog({
+        userId: user.id,
+        action: "importacao_csv",
+        entityType: "upload",
+        entityId: upload.id,
+        status: errors.length > 0 ? "warning" : "success",
+        message: `Importação concluída: ${importedCount} inseridas, ${duplicateCount} duplicadas.`,
+        metadata: {
+          filename: filename || "upload.csv",
+          format: parseResult.format,
+          rowsTotal: parseResult.rowsTotal,
+          autoClassified: autoClassifiedCount,
+          openCount
+        }
       });
 
       if (parseResult.sparkasseDiagnostics) {
@@ -1265,6 +1358,15 @@ export async function registerRoutes(
           confirmedAt: new Date()
         });
 
+        await writeAuditLog({
+          userId: user.id,
+          action: "importacao_classificacao",
+          entityType: "import_run",
+          entityId: importRun.id,
+          message: `Categorias importadas: ${rows.length} linhas.`,
+          metadata: { dataset, rows: rows.length }
+        });
+
         return res.json({
           success: true,
           dataset,
@@ -1298,6 +1400,15 @@ export async function registerRoutes(
         await storage.updateImportRun(importRun.id, {
           status: "confirmed",
           confirmedAt: new Date()
+        });
+
+        await writeAuditLog({
+          userId: user.id,
+          action: "importacao_aliases",
+          entityType: "import_run",
+          entityId: importRun.id,
+          message: `Aliases importados: ${rows.length} linhas.`,
+          metadata: { dataset, rows: rows.length }
         });
 
         return res.json({ success: true, dataset, rows: rows.length });
@@ -1347,6 +1458,15 @@ export async function registerRoutes(
           confirmedAt: new Date()
         });
 
+        await writeAuditLog({
+          userId: user.id,
+          action: "importacao_logos",
+          entityType: "import_run",
+          entityId: importRun.id,
+          message: `Logos processados: ${results.length}.`,
+          metadata: { dataset, processed: results.length }
+        });
+
         return res.json({ success: true, dataset, processed: results.length, results });
       }
 
@@ -1356,6 +1476,15 @@ export async function registerRoutes(
         await storage.updateImportRun(importRun.id, {
           status: "failed",
           errorMessage: error.message
+        });
+        await writeAuditLog({
+          userId: importRun.userId,
+          action: "importacao_dados",
+          entityType: "import_run",
+          entityId: importRun.id,
+          status: "error",
+          message: error.message,
+          metadata: { dataset: importRun.datasetName }
         });
       }
       res.status(500).json({ error: error.message });
@@ -1774,6 +1903,14 @@ export async function registerRoutes(
         const toAdd = incoming.filter(value => !normalizedExisting.has(value.toLowerCase()));
         const merged = [...existingList, ...toAdd].filter(Boolean);
         const updated = await storage.updateRule(existingRule.id, { keyWords: merged.join(";") });
+        await writeAuditLog({
+          userId: user.id,
+          action: "regra_keywords_add",
+          entityType: "rule",
+          entityId: existingRule.id,
+          message: `Adicionadas ${toAdd.length} expressões.`,
+          metadata: { leafId: data.leafId, added: toAdd }
+        });
         return res.json({ success: true, ruleId: existingRule.id, keyWords: updated?.keyWords || merged.join(";") });
       }
 
@@ -1783,7 +1920,76 @@ export async function registerRoutes(
         keyWords: incoming.join(";"),
         active: true
       });
+      await writeAuditLog({
+        userId: user.id,
+        action: "regra_keywords_create",
+        entityType: "rule",
+        entityId: created.id,
+        message: "Regra criada via fila de revisão.",
+        metadata: { leafId: data.leafId, keyWords: incoming }
+      });
       res.json({ success: true, ruleId: created.id, keyWords: created.keyWords });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/classification/rules/append-negative", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const schema = z.object({
+        leafId: z.string(),
+        expressions: z.string()
+      });
+      const data = schema.parse(req.body);
+
+      const incoming = data.expressions
+        .split(";")
+        .map((value) => value.trim())
+        .filter(Boolean);
+      if (incoming.length === 0) {
+        return res.status(400).json({ error: "Nenhuma expressão válida" });
+      }
+
+      const rules = await storage.getRules(user.id);
+      const existingRule = rules.find(rule => rule.leafId === data.leafId);
+
+      if (existingRule) {
+        const existingList = existingRule.keyWordsNegative
+          ? existingRule.keyWordsNegative.split(";").map((value) => value.trim()).filter(Boolean)
+          : [];
+        const normalizedExisting = new Set(existingList.map(value => value.toLowerCase()));
+        const toAdd = incoming.filter(value => !normalizedExisting.has(value.toLowerCase()));
+        const merged = [...existingList, ...toAdd].filter(Boolean);
+        const updated = await storage.updateRule(existingRule.id, { keyWordsNegative: merged.join(";") });
+        await writeAuditLog({
+          userId: user.id,
+          action: "regra_keywords_negative_add",
+          entityType: "rule",
+          entityId: existingRule.id,
+          message: `Adicionadas ${toAdd.length} expressões negativas.`,
+          metadata: { leafId: data.leafId, added: toAdd }
+        });
+        return res.json({ success: true, ruleId: existingRule.id, keyWordsNegative: updated?.keyWordsNegative || merged.join(";") });
+      }
+
+      const created = await storage.createRule({
+        userId: user.id,
+        leafId: data.leafId,
+        keyWordsNegative: incoming.join(";"),
+        active: true
+      });
+      await writeAuditLog({
+        userId: user.id,
+        action: "regra_keywords_negative_create",
+        entityType: "rule",
+        entityId: created.id,
+        message: "Regra criada com negativas via fila de revisão.",
+        metadata: { leafId: data.leafId, keyWordsNegative: incoming }
+      });
+      res.json({ success: true, ruleId: created.id, keyWordsNegative: created.keyWordsNegative });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
@@ -1839,6 +2045,18 @@ export async function registerRoutes(
         status: "FINAL",
         needsReview: false
       } as any);
+
+      await writeAuditLog({
+        userId: user.id,
+        action: "fila_revisao_classificacao",
+        entityType: "transaction",
+        entityId: data.transactionId,
+        message: "Transação classificada manualmente.",
+        metadata: {
+          leafId: data.leafId,
+          createRule: data.createRule || false
+        }
+      });
 
       res.json(updated);
     } catch (error: any) {
@@ -2072,6 +2290,14 @@ export async function registerRoutes(
         }
       }
 
+      await writeAuditLog({
+        userId: user.id,
+        action: "alias_import_apply",
+        entityType: "alias",
+        message: `Aliases aplicados: ${newAliases} novos, ${updatedAliases} atualizados.`,
+        metadata: { newAliases, updatedAliases }
+      });
+
       res.json({
         success: true,
         newAliases,
@@ -2138,6 +2364,14 @@ export async function registerRoutes(
         }
       }
 
+      await writeAuditLog({
+        userId: user.id,
+        action: "logos_import",
+        entityType: "alias",
+        message: `Logos processados: ${results.length}.`,
+        metadata: { processed: results.length }
+      });
+
       res.json({
         success: true,
         processed: results.length,
@@ -2199,6 +2433,14 @@ export async function registerRoutes(
           results.push({ aliasDesc: alias.aliasDesc, status: "error", error: err.message });
         }
       }
+
+      await writeAuditLog({
+        userId: user.id,
+        action: "logos_refresh",
+        entityType: "alias",
+        message: `Logos atualizados: ${results.filter(r => r.status === "ok").length}/${targets.length}.`,
+        metadata: { total: targets.length }
+      });
 
       res.json({ total: targets.length, results });
     } catch (error: any) {
@@ -2401,6 +2643,19 @@ export async function registerRoutes(
           // best-effort cleanup
         }
       }
+
+      await writeAuditLog({
+        userId: user.id,
+        action: "zona_de_perigo_delete",
+        entityType: "settings",
+        status: "warning",
+        message: "Exclusão executada na zona de perigo.",
+        metadata: {
+          deleteTransactions,
+          deleteCategories,
+          deleteAliases
+        }
+      });
 
       res.json({ success: true, deletedAt: new Date().toISOString() });
     } catch (error: any) {
@@ -2642,6 +2897,14 @@ export async function registerRoutes(
       
       const ruleData = insertRuleSchema.parse({ ...req.body, userId: user.id });
       const rule = await storage.createRule(ruleData);
+      await writeAuditLog({
+        userId: user.id,
+        action: "regra_criada",
+        entityType: "rule",
+        entityId: rule.id,
+        message: "Regra criada manualmente.",
+        metadata: { leafId: rule.leafId || null }
+      });
       res.json(rule);
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -2782,10 +3045,19 @@ export async function registerRoutes(
   app.patch("/api/rules/:id", async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(404).json({ error: "User not found" });
       const updated = await storage.updateRule(id, req.body);
       if (!updated) {
         return res.status(404).json({ error: "Rule not found" });
       }
+      await writeAuditLog({
+        userId: user.id,
+        action: "regra_atualizada",
+        entityType: "rule",
+        entityId: updated.id,
+        message: "Regra atualizada.",
+      });
       res.json(updated);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -2795,7 +3067,16 @@ export async function registerRoutes(
   app.delete("/api/rules/:id", async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(404).json({ error: "User not found" });
       await storage.deleteRule(id);
+      await writeAuditLog({
+        userId: user.id,
+        action: "regra_excluida",
+        entityType: "rule",
+        entityId: id,
+        message: "Regra excluída."
+      });
       res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ error: error.message });

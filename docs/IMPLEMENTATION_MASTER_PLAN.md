@@ -8,7 +8,8 @@
 
 ## 1) Current State (Condensed)
 
-- **Core app**: Dashboard, transactions, uploads, budgets, goals, calendar, settings are live.
+- **Core app**: Dashboard, transações, uploads, contas, orçamento, metas, calendário, insights e configurações estão ativos.
+- **IA aplicada**: Sidebar com grupos colapsáveis e “Configurações” apenas em Sistema.
 - **Classification system**: Taxonomy tables + classification import/export endpoints exist; uploads already classify via `leafId` when rules are in taxonomy format.
 - **Legacy compatibility**: `category1` enum remains in use for dashboards and some pages; taxonomy leafs must map back to legacy categories where needed.
 - **Security posture**: Demo auth + RLS disabled; credential rotation is mandatory before any production use.
@@ -57,7 +58,7 @@
 
 **Source**: `docs/UX_UI_MASTER_PLAN.md`
 
-Key enforced UX patterns:
+Key enforced UX patterns (A–H):
 - Preview → Confirm → Commit for imports, rules, and bulk edits.
 - Status panels for every data operation with visible diagnostics.
 - Classification explainability (key_desc, alias, rule match).
@@ -96,4 +97,3 @@ Commit/Sync is deprecated.
 - `docs/UX_UI_MASTER_PLAN.md`
 - `docs/DEPLOYMENT_GUIDE.md`
 - `docs/SECURITY_AUDIT_2025-12-29.md`
-
