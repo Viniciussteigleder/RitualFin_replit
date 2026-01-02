@@ -574,6 +574,26 @@ export const ritualsApi = {
     }),
 };
 
+// Calendar Events
+export const calendarEventsApi = {
+  list: () => fetchApi<any[]>("/calendar-events"),
+  get: (id: string) => fetchApi<any>(`/calendar-events/${id}`),
+  create: (data: any) =>
+    fetchApi<any>("/calendar-events", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  update: (id: string, data: any) =>
+    fetchApi<any>(`/calendar-events/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    fetchApi<{ success: boolean }>(`/calendar-events/${id}`, {
+      method: "DELETE",
+    }),
+};
+
 // Event Occurrences
 export const eventOccurrencesApi = {
   list: (eventId: string) =>
