@@ -24,3 +24,4 @@
 - Updated security audit SHA after guardrail rollout: `docs/SECURITY/SECURITY_AUDIT_REPORT.md`.
 - Documented dependency remediation strategy for `xlsx` and `drizzle-kit`: `docs/SECURITY/SECURITY_AUDIT_REPORT.md`.
 - Made API contract tests tolerate empty transactions arrays with warning: `scripts/qa/run_api_contracts.ts`.
+- Updated dependency remediation note to reflect client-side `xlsx` usage: `docs/SECURITY/SECURITY_AUDIT_REPORT.md`, `docs/SECURITY/SECURITY_BASELINE.md`.
