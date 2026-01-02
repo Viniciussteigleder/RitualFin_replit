@@ -974,6 +974,84 @@ export const transactionsCopy = {
   }
 };
 
+export const transactionDetailCopy = {
+  title: {
+    "pt-BR": "Detalhes da Transação",
+    "de-DE": "Transaktionsdetails",
+    "en-US": "Transaction details"
+  },
+  manualOverride: {
+    "pt-BR": "Ajuste manual",
+    "de-DE": "Manuelle Anpassung",
+    "en-US": "Manual override"
+  },
+  internalTransfer: {
+    "pt-BR": "Transferência Interna",
+    "de-DE": "Interne Überweisung",
+    "en-US": "Internal transfer"
+  },
+  excludedBudget: {
+    "pt-BR": "Excluído do Orçamento",
+    "de-DE": "Vom Budget ausgeschlossen",
+    "en-US": "Excluded from budget"
+  },
+  amountLabel: {
+    "pt-BR": "Valor",
+    "de-DE": "Betrag",
+    "en-US": "Amount"
+  },
+  dateLabel: {
+    "pt-BR": "Data",
+    "de-DE": "Datum",
+    "en-US": "Date"
+  },
+  accountLabel: {
+    "pt-BR": "Conta",
+    "de-DE": "Konto",
+    "en-US": "Account"
+  },
+  typeLabel: {
+    "pt-BR": "Tipo",
+    "de-DE": "Typ",
+    "en-US": "Type"
+  },
+  paymentTypeLabel: {
+    "pt-BR": "Forma de Pagamento",
+    "de-DE": "Zahlungsart",
+    "en-US": "Payment type"
+  },
+  categoryLabel: {
+    "pt-BR": "Categorização",
+    "de-DE": "Kategorisierung",
+    "en-US": "Categorization"
+  },
+  autoCategorized: {
+    "pt-BR": "Categorizado automaticamente por regra",
+    "de-DE": "Automatisch durch Regel kategorisiert",
+    "en-US": "Auto-categorized by rule"
+  },
+  confidenceLabel: {
+    "pt-BR": "{percent}% confiança",
+    "de-DE": "{percent}% Zuversicht",
+    "en-US": "{percent}% confidence"
+  },
+  editAction: {
+    "pt-BR": "Editar",
+    "de-DE": "Bearbeiten",
+    "en-US": "Edit"
+  },
+  duplicateAction: {
+    "pt-BR": "Duplicar",
+    "de-DE": "Duplizieren",
+    "en-US": "Duplicate"
+  },
+  deleteAction: {
+    "pt-BR": "Excluir",
+    "de-DE": "Löschen",
+    "en-US": "Delete"
+  }
+};
+
 export const confirmCopy = {
   title: {
     "pt-BR": "Fila de Confirmação",

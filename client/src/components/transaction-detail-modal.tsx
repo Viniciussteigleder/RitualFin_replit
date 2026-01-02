@@ -14,16 +14,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { getCategoryIcon } from "@/lib/merchant-icons";
 import { AliasLogo } from "@/components/alias-logo";
 import { AccountBadge } from "@/components/account-badge";
+import { transactionDetailCopy, t as translate } from "@/lib/i18n";
+import { useLocale } from "@/hooks/use-locale";
 import {
   Calendar,
   CreditCard,
   FileText,
-  MapPin,
   Tag,
   TrendingUp,
   Edit,
@@ -51,6 +50,16 @@ export function TransactionDetailModal({
 }: TransactionDetailModalProps) {
   if (!transaction) return null;
 
+  const locale = useLocale();
+  const currencyFormatter = new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" });
+  const dateFormatter = new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "long",
+    year: "numeric"
+  });
+  const formatMessage = (template: string, vars: Record<string, string | number>) =>
+    Object.entries(vars).reduce((result, [key, value]) => result.replace(`{${key}}`, String(value)), template);
+
   const CategoryIcon = getCategoryIcon(transaction.category1);
 
   // Split description parts (if formatted as "Main -- Additional")
@@ -76,7 +85,7 @@ export function TransactionDetailModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="sr-only">Detalhes da Transação</DialogTitle>
+          <DialogTitle className="sr-only">{translate(locale, transactionDetailCopy.title)}</DialogTitle>
         </DialogHeader>
 
         {/* Header with Merchant Icon */}
@@ -107,18 +116,18 @@ export function TransactionDetailModal({
               />
               {transaction.manualOverride && (
                 <Badge variant="outline" className="text-xs border-amber-300 text-amber-700">
-                  Manual Override
+                  {translate(locale, transactionDetailCopy.manualOverride)}
                 </Badge>
               )}
               {transaction.internalTransfer && (
                 <Badge variant="outline" className="text-xs border-slate-300 text-slate-700">
                   <ArrowLeftRight className="w-3 h-3 mr-1" />
-                  Transferência Interna
+                  {translate(locale, transactionDetailCopy.internalTransfer)}
                 </Badge>
               )}
               {transaction.excludeFromBudget && (
                 <Badge variant="outline" className="text-xs border-rose-300 text-rose-700">
-                  Excluído do Orçamento
+                  {translate(locale, transactionDetailCopy.excludedBudget)}
                 </Badge>
               )}
             </div>
@@ -127,16 +136,13 @@ export function TransactionDetailModal({
 
         {/* Amount */}
         <div className="bg-muted/30 rounded-xl p-4">
-          <p className="text-sm text-muted-foreground mb-1">Valor</p>
+          <p className="text-sm text-muted-foreground mb-1">{translate(locale, transactionDetailCopy.amountLabel)}</p>
           <p className={cn(
             "text-3xl font-bold",
             transaction.type === "Receita" ? "text-emerald-600" : "text-foreground"
           )}>
             {transaction.type === "Receita" ? "+" : "-"}
-            {Math.abs(transaction.amount || 0).toLocaleString("pt-BR", {
-              style: "currency",
-              currency: "EUR"
-            })}
+            {currencyFormatter.format(Math.abs(transaction.amount || 0))}
           </p>
         </div>
 
@@ -147,17 +153,17 @@ export function TransactionDetailModal({
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wide">
               <Calendar className="w-3.5 h-3.5" />
-              Data
+              {translate(locale, transactionDetailCopy.dateLabel)}
             </div>
             <p className="font-medium">
-              {format(new Date(transaction.paymentDate), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+              {dateFormatter.format(new Date(transaction.paymentDate))}
             </p>
           </div>
 
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wide">
               <CreditCard className="w-3.5 h-3.5" />
-              Conta
+              {translate(locale, transactionDetailCopy.accountLabel)}
             </div>
             {account ? (
               <AccountBadge account={account} size="sm" />
@@ -169,7 +175,7 @@ export function TransactionDetailModal({
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wide">
               <Tag className="w-3.5 h-3.5" />
-              Tipo
+              {translate(locale, transactionDetailCopy.typeLabel)}
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="text-xs">
@@ -184,7 +190,7 @@ export function TransactionDetailModal({
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wide">
               <FileText className="w-3.5 h-3.5" />
-              Forma de Pagamento
+              {translate(locale, transactionDetailCopy.paymentTypeLabel)}
             </div>
             <p className="font-medium text-sm">{transaction.paymentType || "—"}</p>
           </div>
@@ -196,7 +202,7 @@ export function TransactionDetailModal({
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wide">
             <TrendingUp className="w-3.5 h-3.5" />
-            Categorização
+            {translate(locale, transactionDetailCopy.categoryLabel)}
           </div>
 
           <div className="flex items-center gap-2">
@@ -222,10 +228,12 @@ export function TransactionDetailModal({
           {transaction.ruleIdApplied && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Info className="w-3.5 h-3.5" />
-              Categorizado automaticamente por regra
+              {translate(locale, transactionDetailCopy.autoCategorized)}
               {transaction.confidence && (
                 <Badge variant="outline" className="text-xs">
-                  {transaction.confidence}% confiança
+                  {formatMessage(translate(locale, transactionDetailCopy.confidenceLabel), {
+                    percent: transaction.confidence
+                  })}
                 </Badge>
               )}
             </div>
@@ -256,16 +264,16 @@ export function TransactionDetailModal({
               className="gap-2"
             >
               <Edit className="w-4 h-4" />
-              Editar
+              {translate(locale, transactionDetailCopy.editAction)}
             </Button>
           )}
           <Button variant="outline" size="sm" className="gap-2">
             <Copy className="w-4 h-4" />
-            Duplicar
+            {translate(locale, transactionDetailCopy.duplicateAction)}
           </Button>
           <Button variant="outline" size="sm" className="gap-2 text-rose-600 hover:text-rose-700">
             <Trash2 className="w-4 h-4" />
-            Excluir
+            {translate(locale, transactionDetailCopy.deleteAction)}
           </Button>
         </div>
       </DialogContent>
