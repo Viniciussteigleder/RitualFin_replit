@@ -23,3 +23,4 @@
 - Documented demo-auth production guardrail and new env var across security/QA/deployment docs: `SECURITY.md`, `docs/SECURITY/SECURITY_AUDIT_REPORT.md`, `docs/SECURITY/SECURITY_BASELINE.md`, `docs/FULL_DEPLOY_PROTOCOL.md`, `docs/DEPLOYMENT_INSTRUCTIONS.md`, `docs/DEPLOYMENT_CONNECTIVITY_FIX.md`, `docs/QA/FULL_APP_QA_REPORT.md`.
 - Updated security audit SHA after guardrail rollout: `docs/SECURITY/SECURITY_AUDIT_REPORT.md`.
 - Documented dependency remediation strategy for `xlsx` and `drizzle-kit`: `docs/SECURITY/SECURITY_AUDIT_REPORT.md`.
+- Made API contract tests tolerate empty transactions arrays with warning: `scripts/qa/run_api_contracts.ts`.
