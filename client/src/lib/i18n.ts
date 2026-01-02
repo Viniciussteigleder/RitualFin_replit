@@ -62,6 +62,16 @@ export const sidebarCopy = {
     "pt-BR": "Alternar sidebar",
     "de-DE": "Seitenleiste umschalten",
     "en-US": "Toggle sidebar"
+  },
+  mobileTitle: {
+    "pt-BR": "Sidebar",
+    "de-DE": "Seitenleiste",
+    "en-US": "Sidebar"
+  },
+  mobileDescription: {
+    "pt-BR": "Exibe a sidebar no modo mobile.",
+    "de-DE": "Zeigt die mobile Seitenleiste an.",
+    "en-US": "Displays the mobile sidebar."
   }
 };
 
@@ -78,6 +88,11 @@ export const paginationCopy = {
     "pt-BR": "Paginação",
     "de-DE": "Seitennavigation",
     "en-US": "Pagination"
+  },
+  morePages: {
+    "pt-BR": "Mais páginas",
+    "de-DE": "Weitere Seiten",
+    "en-US": "More pages"
   },
   previous: {
     "pt-BR": "Anterior",
@@ -106,6 +121,40 @@ export const breadcrumbCopy = {
     "pt-BR": "Navegação estrutural",
     "de-DE": "Breadcrumb-Navigation",
     "en-US": "Breadcrumb navigation"
+  },
+  more: {
+    "pt-BR": "Mais",
+    "de-DE": "Mehr",
+    "en-US": "More"
+  }
+};
+
+export const carouselCopy = {
+  previousSlide: {
+    "pt-BR": "Slide anterior",
+    "de-DE": "Vorherige Folie",
+    "en-US": "Previous slide"
+  },
+  nextSlide: {
+    "pt-BR": "Próximo slide",
+    "de-DE": "Nächste Folie",
+    "en-US": "Next slide"
+  }
+};
+
+export const dialogCopy = {
+  close: {
+    "pt-BR": "Fechar",
+    "de-DE": "Schließen",
+    "en-US": "Close"
+  }
+};
+
+export const sheetCopy = {
+  close: {
+    "pt-BR": "Fechar",
+    "de-DE": "Schließen",
+    "en-US": "Close"
   }
 };
 
@@ -572,6 +621,11 @@ export const uploadsCopy = {
     "pt-BR": "Erros detectados",
     "de-DE": "Fehler erkannt",
     "en-US": "Errors detected"
+  },
+  processingFile: {
+    "pt-BR": "Processando arquivo...",
+    "de-DE": "Datei wird verarbeitet...",
+    "en-US": "Processing file..."
   },
   labelMissingColumns: {
     "pt-BR": "Colunas obrigatórias faltando",
@@ -5503,6 +5557,21 @@ export const settingsCopy = {
     "pt-BR": "Status",
     "de-DE": "Status",
     "en-US": "Status"
+  },
+  logosStatusOk: {
+    "pt-BR": "OK",
+    "de-DE": "OK",
+    "en-US": "OK"
+  },
+  logosStatusFailed: {
+    "pt-BR": "Falha",
+    "de-DE": "Fehler",
+    "en-US": "Failed"
+  },
+  logosStatusSaved: {
+    "pt-BR": "Logo salva",
+    "de-DE": "Logo gespeichert",
+    "en-US": "Logo saved"
   },
   integrationsIntro: {
     "pt-BR": "Conecte suas contas bancárias e cartões via importação CSV.",

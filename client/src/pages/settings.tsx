@@ -24,7 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { formatDateTime } from "@/lib/format";
 import { useLocale } from "@/hooks/use-locale";
-import { settingsCopy, t } from "@/lib/i18n";
+import { settingsCopy, uploadsCopy, t } from "@/lib/i18n";
 
 export default function SettingsPage() {
   const locale = useLocale();
@@ -1622,19 +1622,19 @@ export default function SettingsPage() {
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                               <Card className="bg-muted/20 border-0">
                                 <CardContent className="p-3">
-                                  <p className="text-xs text-muted-foreground">Encoding</p>
+                                  <p className="text-xs text-muted-foreground">{t(locale, uploadsCopy.labelEncoding)}</p>
                                   <p className="text-sm font-semibold">{aliasPreview.detectedEncoding || "-"}</p>
                                 </CardContent>
                               </Card>
                               <Card className="bg-muted/20 border-0">
                                 <CardContent className="p-3">
-                                  <p className="text-xs text-muted-foreground">Delimiter</p>
+                                  <p className="text-xs text-muted-foreground">{t(locale, uploadsCopy.previewDelimiter)}</p>
                                   <p className="text-sm font-semibold">{aliasPreview.detectedDelimiter || "-"}</p>
                                 </CardContent>
                               </Card>
                               <Card className="bg-muted/20 border-0">
                                 <CardContent className="p-3">
-                                  <p className="text-xs text-muted-foreground">Linhas</p>
+                                  <p className="text-xs text-muted-foreground">{t(locale, uploadsCopy.previewRows)}</p>
                                   <p className="text-sm font-semibold">{aliasPreview.rowsTotal || 0}</p>
                                 </CardContent>
                               </Card>
@@ -1906,12 +1906,12 @@ export default function SettingsPage() {
                                               : "bg-rose-100 text-rose-700"
                                           )}
                                         >
-                                          {row.status === "ok" ? "OK" : "Falha"}
+                                          {row.status === "ok" ? t(locale, settingsCopy.logosStatusOk) : t(locale, settingsCopy.logosStatusFailed)}
                                         </span>
                                       </td>
                                       <td className="px-3 py-2">
                                         {row.status === "ok" ? (
-                                          <span className="text-xs text-emerald-700">Logo salva</span>
+                                          <span className="text-xs text-emerald-700">{t(locale, settingsCopy.logosStatusSaved)}</span>
                                         ) : (
                                           <span className="text-xs text-rose-700">{row.error}</span>
                                         )}

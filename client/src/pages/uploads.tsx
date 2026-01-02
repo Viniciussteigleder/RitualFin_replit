@@ -402,7 +402,7 @@ export default function UploadsPage() {
                 <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
-                <h3 className="font-semibold text-lg mb-2">Processando arquivo...</h3>
+                <h3 className="font-semibold text-lg mb-2">{t(locale, uploadsCopy.processingFile)}</h3>
                 <Progress value={uploadProgress} className="h-2 mb-2" />
                 <p className="text-sm text-muted-foreground">
                   {t(locale, uploadsCopy.validatingTransactions)}
@@ -519,7 +519,7 @@ export default function UploadsPage() {
                   ) : null}
                   {previewData.meta?.warnings?.length ? (
                     <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
-                      <p className="font-semibold">Avisos encontrados</p>
+                      <p className="font-semibold">{t(locale, uploadsCopy.labelWarnings)}</p>
                       <ul className="mt-1 space-y-1">
                         {previewData.meta.warnings.map((warning: string, index: number) => (
                           <li key={`${warning}-${index}`}>• {warning}</li>
@@ -590,14 +590,14 @@ export default function UploadsPage() {
             {lastSummary && !lastError && (
               <div className="rounded-md border border-white/60 bg-white/70 p-2 text-xs text-emerald-700">
                 <p className="font-semibold">{t(locale, uploadsCopy.importSummaryTitle)}</p>
-                <p>Inseridas: {lastSummary.rowsImported}</p>
-                <p>Duplicadas: {lastSummary.duplicates}</p>
+                <p>{t(locale, uploadsCopy.summaryInserted)}: {lastSummary.rowsImported}</p>
+                <p>{t(locale, uploadsCopy.summaryDuplicates)}: {lastSummary.duplicates}</p>
               </div>
             )}
 
             {lastError && (
               <div className="rounded-md border border-white/60 bg-white/70 p-2 text-xs text-rose-700">
-                <p className="font-semibold">{lastError.message || "Falha ao importar"}</p>
+                <p className="font-semibold">{lastError.message || t(locale, uploadsCopy.importErrorTitle)}</p>
                 {lastError.hint && <p>{lastError.hint}</p>}
               </div>
             )}
