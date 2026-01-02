@@ -39,12 +39,17 @@ RitualFin is currently in **Phase C (Pre-Production)** and has **known security 
    - Timeout risk on serverless platforms
    - **Status**: Refactoring planned for Phase C.7
 
-5. **No Session Storage**
+5. **Dependency Vulnerabilities (Audit)**
+   - `xlsx` prototype pollution/ReDoS; no fix available in current version
+   - `esbuild` dev-server exposure via `drizzle-kit` chain (dev-only)
+   - **Status**: Mitigation required before production
+
+6. **No Session Storage**
    - Cannot maintain persistent user sessions
    - No proper logout functionality
    - **Status**: Planned for Phase D
 
-6. **Simplistic Duplicate Detection**
+7. **Simplistic Duplicate Detection**
    - Can miss near-duplicates
    - Can block legitimate multiple transactions
    - **Status**: Improvement planned for Phase D
@@ -230,5 +235,5 @@ We appreciate responsible disclosure of security issues. Contributors who report
 
 ---
 
-**Last Updated**: 2025-12-29
+**Last Updated**: 2026-01-02
 **Next Review**: After Phase D completion

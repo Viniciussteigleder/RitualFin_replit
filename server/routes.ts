@@ -934,9 +934,16 @@ export async function registerRoutes(
       let autoClassifiedCount = 0;
       let openCount = 0;
       const importedKeyDescs = new Set<string>();
+      const seenKeys = new Set<string>();
       const errors: string[] = [];
 
       for (const parsed of parseResult.transactions) {
+        if (seenKeys.has(parsed.key)) {
+          duplicateCount++;
+          continue;
+        }
+        seenKeys.add(parsed.key);
+
         // Check for duplicates by key
         const existing = await storage.getTransactionByKey(user.id, parsed.key);
         if (existing) {

@@ -1,0 +1,18 @@
+# Docs Changelog
+
+## 2026-01-02
+- Added QA backbone docs: `docs/QA/E2E_VALIDATION_PLAN.md`, `docs/QA/FULL_APP_QA_MATRIX.md`, `docs/QA/FULL_APP_FIX_PLAN.md`, `docs/QA/FULL_APP_QA_REPORT.md`.
+- Added security baseline docs: `docs/SECURITY/SECURITY_BASELINE.md`, `docs/SECURITY/SECURITY_AUDIT_REPORT.md`.
+- Added reusable prompt artifact: `docs/prompts/CODEX_FULL_APP_E2E_QA_SECURITY.md` and indexed in `docs/prompts/README.md`.
+- Added Playwright configuration and initial E2E specs under `tests/e2e/` plus QA scripts in `scripts/qa/`.
+- Updated QA guide with automation shortcuts for smoke/E2E/DB checks: `docs/QUALITY_ASSURANCE_AND_DEBUG.md`.
+- Updated security policy with dependency audit note and current review date: `SECURITY.md`.
+- Updated QA report with Playwright run status and evidence links: `docs/QA/FULL_APP_QA_REPORT.md`.
+- Updated QA matrix/fix plan with automated status and blocked items: `docs/QA/FULL_APP_QA_MATRIX.md`, `docs/QA/FULL_APP_FIX_PLAN.md`.
+- Updated security baseline/audit with secret scans and post-`npm audit fix` results: `docs/SECURITY/SECURITY_BASELINE.md`, `docs/SECURITY/SECURITY_AUDIT_REPORT.md`.
+- Added CORS validation notes (local) to security audit/baseline.
+- Added Playwright artifacts to `.gitignore` to avoid committing `test-results` and `playwright-report`.
+- Added scripted DB invariants runner guidance and updated QA docs to reflect DB-01 failure: `docs/QUALITY_ASSURANCE_AND_DEBUG.md`, `docs/QA/FULL_APP_QA_REPORT.md`, `docs/QA/FULL_APP_QA_MATRIX.md`, `docs/QA/FULL_APP_FIX_PLAN.md`.
+- Documented DB dedupe runner and updated QA artifacts after duplicate cleanup: `docs/QUALITY_ASSURANCE_AND_DEBUG.md`, `docs/QA/FULL_APP_QA_REPORT.md`, `docs/QA/FULL_APP_QA_MATRIX.md`, `docs/QA/FULL_APP_FIX_PLAN.md`.
+- Updated QA report with latest API smoke and Playwright results: `docs/QA/FULL_APP_QA_REPORT.md`.
+- Added manual P0 UI smoke evidence placeholders and pending markers: `docs/QA/FULL_APP_QA_REPORT.md`, `docs/QA/FULL_APP_QA_MATRIX.md`.
