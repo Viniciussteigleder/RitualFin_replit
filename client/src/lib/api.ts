@@ -49,6 +49,19 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
   return res.json();
 }
 
+async function fetchBlob(endpoint: string, options?: RequestInit): Promise<Blob> {
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    ...options,
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: "Request failed" }));
+    throw new Error(error.message || error.error || "Request failed");
+  }
+
+  return res.blob();
+}
+
 // Auth
 export const authApi = {
   login: (username: string, password: string) =>
@@ -66,10 +79,25 @@ export const settingsApi = {
     userId: string;
     autoConfirmHighConfidence: boolean;
     confidenceThreshold: number;
+    language?: string | null;
+    currency?: string | null;
+    fiscalRegion?: string | null;
+    notifyImportStatus?: boolean | null;
+    notifyReviewQueue?: boolean | null;
+    notifyMonthlyReport?: boolean | null;
     createdAt: string;
     updatedAt: string;
   }>("/settings"),
-  update: (data: { autoConfirmHighConfidence?: boolean; confidenceThreshold?: number }) =>
+  update: (data: {
+    autoConfirmHighConfidence?: boolean;
+    confidenceThreshold?: number;
+    language?: string;
+    currency?: string;
+    fiscalRegion?: string;
+    notifyImportStatus?: boolean;
+    notifyReviewQueue?: boolean;
+    notifyMonthlyReport?: boolean;
+  }) =>
     fetchApi<any>("/settings", {
       method: "PATCH",
       body: JSON.stringify(data),
@@ -99,25 +127,238 @@ export const accountsApi = {
 // Uploads
 export const uploadsApi = {
   list: () => fetchApi<any[]>("/uploads"),
-  process: (filename: string, csvContent: string) =>
-    fetchApi<{
+  errors: (id: string) => fetchApi<{ uploadId: string; errors: Array<{ rowNumber: number; errorMessage: string }>; count: number }>(`/uploads/${id}/errors`),
+  diagnostics: (id: string) => fetchApi<any>(`/uploads/${id}/diagnostics`),
+  preview: async (
+    filename: string,
+    csvContent: string,
+    encoding?: string,
+    fileBase64?: string,
+    fileType?: string,
+    importDate?: string
+  ) => {
+    const res = await fetch(`${API_BASE}/imports/preview`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filename, csvContent, encoding, fileBase64, fileType, importDate }),
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: "Request failed" }));
+      throw new Error(error.message || error.error || "Request failed");
+    }
+    return res.json();
+  },
+  process: async (
+    filename: string,
+    csvContent: string,
+    encoding?: string,
+    fileBase64?: string,
+    fileType?: string,
+    importDate?: string
+  ) => {
+    const res = await fetch(`${API_BASE}/uploads/process`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filename, csvContent, encoding, fileBase64, fileType, importDate }),
+    });
+    const payload = await res.json().catch(() => ({ message: "Request failed" }));
+    if (!res.ok) {
+      const error: any = new Error(payload.message || payload.error || "Request failed");
+      error.details = payload;
+      throw error;
+    }
+    return payload as {
       success: boolean;
       uploadId: string;
       rowsTotal: number;
       rowsImported: number;
       duplicates: number;
       monthAffected: string;
+      autoClassified?: number;
+      openCount?: number;
       errors?: string[];
-    }>("/uploads/process", {
+      meta?: any;
+      diagnostics?: any;
+      error?: any;
+    };
+  },
+};
+
+// Classification & Aliases
+export const classificationApi = {
+  exportExcel: () => fetchBlob("/classification/export"),
+  exportCsv: () => fetchBlob("/classification/export-csv"),
+  exportCsvTemplate: () => fetchBlob("/classification/template-csv"),
+  previewImport: (fileBase64: string) =>
+    fetchApi<any>("/classification/import/preview", {
       method: "POST",
-      body: JSON.stringify({ filename, csvContent }),
+      body: JSON.stringify({ fileBase64 }),
     }),
+  applyImport: (fileBase64: string, confirmRemap?: boolean) =>
+    fetchApi<any>("/classification/import/apply", {
+      method: "POST",
+      body: JSON.stringify({ fileBase64, confirmRemap }),
+    }),
+  ruleTest: (keyDesc: string) =>
+    fetchApi<any>("/classification/rule-test", {
+      method: "POST",
+      body: JSON.stringify({ keyDesc }),
+    }),
+  listLeaves: () => fetchApi<any[]>("/classification/leaves"),
+  listRules: () => fetchApi<any[]>("/classification/rules"),
+  appendRuleKeywords: (data: { leafId: string; expressions: string }) =>
+    fetchApi<any>("/classification/rules/append", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  appendRuleNegativeKeywords: (data: { leafId: string; expressions: string }) =>
+    fetchApi<any>("/classification/rules/append-negative", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  reviewQueue: () => fetchApi<any[]>("/classification/review-queue"),
+  assignReview: (data: { transactionId: string; leafId: string; ruleId?: string; newExpression?: string; createRule?: boolean }) =>
+    fetchApi<any>("/classification/review/assign", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+};
+
+// AI Keywords
+export type AiKeywordSuggestion = {
+  keyword: string;
+  suggestedCategory: string;
+  suggestedCategory2?: string;
+  suggestedCategory3?: string;
+  suggestedType: "Despesa" | "Receita";
+  suggestedFixVar: "Fixo" | "Variável";
+  confidence: number;
+  reason: string;
+  count?: number;
+  total?: number;
+  samples?: string[];
+  leafId?: string;
+};
+
+export const aiKeywordsApi = {
+  analyze: () =>
+    fetchApi<{ suggestions: AiKeywordSuggestion[]; total?: number; message?: string }>(
+      "/ai/analyze-keywords",
+      { method: "POST", body: JSON.stringify({}) }
+    ),
+  apply: (suggestions: AiKeywordSuggestion[]) =>
+    fetchApi<{ rulesCreated: number; transactionsUpdated: number }>("/ai/apply-suggestions", {
+      method: "POST",
+      body: JSON.stringify({ suggestions }),
+    }),
+};
+
+// Categories (shell-only)
+export const categoriesApi = {
+  list: async () => [] as Array<{ id: string; category1: string; category2: string; category3?: string | null }>,
+  create: async (_data: { category1: string; category2: string; category3?: string | null }) => {
+    throw new Error("Categorias indisponíveis nesta versão.");
+  },
+  update: async (_id: string, _data: { category1: string; category2: string; category3?: string | null }) => {
+    throw new Error("Categorias indisponíveis nesta versão.");
+  },
+  delete: async (_id: string) => {
+    throw new Error("Categorias indisponíveis nesta versão.");
+  },
+};
+
+// Merchant metadata
+export const merchantMetadataApi = {
+  list: () => fetchApi<any[]>("/merchant-metadata"),
+  create: (data: { pattern: string; friendlyName: string; icon: string; color: string }) =>
+    fetchApi<any>("/merchant-metadata", { method: "POST", body: JSON.stringify(data) }),
+  update: (id: string, data: { pattern: string; friendlyName: string; icon: string; color: string }) =>
+    fetchApi<any>(`/merchant-metadata/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  delete: (id: string) =>
+    fetchApi<void>(`/merchant-metadata/${id}`, { method: "DELETE" }),
+};
+
+export const aliasApi = {
+  exportExcel: () => fetchBlob("/aliases/export"),
+  exportKeyDescCsv: () => fetchBlob("/aliases/key-desc/export-csv"),
+  exportKeyDescTemplateCsv: () => fetchBlob("/aliases/key-desc/template-csv"),
+  exportAssetsCsv: () => fetchBlob("/aliases/assets/export-csv"),
+  exportAssetsTemplateCsv: () => fetchBlob("/aliases/assets/template-csv"),
+  exportLogosTemplate: () => fetchBlob("/aliases/logos/template"),
+  previewImport: (fileBase64: string) =>
+    fetchApi<any>("/aliases/import/preview", {
+      method: "POST",
+      body: JSON.stringify({ fileBase64 }),
+    }),
+  applyImport: (fileBase64: string) =>
+    fetchApi<any>("/aliases/import/apply", {
+      method: "POST",
+      body: JSON.stringify({ fileBase64 }),
+    }),
+  importLogos: (fileBase64: string) =>
+    fetchApi<any>("/aliases/logos/import", {
+      method: "POST",
+      body: JSON.stringify({ fileBase64 }),
+    }),
+  test: (keyDesc: string) =>
+    fetchApi<any>("/aliases/test", {
+      method: "POST",
+      body: JSON.stringify({ keyDesc }),
+    }),
+  refreshLogos: (force?: boolean) =>
+    fetchApi<any>("/aliases/refresh-logos", {
+      method: "POST",
+      body: JSON.stringify({ force }),
+    }),
+};
+
+export const dataImportsApi = {
+  preview: async (payload: { dataset: string; filename: string; fileBase64: string; confirmRemap?: boolean }) => {
+    const res = await fetch(`${API_BASE}/data-imports/preview`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({ message: "Request failed" }));
+    if (!res.ok) {
+      return data;
+    }
+    return data;
+  },
+  confirm: (payload: { importId: string; confirmRemap?: boolean }) =>
+    fetchApi<any>("/data-imports/confirm", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  last: (dataset: string) => fetchApi<any>(`/data-imports/last?dataset=${encodeURIComponent(dataset)}`),
+};
+
+export const importConflictsApi = {
+  resolve: (payload: { uploadId: string; action: "keep" | "replace"; duplicateCount?: number }) =>
+    fetchApi<any>("/imports/conflicts/resolve", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+};
+
+export const resetApi = {
+  resetData: () => fetchApi<any>("/settings/reset", { method: "POST" }),
+  deleteData: (data: { deleteTransactions?: boolean; deleteCategories?: boolean; deleteAliases?: boolean; deleteAll?: boolean }) =>
+    fetchApi<any>("/settings/delete-data", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+};
+
+export const auditLogsApi = {
+  list: (limit = 200) => fetchApi<any[]>(`/audit-logs?limit=${limit}`),
+  exportCsv: () => fetchBlob("/audit-logs/export-csv"),
 };
 
 // Transactions
 export const transactionsApi = {
   list: (month?: string) => fetchApi<any[]>(`/transactions${month ? `?month=${month}` : ""}`),
-  confirmQueue: () => fetchApi<any[]>("/transactions/confirm-queue"),
+  confirmQueue: () => fetchApi<any[]>("/classification/review-queue"),
   update: (id: string, data: any) =>
     fetchApi<any>(`/transactions/${id}`, {
       method: "PATCH",
@@ -384,6 +625,26 @@ export const ritualsApi = {
     }>(`/rituals/${id}/complete`, {
       method: "POST",
       body: JSON.stringify({ notes }),
+    }),
+};
+
+// Calendar Events
+export const calendarEventsApi = {
+  list: () => fetchApi<any[]>("/calendar-events"),
+  get: (id: string) => fetchApi<any>(`/calendar-events/${id}`),
+  create: (data: any) =>
+    fetchApi<any>("/calendar-events", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  update: (id: string, data: any) =>
+    fetchApi<any>(`/calendar-events/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    fetchApi<{ success: boolean }>(`/calendar-events/${id}`, {
+      method: "DELETE",
     }),
 };
 

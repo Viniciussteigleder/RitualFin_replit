@@ -1,10 +1,13 @@
 import {
-  users, accounts, uploads, uploadErrors, merchantMetadata, transactions, rules, budgets, calendarEvents, eventOccurrences, goals, categoryGoals, rituals, settings,
-  aiUsageLogs, notifications, merchantDescriptions, merchantIcons,
+  users, accounts, uploads, uploadErrors, uploadDiagnostics, importRuns, merchantMetadata, transactions, rules, budgets, calendarEvents, eventOccurrences, goals, categoryGoals, rituals, settings,
+  aiUsageLogs, auditLogs, notifications, merchantDescriptions, merchantIcons,
+  taxonomyLevel1, taxonomyLevel2, taxonomyLeaf, appCategory, appCategoryLeaf, keyDescMap, aliasAssets,
   type User, type InsertUser,
   type Account, type InsertAccount,
   type Upload, type InsertUpload,
   type UploadError, type InsertUploadError,
+  type UploadDiagnostics, type InsertUploadDiagnostics,
+  type ImportRun, type InsertImportRun,
   type MerchantMetadata, type InsertMerchantMetadata,
   type Transaction, type InsertTransaction,
   type Rule, type InsertRule,
@@ -16,9 +19,17 @@ import {
   type Ritual, type InsertRitual,
   type Settings, type InsertSettings, type UpdateSettings,
   type AiUsageLog, type InsertAiUsageLog,
+  type AuditLog, type InsertAuditLog,
   type Notification, type InsertNotification, type UpdateNotification,
   type MerchantDescription, type InsertMerchantDescription,
-  type MerchantIcon, type InsertMerchantIcon
+  type MerchantIcon, type InsertMerchantIcon,
+  type TaxonomyLevel1, type InsertTaxonomyLevel1,
+  type TaxonomyLevel2, type InsertTaxonomyLevel2,
+  type TaxonomyLeaf, type InsertTaxonomyLeaf,
+  type AppCategory, type InsertAppCategory,
+  type AppCategoryLeaf, type InsertAppCategoryLeaf,
+  type KeyDescMap, type InsertKeyDescMap,
+  type AliasAssets, type InsertAliasAssets
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql, like, gte, lt, or, isNull } from "drizzle-orm";
@@ -37,6 +48,10 @@ export interface IStorage {
   // AI Usage Logs
   createAiUsageLog(log: InsertAiUsageLog): Promise<AiUsageLog>;
   getAiUsageLogs(userId: string, limit?: number): Promise<AiUsageLog[]>;
+
+  // Audit Logs
+  createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
+  getAuditLogs(userId: string, limit?: number): Promise<AuditLog[]>;
 
   // Notifications
   getNotifications(userId: string, limit?: number): Promise<Notification[]>;
@@ -62,6 +77,16 @@ export interface IStorage {
   createUploadError(error: InsertUploadError): Promise<UploadError>;
   getUploadErrors(uploadId: string): Promise<UploadError[]>;
 
+  // Upload Diagnostics
+  createUploadDiagnostics(row: InsertUploadDiagnostics): Promise<UploadDiagnostics>;
+  getUploadDiagnostics(uploadId: string): Promise<UploadDiagnostics | undefined>;
+
+  // Import Runs
+  createImportRun(row: InsertImportRun): Promise<ImportRun>;
+  updateImportRun(id: string, data: Partial<ImportRun>): Promise<ImportRun | undefined>;
+  getImportRun(id: string): Promise<ImportRun | undefined>;
+  getLastImportRunByDataset(userId: string, datasetName: string): Promise<ImportRun | undefined>;
+
   // Merchant Metadata
   getMerchantMetadata(userId: string): Promise<MerchantMetadata[]>;
   getMerchantMetadataById(id: string, userId: string): Promise<MerchantMetadata | undefined>;
@@ -72,10 +97,11 @@ export interface IStorage {
 
   // Transactions
   getTransactions(userId: string, month?: string): Promise<Transaction[]>;
-  getTransactionsWithMerchantAlias(userId: string, month?: string): Promise<(Transaction & { merchantAlias?: string })[]>;
+  getTransactionsWithMerchantAlias(userId: string, month?: string): Promise<(Transaction & { aliasDesc: string | null; logoLocalPath: string | null; appCategory: string | null })[]>;
   getTransactionsByNeedsReview(userId: string): Promise<Transaction[]>;
   getTransaction(id: string): Promise<Transaction | undefined>;
-  getTransactionByKey(key: string): Promise<Transaction | undefined>;
+  getTransactionByKey(userId: string, key: string): Promise<Transaction | undefined>;
+  getTransactionsByKeyDesc(userId: string, keyDesc: string): Promise<Transaction[]>;
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   updateTransaction(id: string, data: Partial<Transaction>): Promise<Transaction | undefined>;
   bulkUpdateTransactions(ids: string[], data: Partial<Transaction>): Promise<void>;
@@ -88,6 +114,33 @@ export interface IStorage {
   createRule(rule: InsertRule): Promise<Rule>;
   updateRule(id: string, data: Partial<Rule>): Promise<Rule | undefined>;
   deleteRule(id: string): Promise<void>;
+
+  // Taxonomy + App Categories
+  getTaxonomyLevel1(userId: string): Promise<TaxonomyLevel1[]>;
+  getTaxonomyLevel2(userId: string): Promise<TaxonomyLevel2[]>;
+  getTaxonomyLeaf(userId: string): Promise<TaxonomyLeaf[]>;
+  getAppCategories(userId: string): Promise<AppCategory[]>;
+  getAppCategoryLeaf(userId: string): Promise<AppCategoryLeaf[]>;
+  createTaxonomyLevel1(row: InsertTaxonomyLevel1): Promise<TaxonomyLevel1>;
+  createTaxonomyLevel2(row: InsertTaxonomyLevel2): Promise<TaxonomyLevel2>;
+  createTaxonomyLeaf(row: InsertTaxonomyLeaf): Promise<TaxonomyLeaf>;
+  createAppCategory(row: InsertAppCategory): Promise<AppCategory>;
+  createAppCategoryLeaf(row: InsertAppCategoryLeaf): Promise<AppCategoryLeaf>;
+  deleteTaxonomyForUser(userId: string): Promise<void>;
+
+  // Alias + key_desc mapping
+  getKeyDescMap(userId: string): Promise<KeyDescMap[]>;
+  getKeyDescMapping(userId: string, keyDesc: string): Promise<KeyDescMap | undefined>;
+  upsertKeyDescMapping(row: InsertKeyDescMap): Promise<KeyDescMap>;
+  updateKeyDescMapping(userId: string, keyDesc: string, data: Partial<KeyDescMap>): Promise<KeyDescMap | undefined>;
+
+  getAliasAssets(userId: string): Promise<AliasAssets[]>;
+  getAliasAsset(userId: string, aliasDesc: string): Promise<AliasAssets | undefined>;
+  upsertAliasAsset(row: InsertAliasAssets): Promise<AliasAssets>;
+  updateAliasAsset(userId: string, aliasDesc: string, data: Partial<AliasAssets>): Promise<AliasAssets | undefined>;
+  deleteAliasAsset(userId: string, aliasDesc: string): Promise<void>;
+  updateTransactionsAliasByKeyDesc(userId: string, keyDesc: string, aliasDesc: string | null): Promise<void>;
+  updateTransactionsByKeyDesc(userId: string, keyDesc: string, data: Partial<Transaction>): Promise<void>;
   
   // Budgets
   getBudgets(userId: string, month: string): Promise<Budget[]>;
@@ -229,6 +282,21 @@ export class DatabaseStorage implements IStorage {
       .limit(limit);
   }
 
+  // Audit Logs
+  async createAuditLog(log: InsertAuditLog): Promise<AuditLog> {
+    const [created] = await db.insert(auditLogs).values(log).returning();
+    return created;
+  }
+
+  async getAuditLogs(userId: string, limit = 200): Promise<AuditLog[]> {
+    return db
+      .select()
+      .from(auditLogs)
+      .where(eq(auditLogs.userId, userId))
+      .orderBy(desc(auditLogs.createdAt))
+      .limit(limit);
+  }
+
   // Notifications
   async getNotifications(userId: string, limit = 200): Promise<Notification[]> {
     return db
@@ -359,6 +427,46 @@ export class DatabaseStorage implements IStorage {
       .orderBy(uploadErrors.rowNumber);
   }
 
+  // Upload Diagnostics
+  async createUploadDiagnostics(row: InsertUploadDiagnostics): Promise<UploadDiagnostics> {
+    const [created] = await db.insert(uploadDiagnostics).values(row).returning();
+    return created;
+  }
+
+  async getUploadDiagnostics(uploadId: string): Promise<UploadDiagnostics | undefined> {
+    const [row] = await db.select().from(uploadDiagnostics).where(eq(uploadDiagnostics.uploadId, uploadId));
+    return row || undefined;
+  }
+
+  async createImportRun(row: InsertImportRun): Promise<ImportRun> {
+    const [created] = await db.insert(importRuns).values(row).returning();
+    return created;
+  }
+
+  async updateImportRun(id: string, data: Partial<ImportRun>): Promise<ImportRun | undefined> {
+    const [updated] = await db
+      .update(importRuns)
+      .set(data)
+      .where(eq(importRuns.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getImportRun(id: string): Promise<ImportRun | undefined> {
+    const [run] = await db.select().from(importRuns).where(eq(importRuns.id, id));
+    return run;
+  }
+
+  async getLastImportRunByDataset(userId: string, datasetName: string): Promise<ImportRun | undefined> {
+    const [run] = await db
+      .select()
+      .from(importRuns)
+      .where(and(eq(importRuns.userId, userId), eq(importRuns.datasetName, datasetName)))
+      .orderBy(desc(importRuns.createdAt))
+      .limit(1);
+    return run;
+  }
+
   // Merchant Metadata
   async getMerchantMetadata(userId: string): Promise<MerchantMetadata[]> {
     return db.select().from(merchantMetadata)
@@ -423,27 +531,33 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(transactions.paymentDate));
   }
 
-  // Get transactions with merchant alias enrichment
-  async getTransactionsWithMerchantAlias(userId: string, month?: string): Promise<(Transaction & { merchantAlias?: string })[]> {
-    const { generateKeyDesc, detectTransactionSource } = await import("./key-desc-generator");
+  // Get transactions with alias + logo enrichment
+  async getTransactionsWithMerchantAlias(userId: string, month?: string): Promise<(Transaction & { aliasDesc: string | null; logoLocalPath: string | null; appCategory: string | null })[]> {
     const txs = await this.getTransactions(userId, month);
-    const result: (Transaction & { merchantAlias?: string })[] = [];
+    const [keyDescRows, aliasRows, appCats, appLeafs] = await Promise.all([
+      this.getKeyDescMap(userId),
+      this.getAliasAssets(userId),
+      this.getAppCategories(userId),
+      this.getAppCategoryLeaf(userId)
+    ]);
 
-    for (const tx of txs) {
-      // Extract merchant key from descRaw using the same logic as key-desc-generator
-      const source = detectTransactionSource(tx.accountSource);
-      const keyDesc = generateKeyDesc(tx.descRaw, tx.accountSource);
+    const keyDescToAlias = new Map(keyDescRows.map(row => [row.keyDesc, row.aliasDesc || undefined]));
+    const aliasToLogo = new Map(aliasRows.map(row => [row.aliasDesc, row.logoLocalPath || undefined]));
+    const appCatMap = new Map(appCats.map(cat => [cat.appCatId, cat.name]));
+    const leafToApp = new Map(appLeafs.map(link => [link.leafId, appCatMap.get(link.appCatId) || "Em aberto"]));
 
-      // Look up merchant alias
-      const merchantDesc = await this.getMerchantDescription(userId, source, keyDesc);
-
-      result.push({
+    return txs.map(tx => {
+      const resolvedAlias = tx.aliasDesc || (tx.keyDesc ? keyDescToAlias.get(tx.keyDesc) : undefined);
+      const resolvedLogo = resolvedAlias ? aliasToLogo.get(resolvedAlias) : undefined;
+      const resolvedCategory = tx.leafId ? leafToApp.get(tx.leafId) : undefined;
+      return {
         ...tx,
-        merchantAlias: merchantDesc?.aliasDesc
-      });
-    }
-
-    return result;
+        category1: (resolvedCategory || tx.category1) as any,
+        appCategory: resolvedCategory || null,
+        aliasDesc: resolvedAlias ?? null,
+        logoLocalPath: resolvedLogo ?? null
+      };
+    });
   }
 
   async getTransactionsByNeedsReview(userId: string): Promise<Transaction[]> {
@@ -460,9 +574,16 @@ export class DatabaseStorage implements IStorage {
     return tx || undefined;
   }
 
-  async getTransactionByKey(key: string): Promise<Transaction | undefined> {
-    const [tx] = await db.select().from(transactions).where(eq(transactions.key, key));
+  async getTransactionByKey(userId: string, key: string): Promise<Transaction | undefined> {
+    const [tx] = await db.select().from(transactions)
+      .where(and(eq(transactions.userId, userId), eq(transactions.key, key)));
     return tx || undefined;
+  }
+
+  async getTransactionsByKeyDesc(userId: string, keyDesc: string): Promise<Transaction[]> {
+    return db.select().from(transactions)
+      .where(and(eq(transactions.userId, userId), eq(transactions.keyDesc, keyDesc)))
+      .orderBy(desc(transactions.paymentDate));
   }
 
   async createTransaction(transaction: InsertTransaction): Promise<Transaction> {
@@ -507,6 +628,158 @@ export class DatabaseStorage implements IStorage {
     await db.delete(rules).where(eq(rules.id, id));
   }
 
+  // Taxonomy + App Categories
+  async getTaxonomyLevel1(userId: string): Promise<TaxonomyLevel1[]> {
+    return db.select().from(taxonomyLevel1)
+      .where(eq(taxonomyLevel1.userId, userId))
+      .orderBy(desc(taxonomyLevel1.updatedAt));
+  }
+
+  async getTaxonomyLevel2(userId: string): Promise<TaxonomyLevel2[]> {
+    return db.select().from(taxonomyLevel2)
+      .where(eq(taxonomyLevel2.userId, userId))
+      .orderBy(desc(taxonomyLevel2.updatedAt));
+  }
+
+  async getTaxonomyLeaf(userId: string): Promise<TaxonomyLeaf[]> {
+    return db.select().from(taxonomyLeaf)
+      .where(eq(taxonomyLeaf.userId, userId))
+      .orderBy(desc(taxonomyLeaf.updatedAt));
+  }
+
+  async getAppCategories(userId: string): Promise<AppCategory[]> {
+    return db.select().from(appCategory)
+      .where(eq(appCategory.userId, userId))
+      .orderBy(appCategory.orderIndex);
+  }
+
+  async getAppCategoryLeaf(userId: string): Promise<AppCategoryLeaf[]> {
+    return db.select().from(appCategoryLeaf)
+      .where(eq(appCategoryLeaf.userId, userId));
+  }
+
+  async createTaxonomyLevel1(row: InsertTaxonomyLevel1): Promise<TaxonomyLevel1> {
+    const [created] = await db.insert(taxonomyLevel1).values(row).returning();
+    return created;
+  }
+
+  async createTaxonomyLevel2(row: InsertTaxonomyLevel2): Promise<TaxonomyLevel2> {
+    const [created] = await db.insert(taxonomyLevel2).values(row).returning();
+    return created;
+  }
+
+  async createTaxonomyLeaf(row: InsertTaxonomyLeaf): Promise<TaxonomyLeaf> {
+    const [created] = await db.insert(taxonomyLeaf).values(row).returning();
+    return created;
+  }
+
+  async createAppCategory(row: InsertAppCategory): Promise<AppCategory> {
+    const [created] = await db.insert(appCategory).values(row).returning();
+    return created;
+  }
+
+  async createAppCategoryLeaf(row: InsertAppCategoryLeaf): Promise<AppCategoryLeaf> {
+    const [created] = await db.insert(appCategoryLeaf).values(row).returning();
+    return created;
+  }
+
+  async deleteTaxonomyForUser(userId: string): Promise<void> {
+    await db.delete(appCategoryLeaf).where(eq(appCategoryLeaf.userId, userId));
+    await db.delete(rules).where(eq(rules.userId, userId));
+    await db.delete(taxonomyLeaf).where(eq(taxonomyLeaf.userId, userId));
+    await db.delete(taxonomyLevel2).where(eq(taxonomyLevel2.userId, userId));
+    await db.delete(taxonomyLevel1).where(eq(taxonomyLevel1.userId, userId));
+    await db.delete(appCategory).where(eq(appCategory.userId, userId));
+  }
+
+  // Alias + key_desc mapping
+  async getKeyDescMap(userId: string): Promise<KeyDescMap[]> {
+    return db.select().from(keyDescMap)
+      .where(eq(keyDescMap.userId, userId))
+      .orderBy(desc(keyDescMap.updatedAt));
+  }
+
+  async getKeyDescMapping(userId: string, keyDesc: string): Promise<KeyDescMap | undefined> {
+    const [row] = await db.select().from(keyDescMap)
+      .where(and(eq(keyDescMap.userId, userId), eq(keyDescMap.keyDesc, keyDesc)));
+    return row || undefined;
+  }
+
+  async upsertKeyDescMapping(row: InsertKeyDescMap): Promise<KeyDescMap> {
+    const existing = await this.getKeyDescMapping(row.userId, row.keyDesc);
+    if (existing) {
+      const [updated] = await db.update(keyDescMap)
+        .set({
+          simpleDesc: row.simpleDesc,
+          aliasDesc: row.aliasDesc ?? existing.aliasDesc,
+          updatedAt: new Date()
+        })
+        .where(and(eq(keyDescMap.userId, row.userId), eq(keyDescMap.keyDesc, row.keyDesc)))
+        .returning();
+      return updated;
+    }
+    const [created] = await db.insert(keyDescMap).values(row).returning();
+    return created;
+  }
+
+  async updateKeyDescMapping(userId: string, keyDesc: string, data: Partial<KeyDescMap>): Promise<KeyDescMap | undefined> {
+    const [updated] = await db.update(keyDescMap)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(keyDescMap.userId, userId), eq(keyDescMap.keyDesc, keyDesc)))
+      .returning();
+    return updated || undefined;
+  }
+
+  async getAliasAssets(userId: string): Promise<AliasAssets[]> {
+    return db.select().from(aliasAssets)
+      .where(eq(aliasAssets.userId, userId))
+      .orderBy(desc(aliasAssets.updatedAt));
+  }
+
+  async getAliasAsset(userId: string, aliasDesc: string): Promise<AliasAssets | undefined> {
+    const [row] = await db.select().from(aliasAssets)
+      .where(and(eq(aliasAssets.userId, userId), eq(aliasAssets.aliasDesc, aliasDesc)));
+    return row || undefined;
+  }
+
+  async upsertAliasAsset(row: InsertAliasAssets): Promise<AliasAssets> {
+    const existing = await this.getAliasAsset(row.userId, row.aliasDesc);
+    if (existing) {
+      const [updated] = await db.update(aliasAssets)
+        .set({ ...row, updatedAt: new Date() })
+        .where(and(eq(aliasAssets.userId, row.userId), eq(aliasAssets.aliasDesc, row.aliasDesc)))
+        .returning();
+      return updated;
+    }
+    const [created] = await db.insert(aliasAssets).values(row).returning();
+    return created;
+  }
+
+  async updateAliasAsset(userId: string, aliasDesc: string, data: Partial<AliasAssets>): Promise<AliasAssets | undefined> {
+    const [updated] = await db.update(aliasAssets)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(aliasAssets.userId, userId), eq(aliasAssets.aliasDesc, aliasDesc)))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteAliasAsset(userId: string, aliasDesc: string): Promise<void> {
+    await db.delete(aliasAssets)
+      .where(and(eq(aliasAssets.userId, userId), eq(aliasAssets.aliasDesc, aliasDesc)));
+  }
+
+  async updateTransactionsAliasByKeyDesc(userId: string, keyDesc: string, aliasDesc: string | null): Promise<void> {
+    await db.update(transactions)
+      .set({ aliasDesc })
+      .where(and(eq(transactions.userId, userId), eq(transactions.keyDesc, keyDesc)));
+  }
+
+  async updateTransactionsByKeyDesc(userId: string, keyDesc: string, data: Partial<Transaction>): Promise<void> {
+    await db.update(transactions)
+      .set(data)
+      .where(and(eq(transactions.userId, userId), eq(transactions.keyDesc, keyDesc)));
+  }
+
   // Budgets
   async getBudgets(userId: string, month: string): Promise<Budget[]> {
     return db.select().from(budgets)
@@ -547,6 +820,11 @@ export class DatabaseStorage implements IStorage {
         lt(transactions.paymentDate, endDate)
       ));
 
+    const appCats: AppCategory[] = await db.select().from(appCategory).where(eq(appCategory.userId, userId));
+    const appCatMap = new Map<string, string>(appCats.map((cat) => [cat.appCatId, cat.name]));
+    const appLeafs: AppCategoryLeaf[] = await db.select().from(appCategoryLeaf).where(eq(appCategoryLeaf.userId, userId));
+    const leafToApp = new Map<string, string>(appLeafs.map((link) => [link.leafId, appCatMap.get(link.appCatId) || "Em aberto"]));
+
     const spentByCategory: Record<string, number> = {};
     let totalSpent = 0;
     let totalIncome = 0;
@@ -555,13 +833,13 @@ export class DatabaseStorage implements IStorage {
     let variableExpenses = 0;
 
     for (const tx of txs) {
-      if (tx.needsReview) pendingReviewCount++;
+      if (tx.needsReview || tx.status === "OPEN") pendingReviewCount++;
       if (tx.excludeFromBudget || tx.internalTransfer) continue;
 
       if (tx.amount < 0) {
         const absAmount = Math.abs(tx.amount);
         totalSpent += absAmount;
-        const cat = tx.category1 || "Outros";
+        const cat = tx.leafId ? (leafToApp.get(tx.leafId) ?? "Em aberto") : "Em aberto";
         spentByCategory[cat] = (spentByCategory[cat] || 0) + absAmount;
         
         if (tx.fixVar === "Fixo") {
@@ -634,7 +912,11 @@ export class DatabaseStorage implements IStorage {
       .where(and(
         eq(transactions.userId, userId),
         eq(transactions.needsReview, true),
-        or(isNull(transactions.category1), eq(transactions.category1, "Outros"))
+        or(
+          isNull(transactions.leafId),
+          isNull(transactions.category1),
+          eq(transactions.category1, "Outros")
+        )
       ))
       .orderBy(desc(transactions.paymentDate));
   }

@@ -19,6 +19,8 @@ import { authApi } from "@/lib/api";
 import { Eye, EyeOff, Sparkles, ArrowRight, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { animations, buttonPress, focusRing } from "@/lib/animations";
+import { useLocale } from "@/hooks/use-locale";
+import { loginCopy, t as translate } from "@/lib/i18n";
 
 export default function LoginPage() {
   const [, setLocation] = useLocation();
@@ -26,6 +28,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const locale = useLocale();
 
   const loginMutation = useMutation({
     mutationFn: () => authApi.login(email || "demo", password || "demo"),
@@ -70,10 +73,10 @@ export default function LoginPage() {
                 </div>
                 <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-400 rounded-full animate-ping opacity-75" />
               </div>
-              <div className="text-center">
-                <h1 className="font-bold text-2xl text-foreground tracking-tight">RitualFin</h1>
-                <p className="text-xs text-muted-foreground mt-0.5">Gestão Financeira Inteligente</p>
-              </div>
+                <div className="text-center">
+                  <h1 className="font-bold text-2xl text-foreground tracking-tight">RitualFin</h1>
+                <p className="text-xs text-muted-foreground mt-0.5">{translate(locale, loginCopy.tagline)}</p>
+                </div>
             </div>
 
             {/* Welcome message */}
@@ -84,10 +87,10 @@ export default function LoginPage() {
               animations.delay[100]
             )}>
               <h2 className="text-2xl md:text-3xl font-bold text-foreground">
-                Bem-vindo de volta
+                {translate(locale, loginCopy.welcomeTitle)}
               </h2>
               <p className="text-muted-foreground">
-                Gerencie suas finanças com clareza e simplicidade
+                {translate(locale, loginCopy.welcomeSubtitle)}
               </p>
             </div>
 
@@ -101,9 +104,9 @@ export default function LoginPage() {
               <div className="flex items-start gap-3">
                 <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-foreground">Modo Demo Ativo</p>
+                  <p className="text-sm font-medium text-foreground">{translate(locale, loginCopy.demoTitle)}</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Clique em qualquer botão para entrar. Sem necessidade de credenciais.
+                    {translate(locale, loginCopy.demoBody)}
                   </p>
                 </div>
               </div>
@@ -135,7 +138,9 @@ export default function LoginPage() {
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                 </svg>
               )}
-              {isSuccess ? "Conectado! Redirecionando..." : "Continuar com Google"}
+              {isSuccess
+                ? translate(locale, loginCopy.googleSuccess)
+                : translate(locale, loginCopy.googleContinue)}
             </Button>
 
             {/* Divider */}
@@ -149,7 +154,9 @@ export default function LoginPage() {
                 <span className="w-full border-t border-gray-200" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-4 text-muted-foreground font-medium">ou continue com email</span>
+                <span className="bg-white px-4 text-muted-foreground font-medium">
+                  {translate(locale, loginCopy.divider)}
+                </span>
               </div>
             </div>
 
@@ -161,12 +168,12 @@ export default function LoginPage() {
               animations.delay[500]
             )}>
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+                <Label htmlFor="email" className="text-sm font-medium">{translate(locale, loginCopy.emailLabel)}</Label>
                 <div className="relative">
                   <Input
                     id="email"
                     type="email"
-                    placeholder="seu@email.com"
+                    placeholder={translate(locale, loginCopy.emailPlaceholder)}
                     className={cn(
                       "h-12 rounded-xl border-2 bg-white transition-all duration-200",
                       focusedField === "email" && "border-primary ring-4 ring-primary/10",
@@ -183,19 +190,19 @@ export default function LoginPage() {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
+                  <Label htmlFor="password" className="text-sm font-medium">{translate(locale, loginCopy.passwordLabel)}</Label>
                   <button
                     type="button"
                     className="text-sm text-primary hover:underline font-medium transition-colors duration-200"
                   >
-                    Esqueceu?
+                    {translate(locale, loginCopy.forgot)}
                   </button>
                 </div>
                 <div className="relative">
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Digite sua senha"
+                    placeholder={translate(locale, loginCopy.passwordPlaceholder)}
                     className={cn(
                       "h-12 rounded-xl border-2 bg-white pr-12 transition-all duration-200",
                       focusedField === "password" && "border-primary ring-4 ring-primary/10",
@@ -230,16 +237,16 @@ export default function LoginPage() {
                 {loginMutation.isPending ? (
                   <div className="flex items-center gap-2">
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Entrando...
+                    {translate(locale, loginCopy.loginLoading)}
                   </div>
                 ) : isSuccess ? (
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-5 h-5 animate-in zoom-in-0 duration-300" />
-                    Sucesso!
+                    {translate(locale, loginCopy.loginSuccess)}
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
-                    Entrar
+                    {translate(locale, loginCopy.loginAction)}
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-200" />
                   </div>
                 )}
@@ -253,12 +260,12 @@ export default function LoginPage() {
               animations.duration[500],
               animations.delay[600]
             )}>
-              Não tem uma conta?{" "}
+              {translate(locale, loginCopy.signupPrompt)}{" "}
               <button
                 type="button"
                 className="text-primary font-medium hover:underline transition-colors duration-200"
               >
-                Cadastre-se gratuitamente
+                {translate(locale, loginCopy.signupCta)}
               </button>
             </p>
           </CardContent>
@@ -271,7 +278,7 @@ export default function LoginPage() {
           animations.duration[700],
           animations.delay[800]
         )}>
-          &copy; 2025 RitualFin. Feito com ❤️ para simplificar suas finanças.
+          &copy; 2025 RitualFin. {translate(locale, loginCopy.footer)}
         </p>
       </div>
     </div>

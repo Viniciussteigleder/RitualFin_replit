@@ -2,26 +2,22 @@ import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Upload, Bell, User, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { transactionsApi } from "@/lib/api";
 import { useMonth } from "@/lib/month-context";
+import { useLocale } from "@/hooks/use-locale";
+import { layoutCopy, t as translate } from "@/lib/i18n";
+import { useMemo } from "react";
 
 const NAV_TABS = [
-  { label: "Painel", href: "/dashboard" },
-  { label: "Transacoes", href: "/confirm" },
-  { label: "Orcamento", href: "/rules" },
+  { label: "dashboard", href: "/dashboard" },
+  { label: "transactions", href: "/transactions" },
+  { label: "settings", href: "/settings" },
 ];
 
 export function TopNav() {
   const [location] = useLocation();
   const { month, setMonth, formatMonth } = useMonth();
-
-  const { data: confirmQueue = [] } = useQuery({
-    queryKey: ["confirm-queue"],
-    queryFn: transactionsApi.confirmQueue,
-  });
-
-  const pendingCount = confirmQueue.length;
+  const locale = useLocale();
+  const navLabels = useMemo(() => translate(locale, layoutCopy.nav) as Record<string, string>, [locale]);
 
   const prevMonth = () => {
     const [year, m] = month.split("-").map(Number);
@@ -61,12 +57,7 @@ export function TopNav() {
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                     )}
                   >
-                    {tab.label}
-                    {tab.href === "/confirm" && pendingCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
-                        {pendingCount > 9 ? "9+" : pendingCount}
-                      </span>
-                    )}
+                    {navLabels[tab.label]}
                     {isActive && (
                       <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-foreground rounded-full" />
                     )}
@@ -93,7 +84,7 @@ export function TopNav() {
             <Link href="/uploads">
               <Button size="sm" className="bg-primary hover:bg-primary/90 gap-2">
                 <Upload className="h-4 w-4" />
-                <span className="hidden sm:inline">Upload CSV</span>
+                <span className="hidden sm:inline">{navLabels.uploadCsv}</span>
               </Button>
             </Link>
 

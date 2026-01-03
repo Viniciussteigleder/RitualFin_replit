@@ -1,0 +1,278 @@
+From a4b05946fb11296deea21787e93377d4e9f4c3ac Mon Sep 17 00:00:00 2001
+From: Vinicius <vinicius.steigleder@gmail.com>
+Date: Mon, 29 Dec 2025 16:40:11 +0100
+Subject: [PATCH 1/2] feat: log deployment fix branch push and PR creation
+ details
+
+---
+ docs/_codex/CODEX_ACTIVITY_LOG.md | 15 +++++++++++++++
+ docs/_codex/DIFF_SUMMARY.md       |  5 +++++
+ docs/_codex/QA_NOTES.md           |  8 ++++++++
+ package-lock.json                 |  4 ++--
+ 4 files changed, 30 insertions(+), 2 deletions(-)
+
+diff --git a/docs/_codex/CODEX_ACTIVITY_LOG.md b/docs/_codex/CODEX_ACTIVITY_LOG.md
+index 20e606b..73632de 100644
+--- a/docs/_codex/CODEX_ACTIVITY_LOG.md
++++ b/docs/_codex/CODEX_ACTIVITY_LOG.md
+@@ -189,6 +189,21 @@
+   - `npm run build` succeeded with chunk-size warnings.
+   - `npm run dev` failed to bind 0.0.0.0 (ENOTSUP) in this environment; `/api/health` could not be verified locally.
+ 
++## 2025-12-29T15:28:32Z (UTC)
++- Session goal: Push deployment fix branch and open PR.
++- Commands executed (READ-ONLY):
++  - git status -sb
++  - git branch --show-current
++  - gh --version
++  - date -u +%Y-%m-%dT%H:%M:%SZ
++- Commands executed (MUTATING):
++  - git checkout fix/deployment-connectivity
++  - git push --force-with-lease origin fix/deployment-connectivity
++  - gh pr create --title "🚨 CRITICAL: Fix deployment connectivity issues" --body "<summary>"
++- Outcomes:
++  - PR created: https://github.com/Viniciussteigleder/RitualFin_replit/pull/1
++  - Warning noted: 1 uncommitted change (package-lock.json).
++
+ ## 2025-12-29T13:07:57Z (UTC)
+ - Session goal: Create a Codex handoff document for Claude and update governance logs.
+ - Context links: docs/_codex/FEATURE_IMPLEMENTATION_PLAN.md, docs/_codex/USER_FEEDBACK_VERBATIM.md, docs/_codex/PRD_FROM_USER_FEEDBACK.md, docs/_codex/CATEGORY_CLASSIFICATION_PROPOSAL.md.
+diff --git a/docs/_codex/DIFF_SUMMARY.md b/docs/_codex/DIFF_SUMMARY.md
+index 191b9e3..f16c229 100644
+--- a/docs/_codex/DIFF_SUMMARY.md
++++ b/docs/_codex/DIFF_SUMMARY.md
+@@ -87,6 +87,11 @@
+   - Change: Logged plan amendment, activity, and QA outcomes.
+   - Reason: Governance and traceability.
+ 
++## 2025-12-29T15:28:32Z (UTC)
++- Modified: docs/_codex/CODEX_ACTIVITY_LOG.md, docs/_codex/QA_NOTES.md
++  - Change: Logged branch push and PR creation details.
++  - Reason: Governance and traceability.
++
+ ## 2025-12-29T13:49:17Z (UTC)
+ - Modified: shared/schema.ts
+   - Change: Added `ai_usage_logs` and `notifications` tables and schemas.
+diff --git a/docs/_codex/QA_NOTES.md b/docs/_codex/QA_NOTES.md
+index a3401e4..23bb970 100644
+--- a/docs/_codex/QA_NOTES.md
++++ b/docs/_codex/QA_NOTES.md
+@@ -51,6 +51,14 @@
+ - Failures: dev server could not start due to environment socket restriction; typecheck failures pre-existing.
+ - Repro steps: See CODEX_ACTIVITY_LOG entry 2025-12-29T13:50:17Z.
+ 
++## 2025-12-29T15:28:32Z (UTC)
++- Environment: local
++- Commands executed (READ-ONLY): status/branch checks; gh version; timestamp check.
++- Commands executed (MUTATING): branch checkout, force push, PR creation via gh.
++- Test results: Not run (release workflow only).
++- Failures: None.
++- Repro steps: Not applicable.
++
+ ## 2025-12-29T13:51:48Z (UTC)
+ - Environment: local
+ - Commands executed (READ-ONLY): none.
+diff --git a/package-lock.json b/package-lock.json
+index a762fe8..9a7605f 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -1,12 +1,12 @@
+ {
+   "name": "rest-express",
+-  "version": "1.0.0",
++  "version": "1.0.1",
+   "lockfileVersion": 3,
+   "requires": true,
+   "packages": {
+     "": {
+       "name": "rest-express",
+-      "version": "1.0.0",
++      "version": "1.0.1",
+       "license": "MIT",
+       "dependencies": {
+         "@hookform/resolvers": "^3.10.0",
+-- 
+2.50.1 (Apple Git-155)
+
+
+From c400778273a4618116f864b5d33e57767569c5dd Mon Sep 17 00:00:00 2001
+From: Vinicius <vinicius.steigleder@gmail.com>
+Date: Mon, 29 Dec 2025 18:22:01 +0100
+Subject: [PATCH 2/2] QA: document deployment connectivity QA
+
+---
+ docs/_codex/CODEX_ACTIVITY_LOG.md             | 36 ++++++++++++++++
+ ...OYMENT_CONNECTIVITY_QA_COMPLETE_SUMMARY.md | 43 +++++++++++++++++++
+ docs/_codex/DIFF_SUMMARY.md                   | 14 ++++++
+ docs/_codex/ISSUES_REGISTER.md                | 12 ++++++
+ docs/_codex/QA_NOTES.md                       | 21 +++++++++
+ 5 files changed, 126 insertions(+)
+ create mode 100644 docs/_codex/DEPLOYMENT_CONNECTIVITY_QA_COMPLETE_SUMMARY.md
+
+diff --git a/docs/_codex/CODEX_ACTIVITY_LOG.md b/docs/_codex/CODEX_ACTIVITY_LOG.md
+index 73632de..3166f45 100644
+--- a/docs/_codex/CODEX_ACTIVITY_LOG.md
++++ b/docs/_codex/CODEX_ACTIVITY_LOG.md
+@@ -257,3 +257,39 @@
+   - Fixed TypeScript AbortError typing in batch utils.
+ - Observations & risks:
+   - Dev server cannot start without DATABASE_URL; endpoint smoke test skipped.
++
++## 2025-12-29T17:20:16Z (UTC)
++- Session goal: Run QA/debug/testing only on branch fix/deployment-connectivity per instructions.
++- Context links: CLAUDE.md, docs/_codex/codex_instructions.md, deployment docs, docs/_codex/DEPLOYMENT_NOTES.md, docs/_codex/ISSUES_REGISTER.md.
++- Commands executed (READ-ONLY):
++  - git branch --show-current
++  - sed -n '1,200p' CLAUDE.md
++  - sed -n '1,200p' docs/_codex/codex_instructions.md
++  - ls docs/DEPLOYMENT_GUIDE.md docs/DEPLOYMENT_INSTRUCTIONS.md docs/DEPLOYMENT_SUPABASE_VERCEL.md docs/DEPLOYMENT_STATUS.md docs/WHY_GIT_INTEGRATION_BROKEN.md docs/_codex/DEPLOYMENT_NOTES.md docs/_codex/ISSUES_REGISTER.md
++  - sed -n '1,200p' docs/DEPLOYMENT_GUIDE.md
++  - sed -n '1,200p' docs/DEPLOYMENT_INSTRUCTIONS.md
++  - sed -n '1,200p' docs/DEPLOYMENT_SUPABASE_VERCEL.md
++  - sed -n '1,200p' docs/_codex/DEPLOYMENT_NOTES.md
++  - sed -n '1,200p' docs/_codex/ISSUES_REGISTER.md
++  - git status -sb
++  - ls -d node_modules
++  - npm run check
++  - npm run build
++  - node -e "process.exit(process.env.DATABASE_URL ? 0 : 1)"
++  - rg -n "useQuery\\(|queryKey" client/src
++  - rg -n "apiRequest\\(" client/src
++  - rg -n "api/health" server/routes.ts
++  - sed -n '20,60p' server/routes.ts
++  - sed -n '1,200p' server/index.ts
++  - sed -n '1,200p' server/db.ts
++  - sed -n '1,200p' client/src/lib/queryClient.ts
++  - sed -n '1,120p' client/src/lib/api.ts
++  - git diff --name-only origin/main...HEAD
++  - git log --oneline -n 5
++  - date -u +%Y-%m-%dT%H:%M:%SZ
++- Commands executed (MUTATING):
++  - git checkout fix/deployment-connectivity
++  - apply_patch (docs/_codex/ISSUES_REGISTER.md)
++- Observations & risks:
++  - DATABASE_URL not set; runtime smoke tests skipped.
++  - Deployment status and git integration docs missing under docs/ (noted in ISSUES_REGISTER).
+diff --git a/docs/_codex/DEPLOYMENT_CONNECTIVITY_QA_COMPLETE_SUMMARY.md b/docs/_codex/DEPLOYMENT_CONNECTIVITY_QA_COMPLETE_SUMMARY.md
+new file mode 100644
+index 0000000..af2c227
+--- /dev/null
++++ b/docs/_codex/DEPLOYMENT_CONNECTIVITY_QA_COMPLETE_SUMMARY.md
+@@ -0,0 +1,43 @@
++# Deployment Connectivity QA Complete Summary
++
++**Branch**: fix/deployment-connectivity
++**Date**: 2025-12-29
++**Scope**: QA + debug + testing only (no deployments, no merges)
++
++## QA Executed
++- `npm run check`
++- `npm run build`
++- Runtime smoke test gating check for `DATABASE_URL`
++- Logical review of deployment connectivity touchpoints:
++  - API base URL handling in `client/src/lib/api.ts`
++  - Query client URL handling in `client/src/lib/queryClient.ts`
++  - DB connection configuration in `server/db.ts`
++  - Health endpoint in `server/routes.ts`
++  - CORS configuration in `server/index.ts`
++  - `vercel.json` routing
++
++## Results
++- TypeScript check: **PASS**
++- Production build: **PASS** (bundle size warnings only)
++- Runtime smoke test: **BLOCKED** (missing `DATABASE_URL`)
++- `/api/health`: **NOT RUN** (dev server not started)
++
++## Deployment Connectivity Validation Notes
++- **API base URL**: `client/src/lib/api.ts` resolves `/api` prefix correctly for `VITE_API_URL` and dev fallback.
++- **Query client base URL**: `client/src/lib/queryClient.ts` uses `VITE_API_URL` without `/api`. Current UI queries provide explicit `queryFn` (from `api.ts`), so default queryFn is not exercised. If future queries rely on default queryFn, `/api` prefix will need to be handled.
++- **DB SSL behavior**: `server/db.ts` relies on `DATABASE_URL` configuration; SSL is expected to be enforced via connection string (e.g., pooler + sslmode).
++- **Health endpoint**: `/api/health` performs `SELECT 1` and returns safe errors without secrets.
++- **CORS**: `server/index.ts` reads `CORS_ORIGIN` (comma-separated) with safe localhost defaults.
++- **Vercel routing**: `vercel.json` is SPA-only; no API rewrites (expected for split deployment).
++
++## Fixes Applied
++- None in this QA pass.
++
++## Repro Steps (Local)
++1. Ensure `DATABASE_URL` is set in the environment (do not print it).
++2. Run `npm run dev`.
++3. Run `curl http://localhost:5000/api/health`.
++4. Re-run `npm run check` and `npm run build` as needed.
++
++## Verdict
++**Blocked by missing DATABASE_URL** for runtime smoke tests. Static checks and build are QA-ready.
+diff --git a/docs/_codex/DIFF_SUMMARY.md b/docs/_codex/DIFF_SUMMARY.md
+index f16c229..4a3ef2f 100644
+--- a/docs/_codex/DIFF_SUMMARY.md
++++ b/docs/_codex/DIFF_SUMMARY.md
+@@ -120,3 +120,17 @@
+ - Modified: docs/_codex/CODEX_ACTIVITY_LOG.md, docs/_codex/DECISION_LOG.md, docs/_codex/ISSUES_REGISTER.md
+   - Change: Logged session constraints, decisions, and missing docs.
+   - Reason: Codex governance.
++
++## 2025-12-29T17:20:16Z (UTC)
++- Modified: docs/_codex/CODEX_ACTIVITY_LOG.md
++  - Change: Logged QA session for fix/deployment-connectivity.
++  - Reason: Codex governance.
++- Modified: docs/_codex/QA_NOTES.md
++  - Change: Recorded QA commands, results, and runtime block.
++  - Reason: QA traceability.
++- Modified: docs/_codex/ISSUES_REGISTER.md
++  - Change: Logged missing deployment docs and runtime QA block.
++  - Reason: Track blockers and missing inputs.
++- New: docs/_codex/DEPLOYMENT_CONNECTIVITY_QA_COMPLETE_SUMMARY.md
++  - Change: Added QA completion summary and verdict for deployment connectivity branch.
++  - Reason: Required QA deliverable.
+diff --git a/docs/_codex/ISSUES_REGISTER.md b/docs/_codex/ISSUES_REGISTER.md
+index 37797d9..b464678 100644
+--- a/docs/_codex/ISSUES_REGISTER.md
++++ b/docs/_codex/ISSUES_REGISTER.md
+@@ -78,3 +78,15 @@
+   - Status: Open
+   - Owner: Claude
+   - Mitigation: Restore or confirm canonical locations for missing docs.
++
++## 2025-12-29T17:20:16Z (UTC)
++- Issue: Mandatory deployment docs not found at expected paths (`docs/DEPLOYMENT_STATUS.md`, `docs/WHY_GIT_INTEGRATION_BROKEN.md`).
++  - Severity: Low
++  - Status: Open
++  - Owner: Codex
++  - Mitigation: Confirm canonical paths or add redirects/links in docs.
++- Issue: Local runtime QA blocked by missing DATABASE_URL (dev server not started).
++  - Severity: Low
++  - Status: Open
++  - Owner: Codex
++  - Mitigation: Provide DATABASE_URL in environment and rerun `npm run dev` + `/api/health`.
+diff --git a/docs/_codex/QA_NOTES.md b/docs/_codex/QA_NOTES.md
+index 23bb970..eed051a 100644
+--- a/docs/_codex/QA_NOTES.md
++++ b/docs/_codex/QA_NOTES.md
+@@ -72,3 +72,24 @@
+   - No secrets printed in test output.
+ - Failures: Missing `DATABASE_URL` prevents dev server start.
+ - Repro steps: Set `DATABASE_URL`, rerun `npm run dev`, then `curl http://localhost:5000/api/health`.
++
++## 2025-12-29T17:20:16Z (UTC)
++- Environment: local (branch: fix/deployment-connectivity)
++- Commands executed (READ-ONLY):
++  - `git status -sb`
++  - `npm run check`
++  - `npm run build`
++  - `node -e "process.exit(process.env.DATABASE_URL ? 0 : 1)"`
++  - Review of `client/src/lib/queryClient.ts`, `client/src/lib/api.ts`, `server/db.ts`, `server/index.ts`, `server/routes.ts`
++- Commands executed (MUTATING):
++  - `git checkout fix/deployment-connectivity`
++- Test results:
++  - `npm run check` passed.
++  - `npm run build` passed (bundle size warnings only).
++  - Runtime smoke test blocked: DATABASE_URL not set; dev server not started.
++  - `/api/health` not exercised due to missing DATABASE_URL.
++- Failures: Runtime QA blocked by missing DATABASE_URL.
++- Repro steps:
++  1) Set `DATABASE_URL` (do not print it).
++  2) Run `npm run dev`.
++  3) Run `curl http://localhost:5000/api/health`.
+-- 
+2.50.1 (Apple Git-155)
+

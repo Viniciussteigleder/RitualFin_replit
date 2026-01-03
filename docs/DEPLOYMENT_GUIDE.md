@@ -3,6 +3,14 @@
 **Last Updated**: 2025-12-28
 **Architecture**: Split deployment (Frontend on Vercel, Backend on Render, Database on Supabase)
 
+See also: `docs/FULL_DEPLOY_PROTOCOL.md` for the ongoing deployment protocol (Commit/Sync vs Full Deploy).
+
+**Policy**: Full Deploy is required for all changes (backend and UI-only). Commit/Sync is deprecated.
+
+## CI/CD Note (No Secrets in Repo)
+
+If deploying from CI (GitHub Actions or similar), set `VERCEL_TOKEN` as a CI secret and expose it as an env var in the deploy step. Do not store secrets in `.env.local` for CI or commit them to the repo.
+
 ---
 
 ## Prerequisites

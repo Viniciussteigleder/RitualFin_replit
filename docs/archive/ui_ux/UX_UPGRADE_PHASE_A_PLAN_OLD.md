@@ -1,5 +1,7 @@
 # Phase A — E2E UX Upgrade & Execution Plan
 
+**Status**: Histórico. As diretrizes atuais de IA, contratos de tela e roadmap estão em `docs/UX_UI_MASTER_PLAN.md` e `docs/IMPLEMENTATION_ROADMAP.md`.
+
 **Project**: RitualFin UI/UX Overhaul
 **Date**: 2025-12-28
 **Designer**: Claude (Senior UX Engineer + Product Designer)

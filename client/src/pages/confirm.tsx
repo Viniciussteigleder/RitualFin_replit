@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, AlertTriangle, CheckCircle2, Loader2, Edit, AlertCircle, Sparkles, TrendingUp, Filter, ChevronDown, Zap, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -14,6 +13,10 @@ import { Badge } from "@/components/ui/badge";
 import { AccountBadge } from "@/components/account-badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AliasLogo } from "@/components/alias-logo";
+import { StatusPanel } from "@/components/status-panel";
+import { useLocale } from "@/hooks/use-locale";
+import { confirmCopy, translateCategory, t } from "@/lib/i18n";
 
 interface TransactionForm {
   type: string;
@@ -34,12 +37,30 @@ const CATEGORY_COLORS: Record<string, string> = {
   "Interno": "#475569"
 };
 
+const CATEGORIES = [
+  "Mercado",
+  "Lazer",
+  "Transporte",
+  "Compras Online",
+  "Moradia",
+  "Saúde",
+  "Receitas",
+  "Outros",
+  "Interno"
+];
+
 export default function ConfirmPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState<Record<string, TransactionForm>>({});
   const [activeTab, setActiveTab] = useState("all");
+  const [statusPayload, setStatusPayload] = useState<{ variant: "success" | "warning" | "error"; title: string; description: string; payload?: Record<string, unknown> } | null>(null);
+  const locale = useLocale();
+  const currencyFormatter = new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" });
+  const dateFormatter = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "2-digit", year: "2-digit" });
+  const formatMessage = (template: string, vars: Record<string, string | number>) =>
+    Object.entries(vars).reduce((result, [key, value]) => result.replace(`{${key}}`, String(value)), template);
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["confirm-queue"],
@@ -76,14 +97,28 @@ export default function ConfirmPage() {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["rules"] });
       setSelectedIds(new Set());
-      toast({ title: `${result.count} transacao(oes) confirmada(s)` });
+      toast({ title: formatMessage(t(locale, confirmCopy.toastConfirmed), { count: result.count }) });
+      setStatusPayload({
+        variant: "success",
+        title: t(locale, confirmCopy.statusSuccessTitle),
+        description: formatMessage(t(locale, confirmCopy.statusSuccessBody), { count: result.count }),
+        payload: result ? { count: result.count, ruleCreated: result.ruleCreated, ruleId: result.ruleId } : undefined
+      });
     },
+    onError: (error: any) => {
+      setStatusPayload({
+        variant: "error",
+        title: t(locale, confirmCopy.statusErrorTitle),
+        description: error?.message || t(locale, confirmCopy.statusErrorBody),
+        payload: error?.details || null
+      });
+    }
   });
 
   const getFormData = (t: any): TransactionForm => {
     return formData[t.id] || {
       type: t.type || "Despesa",
-      fixVar: t.fixVar || "Variavel",
+      fixVar: t.fixVar || "Variável",
       category1: t.category1 || "Outros",
       excludeFromBudget: t.excludeFromBudget || false
     };
@@ -161,16 +196,14 @@ export default function ConfirmPage() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-2xl font-bold">Fila de Confirmacao</h1>
+              <h1 className="text-2xl font-bold">{t(locale, confirmCopy.title)}</h1>
               {items.length > 0 && (
                 <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-amber-100 text-amber-700 text-sm font-bold">
                   {items.length}
                 </span>
               )}
             </div>
-            <p className="text-muted-foreground">
-              A IA pre-analisou cada transacao. Revise as sugestoes e confirme.
-            </p>
+            <p className="text-muted-foreground">{t(locale, confirmCopy.subtitle)}</p>
           </div>
           
           {highConfidenceCount > 0 && (
@@ -180,7 +213,7 @@ export default function ConfirmPage() {
               className="bg-emerald-500 hover:bg-emerald-600 gap-2 shadow-lg shadow-emerald-500/20"
             >
               <Zap className="h-4 w-4" />
-              Aceitar {highConfidenceCount} com alta confianca
+              {t(locale, confirmCopy.acceptHigh)} {highConfidenceCount}
             </Button>
           )}
         </div>
@@ -190,7 +223,7 @@ export default function ConfirmPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total Pendente</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(locale, confirmCopy.totalPending)}</p>
                   <p className="text-3xl font-bold mt-1">{items.length}</p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-muted/50 flex items-center justify-center">
@@ -204,7 +237,7 @@ export default function ConfirmPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Alta Confianca</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(locale, confirmCopy.highConfidence)}</p>
                   <p className="text-3xl font-bold mt-1 text-emerald-600">{highConfidenceCount}</p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
@@ -218,7 +251,7 @@ export default function ConfirmPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Media Confianca</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(locale, confirmCopy.mediumConfidence)}</p>
                   <p className="text-3xl font-bold mt-1 text-amber-600">{mediumConfidenceCount}</p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
@@ -232,7 +265,7 @@ export default function ConfirmPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Sem Categoria</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(locale, confirmCopy.noCategory)}</p>
                   <p className="text-3xl font-bold mt-1 text-rose-600">{lowConfidenceCount}</p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center">
@@ -243,31 +276,40 @@ export default function ConfirmPage() {
           </Card>
         </div>
 
+        {statusPayload && (
+          <StatusPanel
+            title={statusPayload.title}
+            description={statusPayload.description}
+            variant={statusPayload.variant}
+            payload={statusPayload.payload}
+          />
+        )}
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="bg-white border shadow-sm p-1 h-auto">
             <TabsTrigger 
               value="all" 
               className="data-[state=active]:bg-primary data-[state=active]:text-white px-4 py-2"
             >
-              Todas ({items.length})
+              {t(locale, confirmCopy.tabAll)} ({items.length})
             </TabsTrigger>
             <TabsTrigger 
               value="high"
               className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white px-4 py-2"
             >
-              Alta ({highConfidenceCount})
+              {t(locale, confirmCopy.tabHigh)} ({highConfidenceCount})
             </TabsTrigger>
             <TabsTrigger 
               value="medium"
               className="data-[state=active]:bg-amber-500 data-[state=active]:text-white px-4 py-2"
             >
-              Media ({mediumConfidenceCount})
+              {t(locale, confirmCopy.tabMedium)} ({mediumConfidenceCount})
             </TabsTrigger>
             <TabsTrigger 
               value="low"
               className="data-[state=active]:bg-rose-500 data-[state=active]:text-white px-4 py-2"
             >
-              Baixa ({lowConfidenceCount})
+              {t(locale, confirmCopy.tabLow)} ({lowConfidenceCount})
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -285,13 +327,27 @@ export default function ConfirmPage() {
                         data-testid="checkbox-select-all"
                       />
                     </th>
-                    <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">Data</th>
-                    <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">Conta</th>
-                    <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">Descricao</th>
-                    <th className="px-5 py-3 text-right font-medium text-xs uppercase tracking-wide">Valor</th>
-                    <th className="px-5 py-3 text-center font-medium text-xs uppercase tracking-wide">Confianca</th>
-                    <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">Categoria</th>
-                    <th className="px-5 py-3 text-center font-medium text-xs uppercase tracking-wide">Acao</th>
+                    <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">
+                      {t(locale, confirmCopy.tableDate)}
+                    </th>
+                    <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">
+                      {t(locale, confirmCopy.tableAccount)}
+                    </th>
+                    <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">
+                      {t(locale, confirmCopy.tableDescription)}
+                    </th>
+                    <th className="px-5 py-3 text-right font-medium text-xs uppercase tracking-wide">
+                      {t(locale, confirmCopy.tableAmount)}
+                    </th>
+                    <th className="px-5 py-3 text-center font-medium text-xs uppercase tracking-wide">
+                      {t(locale, confirmCopy.tableConfidence)}
+                    </th>
+                    <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">
+                      {t(locale, confirmCopy.tableCategory)}
+                    </th>
+                    <th className="px-5 py-3 text-center font-medium text-xs uppercase tracking-wide">
+                      {t(locale, confirmCopy.tableAction)}
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/50">
@@ -301,7 +357,8 @@ export default function ConfirmPage() {
                     const confidence = t.confidence || 0;
                     const hasSuggestion = !!t.category1;
                     const categoryColor = CATEGORY_COLORS[form.category1] || "#6b7280";
-                    
+                    const fallbackDesc = t.simpleDesc || t.descRaw?.split(" -- ")[0];
+
                     return (
                       <tr 
                         key={t.id} 
@@ -319,17 +376,28 @@ export default function ConfirmPage() {
                           />
                         </td>
                         <td className="px-5 py-4 text-muted-foreground whitespace-nowrap">
-                          {format(new Date(t.paymentDate), "dd/MM/yy")}
+                          {dateFormatter.format(new Date(t.paymentDate))}
                         </td>
                         <td className="px-5 py-4">
                           <AccountBadge account={accountsById[t.accountId]} size="sm" />
                         </td>
                         <td className="px-5 py-4">
-                          <p className="font-medium truncate max-w-[250px]">{t.merchantAlias || t.descRaw?.split(" -- ")[0]}</p>
+                          <div className="flex items-center gap-2">
+                            <AliasLogo
+                              aliasDesc={t.aliasDesc}
+                              fallbackDesc={fallbackDesc}
+                              logoUrl={t.logoLocalPath}
+                              size={22}
+                              showText={false}
+                            />
+                            <p className="font-medium truncate max-w-[220px]">
+                              {t.aliasDesc || fallbackDesc}
+                            </p>
+                          </div>
                         </td>
                         <td className="px-5 py-4 text-right font-semibold whitespace-nowrap">
                           <span className={t.amount > 0 ? "text-emerald-600" : ""}>
-                            {t.amount?.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                            {currencyFormatter.format(t.amount || 0)}
                           </span>
                         </td>
                         <td className="px-5 py-4">
@@ -350,9 +418,9 @@ export default function ConfirmPage() {
                               {confidence}%
                             </span>
                             {!settings?.autoConfirmHighConfidence && confidence >= (settings?.confidenceThreshold || 80) && (
-                              <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-emerald-500/30 text-emerald-700 bg-emerald-50/50">
-                                <Zap className="h-2.5 w-2.5 mr-0.5" />
-                                Auto
+                                <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-emerald-500/30 text-emerald-700 bg-emerald-50/50">
+                                  <Zap className="h-2.5 w-2.5 mr-0.5" />
+                                {t(locale, confirmCopy.autoBadge)}
                               </Badge>
                             )}
                           </div>
@@ -374,20 +442,16 @@ export default function ConfirmPage() {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="Mercado">Mercado</SelectItem>
-                                <SelectItem value="Lazer">Lazer</SelectItem>
-                                <SelectItem value="Transporte">Transporte</SelectItem>
-                                <SelectItem value="Compras Online">Compras Online</SelectItem>
-                                <SelectItem value="Moradia">Moradia</SelectItem>
-                                <SelectItem value="Saúde">Saude</SelectItem>
-                                <SelectItem value="Receitas">Receitas</SelectItem>
-                                <SelectItem value="Outros">Outros</SelectItem>
-                                <SelectItem value="Interno">Interno</SelectItem>
+                                {CATEGORIES.map((cat) => (
+                                  <SelectItem key={cat} value={cat}>
+                                    {translateCategory(locale, cat)}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                             {confidence >= 80 && (
                               <Badge className="text-[10px] bg-emerald-100 text-emerald-700 border-0">
-                                IA
+                                {t(locale, confirmCopy.aiBadge)}
                               </Badge>
                             )}
                           </div>
@@ -406,7 +470,7 @@ export default function ConfirmPage() {
                             data-testid={`btn-confirm-${t.id}`}
                           >
                             <Check className="h-3.5 w-3.5" />
-                            {confidence >= 80 ? "Aceitar" : "Confirmar"}
+                            {confidence >= 80 ? t(locale, confirmCopy.accept) : t(locale, confirmCopy.confirm)}
                           </Button>
                         </td>
                       </tr>
@@ -417,9 +481,15 @@ export default function ConfirmPage() {
             </div>
             
             <div className="px-5 py-3 bg-muted/20 text-sm text-muted-foreground border-t flex items-center justify-between">
-              <span>Mostrando {filteredItems.length} de {items.length} itens</span>
+              <span>
+                {t(locale, confirmCopy.showingCount)
+                  .replace("{shown}", String(filteredItems.length))
+                  .replace("{total}", String(items.length))}
+              </span>
               {selectedIds.size > 0 && (
-                <span className="font-medium text-primary">{selectedIds.size} selecionado(s)</span>
+                <span className="font-medium text-primary">
+                  {t(locale, confirmCopy.selectedCount).replace("{count}", String(selectedIds.size))}
+                </span>
               )}
             </div>
           </Card>
@@ -429,12 +499,18 @@ export default function ConfirmPage() {
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                 <CheckCircle2 className="h-8 w-8 text-primary/50" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Tudo limpo!</h3>
+              <h3 className="text-lg font-semibold mb-2">{t(locale, confirmCopy.emptyTitle)}</h3>
               <p className="text-muted-foreground text-sm">
-                {activeTab === "all" 
-                  ? "Nenhuma transacao pendente de revisao."
-                  : `Nenhuma transacao com ${activeTab === "high" ? "alta" : activeTab === "medium" ? "media" : "baixa"} confianca.`
-                }
+                {activeTab === "all"
+                  ? t(locale, confirmCopy.emptyAll)
+                  : t(locale, confirmCopy.emptyByConfidence).replace(
+                      "{level}",
+                      activeTab === "high"
+                        ? t(locale, confirmCopy.confidenceHighLabel)
+                        : activeTab === "medium"
+                          ? t(locale, confirmCopy.confidenceMediumLabel)
+                          : t(locale, confirmCopy.confidenceLowLabel)
+                    )}
               </p>
             </CardContent>
           </Card>
@@ -446,7 +522,7 @@ export default function ConfirmPage() {
               <span className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-sm font-bold">
                 {selectedIds.size}
               </span>
-              selecionado(s)
+              {t(locale, confirmCopy.selectedLabel)}
             </span>
             <Button 
               className="bg-primary hover:bg-primary/90 gap-2"
@@ -455,8 +531,8 @@ export default function ConfirmPage() {
               data-testid="btn-confirm-selected"
             >
               <Check className="h-4 w-4" />
-              Confirmar Selecionados
-            </Button>
+            {t(locale, confirmCopy.confirmSelected)}
+          </Button>
           </div>
         )}
       </div>

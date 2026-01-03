@@ -1,5 +1,5 @@
 import { sql, relations } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, real, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, real, timestamp, pgEnum, date, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -17,6 +17,8 @@ export const uploadStatusEnum = pgEnum("upload_status", ["processing", "ready", 
 export const accountTypeEnum = pgEnum("account_type", ["credit_card", "debit_card", "bank_account", "cash"]);
 export const transactionSourceEnum = pgEnum("transaction_source", ["Sparkasse", "Amex", "M&M"]);
 export type TransactionSource = typeof transactionSourceEnum.enumValues[number];
+export const transactionStatusEnum = pgEnum("transaction_status", ["FINAL", "OPEN"]);
+export const transactionClassifiedByEnum = pgEnum("transaction_classified_by", ["AUTO_KEYWORDS", "MANUAL", "AI_SUGGESTION"]);
 
 // Users table
 export const users = pgTable("users", {
@@ -38,6 +40,12 @@ export const settings = pgTable("settings", {
   userId: varchar("user_id").notNull().unique().references(() => users.id),
   autoConfirmHighConfidence: boolean("auto_confirm_high_confidence").notNull().default(false),
   confidenceThreshold: integer("confidence_threshold").notNull().default(80),
+  language: text("language").notNull().default("pt-BR"),
+  currency: text("currency").notNull().default("EUR"),
+  fiscalRegion: text("fiscal_region").notNull().default("Portugal/PT"),
+  notifyImportStatus: boolean("notify_import_status").notNull().default(true),
+  notifyReviewQueue: boolean("notify_review_queue").notNull().default(true),
+  notifyMonthlyReport: boolean("notify_monthly_report").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -75,6 +83,27 @@ export const aiUsageLogsRelations = relations(aiUsageLogs, ({ one }) => ({
 export const insertAiUsageLogSchema = createInsertSchema(aiUsageLogs).omit({ id: true, createdAt: true });
 export type InsertAiUsageLog = z.infer<typeof insertAiUsageLogSchema>;
 export type AiUsageLog = typeof aiUsageLogs.$inferSelect;
+
+// Audit Logs
+export const auditLogs = pgTable("audit_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  action: text("action").notNull(),
+  entityType: text("entity_type"),
+  entityId: text("entity_id"),
+  status: text("status").notNull().default("success"),
+  message: text("message"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
+  user: one(users, { fields: [auditLogs.userId], references: [users.id] }),
+}));
+
+export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ id: true, createdAt: true });
+export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
+export type AuditLog = typeof auditLogs.$inferSelect;
 
 // Notifications (in-app only)
 export const notifications = pgTable("notifications", {
@@ -158,6 +187,67 @@ export const insertUploadErrorSchema = createInsertSchema(uploadErrors).omit({ i
 export type InsertUploadError = z.infer<typeof insertUploadErrorSchema>;
 export type UploadError = typeof uploadErrors.$inferSelect;
 
+// Upload Diagnostics (Sparkasse import debug trail)
+export const uploadDiagnostics = pgTable("upload_diagnostics", {
+  uploadAttemptId: varchar("upload_attempt_id").primaryKey().default(sql`gen_random_uuid()`),
+  uploadId: varchar("upload_id").references(() => uploads.id, { onDelete: "set null" }),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  source: text("source").notNull(),
+  filename: text("filename").notNull(),
+  mimeType: text("mime_type"),
+  sizeBytes: integer("size_bytes").notNull(),
+  encodingUsed: text("encoding_used"),
+  delimiterUsed: text("delimiter_used"),
+  headerFound: jsonb("header_found").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  requiredMissing: jsonb("required_missing").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  rowsTotal: integer("rows_total").notNull().default(0),
+  rowsPreview: jsonb("rows_preview").$type<Record<string, string>[]>().notNull().default(sql`'[]'::jsonb`),
+  stage: text("stage"),
+  errorCode: text("error_code"),
+  errorMessage: text("error_message"),
+  errorDetails: jsonb("error_details"),
+  stacktrace: text("stacktrace"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const uploadDiagnosticsRelations = relations(uploadDiagnostics, ({ one }) => ({
+  user: one(users, { fields: [uploadDiagnostics.userId], references: [users.id] }),
+  upload: one(uploads, { fields: [uploadDiagnostics.uploadId], references: [uploads.id] }),
+}));
+
+export const insertUploadDiagnosticsSchema = createInsertSchema(uploadDiagnostics).omit({ createdAt: true });
+export type InsertUploadDiagnostics = z.infer<typeof insertUploadDiagnosticsSchema>;
+export type UploadDiagnostics = typeof uploadDiagnostics.$inferSelect;
+
+// Import runs (CSV contract imports)
+export const importRuns = pgTable("import_runs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  datasetName: text("dataset_name").notNull(),
+  filename: text("filename").notNull(),
+  status: text("status").notNull().default("previewed"),
+  reasonCodes: jsonb("reason_codes").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  errorMessage: text("error_message"),
+  detectedEncoding: text("detected_encoding"),
+  detectedDelimiter: text("detected_delimiter"),
+  headerFound: jsonb("header_found").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  headerDiff: jsonb("header_diff"),
+  rowErrorSamples: jsonb("row_error_samples").$type<Record<string, unknown>[]>().notNull().default(sql`'[]'::jsonb`),
+  rowsTotal: integer("rows_total").notNull().default(0),
+  rowsValid: integer("rows_valid").notNull().default(0),
+  canonicalCsv: text("canonical_csv"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  confirmedAt: timestamp("confirmed_at")
+});
+
+export const importRunsRelations = relations(importRuns, ({ one }) => ({
+  user: one(users, { fields: [importRuns.userId], references: [users.id] })
+}));
+
+export const insertImportRunSchema = createInsertSchema(importRuns).omit({ createdAt: true });
+export type InsertImportRun = z.infer<typeof insertImportRunSchema>;
+export type ImportRun = typeof importRuns.$inferSelect;
+
 // Merchant Metadata table (icon/color/name for merchants)
 export const merchantMetadata = pgTable("merchant_metadata", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -183,16 +273,20 @@ export type MerchantMetadata = typeof merchantMetadata.$inferSelect;
 export const rules = pgTable("rules", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => users.id),
-  name: text("name").notNull(),
-  keywords: text("keywords").notNull(),
-  type: transactionTypeEnum("type").notNull(),
-  fixVar: fixVarEnum("fix_var").notNull(),
-  category1: category1Enum("category_1").notNull(),
+  name: text("name"),
+  keywords: text("keywords"),
+  type: transactionTypeEnum("type"),
+  fixVar: fixVarEnum("fix_var"),
+  category1: category1Enum("category_1"),
   category2: text("category_2"),
   category3: text("category_3"),
   priority: integer("priority").notNull().default(500),
   strict: boolean("strict").notNull().default(false),
   isSystem: boolean("is_system").notNull().default(false),
+  leafId: varchar("leaf_id"),
+  keyWords: text("key_words"),
+  keyWordsNegative: text("key_words_negative"),
+  active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -204,22 +298,180 @@ export const insertRuleSchema = createInsertSchema(rules).omit({ id: true, creat
 export type InsertRule = z.infer<typeof insertRuleSchema>;
 export type Rule = typeof rules.$inferSelect;
 
+// Taxonomy level 1 (Nivel_1_PT)
+export const taxonomyLevel1 = pgTable("taxonomy_level_1", {
+  level1Id: varchar("level_1_id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  nivel1Pt: text("nivel_1_pt").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const taxonomyLevel1Relations = relations(taxonomyLevel1, ({ one }) => ({
+  user: one(users, { fields: [taxonomyLevel1.userId], references: [users.id] }),
+}));
+
+export const insertTaxonomyLevel1Schema = createInsertSchema(taxonomyLevel1).omit({ level1Id: true, createdAt: true, updatedAt: true });
+export type InsertTaxonomyLevel1 = z.infer<typeof insertTaxonomyLevel1Schema>;
+export type TaxonomyLevel1 = typeof taxonomyLevel1.$inferSelect;
+
+// Taxonomy level 2 (Nivel_2_PT)
+export const taxonomyLevel2 = pgTable("taxonomy_level_2", {
+  level2Id: varchar("level_2_id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  level1Id: varchar("level_1_id").notNull().references(() => taxonomyLevel1.level1Id, { onDelete: "cascade" }),
+  nivel2Pt: text("nivel_2_pt").notNull(),
+  recorrenteDefault: text("recorrente_default"),
+  fixoVariavelDefault: text("fixo_variavel_default"),
+  receitaDespesaDefault: text("receita_despesa_default"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const taxonomyLevel2Relations = relations(taxonomyLevel2, ({ one }) => ({
+  user: one(users, { fields: [taxonomyLevel2.userId], references: [users.id] }),
+  level1: one(taxonomyLevel1, { fields: [taxonomyLevel2.level1Id], references: [taxonomyLevel1.level1Id] }),
+}));
+
+export const insertTaxonomyLevel2Schema = createInsertSchema(taxonomyLevel2).omit({ level2Id: true, createdAt: true, updatedAt: true });
+export type InsertTaxonomyLevel2 = z.infer<typeof insertTaxonomyLevel2Schema>;
+export type TaxonomyLevel2 = typeof taxonomyLevel2.$inferSelect;
+
+// Taxonomy leaf (Nivel_3_PT)
+export const taxonomyLeaf = pgTable("taxonomy_leaf", {
+  leafId: varchar("leaf_id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  level2Id: varchar("level_2_id").notNull().references(() => taxonomyLevel2.level2Id, { onDelete: "cascade" }),
+  nivel3Pt: text("nivel_3_pt").notNull(),
+  recorrenteDefault: text("recorrente_default"),
+  fixoVariavelDefault: text("fixo_variavel_default"),
+  receitaDespesaDefault: text("receita_despesa_default"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const taxonomyLeafRelations = relations(taxonomyLeaf, ({ one }) => ({
+  user: one(users, { fields: [taxonomyLeaf.userId], references: [users.id] }),
+  level2: one(taxonomyLevel2, { fields: [taxonomyLeaf.level2Id], references: [taxonomyLevel2.level2Id] }),
+}));
+
+export const insertTaxonomyLeafSchema = createInsertSchema(taxonomyLeaf).omit({ leafId: true, createdAt: true, updatedAt: true });
+export type InsertTaxonomyLeaf = z.infer<typeof insertTaxonomyLeafSchema>;
+export type TaxonomyLeaf = typeof taxonomyLeaf.$inferSelect;
+
+// App category (UI layer)
+export const appCategory = pgTable("app_category", {
+  appCatId: varchar("app_cat_id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  active: boolean("active").notNull().default(true),
+  versionId: varchar("version_id").notNull().default(sql`gen_random_uuid()`),
+  orderIndex: integer("order_index").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const appCategoryRelations = relations(appCategory, ({ one }) => ({
+  user: one(users, { fields: [appCategory.userId], references: [users.id] }),
+}));
+
+export const insertAppCategorySchema = createInsertSchema(appCategory).omit({ appCatId: true, createdAt: true, updatedAt: true });
+export type InsertAppCategory = z.infer<typeof insertAppCategorySchema>;
+export type AppCategory = typeof appCategory.$inferSelect;
+
+// App category to leaf mapping
+export const appCategoryLeaf = pgTable("app_category_leaf", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  appCatId: varchar("app_cat_id").notNull().references(() => appCategory.appCatId, { onDelete: "cascade" }),
+  leafId: varchar("leaf_id").notNull().references(() => taxonomyLeaf.leafId, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const appCategoryLeafRelations = relations(appCategoryLeaf, ({ one }) => ({
+  user: one(users, { fields: [appCategoryLeaf.userId], references: [users.id] }),
+  appCategory: one(appCategory, { fields: [appCategoryLeaf.appCatId], references: [appCategory.appCatId] }),
+  leaf: one(taxonomyLeaf, { fields: [appCategoryLeaf.leafId], references: [taxonomyLeaf.leafId] }),
+}));
+
+export const insertAppCategoryLeafSchema = createInsertSchema(appCategoryLeaf).omit({ id: true, createdAt: true });
+export type InsertAppCategoryLeaf = z.infer<typeof insertAppCategoryLeafSchema>;
+export type AppCategoryLeaf = typeof appCategoryLeaf.$inferSelect;
+
+// key_desc map (stable key_desc -> alias)
+export const keyDescMap = pgTable("key_desc_map", {
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  keyDesc: text("key_desc").notNull(),
+  simpleDesc: text("simple_desc").notNull(),
+  aliasDesc: text("alias_desc"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  uniqueKey: sql`UNIQUE (user_id, key_desc)`,
+}));
+
+export const keyDescMapRelations = relations(keyDescMap, ({ one }) => ({
+  user: one(users, { fields: [keyDescMap.userId], references: [users.id] }),
+}));
+
+export const insertKeyDescMapSchema = createInsertSchema(keyDescMap).omit({ createdAt: true, updatedAt: true });
+export type InsertKeyDescMap = z.infer<typeof insertKeyDescMapSchema>;
+export type KeyDescMap = typeof keyDescMap.$inferSelect;
+
+// alias assets (keywords + logo metadata)
+export const aliasAssets = pgTable("alias_assets", {
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  aliasDesc: text("alias_desc").notNull(),
+  keyWordsAlias: text("key_words_alias").notNull(),
+  urlLogoInternet: text("url_logo_internet"),
+  logoLocalPath: text("logo_local_path"),
+  logoMimeType: text("logo_mime_type"),
+  logoUpdatedAt: timestamp("logo_updated_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  uniqueAlias: sql`UNIQUE (user_id, alias_desc)`,
+}));
+
+export const aliasAssetsRelations = relations(aliasAssets, ({ one }) => ({
+  user: one(users, { fields: [aliasAssets.userId], references: [users.id] }),
+}));
+
+export const insertAliasAssetsSchema = createInsertSchema(aliasAssets).omit({ createdAt: true, updatedAt: true });
+export type InsertAliasAssets = z.infer<typeof insertAliasAssetsSchema>;
+export type AliasAssets = typeof aliasAssets.$inferSelect;
+
 // Transactions table (ledger canonico)
 export const transactions = pgTable("transactions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
   paymentDate: timestamp("payment_date").notNull(),
+  bookingDate: date("booking_date"),
   importedAt: timestamp("imported_at").notNull().defaultNow(),
   accountSource: text("account_source").notNull().default("M&M"), // Legacy field, kept for compatibility
   accountId: varchar("account_id").references(() => accounts.id), // New structured account reference
   descRaw: text("desc_raw").notNull(),
   descNorm: text("desc_norm").notNull(),
+  rawDescription: text("raw_description"),
+  normalizedDescription: text("normalized_description"),
   amount: real("amount").notNull(),
   currency: text("currency").notNull().default("EUR"),
   foreignAmount: real("foreign_amount"),
   foreignCurrency: text("foreign_currency"),
   exchangeRate: real("exchange_rate"),
-  key: text("key").notNull().unique(),
+  key: text("key").notNull(),
+  source: transactionSourceEnum("source"),
+  keyDesc: text("key_desc"),
+  simpleDesc: text("simple_desc"),
+  aliasDesc: text("alias_desc"),
+  leafId: varchar("leaf_id"),
+  classifiedBy: transactionClassifiedByEnum("classified_by"),
+  status: transactionStatusEnum("status"),
+  recurringFlag: boolean("recurring_flag").notNull().default(false),
+  recurringGroupId: varchar("recurring_group_id"),
+  recurringConfidence: real("recurring_confidence"),
+  recurringDayOfMonth: integer("recurring_day_of_month"),
+  recurringDayWindow: integer("recurring_day_window"),
   type: transactionTypeEnum("type"),
   fixVar: fixVarEnum("fix_var"),
   category1: category1Enum("category_1"),
@@ -233,13 +485,16 @@ export const transactions = pgTable("transactions", {
   uploadId: varchar("upload_id").references(() => uploads.id),
   confidence: integer("confidence"),
   suggestedKeyword: text("suggested_keyword"),
-});
+}, (table) => ({
+  uniqueKeyPerUser: sql`UNIQUE (user_id, key)`,
+}));
 
 export const transactionsRelations = relations(transactions, ({ one }) => ({
   user: one(users, { fields: [transactions.userId], references: [users.id] }),
   upload: one(uploads, { fields: [transactions.uploadId], references: [uploads.id] }),
   rule: one(rules, { fields: [transactions.ruleIdApplied], references: [rules.id] }),
   account: one(accounts, { fields: [transactions.accountId], references: [accounts.id] }),
+  leaf: one(taxonomyLeaf, { fields: [transactions.leafId], references: [taxonomyLeaf.leafId] }),
 }));
 
 export const insertTransactionSchema = createInsertSchema(transactions).omit({ id: true, importedAt: true });

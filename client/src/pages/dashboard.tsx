@@ -40,17 +40,16 @@ import {
   Dumbbell,
   PiggyBank
 } from "lucide-react";
-import { format, subMonths, startOfMonth, endOfMonth, differenceInDays } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
 import { dashboardApi, transactionsApi, accountsApi } from "@/lib/api";
-import { getAccountIcon, getMerchantIcon } from "@/lib/icons";
+import { getAccountIcon } from "@/lib/icons";
 import { Link } from "wouter";
 import { useMonth } from "@/lib/month-context";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
+import { dashboardCopy, translateCategory, t } from "@/lib/i18n";
+import { useLocale } from "@/hooks/use-locale";
 
 const CATEGORY_ICONS: Record<string, any> = {
   "Moradia": Home,
@@ -100,9 +99,32 @@ interface Insight {
   percentage?: number;
 }
 
+const formatMessage = (template: string, vars: Record<string, string | number>) =>
+  Object.entries(vars).reduce((result, [key, value]) => result.replace(`{${key}}`, String(value)), template);
+
 export default function DashboardPage() {
-  const { month, formatMonth } = useMonth();
+  const locale = useLocale();
+  const { month } = useMonth();
   const [accountFilter, setAccountFilter] = useState<string>("all");
+  const currencyFormatter = new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" });
+  const dateTimeFormatter = new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+  const dateFormatter = new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  });
+  const dayMonthTimeFormatter = new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
 
   const { data: accounts = [] } = useQuery({
     queryKey: ["accounts"],
@@ -188,12 +210,16 @@ export default function DashboardPage() {
         if (prevCat && prevCat.amount > 0) {
           const change = ((cat.amount - prevCat.amount) / prevCat.amount) * 100;
           if (isFinite(change)) {
+            const categoryLabel = translateCategory(locale, cat.category);
             if (change < -10) {
               insights.push({
                 id: `save-${cat.category}`,
                 type: "positive",
-                title: `Economia em ${cat.category}`,
-                description: `Você economizou ${Math.abs(change).toFixed(0)}% em ${cat.category} comparado ao mês anterior.`,
+                title: formatMessage(t(locale, dashboardCopy.insightSaveTitle), { category: categoryLabel }),
+                description: formatMessage(t(locale, dashboardCopy.insightSaveDescription), {
+                  percent: Math.abs(change).toFixed(0),
+                  category: categoryLabel
+                }),
                 category: cat.category,
                 percentage: Math.abs(change)
               });
@@ -201,8 +227,11 @@ export default function DashboardPage() {
               insights.push({
                 id: `warn-${cat.category}`,
                 type: "warning",
-                title: `Atenção com ${cat.category}`,
-                description: `Seus gastos em ${cat.category} aumentaram ${change.toFixed(0)}% este mês.`,
+                title: formatMessage(t(locale, dashboardCopy.insightWarnTitle), { category: categoryLabel }),
+                description: formatMessage(t(locale, dashboardCopy.insightWarnDescription), {
+                  percent: change.toFixed(0),
+                  category: categoryLabel
+                }),
                 category: cat.category,
                 percentage: change
               });
@@ -218,8 +247,10 @@ export default function DashboardPage() {
         insights.push({
           id: "projection-warning",
           type: "warning",
-          title: "Projeção acima do orçamento",
-          description: `Com base no ritmo atual, você pode gastar ${projectedOverspend.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })} a mais que o planejado.`
+          title: t(locale, dashboardCopy.projectionWarningTitle),
+          description: formatMessage(t(locale, dashboardCopy.projectionWarningDescription), {
+            amount: currencyFormatter.format(projectedOverspend)
+          })
         });
       }
     }
@@ -228,8 +259,8 @@ export default function DashboardPage() {
       insights.push({
         id: "default",
         type: "neutral",
-        title: "Seus gastos estão estáveis",
-        description: "Continue acompanhando suas despesas para manter o controle financeiro."
+        title: t(locale, dashboardCopy.defaultInsightTitle),
+        description: t(locale, dashboardCopy.defaultInsightDescription)
       });
     }
 
@@ -256,18 +287,18 @@ export default function DashboardPage() {
         <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">Seu Mês em Foco</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">{t(locale, dashboardCopy.title)}</h1>
             <p className="text-muted-foreground">
-              Uma visão clara do seu orçamento. Sempre atualizada.
+              {t(locale, dashboardCopy.subtitle)}
             </p>
           </div>
           <div className="w-full md:w-64">
             <Select value={accountFilter} onValueChange={setAccountFilter}>
               <SelectTrigger>
-                <SelectValue placeholder="Todas as contas" />
+                <SelectValue placeholder={t(locale, dashboardCopy.accountFilterPlaceholder)} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todas as contas</SelectItem>
+                <SelectItem value="all">{t(locale, dashboardCopy.accountFilterPlaceholder)}</SelectItem>
                 {accounts.filter((a: any) => a.isActive).map((account: any) => (
                   <SelectItem key={account.id} value={account.id}>
                     {account.name}
@@ -283,17 +314,17 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <RefreshCw className="h-5 w-5 text-primary" />
-                <CardTitle className="text-base">Última Atualização</CardTitle>
+                <CardTitle className="text-base">{t(locale, dashboardCopy.lastUpdateTitle)}</CardTitle>
               </div>
               <Link href="/uploads" className="text-xs font-bold text-primary hover:underline">
-                Ver todos uploads
+                {t(locale, dashboardCopy.viewAllUploads)}
               </Link>
             </div>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {['sparkasse', 'amex', 'miles-more'].map((accountType) => {
               const upload = lastUploads.find((u: any) => u.accountType === accountType);
-              const accountInfo = getAccountIcon(accountType);
+              const accountInfo = getAccountIcon(accountType, locale);
 
               return (
                 <div key={accountType} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
@@ -309,16 +340,18 @@ export default function DashboardPage() {
                       <>
                         <p className="text-xs text-muted-foreground">
                           <Clock className="h-3 w-3 inline mr-1" />
-                          {format(new Date(upload.lastUploadDate), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                          {dateTimeFormatter.format(new Date(upload.lastUploadDate))}
                         </p>
                         {upload.importedThrough && (
                           <p className="text-xs text-primary font-medium">
-                            Até {format(new Date(upload.importedThrough), "dd/MM/yyyy", { locale: ptBR })}
+                            {formatMessage(t(locale, dashboardCopy.importedThrough), {
+                              date: dateFormatter.format(new Date(upload.importedThrough))
+                            })}
                           </p>
                         )}
                       </>
                     ) : (
-                      <p className="text-xs text-muted-foreground">Sem upload</p>
+                      <p className="text-xs text-muted-foreground">{t(locale, dashboardCopy.noUpload)}</p>
                     )}
                   </div>
                 </div>
@@ -333,25 +366,25 @@ export default function DashboardPage() {
             <CardContent className="p-6 relative">
               <div className="flex items-center gap-2 text-primary font-bold text-sm uppercase tracking-wide mb-2">
                 <TrendingUp className="h-5 w-5" />
-                Projeção do Mês
+                {t(locale, dashboardCopy.monthlyProjection)}
               </div>
               <p className="text-4xl lg:text-5xl font-black text-foreground tracking-tight">
-                {projection.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                {currencyFormatter.format(projection)}
               </p>
               
               <div className="grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-border">
                 <div className="p-3 rounded-xl bg-primary/5 border border-primary/10">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Restante do Mês</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">{t(locale, dashboardCopy.remainingMonth)}</p>
                   <p className="text-primary font-bold flex items-center gap-1 text-xl">
                     <ArrowUpRight className="h-5 w-5" />
-                    {remaining.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                    {currencyFormatter.format(remaining)}
                   </p>
                 </div>
                 <div className="p-3 rounded-xl bg-rose-50 border border-rose-100">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Já Comprometido</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">{t(locale, dashboardCopy.alreadyCommitted)}</p>
                   <p className="text-rose-600 font-bold flex items-center gap-1 text-xl">
                     <ArrowDownRight className="h-5 w-5" />
-                    {spent.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                    {currencyFormatter.format(spent)}
                   </p>
                 </div>
               </div>
@@ -364,17 +397,17 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2 text-rose-600 font-bold text-sm uppercase tracking-wide">
                   <Calendar className="h-5 w-5" />
-                  Compromissos Restantes
+                  {t(locale, dashboardCopy.remainingCommitments)}
                 </div>
                 <Link href="/calendar">
                   <Button variant="ghost" size="sm" className="text-xs text-primary">
-                    Ver todos
+                    {t(locale, dashboardCopy.viewAll)}
                     <ChevronRight className="h-3 w-3 ml-1" />
                   </Button>
                 </Link>
               </div>
               <p className="text-4xl lg:text-5xl font-black text-foreground tracking-tight">
-                {totalCommitted.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                {currencyFormatter.format(totalCommitted)}
               </p>
               
               <div className="flex items-center gap-2 mt-6 pt-4 border-t border-border">
@@ -398,13 +431,16 @@ export default function DashboardPage() {
                     </div>
                     {upcomingCommitments.length > 0 && (
                       <span className="text-sm text-muted-foreground ml-auto">
-                        {upcomingCommitments.length} evento(s) este mês
+                        {formatMessage(t(locale, dashboardCopy.eventsThisMonth), {
+                          count: upcomingCommitments.length
+                        })}
                       </span>
                     )}
                   </>
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    Nenhum compromisso cadastrado. <Link href="/calendar" className="text-primary underline">Adicionar</Link>
+                    {t(locale, dashboardCopy.noCommitments)}{" "}
+                    <Link href="/calendar" className="text-primary underline">{t(locale, dashboardCopy.addAction)}</Link>
                   </p>
                 )}
               </div>
@@ -433,17 +469,17 @@ export default function DashboardPage() {
                   <div>
                     <span className={cn(
                       "text-xs font-bold uppercase tracking-wider",
-                      mainInsight.type === "positive" && "text-green-600",
-                      mainInsight.type === "warning" && "text-amber-600",
-                      mainInsight.type === "neutral" && "text-primary"
-                    )}>Insight Semanal</span>
+                    mainInsight.type === "positive" && "text-green-600",
+                    mainInsight.type === "warning" && "text-amber-600",
+                    mainInsight.type === "neutral" && "text-primary"
+                  )}>{t(locale, dashboardCopy.weeklyInsight)}</span>
                     <p className="text-foreground font-semibold mt-1">
                       {mainInsight.description}
                     </p>
                   </div>
                 </div>
                 <Button variant="secondary" className="bg-white/80 hover:bg-white gap-2">
-                  Ver detalhes
+                  {t(locale, dashboardCopy.viewDetails)}
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
@@ -454,7 +490,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card className="lg:col-span-2 bg-white border-0 shadow-sm">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold">Gastos por Categoria</CardTitle>
+              <CardTitle className="text-base font-semibold">{t(locale, dashboardCopy.spendByCategory)}</CardTitle>
             </CardHeader>
             <CardContent className="p-5">
               <div className="flex flex-col md:flex-row gap-8 items-center">
@@ -474,7 +510,9 @@ export default function DashboardPage() {
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center justify-between mb-1.5">
-                            <span className="font-semibold text-sm">{cat.category}</span>
+                            <span className="font-semibold text-sm">
+                              {translateCategory(locale, cat.category)}
+                            </span>
                             <span className="text-sm font-bold" style={{ color }}>{percentage}%</span>
                           </div>
                           <div className="h-3 bg-muted rounded-full overflow-hidden">
@@ -525,7 +563,7 @@ export default function DashboardPage() {
                     <span className="text-2xl font-black text-foreground">
                       {(spent / 1000).toFixed(1)}k
                     </span>
-                    <span className="text-xs text-muted-foreground uppercase font-medium">Total Gasto</span>
+                    <span className="text-xs text-muted-foreground uppercase font-medium">{t(locale, dashboardCopy.totalSpent)}</span>
                   </div>
                 </div>
               </div>
@@ -534,25 +572,25 @@ export default function DashboardPage() {
 
           <Card className="bg-white border-0 shadow-sm">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-base font-semibold">Atividade Recente</CardTitle>
+              <CardTitle className="text-base font-semibold">{t(locale, dashboardCopy.recentActivity)}</CardTitle>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" title="Mais opções">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" title={t(locale, dashboardCopy.moreOptions)}>
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem asChild>
                     <Link href="/transactions" className="cursor-pointer">
-                      Ver todas as transações
+                      {t(locale, dashboardCopy.viewAllTransactions)}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setAccountFilter("all")}>
-                    Mostrar todas as contas
+                    {t(locale, dashboardCopy.showAllAccounts)}
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/uploads" className="cursor-pointer">
-                      Gerenciar uploads
+                      {t(locale, dashboardCopy.manageUploads)}
                     </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -563,15 +601,15 @@ export default function DashboardPage() {
                 {recentTransactions.length === 0 ? (
                   <div className="px-5 py-8 text-center text-muted-foreground">
                     <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>Nenhuma transação neste mês</p>
+                    <p>{t(locale, dashboardCopy.noTransactions)}</p>
                   </div>
                 ) : (
                   recentTransactions.map((t: any) => {
-                    const merchantInfo = getMerchantIcon(t.descRaw);
-                    const Icon = merchantInfo?.icon || (CATEGORY_ICONS[t.category1] || CreditCard);
-                    const color = merchantInfo?.color || (CATEGORY_COLORS[t.category1] || "#6b7280");
+                    const Icon = CATEGORY_ICONS[t.category1] || CreditCard;
+                    const color = CATEGORY_COLORS[t.category1] || "#6b7280";
                     const isIncome = t.amount > 0;
-                    const merchantName = t.descRaw?.split(" -- ")[0]?.replace(/\s+\d{4,}/g, '').trim() || t.descRaw;
+                    const fallbackDesc = t.simpleDesc || t.descRaw?.split(" -- ")[0]?.replace(/\s+\d{4,}/g, '').trim() || t.descRaw;
+                    const merchantName = t.aliasDesc || fallbackDesc;
 
                     return (
                       <div
@@ -579,25 +617,26 @@ export default function DashboardPage() {
                         className="px-5 py-3 hover:bg-muted/30 transition-colors flex items-center gap-3"
                         data-testid={`row-transaction-${t.id}`}
                       >
-                        <div
-                          className="w-10 h-10 rounded-xl flex items-center justify-center"
-                          style={{ backgroundColor: `${color}15` }}
-                        >
-                          <Icon className="h-4 w-4" style={{ color }} />
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center border border-muted bg-white">
+                          {t.logoLocalPath ? (
+                            <img src={t.logoLocalPath} alt={merchantName} className="h-5 w-5 object-contain" />
+                          ) : (
+                            <Icon className="h-4 w-4" style={{ color }} />
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">
                             {merchantName.substring(0, 30)}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {format(new Date(t.paymentDate), "dd MMM, HH:mm", { locale: ptBR })}
+                            {dayMonthTimeFormatter.format(new Date(t.paymentDate))}
                           </p>
                         </div>
                         <span className={cn(
                           "font-bold text-sm",
                           isIncome ? "text-primary" : "text-foreground"
                         )}>
-                          {isIncome ? "+" : "-"} {Math.abs(t.amount).toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                          {isIncome ? "+" : "-"} {currencyFormatter.format(Math.abs(t.amount))}
                         </span>
                       </div>
                     );
@@ -617,15 +656,15 @@ export default function DashboardPage() {
                     <Sparkles className="h-6 w-6 text-amber-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-amber-900">Categorização Inteligente</h3>
+                    <h3 className="font-semibold text-amber-900">{t(locale, dashboardCopy.smartCategorizationTitle)}</h3>
                     <p className="text-sm text-amber-700/80 mt-0.5">
-                      {pendingCount} transação(ões) aguardando sua confirmação. A IA já pré-analisou cada uma.
+                      {formatMessage(t(locale, dashboardCopy.smartCategorizationBody), { count: pendingCount })}
                     </p>
                   </div>
                 </div>
                 <Link href="/confirm">
                   <Button className="bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-500/20">
-                    Revisar agora
+                    {t(locale, dashboardCopy.reviewNow)}
                   </Button>
                 </Link>
               </div>

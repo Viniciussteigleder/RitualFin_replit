@@ -163,9 +163,9 @@ app.delete("/api/merchant-icons/:id/remove-icon", async (req, res) => {
   // Clear iconLocalPath, iconSourceUrl
 });
 
-// Export to Excel/CSV
+// Export to CSV
 app.get("/api/merchant-dictionary/export", async (req, res) => {
-  // Query params: type (aliases|icons|both), format (csv|xlsx)
+  // Query params: type (aliases|icons|both), format (csv)
   // Generate file, return download
 });
 

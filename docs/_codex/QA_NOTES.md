@@ -64,3 +64,30 @@
   - No secrets printed in test output.
 - Failures: Missing `DATABASE_URL` prevents dev server start.
 - Repro steps: Set `DATABASE_URL`, rerun `npm run dev`, then `curl http://localhost:5000/api/health`.
+
+## 2026-01-01
+- Tests not run (not requested). Suggested: `npm run check`, `tsx script/test-imports.ts`.
+
+## 2026-01-01
+- Commands executed:
+  - npm run check
+  - npx tsx script/test-imports.ts
+- Results:
+  - TypeScript check: PASS
+  - Import parsing script: PASS (Sparkasse/Amex/M&M)
+
+## 2026-01-01
+- Command: vercel --prod
+- Result: Upload completed; deployment queued (command timed out at 10s). Inspect URL provided by CLI.
+
+## 2026-01-01
+- Command: npm run db:push
+- Result: FAILED (DATABASE_URL not set)
+- Command: npm run dev (HOST=127.0.0.1 PORT=5001)
+- Result: FAILED (ENOTSUP: operation not supported on socket)
+- Command: curl http://127.0.0.1:5001/api/health
+- Result: FAILED (connection refused)
+
+## 2026-01-01
+- Command: vercel --prod
+- Result: Upload completed; deployment queued/building (CLI timed out at 10s). Inspect URL provided by CLI.

@@ -12,27 +12,59 @@
 import AppLayout from "@/components/layout/app-layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { useMonth } from "@/lib/month-context";
 import { useQuery } from "@tanstack/react-query";
-import { transactionsApi } from "@/lib/api";
+import { transactionsApi, calendarEventsApi } from "@/lib/api";
 import { MonthView } from "@/components/calendar/month-view";
 import { WeekBlocksView } from "@/components/calendar/week-blocks-view";
 import { DetailPanel } from "@/components/calendar/detail-panel";
-import { format, addMonths, subMonths } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { addMonths, subMonths } from "date-fns";
+import { calendarCopy, t as translate } from "@/lib/i18n";
+import { useLocale } from "@/hooks/use-locale";
 
 export default function CalendarPage() {
   const { month, setMonth, formatMonth } = useMonth();
+  const locale = useLocale();
   const [view, setView] = useState<"month" | "week">("month");
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [selectedWeek, setSelectedWeek] = useState<Date | null>(null);
+  const [showRealized, setShowRealized] = useState(true);
+  const [showProjected, setShowProjected] = useState(true);
 
   const { data: transactions = [], isLoading } = useQuery({
     queryKey: ["transactions", month],
     queryFn: () => transactionsApi.list(month),
   });
+
+  const { data: calendarEvents = [] } = useQuery({
+    queryKey: ["calendar-events"],
+    queryFn: calendarEventsApi.list,
+  });
+
+  const projectedTransactions = calendarEvents
+    .filter((e: any) => e.isActive && e.nextDueDate)
+    .map((event: any) => ({
+      id: `proj-${event.id}`,
+      paymentDate: event.nextDueDate,
+      amount: Math.abs(event.amount || 0),
+      type: "Despesa",
+      descRaw: `${event.name} -- Projetado`,
+      category1: event.category1,
+      category2: event.category2,
+      projected: true,
+      recurring: event.recurrence && event.recurrence !== "none",
+      internalTransfer: false,
+    }));
+
+  const realizedTransactions = transactions.map((t: any) => ({ ...t, projected: false }));
+  const calendarTransactions = [
+    ...(showRealized ? realizedTransactions : []),
+    ...(showProjected ? projectedTransactions : []),
+  ];
 
   const handlePrevMonth = () => {
     const [year, m] = month.split("-").map(Number);
@@ -55,9 +87,9 @@ export default function CalendarPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Calendário</h1>
+            <h1 className="text-3xl font-bold">{translate(locale, calendarCopy.title)}</h1>
             <p className="text-muted-foreground">
-              Visualize suas transações por dia ou semana
+              {translate(locale, calendarCopy.subtitle)}
             </p>
           </div>
 
@@ -77,9 +109,39 @@ export default function CalendarPage() {
 
         {/* View Toggle */}
         <Tabs value={view} onValueChange={(v) => setView(v as "month" | "week")}>
+          <div className="flex flex-wrap items-center gap-4 mb-3 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+              Realizado
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full border border-dashed border-amber-500" />
+              Projetado
+            </span>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="toggle-realized"
+                checked={showRealized}
+                onCheckedChange={setShowRealized}
+              />
+              <Label htmlFor="toggle-realized" className="text-xs text-muted-foreground">
+                Mostrar realizados
+              </Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="toggle-projected"
+                checked={showProjected}
+                onCheckedChange={setShowProjected}
+              />
+              <Label htmlFor="toggle-projected" className="text-xs text-muted-foreground">
+                Mostrar projetados
+              </Label>
+            </div>
+          </div>
           <TabsList className="grid w-full max-w-[400px] grid-cols-2">
-            <TabsTrigger value="month">Mês</TabsTrigger>
-            <TabsTrigger value="week">4 Semanas</TabsTrigger>
+            <TabsTrigger value="month">{translate(locale, calendarCopy.viewMonth)}</TabsTrigger>
+            <TabsTrigger value="week">{translate(locale, calendarCopy.viewWeek)}</TabsTrigger>
           </TabsList>
 
           {/* Month View + Detail Panel */}
@@ -88,12 +150,12 @@ export default function CalendarPage() {
               <div className="lg:col-span-2">
                 {isLoading ? (
                   <div className="bg-white rounded-lg border p-12 text-center">
-                    <p className="text-muted-foreground">Carregando...</p>
+                    <p className="text-muted-foreground">{translate(locale, calendarCopy.loading)}</p>
                   </div>
                 ) : (
                   <MonthView
                     month={month}
-                    transactions={transactions}
+                    transactions={calendarTransactions}
                     selectedDay={selectedDay}
                     onDaySelect={setSelectedDay}
                   />
@@ -103,7 +165,7 @@ export default function CalendarPage() {
                 <DetailPanel
                   mode={detailMode}
                   selectedDate={detailDate}
-                  transactions={transactions}
+                  transactions={calendarTransactions}
                 />
               </div>
             </div>
@@ -114,12 +176,12 @@ export default function CalendarPage() {
             <div className="space-y-6">
               {isLoading ? (
                 <div className="bg-white rounded-lg border p-12 text-center">
-                  <p className="text-muted-foreground">Carregando...</p>
+                  <p className="text-muted-foreground">{translate(locale, calendarCopy.loading)}</p>
                 </div>
               ) : (
                 <WeekBlocksView
                   month={month}
-                  transactions={transactions}
+                  transactions={calendarTransactions}
                   selectedWeek={selectedWeek}
                   onWeekSelect={setSelectedWeek}
                 />
@@ -128,7 +190,7 @@ export default function CalendarPage() {
                 <DetailPanel
                   mode="week"
                   selectedDate={selectedWeek}
-                  transactions={transactions}
+                  transactions={calendarTransactions}
                 />
               )}
             </div>

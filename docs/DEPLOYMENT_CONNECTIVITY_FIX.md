@@ -143,8 +143,9 @@ Updated `/api/health` endpoint to return degraded status when DB is not configur
 ### Vercel Deployment (Primary)
 
 1. **Ensure environment variables are set in Vercel dashboard**:
-   - `DATABASE_URL` - PostgreSQL connection string (from Supabase)
-   - `VITE_API_URL` - Backend URL (e.g., `https://backend.render.com`)
+  - `DATABASE_URL` - PostgreSQL connection string (from Supabase)
+  - `VITE_API_URL` - Backend URL (e.g., `https://backend.render.com`)
+  - `ALLOW_DEMO_AUTH_IN_PROD` - Demo-only bypass (leave unset for real production)
    - `OPENAI_API_KEY` - OpenAI API key (optional)
 
 2. **Deploy via Git integration** (if working):

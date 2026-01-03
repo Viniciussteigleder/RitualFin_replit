@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Loader2, Edit2, Trash2, BookOpen, Filter, Download, Upload } from "lucide-react";
+import { Search, Loader2, Edit2, Trash2, BookOpen, Filter, Download, Upload, Sparkles } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { merchantDictionaryApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -11,17 +11,40 @@ import { useState, useRef } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import * as XLSX from 'xlsx';
+import { merchantDictionaryCopy, t as translate } from "@/lib/i18n";
+import { useLocale } from "@/hooks/use-locale";
+import { parseCsv, toCsv } from "@/lib/csv";
 
 export default function MerchantDictionaryPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const locale = useLocale();
   const [search, setSearch] = useState("");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [manualFilter, setManualFilter] = useState("all");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingAlias, setEditingAlias] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const formatMessage = (template: string, vars: Record<string, string | number>) =>
+    Object.entries(vars).reduce((result, [key, value]) => result.replace(`{${key}}`, String(value)), template);
+  const dateTimeFormatter = new Intl.DateTimeFormat(locale, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+  const columnKeys = {
+    source: [translate(locale, merchantDictionaryCopy.sourceLabel), "Fonte"],
+    keyDesc: [translate(locale, merchantDictionaryCopy.keyDescLabel), "Descrição Chave"],
+    alias: [translate(locale, merchantDictionaryCopy.aliasLabel), "Alias"],
+    manual: [translate(locale, merchantDictionaryCopy.manualLabel), "Manual"]
+  };
+
+  const getRowValue = (row: Record<string, any>, keys: string[]) => {
+    const key = keys.find((k) => Object.prototype.hasOwnProperty.call(row, k));
+    return key ? row[key] : undefined;
+  };
 
   // Fetch descriptions with filters
   const { data: descriptions = [], isLoading } = useQuery({
@@ -43,10 +66,10 @@ export default function MerchantDictionaryPage() {
       queryClient.invalidateQueries({ queryKey: ["merchant-descriptions"] });
       setEditingId(null);
       setEditingAlias("");
-      toast({ title: "Alias atualizado com sucesso" });
+      toast({ title: translate(locale, merchantDictionaryCopy.toastAliasUpdated) });
     },
     onError: (error: any) => {
-      toast({ title: "Erro ao atualizar", description: error.message, variant: "destructive" });
+      toast({ title: translate(locale, merchantDictionaryCopy.toastUpdateError), description: error.message, variant: "destructive" });
     },
   });
 
@@ -55,13 +78,44 @@ export default function MerchantDictionaryPage() {
     mutationFn: (id: string) => merchantDictionaryApi.deleteDescription(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["merchant-descriptions"] });
-      toast({ title: "Mapeamento removido" });
+      toast({ title: translate(locale, merchantDictionaryCopy.toastRemoved) });
+    },
+  });
+
+  // AI suggestion mutation
+  const aiSuggestMutation = useMutation({
+    mutationFn: async ({ keyDesc, source }: { keyDesc: string; source: string }) => {
+      const res = await fetch("/api/merchant-descriptions/ai-suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keyDesc, source })
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || translate(locale, merchantDictionaryCopy.toastSuggestError));
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setEditingAlias(data.suggestedAlias);
+      toast({ title: translate(locale, merchantDictionaryCopy.toastSuggestionReady), description: translate(locale, merchantDictionaryCopy.toastSuggestionBody) });
+    },
+    onError: (error: any) => {
+      toast({
+        title: translate(locale, merchantDictionaryCopy.toastAiError),
+        description: error.message,
+        variant: "destructive"
+      });
     },
   });
 
   const handleEdit = (desc: any) => {
     setEditingId(desc.id);
     setEditingAlias(desc.aliasDesc);
+  };
+
+  const handleAISuggest = (keyDesc: string, source: string) => {
+    aiSuggestMutation.mutate({ keyDesc, source });
   };
 
   const handleSaveEdit = () => {
@@ -75,43 +129,39 @@ export default function MerchantDictionaryPage() {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm("Remover este mapeamento?")) {
+    if (confirm(translate(locale, merchantDictionaryCopy.confirmDelete))) {
       deleteMutation.mutate(id);
     }
   };
 
   const handleDownloadExcel = async () => {
     if (descriptions.length === 0) {
-      toast({ title: "Nenhum dado para exportar", variant: "destructive" });
+      toast({ title: translate(locale, merchantDictionaryCopy.exportEmpty), variant: "destructive" });
       return;
     }
 
-    const excelData = descriptions.map((d: any) => ({
-      'Fonte': d.source,
-      'Descrição Chave': d.keyDesc,
-      'Alias': d.aliasDesc,
-      'Manual': d.isManual ? 'Sim' : 'Não',
-      'Criado em': new Date(d.createdAt).toLocaleString('pt-BR'),
-      'Atualizado em': new Date(d.updatedAt).toLocaleString('pt-BR')
+    const csvData = descriptions.map((d: any) => ({
+      [translate(locale, merchantDictionaryCopy.sourceLabel)]: d.source,
+      [translate(locale, merchantDictionaryCopy.keyDescLabel)]: d.keyDesc,
+      [translate(locale, merchantDictionaryCopy.aliasLabel)]: d.aliasDesc,
+      [translate(locale, merchantDictionaryCopy.manualLabel)]: d.isManual ? translate(locale, merchantDictionaryCopy.yes) : translate(locale, merchantDictionaryCopy.no),
+      [translate(locale, merchantDictionaryCopy.createdAt)]: dateTimeFormatter.format(new Date(d.createdAt)),
+      [translate(locale, merchantDictionaryCopy.updatedAt)]: dateTimeFormatter.format(new Date(d.updatedAt))
     }));
 
-    const ws = XLSX.utils.json_to_sheet(excelData);
-    ws['!cols'] = [
-      { wch: 15 }, // Fonte
-      { wch: 50 }, // Descrição Chave
-      { wch: 30 }, // Alias
-      { wch: 10 }, // Manual
-      { wch: 20 }, // Criado em
-      { wch: 20 }  // Atualizado em
-    ];
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Merchant Aliases');
-
+    const headers = Object.keys(csvData[0] || {});
+    const csvContent = toCsv(csvData, headers);
     const date = new Date().toISOString().split('T')[0];
-    XLSX.writeFile(wb, `ritualfin_merchant_aliases_${date}.xlsx`);
+    const filename = `ritualfin_merchant_aliases_${date}.csv`;
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
 
-    toast({ title: `${descriptions.length} registros exportados` });
+    toast({ title: formatMessage(translate(locale, merchantDictionaryCopy.exportCount), { count: descriptions.length }) });
   };
 
   const handleUploadExcel = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -121,14 +171,17 @@ export default function MerchantDictionaryPage() {
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
-        const data = e.target?.result;
-        const workbook = XLSX.read(data, { type: 'binary' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        const data = String(e.target?.result || "");
+        const { headers, rows } = parseCsv(data);
+        const jsonData = rows.map((row) =>
+          headers.reduce<Record<string, string>>((acc, header, index) => {
+            acc[header] = row[index] ?? "";
+            return acc;
+          }, {})
+        );
 
         if (jsonData.length === 0) {
-          toast({ title: "Arquivo vazio", variant: "destructive" });
+          toast({ title: translate(locale, merchantDictionaryCopy.importEmpty), variant: "destructive" });
           return;
         }
 
@@ -138,31 +191,34 @@ export default function MerchantDictionaryPage() {
 
         jsonData.forEach((row: any, index: number) => {
           const rowNum = index + 2;
+          const sourceValue = getRowValue(row, columnKeys.source);
+          const keyDescValue = getRowValue(row, columnKeys.keyDesc);
+          const aliasValue = getRowValue(row, columnKeys.alias);
 
           // Validate required fields
-          if (!row['Fonte'] || !['Sparkasse', 'Amex', 'M&M'].includes(row['Fonte'])) {
-            errors.push(`Linha ${rowNum}: Fonte deve ser "Sparkasse", "Amex" ou "M&M"`);
+          if (!sourceValue || !['Sparkasse', 'Amex', 'M&M'].includes(sourceValue)) {
+            errors.push(formatMessage(translate(locale, merchantDictionaryCopy.importSourceError), { row: rowNum }));
             return;
           }
-          if (!row['Descrição Chave']) {
-            errors.push(`Linha ${rowNum}: Descrição Chave é obrigatória`);
+          if (!keyDescValue) {
+            errors.push(formatMessage(translate(locale, merchantDictionaryCopy.importKeyError), { row: rowNum }));
             return;
           }
-          if (!row['Alias']) {
-            errors.push(`Linha ${rowNum}: Alias é obrigatório`);
+          if (!aliasValue) {
+            errors.push(formatMessage(translate(locale, merchantDictionaryCopy.importAliasError), { row: rowNum }));
             return;
           }
 
           toImport.push({
-            source: row['Fonte'],
-            keyDesc: row['Descrição Chave'],
-            aliasDesc: row['Alias']
+            source: sourceValue,
+            keyDesc: keyDescValue,
+            aliasDesc: aliasValue
           });
         });
 
         if (errors.length > 0) {
           toast({
-            title: "Erros encontrados no arquivo",
+            title: translate(locale, merchantDictionaryCopy.importErrors),
             description: errors.slice(0, 3).join('; '),
             variant: "destructive"
           });
@@ -170,7 +226,7 @@ export default function MerchantDictionaryPage() {
         }
 
         if (toImport.length === 0) {
-          toast({ title: "Nenhum registro válido para importar", variant: "destructive" });
+          toast({ title: translate(locale, merchantDictionaryCopy.importNoneValid), variant: "destructive" });
           return;
         }
 
@@ -191,24 +247,24 @@ export default function MerchantDictionaryPage() {
         queryClient.invalidateQueries({ queryKey: ["merchant-descriptions"] });
 
         if (failCount === 0) {
-          toast({ title: `${successCount} registros importados com sucesso` });
+          toast({ title: formatMessage(translate(locale, merchantDictionaryCopy.importSuccess), { count: successCount }) });
         } else {
           toast({
-            title: "Importação concluída com erros",
-            description: `${successCount} importados, ${failCount} falharam`
+            title: translate(locale, merchantDictionaryCopy.importPartialTitle),
+            description: formatMessage(translate(locale, merchantDictionaryCopy.importPartialBody), { success: successCount, fail: failCount })
           });
         }
 
       } catch (error: any) {
         toast({
-          title: "Erro ao processar arquivo",
+          title: translate(locale, merchantDictionaryCopy.importProcessError),
           description: error.message,
           variant: "destructive"
         });
       }
     };
 
-    reader.readAsBinaryString(file);
+    reader.readAsText(file);
 
     // Reset input
     if (fileInputRef.current) {
@@ -238,9 +294,9 @@ export default function MerchantDictionaryPage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold">Dicionário de Comerciantes</h1>
+            <h1 className="text-2xl font-bold">{translate(locale, merchantDictionaryCopy.headerTitle)}</h1>
             <p className="text-muted-foreground">
-              Gerencie aliases padronizados para descrições de transações
+              {translate(locale, merchantDictionaryCopy.headerSubtitle)}
             </p>
           </div>
 
@@ -252,7 +308,7 @@ export default function MerchantDictionaryPage() {
               disabled={descriptions.length === 0}
             >
               <Download className="h-4 w-4" />
-              Exportar
+              {translate(locale, merchantDictionaryCopy.exportLabel)}
             </Button>
 
             <Button
@@ -261,14 +317,14 @@ export default function MerchantDictionaryPage() {
               onClick={() => fileInputRef.current?.click()}
             >
               <Upload className="h-4 w-4" />
-              Importar
+              {translate(locale, merchantDictionaryCopy.importLabel)}
             </Button>
 
             <input
               type="file"
               ref={fileInputRef}
               onChange={handleUploadExcel}
-              accept=".xlsx,.xls"
+              accept=".csv"
               className="hidden"
             />
           </div>
@@ -280,7 +336,7 @@ export default function MerchantDictionaryPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{translate(locale, merchantDictionaryCopy.statTotal)}</p>
                   <p className="text-3xl font-bold mt-1">{descriptions.length}</p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -294,7 +350,7 @@ export default function MerchantDictionaryPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Manual</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{translate(locale, merchantDictionaryCopy.statManual)}</p>
                   <p className="text-3xl font-bold mt-1 text-amber-600">
                     {descriptions.filter((d: any) => d.isManual).length}
                   </p>
@@ -307,7 +363,7 @@ export default function MerchantDictionaryPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Auto</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{translate(locale, merchantDictionaryCopy.statAuto)}</p>
                   <p className="text-3xl font-bold mt-1 text-gray-600">
                     {descriptions.filter((d: any) => !d.isManual).length}
                   </p>
@@ -320,7 +376,7 @@ export default function MerchantDictionaryPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Fontes</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{translate(locale, merchantDictionaryCopy.statSources)}</p>
                   <p className="text-3xl font-bold mt-1">
                     {new Set(descriptions.map((d: any) => d.source)).size}
                   </p>
@@ -335,7 +391,7 @@ export default function MerchantDictionaryPage() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por descrição ou alias..."
+              placeholder={translate(locale, merchantDictionaryCopy.searchPlaceholder)}
               className="pl-9 bg-white border-0 shadow-sm"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -345,10 +401,10 @@ export default function MerchantDictionaryPage() {
           <Select value={sourceFilter} onValueChange={setSourceFilter}>
             <SelectTrigger className="w-[180px] bg-white border-0 shadow-sm">
               <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
-              <SelectValue placeholder="Fonte" />
+              <SelectValue placeholder={translate(locale, merchantDictionaryCopy.filterSource)} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas as Fontes</SelectItem>
+              <SelectItem value="all">{translate(locale, merchantDictionaryCopy.filterAllSources)}</SelectItem>
               <SelectItem value="Sparkasse">Sparkasse</SelectItem>
               <SelectItem value="Amex">Amex</SelectItem>
               <SelectItem value="M&M">M&M</SelectItem>
@@ -358,12 +414,12 @@ export default function MerchantDictionaryPage() {
           <Select value={manualFilter} onValueChange={setManualFilter}>
             <SelectTrigger className="w-[180px] bg-white border-0 shadow-sm">
               <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
-              <SelectValue placeholder="Tipo" />
+              <SelectValue placeholder={translate(locale, merchantDictionaryCopy.filterType)} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="manual">Manual</SelectItem>
-              <SelectItem value="auto">Auto</SelectItem>
+              <SelectItem value="all">{translate(locale, merchantDictionaryCopy.filterAll)}</SelectItem>
+              <SelectItem value="manual">{translate(locale, merchantDictionaryCopy.filterManualOnly)}</SelectItem>
+              <SelectItem value="auto">{translate(locale, merchantDictionaryCopy.filterAutoOnly)}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -376,9 +432,9 @@ export default function MerchantDictionaryPage() {
                 <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                   <BookOpen className="h-8 w-8 text-primary/50" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">Nenhum alias encontrado</h3>
+                <h3 className="text-lg font-semibold mb-2">{translate(locale, merchantDictionaryCopy.emptyTitle)}</h3>
                 <p className="text-muted-foreground">
-                  Os aliases serão criados automaticamente ao importar transações.
+                  {translate(locale, merchantDictionaryCopy.emptyBody)}
                 </p>
               </div>
             ) : (
@@ -393,7 +449,7 @@ export default function MerchantDictionaryPage() {
                           </Badge>
                           {desc.isManual && (
                             <Badge variant="outline" className="text-xs border-amber-300 text-amber-700">
-                              Manual
+                              {translate(locale, merchantDictionaryCopy.manualBadge)}
                             </Badge>
                           )}
                         </div>
@@ -403,7 +459,7 @@ export default function MerchantDictionaryPage() {
                         </p>
 
                         {editingId === desc.id ? (
-                          <div className="flex gap-2 items-center">
+                          <div className="flex gap-2 items-center flex-wrap">
                             <Input
                               value={editingAlias}
                               onChange={(e) => setEditingAlias(e.target.value)}
@@ -414,11 +470,25 @@ export default function MerchantDictionaryPage() {
                                 if (e.key === 'Escape') handleCancelEdit();
                               }}
                             />
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleAISuggest(desc.keyDesc, desc.source)}
+                              disabled={aiSuggestMutation.isPending}
+                              className="gap-1.5"
+                            >
+                              {aiSuggestMutation.isPending ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Sparkles className="h-3.5 w-3.5" />
+                              )}
+                              {translate(locale, merchantDictionaryCopy.suggestAi)}
+                            </Button>
                             <Button size="sm" onClick={handleSaveEdit} disabled={updateMutation.isPending}>
-                              Salvar
+                              {translate(locale, merchantDictionaryCopy.save)}
                             </Button>
                             <Button size="sm" variant="ghost" onClick={handleCancelEdit}>
-                              Cancelar
+                              {translate(locale, merchantDictionaryCopy.cancel)}
                             </Button>
                           </div>
                         ) : (

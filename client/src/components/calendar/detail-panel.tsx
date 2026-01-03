@@ -14,12 +14,13 @@
  */
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { format, isSameDay, startOfWeek, endOfWeek } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { isSameDay, startOfWeek, endOfWeek } from "date-fns";
 import { Calendar, TrendingUp, TrendingDown } from "lucide-react";
-import { getMerchantIcon } from "@/lib/merchant-icons";
-import { getAccountIcon, IconBadge, TRANSACTION_ICONS } from "@/lib/icons";
+import { AliasLogo } from "@/components/alias-logo";
+import { getAccountIcon, getTransactionIcons, IconBadge } from "@/lib/icons";
 import { cn } from "@/lib/utils";
+import { calendarDetailCopy, translateCategory, t as translate } from "@/lib/i18n";
+import { useLocale } from "@/hooks/use-locale";
 
 interface Transaction {
   id: string;
@@ -27,11 +28,15 @@ interface Transaction {
   amount: number;
   type: string;
   descRaw: string;
+  simpleDesc?: string;
+  aliasDesc?: string;
+  logoLocalPath?: string;
   category1?: string;
   category2?: string;
   category3?: string;
   fixVar?: string;
   recurring?: boolean;
+  recurringFlag?: boolean;
   isRefund?: boolean;
   internalTransfer?: boolean;
   accountSource?: string;
@@ -44,20 +49,28 @@ interface DetailPanelProps {
 }
 
 export function DetailPanel({ mode, selectedDate, transactions }: DetailPanelProps) {
+  const locale = useLocale();
+  const transactionIcons = getTransactionIcons(locale);
+  const currencyFormatter = new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" });
+  const dateFormatter = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "long", year: "numeric" });
+  const dayFormatter = new Intl.DateTimeFormat(locale, { day: "2-digit" });
+  const dayMonthFormatter = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short" });
   if (!mode || !selectedDate) {
     return (
       <Card className="sticky top-6">
         <CardContent className="p-12 text-center">
           <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
           <p className="text-muted-foreground">
-            Selecione um dia ou semana para ver detalhes
+            {translate(locale, calendarDetailCopy.emptyPrompt)}
           </p>
         </CardContent>
       </Card>
     );
   }
 
-  const title = mode === "day" ? "Detalhes do Dia" : "Resumo da Semana";
+  const title = mode === "day"
+    ? translate(locale, calendarDetailCopy.titleDay)
+    : translate(locale, calendarDetailCopy.titleWeek);
 
   // Filter transactions based on mode
   const filteredTransactions = transactions.filter((t) => {
@@ -66,8 +79,8 @@ export function DetailPanel({ mode, selectedDate, transactions }: DetailPanelPro
       return isSameDay(tDate, selectedDate);
     } else {
       // Week mode
-      const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1, locale: ptBR });
-      const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1, locale: ptBR });
+      const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
       return tDate >= weekStart && tDate <= weekEnd;
     }
   });
@@ -93,8 +106,8 @@ export function DetailPanel({ mode, selectedDate, transactions }: DetailPanelPro
         </CardTitle>
         <p className="text-sm text-muted-foreground">
           {mode === "day"
-            ? format(selectedDate, "dd 'de' MMMM, yyyy", { locale: ptBR })
-            : `${format(startOfWeek(selectedDate, { weekStartsOn: 1 }), "dd", { locale: ptBR })} - ${format(endOfWeek(selectedDate, { weekStartsOn: 1 }), "dd MMM", { locale: ptBR })}`}
+            ? dateFormatter.format(selectedDate)
+            : `${dayFormatter.format(startOfWeek(selectedDate, { weekStartsOn: 1 }))} - ${dayMonthFormatter.format(endOfWeek(selectedDate, { weekStartsOn: 1 }))}`}
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -103,25 +116,19 @@ export function DetailPanel({ mode, selectedDate, transactions }: DetailPanelPro
           <div>
             <div className="flex items-center gap-1 mb-1">
               <TrendingUp className="h-4 w-4 text-emerald-600" />
-              <span className="text-xs text-muted-foreground">Receitas</span>
+              <span className="text-xs text-muted-foreground">{translate(locale, calendarDetailCopy.income)}</span>
             </div>
             <p className="text-lg font-bold text-emerald-600">
-              {summary.income.toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "EUR",
-              })}
+              {currencyFormatter.format(summary.income)}
             </p>
           </div>
           <div>
             <div className="flex items-center gap-1 mb-1">
               <TrendingDown className="h-4 w-4 text-rose-600" />
-              <span className="text-xs text-muted-foreground">Despesas</span>
+              <span className="text-xs text-muted-foreground">{translate(locale, calendarDetailCopy.expense)}</span>
             </div>
             <p className="text-lg font-bold text-rose-600">
-              {summary.expense.toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "EUR",
-              })}
+              {currencyFormatter.format(summary.expense)}
             </p>
           </div>
         </div>
@@ -130,12 +137,12 @@ export function DetailPanel({ mode, selectedDate, transactions }: DetailPanelPro
         <div className="space-y-2 max-h-[600px] overflow-y-auto">
           {filteredTransactions.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">
-              Nenhuma transação neste período
+              {translate(locale, calendarDetailCopy.emptyList)}
             </p>
           ) : (
             filteredTransactions.map((t) => {
-              const merchantInfo = getMerchantIcon(t.descRaw);
-              const accountInfo = getAccountIcon(t.accountSource);
+              const fallbackDesc = t.simpleDesc || t.descRaw?.split(" -- ")[0]?.replace(/\s+\d{4,}/g, "");
+              const accountInfo = getAccountIcon(t.accountSource, locale);
 
               return (
                 <div
@@ -144,38 +151,34 @@ export function DetailPanel({ mode, selectedDate, transactions }: DetailPanelPro
                 >
                   <div className="flex items-start gap-3">
                     {/* Merchant Icon */}
-                    {merchantInfo && (
-                      <div
-                        className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                        style={{ backgroundColor: `${merchantInfo.color}15` }}
-                      >
-                        <merchantInfo.icon
-                          className="w-5 h-5"
-                          style={{ color: merchantInfo.color }}
-                        />
-                      </div>
-                    )}
+                    <AliasLogo
+                      aliasDesc={t.aliasDesc}
+                      fallbackDesc={fallbackDesc}
+                      logoUrl={t.logoLocalPath}
+                      size={24}
+                      showText={false}
+                    />
 
                     {/* Transaction Details */}
                     <div className="flex-1 min-w-0">
                       {/* Merchant + Badges */}
                       <div className="flex items-center gap-1.5 mb-0.5">
                         <p className="font-medium text-sm truncate">
-                          {t.descRaw?.split(" -- ")[0]?.replace(/\s+\d{4,}/g, "")}
+                          {t.aliasDesc || fallbackDesc}
                         </p>
                         {/* Icon badges */}
                         <div className="flex items-center gap-0.5 flex-shrink-0">
                           {t.fixVar === "Fixo" && (
-                            <IconBadge {...TRANSACTION_ICONS.fixed} size="xs" />
+                            <IconBadge {...transactionIcons.fixed} size="xs" />
                           )}
-                          {t.recurring && (
-                            <IconBadge {...TRANSACTION_ICONS.recurring} size="xs" />
+                          {(t.recurringFlag || t.recurring) && (
+                            <IconBadge {...transactionIcons.recurring} size="xs" />
                           )}
                           {t.isRefund && (
-                            <IconBadge {...TRANSACTION_ICONS.refund} size="xs" />
+                            <IconBadge {...transactionIcons.refund} size="xs" />
                           )}
                           {t.internalTransfer && (
-                            <IconBadge {...TRANSACTION_ICONS.internal} size="xs" />
+                            <IconBadge {...transactionIcons.internal} size="xs" />
                           )}
                         </div>
                       </div>
@@ -183,7 +186,7 @@ export function DetailPanel({ mode, selectedDate, transactions }: DetailPanelPro
                       {/* Category Subtitle */}
                       {t.category1 && (
                         <p className="text-xs text-muted-foreground truncate">
-                          {[t.category1, t.category2, t.category3]
+                          {[translateCategory(locale, t.category1), t.category2, t.category3]
                             .filter(Boolean)
                             .join(" → ")}
                         </p>
@@ -203,10 +206,7 @@ export function DetailPanel({ mode, selectedDate, transactions }: DetailPanelPro
                             t.amount > 0 ? "text-emerald-600" : "text-rose-600"
                           )}
                         >
-                          {t.amount.toLocaleString("pt-BR", {
-                            style: "currency",
-                            currency: "EUR",
-                          })}
+                          {currencyFormatter.format(t.amount)}
                         </span>
                       </div>
                     </div>

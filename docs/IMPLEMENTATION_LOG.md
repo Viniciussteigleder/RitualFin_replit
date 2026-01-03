@@ -7188,3 +7188,47 @@ VITE_API_URL=https://ritualfin-api.onrender.com
 - Rotate Vercel API tokens if exposed
 
 ---
+
+---
+
+## Classification + Alias + Logos + Excel Roundtrip (2026-01-01)
+
+**Summary**:
+- Added taxonomy tables + app category layer and alias/logos tables in schema.
+- Implemented strict `key_desc`/`key` generation for Sparkasse, Amex, M&M imports.
+- Added Settings → Classificação & Dados with CSV preview, Excel import/export, alias/logo tools, and review queue.
+- Implemented logo download + storage and recurring day-of-month inference.
+
+**Files touched**:
+- `shared/schema.ts`
+- `server/csv-parser.ts`, `server/routes.ts`, `server/storage.ts`, `server/classification-utils.ts`, `server/logo-downloader.ts`, `server/recurrence.ts`
+- `client/src/pages/settings.tsx`, `client/src/pages/transactions.tsx`, `client/src/pages/confirm.tsx`, `client/src/pages/dashboard.tsx`
+- `client/src/components/alias-logo.tsx`, `client/src/components/calendar/detail-panel.tsx`, `client/src/components/transaction-detail-modal.tsx`
+- `client/src/lib/api.ts`
+- `migrations/004_classification_alias_logos.sql`, `README.md`, `script/test-imports.ts`
+
+### Decision Log
+- **Decision**: Keep legacy `category1` fields and old rules for backward compatibility.
+  - Option A: Migrate and remove legacy fields
+  - Option B: Add new classification layer alongside legacy fields
+  - **Chosen**: Option B to avoid breaking existing dashboard/confirm flows.
+  - **Revisit**: When dashboard is fully migrated to app_category.
+
+---
+
+## Sparkasse Import Diagnostics + Robust Parser (2026-01-01)
+
+**Summary**:
+- Added Sparkasse parse pipeline with encoding fallback (UTF-8 → Latin-1), delimiter mismatch detection, header validation, and row normalization/partial import policy.
+- Persisted structured upload diagnostics for Sparkasse (encoding, delimiter, headers, preview, row errors).
+- Added dev scripts for Sparkasse parsing preview and pipeline tests.
+- Added minimal UI diagnostics panel on uploads screen (success + failure details).
+
+**Files touched**:
+- `server/sparkasse-pipeline.ts`, `server/csv-parser.ts`, `server/routes.ts`, `server/storage.ts`
+- `shared/schema.ts`, `migrations/005_upload_diagnostics.sql`
+- `client/src/pages/uploads.tsx`, `client/src/pages/settings.tsx`, `client/src/lib/api.ts`
+- `script/sparkasse-pipeline-debug.ts`, `script/sparkasse-pipeline.test.ts`
+
+**Notes**:
+- Diagnostics stored in `upload_diagnostics` with preview rows and row-level errors (no raw file contents).

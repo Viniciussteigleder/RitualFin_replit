@@ -1,5 +1,7 @@
 import { CreditCard, Landmark, Wallet, Coins } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/hooks/use-locale";
+import { accountBadgeCopy, t as translate } from "@/lib/i18n";
 
 interface Account {
   id: string;
@@ -32,10 +34,11 @@ export function AccountBadge({
   iconOnly = false,
   size = "md"
 }: AccountBadgeProps) {
+  const locale = useLocale();
   if (!account) {
     return iconOnly ? null : (
       <span className={cn("text-xs text-muted-foreground", className)}>
-        Sem conta
+        {translate(locale, accountBadgeCopy.noAccount)}
       </span>
     );
   }
