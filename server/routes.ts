@@ -4686,5 +4686,145 @@ Retorne APENAS um array JSON válido, sem markdown ou texto adicional.`;
     }
   });
 
+  // Migration endpoint to import categories and aliases from /tmp JSON files
+  app.post("/api/admin/migrate-categories", async (_req: Request, res: Response) => {
+    try {
+      const user = await storage.getUserByUsername("demo");
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const CATEGORIAS_JSON = '/tmp/categorias.json';
+      const ALIAS_JSON = '/tmp/alias.json';
+
+      // Check files exist
+      if (!await fs.access(CATEGORIAS_JSON).then(() => true).catch(() => false) ||
+          !await fs.access(ALIAS_JSON).then(() => true).catch(() => false)) {
+        return res.status(400).json({
+          error: 'JSON files not found in /tmp/. Run Excel extraction first.'
+        });
+      }
+
+      const stats = {
+        userId: user.id,
+        categories: { imported: 0, skipped: 0, level1: 0, level2: 0, level3: 0 },
+        aliases: { imported: 0, skipped: 0 }
+      };
+
+      // Import categories
+      const categoriesRaw = JSON.parse(await fs.readFile(CATEGORIAS_JSON, 'utf-8'));
+      const categoryRows = categoriesRaw.slice(1);
+
+      const level1Map = new Map<string, string>();
+      const level2Map = new Map<string, string>();
+      const leafMap = new Map<string, string>();
+
+      for (const row of categoryRows) {
+        if (!row || row.length === 0) continue;
+
+        const [appClassificacao, nivel1Pt, nivel2Pt, nivel3Pt, keyWords, keyWordsNegative, receitaDespesa, fixoVariavel, recorrente] = row;
+
+        if (!nivel1Pt || !nivel2Pt || !nivel3Pt) {
+          stats.categories.skipped++;
+          continue;
+        }
+
+        // Level 1
+        let level1Id = level1Map.get(nivel1Pt);
+        if (!level1Id) {
+          const created = await storage.createTaxonomyLevel1({ userId: user.id, nivel1Pt });
+          level1Id = created.level1Id;
+          level1Map.set(nivel1Pt, level1Id);
+        }
+
+        // Level 2
+        const level2Key = `${nivel1Pt}::${nivel2Pt}`;
+        let level2Id = level2Map.get(level2Key);
+        if (!level2Id) {
+          const created = await storage.createTaxonomyLevel2({
+            userId: user.id,
+            level1Id,
+            nivel2Pt,
+            recorrenteDefault: recorrente === 'Sim' ? 'Sim' : 'Não',
+            fixoVariavelDefault: fixoVariavel,
+            receitaDespesaDefault: receitaDespesa
+          });
+          level2Id = created.level2Id;
+          level2Map.set(level2Key, level2Id);
+        }
+
+        // Leaf (Level 3)
+        const leafKey = `${nivel1Pt}::${nivel2Pt}::${nivel3Pt}`;
+        let leafId = leafMap.get(leafKey);
+        if (!leafId) {
+          const created = await storage.createTaxonomyLeaf({
+            userId: user.id,
+            level2Id,
+            nivel3Pt,
+            recorrenteDefault: recorrente === 'Sim' ? 'Sim' : 'Não',
+            fixoVariavelDefault: fixoVariavel,
+            receitaDespesaDefault: receitaDespesa
+          });
+          leafId = created.leafId;
+          leafMap.set(leafKey, leafId);
+        }
+
+        // Create rule if keywords exist
+        if (keyWords && keyWords.trim()) {
+          await storage.createRule({
+            userId: user.id,
+            name: `${nivel3Pt} - Auto`,
+            leafId,
+            keyWords: keyWords,
+            keyWordsNegative: keyWordsNegative || null,
+            priority: 500,
+            strict: false,
+            active: true
+          });
+        }
+
+        stats.categories.imported++;
+      }
+
+      stats.categories.level1 = level1Map.size;
+      stats.categories.level2 = level2Map.size;
+      stats.categories.level3 = leafMap.size;
+
+      // Import aliases
+      const aliasesRaw = JSON.parse(await fs.readFile(ALIAS_JSON, 'utf-8'));
+      const aliasRows = aliasesRaw.slice(1);
+
+      for (const row of aliasRows) {
+        if (!row || row.length === 0) continue;
+        const [aliasDesc, keyWordsAlias, urlLogoInternet] = row;
+        if (!aliasDesc || !keyWordsAlias) {
+          stats.aliases.skipped++;
+          continue;
+        }
+
+        await storage.upsertAliasAsset({
+          userId: user.id,
+          aliasDesc,
+          keyWordsAlias,
+          urlLogoInternet: urlLogoInternet || null
+        });
+
+        stats.aliases.imported++;
+      }
+
+      res.json({
+        success: true,
+        message: 'Migration completed successfully',
+        stats
+      });
+
+    } catch (error: any) {
+      console.error('Migration failed:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
+    }
+  });
+
   return httpServer;
 }
