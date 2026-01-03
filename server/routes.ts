@@ -327,11 +327,14 @@ export async function registerRoutes(
     try {
       const { username, password } = req.body;
       let user = await storage.getUserByUsername(username || "demo");
-      
+
       if (!user) {
         user = await storage.createUser({ username: username || "demo", password: password || "demo" });
       }
-      
+
+      // Set session
+      req.session.userId = user.id;
+
       res.json({ success: true, user: { id: user.id, username: user.username } });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
