@@ -41,22 +41,6 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (!id.includes("node_modules")) return;
-          if (id.includes("react")) return "vendor-react";
-          if (id.includes("@radix-ui")) return "vendor-radix";
-          if (id.includes("@tanstack")) return "vendor-tanstack";
-          if (id.includes("date-fns")) return "vendor-date";
-          if (id.includes("recharts")) return "vendor-charts";
-          if (id.includes("lucide-react")) return "vendor-icons";
-          if (id.includes("framer-motion")) return "vendor-motion";
-          if (id.includes("xlsx")) return "vendor-xlsx";
-          return "vendor";
-        },
-      },
-    },
   },
   server: {
     host: "0.0.0.0",
