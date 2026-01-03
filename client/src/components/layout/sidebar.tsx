@@ -37,20 +37,13 @@ const NAV_CLUSTER_DEFS = [
     items: [
       { id: "dashboard", icon: LayoutDashboard, href: "/dashboard", labelKey: "dashboard", descriptionKey: "dashboard" },
       { id: "calendar", icon: Calendar, href: "/calendar", labelKey: "calendar", descriptionKey: "calendar" },
-      { id: "forecast", icon: TrendingUp, href: "/forecast", labelKey: "forecast", descriptionKey: "forecast" },
-      { id: "transactions", icon: Receipt, href: "/transactions", labelKey: "transactions", descriptionKey: "transactions" },
-      { id: "accounts", icon: Wallet, href: "/accounts", labelKey: "accounts", descriptionKey: "accounts" },
-      { id: "insights", icon: Lightbulb, href: "/insights", labelKey: "insights", descriptionKey: "insights" },
     ]
   },
   {
-    id: "operations",
+    id: "action",
     items: [
-      { id: "upload", icon: Upload, href: "/uploads", labelKey: "upload", descriptionKey: "upload" },
       { id: "confirm", icon: ListChecks, href: "/confirm", labelKey: "confirm", descriptionKey: "confirm" },
-      { id: "rules", icon: Filter, href: "/rules", labelKey: "rules", descriptionKey: "rules" },
-      { id: "ai-keywords", icon: Brain, href: "/ai-keywords", labelKey: "aiKeywords", descriptionKey: "aiKeywords" },
-      { id: "notifications", icon: Bell, href: "/notifications", labelKey: "notifications", descriptionKey: "notifications" },
+      { id: "transactions", icon: Receipt, href: "/transactions", labelKey: "transactions", descriptionKey: "transactions" },
     ]
   },
   {
@@ -61,21 +54,23 @@ const NAV_CLUSTER_DEFS = [
     ]
   },
   {
-    id: "rituals",
+    id: "automation",
     items: [
-      { id: "ritual-weekly", icon: CalendarCheck, href: "/rituals?type=weekly", labelKey: "ritualWeekly", descriptionKey: "ritualWeekly" },
-      { id: "ritual-monthly", icon: Calendar, href: "/rituals?type=monthly", labelKey: "ritualMonthly", descriptionKey: "ritualMonthly" },
+      { id: "rules", icon: Filter, href: "/rules", labelKey: "rules", descriptionKey: "rules" },
+      { id: "ai-keywords", icon: Brain, href: "/ai-keywords", labelKey: "aiKeywords", descriptionKey: "aiKeywords" },
     ]
   },
   {
-    label: "Sistema",
+    id: "operations",
     items: [
-      {
-        label: "Configurações",
-        icon: Settings,
-        href: "/settings",
-        description: "Preferências e integrações"
-      },
+      { id: "upload", icon: Upload, href: "/uploads", labelKey: "upload", descriptionKey: "upload" },
+      { id: "accounts", icon: Wallet, href: "/accounts", labelKey: "accounts", descriptionKey: "accounts" },
+    ]
+  },
+  {
+    id: "collaboration",
+    items: [
+      { id: "rituals", icon: CalendarCheck, href: "/rituals", labelKey: "rituals", descriptionKey: "rituals" },
     ]
   },
 ];

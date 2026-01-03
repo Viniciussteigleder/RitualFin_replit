@@ -95,17 +95,6 @@ export function OnboardingModal({ forceShow = false }: OnboardingModalProps) {
               <p className="text-sm font-medium">{t("step1CardConfirm")}</p>
             </div>
           </div>
-          <div className="bg-primary/5 rounded-lg p-4 border border-primary/20">
-            <div className="flex items-start gap-3">
-              <Sparkles className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium text-sm mb-1">{t("step1BadgeTitle")}</p>
-                <p className="text-xs text-muted-foreground">
-                  {t("step1BadgeBody")}
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
       )
     },
