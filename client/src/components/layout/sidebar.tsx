@@ -67,6 +67,17 @@ const NAV_CLUSTER_DEFS = [
       { id: "ritual-monthly", icon: Calendar, href: "/rituals?type=monthly", labelKey: "ritualMonthly", descriptionKey: "ritualMonthly" },
     ]
   },
+  {
+    label: "Sistema",
+    items: [
+      {
+        label: "Configurações",
+        icon: Settings,
+        href: "/settings",
+        description: "Preferências e integrações"
+      },
+    ]
+  },
 ];
 
 export function Sidebar() {

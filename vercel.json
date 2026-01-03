@@ -1,15 +1,16 @@
 {
   "$schema": "https://openapis.vercel.sh/vercel.json",
+
+  "_comment": "FRONTEND ONLY - Backend deployed separately to Render. See docs/DEPLOYMENT_GUIDE.md for full architecture.",
+
   "buildCommand": "npm run build",
   "outputDirectory": "dist/public",
   "framework": null,
   "installCommand": "npm install",
+
   "rewrites": [
     {
-      "source": "/version.json",
-      "destination": "/version.json"
-    },
-    {
+      "_comment": "SPA routing - all routes serve index.html",
       "source": "/(.*)",
       "destination": "/index.html"
     }

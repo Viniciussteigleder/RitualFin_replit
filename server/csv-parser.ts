@@ -51,6 +51,21 @@ export interface ParsedTransaction {
   rawDescription?: string;
 }
 
+export interface ParseDiagnostics {
+  encodingDetected?: string;
+  delimiterDetected?: string;
+  headerMatch?: {
+    found: string[];
+    missing: string[];
+    extra: string[];
+  };
+  rowParseErrors?: {
+    count: number;
+    examples: Array<{ row: number; reason: string; data: string }>;
+  };
+  rejectionReasons?: Record<string, number>;
+}
+
 export interface ParseResult {
   success: boolean;
   transactions: ParsedTransaction[];
@@ -59,9 +74,7 @@ export interface ParseResult {
   rowsImported: number;
   monthAffected: string;
   format?: "miles_and_more" | "amex" | "sparkasse" | "unknown";
-  meta?: ParseMeta;
-  sparkasseDiagnostics?: SparkasseDiagnostics;
-  sparkasseError?: SparkasseError;
+  diagnostics?: ParseDiagnostics;
 }
 
 type CsvFormat = "miles_and_more" | "amex" | "sparkasse" | "unknown";
@@ -729,6 +742,12 @@ function parseSparkasse(lines: string[], meta: ParseMeta): ParseResult {
   const transactions: ParsedTransaction[] = [];
   const errors: string[] = [];
   const months = new Set<string>();
+  const rowParseErrors: Array<{ row: number; reason: string; data: string }> = [];
+  const rejectionReasons: Record<string, number> = {};
+
+  // Diagnostic: encoding and delimiter
+  const encodingDetected = "UTF-8"; // Node.js default, could be enhanced
+  const delimiterDetected = ";";
 
   // Header is on line 1
   const headerIndex = 0;
@@ -750,6 +769,9 @@ function parseSparkasse(lines: string[], meta: ParseMeta): ParseResult {
   const missingColumns = SPARKASSE_REQUIRED_COLUMNS.filter(col =>
     !headers.some(h => h.toLowerCase() === col.toLowerCase())
   );
+  const extraColumns = headers.filter(h =>
+    !SPARKASSE_REQUIRED_COLUMNS.some(req => req.toLowerCase() === h.toLowerCase())
+  );
 
   if (missingColumns.length > 0) {
     logger.error("sparkasse_missing_columns", {
@@ -757,8 +779,7 @@ function parseSparkasse(lines: string[], meta: ParseMeta): ParseResult {
       found: headers,
       missing: missingColumns
     });
-    meta.missingColumns = missingColumns;
-    meta.warnings.push(`Sparkasse: colunas obrigatórias faltando: ${missingColumns.join(", ")}`);
+
     return {
       success: false,
       transactions: [],
@@ -767,7 +788,17 @@ function parseSparkasse(lines: string[], meta: ParseMeta): ParseResult {
       rowsImported: 0,
       monthAffected: "",
       format: "sparkasse",
-      meta
+      diagnostics: {
+        encodingDetected,
+        delimiterDetected,
+        headerMatch: {
+          found: headers,
+          missing: missingColumns,
+          extra: extraColumns
+        },
+        rowParseErrors: { count: 0, examples: [] },
+        rejectionReasons: { "MISSING_REQUIRED_COLUMNS": 1 }
+      }
     };
   }
 
@@ -863,7 +894,20 @@ function parseSparkasse(lines: string[], meta: ParseMeta): ParseResult {
     rowsImported: transactions.length,
     monthAffected,
     format: "sparkasse",
-    meta
+    diagnostics: {
+      encodingDetected,
+      delimiterDetected,
+      headerMatch: {
+        found: headers,
+        missing: [],
+        extra: extraColumns
+      },
+      rowParseErrors: {
+        count: rowParseErrors.length,
+        examples: rowParseErrors.slice(0, 5)
+      },
+      rejectionReasons
+    }
   };
 }
 

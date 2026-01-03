@@ -50,15 +50,16 @@ export function matchRules(descNorm: string, rules: Rule[], settings: UserSettin
   const sortedRules = [...rules].sort((a, b) => (b.priority || 500) - (a.priority || 500));
 
   for (const rule of sortedRules) {
-    if (!rule.keywords || !rule.type || !rule.fixVar || !rule.category1) {
-      continue;
-    }
-
+    // CRITICAL: Keywords are split ONLY on semicolon (;) separator
+    // Each expression between semicolons is preserved as a whole unit
+    // Example: "LIDL;SV Fuerstenfeldbrucker Wasserratten e.V.;REWE"
+    // Results in 3 expressions: ["LIDL", "SV Fuerstenfeldbrucker Wasserratten e.V.", "REWE"]
+    // Spaces within expressions are PRESERVED and normalized together
     const keywords = rule.keywords
       .split(";")
       .map(k => normalizeForMatch(k))
       .filter(k => k.length > 0);
-    
+
     const matchedKeyword = keywords.find(keyword => haystack.includes(keyword));
     
     if (matchedKeyword) {
