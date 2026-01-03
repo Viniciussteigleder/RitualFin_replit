@@ -8,8 +8,8 @@
 
 import fs from 'fs';
 import path from 'path';
-import { db } from '../db';
-import { taxonomyLevel1, taxonomyLevel2, taxonomyLeaf, rules, aliasAssets, keyDescMap } from '@shared/schema';
+import { db } from './db';
+import { taxonomyLevel1, taxonomyLevel2, taxonomyLeaf, rules, aliasAssets, keyDescMap, users } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 
 const CATEGORIAS_JSON = '/tmp/categorias.json';
@@ -33,9 +33,26 @@ interface AliasRow {
   urlLogoInternet: string | null;
 }
 
-const DEFAULT_USER_ID = '1'; // Update with actual user ID
+async function getUserId(): Promise<string> {
+  // Get or create demo user (same pattern as routes.ts)
+  const [user] = await db.select().from(users).where(eq(users.username, 'demo')).limit(1);
 
-async function importCategories() {
+  if (user) {
+    console.log(`✅ Found user: ${user.username} (ID: ${user.id})`);
+    return user.id;
+  }
+
+  // Create demo user if doesn't exist
+  const [newUser] = await db.insert(users).values({
+    username: 'demo',
+    password: 'demo'
+  }).returning();
+
+  console.log(`✅ Created user: ${newUser.username} (ID: ${newUser.id})`);
+  return newUser.id;
+}
+
+async function importCategories(userId: string) {
   console.log('🔄 Importing categories from Excel...');
 
   const raw = JSON.parse(fs.readFileSync(CATEGORIAS_JSON, 'utf-8'));
@@ -64,7 +81,7 @@ async function importCategories() {
     if (!level1Id) {
       const existing = await db.query.taxonomyLevel1.findFirst({
         where: and(
-          eq(taxonomyLevel1.userId, DEFAULT_USER_ID),
+          eq(taxonomyLevel1.userId, userId),
           eq(taxonomyLevel1.nivel1Pt, nivel1Pt)
         )
       });
@@ -73,7 +90,7 @@ async function importCategories() {
         level1Id = existing.level1Id;
       } else {
         const [newLevel1] = await db.insert(taxonomyLevel1).values({
-          userId: DEFAULT_USER_ID,
+          userId,
           nivel1Pt
         }).returning({ level1Id: taxonomyLevel1.level1Id });
         level1Id = newLevel1.level1Id;
@@ -87,7 +104,7 @@ async function importCategories() {
     if (!level2Id) {
       const existing = await db.query.taxonomyLevel2.findFirst({
         where: and(
-          eq(taxonomyLevel2.userId, DEFAULT_USER_ID),
+          eq(taxonomyLevel2.userId, userId),
           eq(taxonomyLevel2.level1Id, level1Id),
           eq(taxonomyLevel2.nivel2Pt, nivel2Pt)
         )
@@ -97,7 +114,7 @@ async function importCategories() {
         level2Id = existing.level2Id;
       } else {
         const [newLevel2] = await db.insert(taxonomyLevel2).values({
-          userId: DEFAULT_USER_ID,
+          userId,
           level1Id,
           nivel2Pt,
           recorrenteDefault: recorrente === 'Sim' ? 'Sim' : 'Não',
@@ -115,7 +132,7 @@ async function importCategories() {
     if (!leafId) {
       const existing = await db.query.taxonomyLeaf.findFirst({
         where: and(
-          eq(taxonomyLeaf.userId, DEFAULT_USER_ID),
+          eq(taxonomyLeaf.userId, userId),
           eq(taxonomyLeaf.level2Id, level2Id),
           eq(taxonomyLeaf.nivel3Pt, nivel3Pt)
         )
@@ -125,7 +142,7 @@ async function importCategories() {
         leafId = existing.leafId;
       } else {
         const [newLeaf] = await db.insert(taxonomyLeaf).values({
-          userId: DEFAULT_USER_ID,
+          userId,
           level2Id,
           nivel3Pt,
           recorrenteDefault: recorrente === 'Sim' ? 'Sim' : 'Não',
@@ -141,7 +158,7 @@ async function importCategories() {
     if (keyWords && keyWords.trim()) {
       const existingRule = await db.query.rules.findFirst({
         where: and(
-          eq(rules.userId, DEFAULT_USER_ID),
+          eq(rules.userId, userId),
           eq(rules.leafId, leafId),
           eq(rules.keyWords, keyWords)
         )
@@ -149,7 +166,7 @@ async function importCategories() {
 
       if (!existingRule) {
         await db.insert(rules).values({
-          userId: DEFAULT_USER_ID,
+          userId,
           name: `${nivel3Pt} - Auto`,
           leafId,
           keyWords: keyWords,
@@ -168,7 +185,7 @@ async function importCategories() {
   console.log(`📊 Level 1: ${level1Map.size}, Level 2: ${level2Map.size}, Level 3 (Leaves): ${leafMap.size}`);
 }
 
-async function importAliases() {
+async function importAliases(userId: string) {
   console.log('🔄 Importing merchant aliases...');
 
   const raw = JSON.parse(fs.readFileSync(ALIAS_JSON, 'utf-8'));
@@ -191,7 +208,7 @@ async function importAliases() {
     // Check if alias already exists
     const existing = await db.query.aliasAssets.findFirst({
       where: and(
-        eq(aliasAssets.userId, DEFAULT_USER_ID),
+        eq(aliasAssets.userId, userId),
         eq(aliasAssets.aliasDesc, aliasDesc)
       )
     });
@@ -205,13 +222,13 @@ async function importAliases() {
           updatedAt: new Date()
         })
         .where(and(
-          eq(aliasAssets.userId, DEFAULT_USER_ID),
+          eq(aliasAssets.userId, userId),
           eq(aliasAssets.aliasDesc, aliasDesc)
         ));
     } else {
       // Insert new
       await db.insert(aliasAssets).values({
-        userId: DEFAULT_USER_ID,
+        userId,
         aliasDesc,
         keyWordsAlias,
         urlLogoInternet: urlLogoInternet || null
@@ -236,11 +253,22 @@ async function main() {
       throw new Error(`Alias JSON not found: ${ALIAS_JSON}`);
     }
 
-    await importCategories();
+    // Get or create user
+    const userId = await getUserId();
     console.log('');
-    await importAliases();
+
+    await importCategories(userId);
+    console.log('');
+    await importAliases(userId);
 
     console.log('\n✅ Import completed successfully!');
+    console.log('📊 Data is now available in the database');
+
+    // Close database connection
+    if (db && typeof (db as any).end === 'function') {
+      await (db as any).end();
+    }
+    process.exit(0);
   } catch (error) {
     console.error('❌ Import failed:', error);
     process.exit(1);
