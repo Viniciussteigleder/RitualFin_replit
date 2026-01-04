@@ -40,12 +40,25 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
     },
     ...options,
   });
-  
+
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: "Request failed" }));
-    throw new Error(error.message || error.error || "Request failed");
+    const errorData = await res.json().catch(() => ({ message: `HTTP ${res.status}: ${res.statusText}` }));
+
+    // Create detailed error message
+    let errorMessage = errorData.message || errorData.error || `HTTP ${res.status}: ${res.statusText}`;
+
+    // Add technical details in dev mode
+    if (import.meta.env.DEV && errorData.details) {
+      errorMessage += `\n\nDetalhes técnicos:\n${JSON.stringify(errorData.details, null, 2)}`;
+    }
+
+    const error: any = new Error(errorMessage);
+    error.status = res.status;
+    error.statusText = res.statusText;
+    error.details = errorData;
+    throw error;
   }
-  
+
   return res.json();
 }
 
@@ -137,16 +150,42 @@ export const uploadsApi = {
     fileType?: string,
     importDate?: string
   ) => {
-    const res = await fetch(`${API_BASE}/imports/preview`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename, csvContent, encoding, fileBase64, fileType, importDate }),
-    });
-    if (!res.ok) {
-      const error = await res.json().catch(() => ({ message: "Request failed" }));
-      throw new Error(error.message || error.error || "Request failed");
+    try {
+      const res = await fetch(`${API_BASE}/imports/preview`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename, csvContent, encoding, fileBase64, fileType, importDate }),
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: `HTTP ${res.status}: Erro ao gerar pré-visualização` }));
+
+        let errorMessage = errorData.message || errorData.error || `Erro HTTP ${res.status}`;
+
+        // Add backend error details if available
+        if (errorData.details) {
+          errorMessage += `\n\nDetalhes: ${JSON.stringify(errorData.details, null, 2)}`;
+        }
+
+        const error: any = new Error(errorMessage);
+        error.status = res.status;
+        error.details = errorData;
+        throw error;
+      }
+      return res.json();
+    } catch (error) {
+      // Network errors (backend down, CORS, timeout)
+      if (error instanceof TypeError) {
+        const networkError: any = new Error(
+          error.message === 'Failed to fetch'
+            ? `Não foi possível conectar ao servidor.\n\nVerifique se o backend está rodando.\n\n${import.meta.env.DEV ? `API URL: ${API_BASE}` : 'Servidor indisponível'}`
+            : `Erro de rede: ${error.message}`
+        );
+        networkError.status = 0;
+        networkError.isNetworkError = true;
+        throw networkError;
+      }
+      throw error;
     }
-    return res.json();
   },
   process: async (
     filename: string,
@@ -156,31 +195,61 @@ export const uploadsApi = {
     fileType?: string,
     importDate?: string
   ) => {
-    const res = await fetch(`${API_BASE}/uploads/process`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename, csvContent, encoding, fileBase64, fileType, importDate }),
-    });
-    const payload = await res.json().catch(() => ({ message: "Request failed" }));
-    if (!res.ok) {
-      const error: any = new Error(payload.message || payload.error || "Request failed");
-      error.details = payload;
+    try {
+      const res = await fetch(`${API_BASE}/uploads/process`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename, csvContent, encoding, fileBase64, fileType, importDate }),
+      });
+      const payload = await res.json().catch(() => ({
+        message: `HTTP ${res.status}: Erro ao processar importação`,
+        error: res.statusText
+      }));
+
+      if (!res.ok) {
+        let errorMessage = payload.message || payload.error || `Erro HTTP ${res.status}`;
+
+        // Add detailed error information
+        if (payload.details) {
+          errorMessage += `\n\nDetalhes:\n${JSON.stringify(payload.details, null, 2)}`;
+        }
+        if (payload.diagnostics) {
+          errorMessage += `\n\nDiagnóstico:\n${JSON.stringify(payload.diagnostics, null, 2)}`;
+        }
+
+        const error: any = new Error(errorMessage);
+        error.status = res.status;
+        error.details = payload;
+        throw error;
+      }
+      return payload as {
+        success: boolean;
+        uploadId: string;
+        rowsTotal: number;
+        rowsImported: number;
+        duplicates: number;
+        monthAffected: string;
+        autoClassified?: number;
+        openCount?: number;
+        errors?: string[];
+        meta?: any;
+        diagnostics?: any;
+        error?: any;
+      };
+    } catch (error) {
+      // Network errors (backend down, CORS, timeout)
+      if (error instanceof TypeError) {
+        const networkError: any = new Error(
+          error.message === 'Failed to fetch'
+            ? `Não foi possível conectar ao servidor.\n\nVerifique se o backend está rodando.\n\n${import.meta.env.DEV ? `API URL: ${API_BASE}` : 'Servidor indisponível'}`
+            : `Erro de rede: ${error.message}`
+        );
+        networkError.status = 0;
+        networkError.isNetworkError = true;
+        throw networkError;
+      }
       throw error;
     }
-    return payload as {
-      success: boolean;
-      uploadId: string;
-      rowsTotal: number;
-      rowsImported: number;
-      duplicates: number;
-      monthAffected: string;
-      autoClassified?: number;
-      openCount?: number;
-      errors?: string[];
-      meta?: any;
-      diagnostics?: any;
-      error?: any;
-    };
   },
 };
 
