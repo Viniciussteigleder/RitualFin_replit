@@ -5,46 +5,33 @@
 -- Run this ONLY when you want a clean slate
 -- =====================================================
 
--- Drop all existing tables (cascade to handle dependencies)
-DROP TABLE IF EXISTS upload_diagnostics CASCADE;
-DROP TABLE IF EXISTS upload_errors CASCADE;
-DROP TABLE IF EXISTS uploads CASCADE;
-DROP TABLE IF EXISTS transactions CASCADE;
-DROP TABLE IF EXISTS rules CASCADE;
-DROP TABLE IF EXISTS alias_assets CASCADE;
-DROP TABLE IF EXISTS key_desc_map CASCADE;
-DROP TABLE IF EXISTS app_category_leaf CASCADE;
-DROP TABLE IF EXISTS app_category CASCADE;
-DROP TABLE IF EXISTS taxonomy_leaf CASCADE;
-DROP TABLE IF EXISTS taxonomy_level_2 CASCADE;
-DROP TABLE IF EXISTS taxonomy_level_1 CASCADE;
-DROP TABLE IF EXISTS merchant_icons CASCADE;
-DROP TABLE IF EXISTS merchant_descriptions CASCADE;
-DROP TABLE IF EXISTS merchant_metadata CASCADE;
-DROP TABLE IF EXISTS messages CASCADE;
-DROP TABLE IF EXISTS conversations CASCADE;
-DROP TABLE IF EXISTS ai_usage_logs CASCADE;
-DROP TABLE IF EXISTS notifications CASCADE;
-DROP TABLE IF EXISTS audit_logs CASCADE;
-DROP TABLE IF EXISTS rituals CASCADE;
-DROP TABLE IF EXISTS category_goals CASCADE;
-DROP TABLE IF EXISTS goals CASCADE;
-DROP TABLE IF EXISTS event_occurrences CASCADE;
-DROP TABLE IF EXISTS calendar_events CASCADE;
-DROP TABLE IF EXISTS budgets CASCADE;
-DROP TABLE IF EXISTS accounts CASCADE;
-DROP TABLE IF EXISTS settings CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
+-- =====================================================
+-- COMPLETE DATABASE RESET - DROPS EVERYTHING
+-- =====================================================
+-- This will destroy ALL data and recreate from scratch
+-- Only run this when you want a clean slate
+-- =====================================================
 
--- Drop all enums
-DROP TYPE IF EXISTS transaction_status CASCADE;
-DROP TYPE IF EXISTS transaction_classified_by CASCADE;
-DROP TYPE IF EXISTS transaction_source CASCADE;
-DROP TYPE IF EXISTS account_type CASCADE;
-DROP TYPE IF EXISTS upload_status CASCADE;
-DROP TYPE IF EXISTS category_1 CASCADE;
-DROP TYPE IF EXISTS fix_var CASCADE;
-DROP TYPE IF EXISTS transaction_type CASCADE;
+-- Drop ALL tables
+DO $$
+DECLARE
+    r RECORD;
+BEGIN
+    -- Drop all tables
+    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
+        EXECUTE 'DROP TABLE IF EXISTS public.' || quote_ident(r.tablename) || ' CASCADE';
+    END LOOP;
+END $$;
+
+-- Drop ALL enums
+DO $$
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN (SELECT t.typname FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid GROUP BY t.typname) LOOP
+        EXECUTE 'DROP TYPE IF EXISTS ' || quote_ident(r.typname) || ' CASCADE';
+    END LOOP;
+END $$;
 
 -- =====================================================
 -- CREATE ENUMS
