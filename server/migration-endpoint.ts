@@ -156,7 +156,7 @@ migrationRouter.post('/api/admin/migrate-categories', async (req: Request, res: 
 
     for (const row of aliasRows) {
       if (!row || row.length === 0) continue;
-      const [aliasDesc, keyWordsAlias, urlLogoInternet] = row;
+      const [aliasDesc, keyWordsAlias, urlIconInternet] = row;
       if (!aliasDesc || !keyWordsAlias) {
         stats.aliases.skipped++;
         continue;
@@ -169,13 +169,13 @@ migrationRouter.post('/api/admin/migrate-categories', async (req: Request, res: 
       if (existing) {
         await db.update(aliasAssets).set({
           keyWordsAlias,
-          urlLogoInternet: urlLogoInternet || null,
+          urlIconInternet: urlIconInternet || null,
           updatedAt: new Date()
         }).where(and(eq(aliasAssets.userId, userId), eq(aliasAssets.aliasDesc, aliasDesc)));
       } else {
         await db.insert(aliasAssets).values({
           userId, aliasDesc, keyWordsAlias,
-          urlLogoInternet: urlLogoInternet || null
+          urlIconInternet: urlIconInternet || null
         });
       }
 

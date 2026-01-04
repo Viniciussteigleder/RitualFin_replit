@@ -274,7 +274,7 @@ export const rules = pgTable("rules", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => users.id),
   name: text("name"),
-  keywords: text("keywords"),
+  keywords: text("keywords"), // Legacy field - NULLABLE
   type: transactionTypeEnum("type"),
   fixVar: fixVarEnum("fix_var"),
   category1: category1Enum("category_1"),
@@ -284,7 +284,7 @@ export const rules = pgTable("rules", {
   strict: boolean("strict").notNull().default(false),
   isSystem: boolean("is_system").notNull().default(false),
   leafId: varchar("leaf_id"),
-  keyWords: text("key_words"),
+  keyWords: text("key_words"), // New field - NULLABLE (keywords optional)
   keyWordsNegative: text("key_words_negative"),
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -423,7 +423,7 @@ export const aliasAssets = pgTable("alias_assets", {
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   aliasDesc: text("alias_desc").notNull(),
   keyWordsAlias: text("key_words_alias").notNull(),
-  urlLogoInternet: text("url_logo_internet"),
+  urlIconInternet: text("url_icon_internet"),
   logoLocalPath: text("logo_local_path"),
   logoMimeType: text("logo_mime_type"),
   logoUpdatedAt: timestamp("logo_updated_at"),

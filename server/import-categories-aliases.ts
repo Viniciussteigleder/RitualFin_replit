@@ -30,7 +30,7 @@ interface CategoryRow {
 interface AliasRow {
   aliasDesc: string;
   keyWordsAlias: string;
-  urlLogoInternet: string | null;
+  urlIconInternet: string | null;
 }
 
 async function getUserId(): Promise<string> {
@@ -198,7 +198,7 @@ async function importAliases(userId: string) {
   for (const row of rows) {
     if (!row || row.length === 0) continue;
 
-    const [aliasDesc, keyWordsAlias, urlLogoInternet] = row;
+    const [aliasDesc, keyWordsAlias, urlIconInternet] = row;
 
     if (!aliasDesc || !keyWordsAlias) {
       skipped++;
@@ -218,7 +218,7 @@ async function importAliases(userId: string) {
       await db.update(aliasAssets)
         .set({
           keyWordsAlias,
-          urlLogoInternet: urlLogoInternet || null,
+          urlIconInternet: urlIconInternet || null,
           updatedAt: new Date()
         })
         .where(and(
@@ -231,7 +231,7 @@ async function importAliases(userId: string) {
         userId,
         aliasDesc,
         keyWordsAlias,
-        urlLogoInternet: urlLogoInternet || null
+        urlIconInternet: urlIconInternet || null
       });
     }
 

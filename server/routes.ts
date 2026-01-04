@@ -223,7 +223,7 @@ async function buildClassificationDiff(userId: string, rows: Record<string, stri
 const ALIAS_COLUMN_ALIASES = {
   aliasDesc: ["Alias_Desc", "alias_desc"],
   keyWordsAlias: ["Key_words_alias", "key_words_alias"],
-  urlLogoInternet: ["URL_icon_internet", "url_logo_internet"]
+  urlIconInternet: ["URL_icon_internet", "url_icon_internet"]
 };
 
 const getAliasMissingColumns = (columns: string[]) => {
@@ -235,7 +235,7 @@ const getAliasMissingColumns = (columns: string[]) => {
   };
   check("Alias_Desc", ALIAS_COLUMN_ALIASES.aliasDesc);
   check("Key_words_alias", ALIAS_COLUMN_ALIASES.keyWordsAlias);
-  check("URL_icon_internet", ALIAS_COLUMN_ALIASES.urlLogoInternet);
+  check("URL_icon_internet", ALIAS_COLUMN_ALIASES.urlIconInternet);
   return missing;
 };
 
@@ -1483,17 +1483,17 @@ export async function registerRoutes(
         for (const row of rows) {
           const aliasDesc = String(row["Alias_Desc"] || "").trim();
           const keyWordsAlias = String(row["Key_words_alias"] || "").trim();
-          const urlLogoInternet = String(row["URL_icon_internet"] || "").trim();
+          const urlIconInternet = String(row["URL_icon_internet"] || "").trim();
           if (!aliasDesc) continue;
 
           await storage.upsertAliasAsset({
             userId: user.id,
             aliasDesc,
             keyWordsAlias: keyWordsAlias || "",
-            urlLogoInternet: urlLogoInternet || null
+            urlIconInternet: urlIconInternet || null
           });
 
-          if (!urlLogoInternet) {
+          if (!urlIconInternet) {
             results.push({ aliasDesc, status: "error", error: "URL_icon_internet vazio" });
             continue;
           }
@@ -1502,7 +1502,7 @@ export async function registerRoutes(
             const stored = await downloadLogoForAlias({
               userId: user.id,
               aliasDesc,
-              url: urlLogoInternet
+              url: urlIconInternet
             });
 
             await storage.updateAliasAsset(user.id, aliasDesc, {
@@ -2169,7 +2169,7 @@ export async function registerRoutes(
         aliasRows.map(row => ({
           Alias_Desc: row.aliasDesc,
           Key_words_alias: row.keyWordsAlias,
-          URL_icon_internet: row.urlLogoInternet || "",
+          URL_icon_internet: row.urlIconInternet || "",
           Logo_local_path: row.logoLocalPath || ""
         }))
       );
@@ -2228,7 +2228,7 @@ export async function registerRoutes(
       const rows = aliasRows.map((row) => ({
         Alias_Desc: row.aliasDesc,
         Key_words_alias: row.keyWordsAlias,
-        URL_icon_internet: row.urlLogoInternet || "",
+        URL_icon_internet: row.urlIconInternet || "",
         Logo_local_path: row.logoLocalPath || ""
       }));
 
@@ -2262,7 +2262,7 @@ export async function registerRoutes(
         aliasRows.map(row => ({
           Alias_Desc: row.aliasDesc,
           Key_words_alias: row.keyWordsAlias,
-          URL_icon_internet: row.urlLogoInternet || "",
+          URL_icon_internet: row.urlIconInternet || "",
           Logo_local_path: row.logoLocalPath || ""
         }))
       );
@@ -2357,7 +2357,7 @@ export async function registerRoutes(
       for (const row of aliasRows) {
         const aliasDesc = String(getRowValue(row, ALIAS_COLUMN_ALIASES.aliasDesc) || "").trim();
         const keyWordsAlias = String(getRowValue(row, ALIAS_COLUMN_ALIASES.keyWordsAlias) || "").trim();
-        const urlLogoInternet = String(getRowValue(row, ALIAS_COLUMN_ALIASES.urlLogoInternet) || "").trim();
+        const urlIconInternet = String(getRowValue(row, ALIAS_COLUMN_ALIASES.urlIconInternet) || "").trim();
         if (!aliasDesc) continue;
 
         const exists = existingByAlias.has(aliasDesc);
@@ -2365,7 +2365,7 @@ export async function registerRoutes(
           userId: user.id,
           aliasDesc,
           keyWordsAlias: keyWordsAlias || "",
-          urlLogoInternet: urlLogoInternet || null
+          urlIconInternet: urlIconInternet || null
         });
         if (exists) {
           updatedAliases += 1;
@@ -2414,17 +2414,17 @@ export async function registerRoutes(
       for (const row of rows) {
         const aliasDesc = String(getRowValue(row, ALIAS_COLUMN_ALIASES.aliasDesc) || "").trim();
         const keyWordsAlias = String(getRowValue(row, ALIAS_COLUMN_ALIASES.keyWordsAlias) || "").trim();
-        const urlLogoInternet = String(getRowValue(row, ALIAS_COLUMN_ALIASES.urlLogoInternet) || "").trim();
+        const urlIconInternet = String(getRowValue(row, ALIAS_COLUMN_ALIASES.urlIconInternet) || "").trim();
         if (!aliasDesc) continue;
 
         await storage.upsertAliasAsset({
           userId: user.id,
           aliasDesc,
           keyWordsAlias: keyWordsAlias || "",
-          urlLogoInternet: urlLogoInternet || null
+          urlIconInternet: urlIconInternet || null
         });
 
-        if (!urlLogoInternet) {
+        if (!urlIconInternet) {
           results.push({ aliasDesc, status: "error", error: "URL_icon_internet vazio" });
           continue;
         }
@@ -2433,7 +2433,7 @@ export async function registerRoutes(
           const stored = await downloadLogoForAlias({
             userId: user.id,
             aliasDesc,
-            url: urlLogoInternet
+            url: urlIconInternet
           });
 
           await storage.updateAliasAsset(user.id, aliasDesc, {
@@ -2495,7 +2495,7 @@ export async function registerRoutes(
 
       const { force } = req.body || {};
       const aliases = await storage.getAliasAssets(user.id);
-      const targets = aliases.filter(a => a.urlLogoInternet && (force || !a.logoLocalPath));
+      const targets = aliases.filter(a => a.urlIconInternet && (force || !a.logoLocalPath));
 
       const results: Array<{ aliasDesc: string; status: string; error?: string }> = [];
       for (const alias of targets) {
@@ -2503,7 +2503,7 @@ export async function registerRoutes(
           const stored = await downloadLogoForAlias({
             userId: user.id,
             aliasDesc: alias.aliasDesc,
-            url: alias.urlLogoInternet as string
+            url: alias.urlIconInternet as string
           });
 
           await storage.updateAliasAsset(user.id, alias.aliasDesc, {
@@ -2667,13 +2667,13 @@ export async function registerRoutes(
       for (const row of aliasRows) {
         const aliasDesc = String(row["Alias_Desc"] || row["alias_desc"] || "").trim();
         const keyWordsAlias = String(row["Key_words_alias"] || row["key_words_alias"] || "").trim();
-        const urlLogoInternet = String(row["URL_icon_internet"] || row["url_logo_internet"] || "").trim();
+        const urlIconInternet = String(row["URL_icon_internet"] || row["url_icon_internet"] || "").trim();
         if (!aliasDesc) continue;
         await storage.upsertAliasAsset({
           userId: user.id,
           aliasDesc,
           keyWordsAlias: keyWordsAlias || "",
-          urlLogoInternet: urlLogoInternet || null
+          urlIconInternet: urlIconInternet || null
         });
       }
 
@@ -4794,7 +4794,7 @@ Retorne APENAS um array JSON válido, sem markdown ou texto adicional.`;
 
       for (const row of aliasRows) {
         if (!row || row.length === 0) continue;
-        const [aliasDesc, keyWordsAlias, urlLogoInternet] = row;
+        const [aliasDesc, keyWordsAlias, urlIconInternet] = row;
         if (!aliasDesc || !keyWordsAlias) {
           stats.aliases.skipped++;
           continue;
@@ -4804,7 +4804,7 @@ Retorne APENAS um array JSON válido, sem markdown ou texto adicional.`;
           userId: user.id,
           aliasDesc,
           keyWordsAlias,
-          urlLogoInternet: urlLogoInternet || null
+          urlIconInternet: urlIconInternet || null
         });
 
         stats.aliases.imported++;
