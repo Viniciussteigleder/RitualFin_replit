@@ -5,6 +5,8 @@ These instructions will completely reset your Supabase database and seed it with
 - ✅ 109 categories (3-level hierarchy N1→N2→N3)
 - ✅ ~60-70 auto-generated rules from keywords
 - ✅ 1000 merchant aliases with logo URLs
+- ✅ Recurrence tracking for monthly/weekly transactions
+- ✅ Reporting views excluding Internal transactions
 - ✅ Demo user (username: `demo`, password: `demo`)
 
 **Time required:** ~5 minutes
@@ -12,7 +14,25 @@ These instructions will completely reset your Supabase database and seed it with
 
 ---
 
-## Step 1: Access Supabase SQL Editor
+## Quick Method: Run All Migrations at Once
+
+**Recommended for clean installations:**
+
+1. Go to https://supabase.com/dashboard → SQL Editor
+2. Open this file on your computer: `db/migrations/000_RUN_THIS_FIRST.sql`
+3. Copy the ENTIRE file contents
+4. Paste into Supabase SQL Editor
+5. Click **"Run"**
+6. Wait ~60 seconds for all 7 migrations to complete
+7. Jump to Step 6 (Verify Database State)
+
+**Note:** If you encounter errors or need more control, use the detailed step-by-step method below.
+
+---
+
+## Detailed Step-by-Step Method
+
+### Step 1: Access Supabase SQL Editor
 
 1. Go to https://supabase.com/dashboard
 2. Sign in to your account
@@ -22,7 +42,7 @@ These instructions will completely reset your Supabase database and seed it with
 
 ---
 
-## Step 2: Run Schema Reset Migration
+### Step 2: Run Schema Reset Migration
 
 1. Open this file on your computer:
    ```
@@ -81,7 +101,7 @@ These instructions will completely reset your Supabase database and seed it with
 
 ---
 
-## Step 4: Seed Merchant Aliases
+### Step 4: Seed Merchant Aliases
 
 1. Open this file on your computer:
    ```
@@ -108,7 +128,65 @@ These instructions will completely reset your Supabase database and seed it with
 
 ---
 
-## Step 5: Verify Database State
+### Step 5: Add key_desc Documentation
+
+1. Open this file: `db/migrations/004_key_desc_documentation.sql`
+2. Copy and paste into Supabase SQL Editor
+3. Click **"Run"**
+4. Wait ~2 seconds
+
+**What this does:**
+- Documents key_desc derivation logic for Sparkasse, Amex, M&M CSVs
+- Documents keyword matching rules (semicolon-delimited, contains-match)
+- No schema changes (documentation only)
+
+---
+
+### Step 6: Add Recurrence Tracking
+
+1. Open this file: `db/migrations/005_add_recurrence_tracking.sql`
+2. Copy and paste into Supabase SQL Editor
+3. Click **"Run"**
+4. Wait ~5 seconds
+
+**What this does:**
+- Adds recurrence fields to transactions (is_recurrent, pattern, day_of_month)
+- Adds recurrence fields to calendar_events
+- Creates indexes for recurrence queries
+
+---
+
+### Step 7: Fix Category References
+
+1. Open this file: `db/migrations/006_fix_category_references.sql`
+2. Copy and paste into Supabase SQL Editor
+3. Click **"Run"**
+4. Wait ~5 seconds
+
+**What this does:**
+- Adds leaf_id references to budgets, calendar_events, category_goals
+- Creates helper function get_category_hierarchy(leaf_id)
+- Enables hierarchical category queries
+
+---
+
+### Step 8: Create Reporting Views
+
+1. Open this file: `db/migrations/007_reporting_views_and_indexes.sql`
+2. Copy and paste into Supabase SQL Editor
+3. Click **"Run"**
+4. Wait ~10 seconds
+
+**What this does:**
+- Creates v_reportable_transactions (excludes Internal)
+- Creates v_monthly_dashboard for KPIs
+- Creates v_category_spending_monthly
+- Adds helper functions: get_week_spending, get_budget_vs_actual, get_upcoming_commitments
+- Creates indexes for performance
+
+---
+
+## Step 9: Verify Database State
 
 Run this verification query in Supabase SQL Editor:
 
@@ -168,7 +246,7 @@ Merchant Aliases     1000
 
 ---
 
-## Step 6: Restart Render Backend
+## Step 10: Restart Render Backend
 
 After database reset, restart your backend to clear any cached connections:
 
@@ -186,7 +264,7 @@ After database reset, restart your backend to clear any cached connections:
 
 ---
 
-## Step 7: Test in UI
+## Step 11: Test in UI
 
 1. Open your RitualFin app URL (Vercel deployment)
 
@@ -243,10 +321,14 @@ After database reset, restart your backend to clear any cached connections:
 
 | File | Lines | Purpose |
 |------|-------|---------|
-| `001_complete_reset_and_schema.sql` | 474 | Drop/create all tables |
-| `002_seed_taxonomy.sql` | 5363 | Seed categories + rules |
-| `003_seed_aliases.sql` | 866 | Seed merchant aliases |
-| `000_RUN_THIS_FIRST.sql` | 48 | Master runner (if `\i` supported) |
+| `000_RUN_THIS_FIRST.sql` | 60 | Master runner (runs all 7 migrations) |
+| `001_complete_reset_and_schema.sql` | 474 | Drop/create all tables and enums |
+| `002_seed_taxonomy.sql` | 5363 | Seed 109 categories + auto-generate rules |
+| `003_seed_aliases.sql` | 866 | Seed 1000 merchant aliases with logos |
+| `004_key_desc_documentation.sql` | 118 | Document key_desc derivation logic |
+| `005_add_recurrence_tracking.sql` | 65 | Add recurrence fields for patterns |
+| `006_fix_category_references.sql` | 94 | Add leaf_id references + helper function |
+| `007_reporting_views_and_indexes.sql` | 303 | Create views/indexes excluding Internal |
 
 ---
 
@@ -255,9 +337,13 @@ After database reset, restart your backend to clear any cached connections:
 After completing these steps, you will have:
 - ✅ Clean database with latest schema
 - ✅ Keywords OPTIONAL in rules
-- ✅ 109 categories ready for categorization
+- ✅ 109 categories ready for categorization (N1→N2→N3 hierarchy)
 - ✅ 1000 merchant aliases for auto-classification
 - ✅ ~60-70 rules to jumpstart auto-categorization
+- ✅ Recurrence tracking for monthly/weekly transactions
+- ✅ Reporting views that automatically exclude Internal transactions
+- ✅ Budget vs actual tracking functions
+- ✅ Calendar week/month aggregation functions
 - ✅ Demo user ready to use
 
 **Next:** Upload your real CSVs and start categorizing!
