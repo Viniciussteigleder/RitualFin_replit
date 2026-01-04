@@ -40,12 +40,25 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
     },
     ...options,
   });
-  
+
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: "Request failed" }));
-    throw new Error(error.message || error.error || "Request failed");
+    const errorData = await res.json().catch(() => ({ message: `HTTP ${res.status}: ${res.statusText}` }));
+
+    // Create detailed error message
+    let errorMessage = errorData.message || errorData.error || `HTTP ${res.status}: ${res.statusText}`;
+
+    // Add technical details in dev mode
+    if (import.meta.env.DEV && errorData.details) {
+      errorMessage += `\n\nDetalhes técnicos:\n${JSON.stringify(errorData.details, null, 2)}`;
+    }
+
+    const error: any = new Error(errorMessage);
+    error.status = res.status;
+    error.statusText = res.statusText;
+    error.details = errorData;
+    throw error;
   }
-  
+
   return res.json();
 }
 
@@ -143,8 +156,19 @@ export const uploadsApi = {
       body: JSON.stringify({ filename, csvContent, encoding, fileBase64, fileType, importDate }),
     });
     if (!res.ok) {
-      const error = await res.json().catch(() => ({ message: "Request failed" }));
-      throw new Error(error.message || error.error || "Request failed");
+      const errorData = await res.json().catch(() => ({ message: `HTTP ${res.status}: Erro ao gerar pré-visualização` }));
+
+      let errorMessage = errorData.message || errorData.error || `Erro HTTP ${res.status}`;
+
+      // Add backend error details if available
+      if (errorData.details) {
+        errorMessage += `\n\nDetalhes: ${JSON.stringify(errorData.details, null, 2)}`;
+      }
+
+      const error: any = new Error(errorMessage);
+      error.status = res.status;
+      error.details = errorData;
+      throw error;
     }
     return res.json();
   },
@@ -161,9 +185,24 @@ export const uploadsApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ filename, csvContent, encoding, fileBase64, fileType, importDate }),
     });
-    const payload = await res.json().catch(() => ({ message: "Request failed" }));
+    const payload = await res.json().catch(() => ({
+      message: `HTTP ${res.status}: Erro ao processar importação`,
+      error: res.statusText
+    }));
+
     if (!res.ok) {
-      const error: any = new Error(payload.message || payload.error || "Request failed");
+      let errorMessage = payload.message || payload.error || `Erro HTTP ${res.status}`;
+
+      // Add detailed error information
+      if (payload.details) {
+        errorMessage += `\n\nDetalhes:\n${JSON.stringify(payload.details, null, 2)}`;
+      }
+      if (payload.diagnostics) {
+        errorMessage += `\n\nDiagnóstico:\n${JSON.stringify(payload.diagnostics, null, 2)}`;
+      }
+
+      const error: any = new Error(errorMessage);
+      error.status = res.status;
       error.details = payload;
       throw error;
     }
