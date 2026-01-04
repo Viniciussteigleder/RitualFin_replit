@@ -274,7 +274,7 @@ END $$;
         if not alias_desc or not key_words_alias:
             continue
 
-        sql += f"""INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+        sql += f"""INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   {escape_sql(alias_desc)},
@@ -284,7 +284,7 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
 """

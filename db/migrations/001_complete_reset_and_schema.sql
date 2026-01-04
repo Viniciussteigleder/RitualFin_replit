@@ -355,7 +355,7 @@ CREATE TABLE alias_assets (
   user_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   alias_desc TEXT NOT NULL,
   key_words_alias TEXT NOT NULL,
-  url_logo_internet TEXT,
+  url_icon_internet TEXT,
   logo_local_path TEXT,
   logo_mime_type TEXT,
   logo_updated_at TIMESTAMP,

@@ -423,7 +423,7 @@ export const aliasAssets = pgTable("alias_assets", {
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   aliasDesc: text("alias_desc").notNull(),
   keyWordsAlias: text("key_words_alias").notNull(),
-  urlLogoInternet: text("url_logo_internet"),
+  urlIconInternet: text("url_icon_internet"),
   logoLocalPath: text("logo_local_path"),
   logoMimeType: text("logo_mime_type"),
   logoUpdatedAt: timestamp("logo_updated_at"),

@@ -21,7 +21,7 @@ END $$;
 -- Merchant Aliases
 -- =====================================================
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'C&A',
@@ -31,10 +31,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Decathlon',
@@ -44,10 +44,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'About You',
@@ -57,10 +57,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Zara',
@@ -70,10 +70,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Deichmann',
@@ -83,10 +83,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Amazon',
@@ -96,10 +96,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Lidl',
@@ -109,10 +109,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Rewe',
@@ -122,10 +122,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Aldi',
@@ -135,10 +135,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Edeka',
@@ -148,10 +148,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Netto',
@@ -161,10 +161,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Ihle',
@@ -174,10 +174,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Wünsche',
@@ -187,10 +187,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Claude AI',
@@ -200,10 +200,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Temu',
@@ -213,10 +213,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'PayPal',
@@ -226,10 +226,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Tedi',
@@ -239,10 +239,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'DM',
@@ -252,10 +252,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Rossmann',
@@ -265,10 +265,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Müller',
@@ -278,10 +278,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Apple',
@@ -291,10 +291,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Google',
@@ -304,10 +304,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Netflix',
@@ -317,10 +317,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Disney+',
@@ -330,10 +330,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'YouTube',
@@ -343,10 +343,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'ChatGPT',
@@ -356,10 +356,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Paramount+',
@@ -369,10 +369,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Active Campaign',
@@ -382,10 +382,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Blau Handy',
@@ -395,10 +395,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Futalis',
@@ -408,10 +408,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Fressnapf',
@@ -421,10 +421,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'CleverFit Fitness',
@@ -434,10 +434,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Seguro',
@@ -447,10 +447,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Estacionamento',
@@ -460,10 +460,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Multas/Infrações',
@@ -473,10 +473,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'MVV / Bus / Trem',
@@ -486,10 +486,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Médico',
@@ -499,10 +499,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Dentista/Ortodontia',
@@ -512,10 +512,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Farmácia',
@@ -525,10 +525,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'AOK',
@@ -538,10 +538,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'DEVK',
@@ -551,10 +551,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Gymnasium Olching',
@@ -564,10 +564,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Kindergeld',
@@ -577,10 +577,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Wise',
@@ -590,10 +590,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Amex fatura',
@@ -603,10 +603,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Miles & More fatura',
@@ -616,10 +616,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Saque',
@@ -629,10 +629,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Miles & More Mensalidade',
@@ -642,10 +642,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Apollo',
@@ -655,10 +655,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Bosch salário Vinicius',
@@ -668,10 +668,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Salário Erica',
@@ -681,10 +681,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Kleinanzeigen',
@@ -694,10 +694,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'BOG Mitglied',
@@ -707,10 +707,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Diba Financiamento',
@@ -720,10 +720,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Diba Rahmenkredit',
@@ -733,10 +733,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Saturn',
@@ -746,10 +746,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Mediamarkt',
@@ -759,10 +759,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Ikea',
@@ -772,10 +772,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Schülerhilfe',
@@ -785,10 +785,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'ROBLOX',
@@ -798,10 +798,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'AOK Seguro Vinao',
@@ -811,10 +811,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Reembolso Bosch',
@@ -824,10 +824,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Stadtwerk Karlsruhe - Fernwärme',
@@ -837,10 +837,10 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
-INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_logo_internet)
+INSERT INTO alias_assets (user_id, alias_desc, key_words_alias, url_icon_internet)
 SELECT
   var_value,
   'Stadtwerk Karlsruhe - Wasser',
@@ -850,7 +850,7 @@ FROM temp_vars
 WHERE var_name = 'demo_user_id'
 ON CONFLICT (user_id, alias_desc) DO UPDATE SET
   key_words_alias = EXCLUDED.key_words_alias,
-  url_logo_internet = EXCLUDED.url_logo_internet,
+  url_icon_internet = EXCLUDED.url_icon_internet,
   updated_at = NOW();
 
 
