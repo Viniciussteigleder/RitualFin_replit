@@ -498,7 +498,6 @@ export default function UploadsPage() {
                     </Button>
                   </div>
                 </div>
-              </div>
 
               {previewError && (
                 <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 whitespace-pre-wrap">
