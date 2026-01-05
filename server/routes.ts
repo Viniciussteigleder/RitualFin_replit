@@ -295,11 +295,26 @@ export async function registerRoutes(
   });
 
   app.get("/api/version", (_req: Request, res: Response) => {
-    res.json({
+    res.type("application/json").json({
       service: "ritualfin-api",
       gitSha: buildInfo.gitSha,
       buildTime: buildInfo.buildTime,
       env: buildInfo.env,
+    });
+  });
+
+  // Simple version endpoint for verifying deployed code (NO auth required for quick testing)
+  app.get("/api/admin/version", (_req: Request, res: Response) => {
+    res.type("application/json").json({
+      ok: true,
+      gitSha: process.env.RENDER_GIT_COMMIT || buildInfo.gitSha || "unknown",
+      buildTime: buildInfo.buildTime || "unknown",
+      startedAt: new Date().toISOString(),
+      node: process.version,
+      platform: process.platform,
+      arch: process.arch,
+      env: process.env.NODE_ENV || "development",
+      bootstrapRan: process.env.BOOTSTRAP_IPV4_RESOLVED === "true"
     });
   });
 
@@ -310,7 +325,7 @@ export async function registerRoutes(
     const expectedKey = process.env.ADMIN_API_KEY;
 
     if (!expectedKey || adminKey !== expectedKey) {
-      return res.status(403).json({ ok: false, error: "forbidden" });
+      return res.type("application/json").status(403).json({ ok: false, error: "forbidden" });
     }
 
     // Parse DATABASE_URL to show connection details (sanitized)
@@ -335,7 +350,7 @@ export async function registerRoutes(
     try {
       await db.execute(sql`SELECT 1`);
       const elapsed_ms = Date.now() - start;
-      res.json({
+      res.type("application/json").json({
         ok: true,
         elapsed_ms,
         db: "reachable",
@@ -344,7 +359,7 @@ export async function registerRoutes(
       });
     } catch (error: any) {
       const elapsed_ms = Date.now() - start;
-      res.json({
+      res.type("application/json").json({
         ok: false,
         elapsed_ms,
         db: "unreachable",
@@ -363,7 +378,7 @@ export async function registerRoutes(
     const expectedKey = process.env.ADMIN_API_KEY;
 
     if (!expectedKey || adminKey !== expectedKey) {
-      return res.status(403).json({ ok: false, error: "forbidden" });
+      return res.type("application/json").status(403).json({ ok: false, error: "forbidden" });
     }
 
     // Gather comprehensive diagnostic information
@@ -430,7 +445,7 @@ export async function registerRoutes(
     // Add build info if available
     diagnostics.build = buildInfo;
 
-    res.json(diagnostics);
+    res.type("application/json").json(diagnostics);
   });
 
   const demoAuthBlocked =
