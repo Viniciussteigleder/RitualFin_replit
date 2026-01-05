@@ -313,6 +313,23 @@ export async function registerRoutes(
       return res.status(403).json({ ok: false, error: "forbidden" });
     }
 
+    // Parse DATABASE_URL to show connection details (sanitized)
+    let connectionInfo: any = { configured: isDatabaseConfigured };
+    if (process.env.DATABASE_URL) {
+      try {
+        const url = new URL(process.env.DATABASE_URL);
+        connectionInfo = {
+          configured: true,
+          host: url.hostname, // Show what host we're connecting to (might be IPv4 if resolved)
+          port: url.port || "5432",
+          database: url.pathname.slice(1),
+          bootstrapRan: process.env.BOOTSTRAP_IPV4_RESOLVED === "true"
+        };
+      } catch {
+        connectionInfo = { configured: true, parseError: true };
+      }
+    }
+
     const start = Date.now();
 
     try {
@@ -322,6 +339,7 @@ export async function registerRoutes(
         ok: true,
         elapsed_ms,
         db: "reachable",
+        connection: connectionInfo,
         timestamp: new Date().toISOString()
       });
     } catch (error: any) {
@@ -332,6 +350,7 @@ export async function registerRoutes(
         db: "unreachable",
         code: error.code,
         message: error.message,
+        connection: connectionInfo,
         timestamp: new Date().toISOString()
       });
     }

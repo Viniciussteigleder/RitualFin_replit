@@ -5,43 +5,72 @@ const dnsPromises = require("node:dns/promises");
 const order = process.env.DNS_RESULT_ORDER || "ipv4first";
 dns.setDefaultResultOrder(order);
 
-console.log(`DNS order: ${order} (bootstrap)`);
+console.log("╔══════════════════════════════════════════════════════════════╗");
+console.log("║              RitualFin Bootstrap - IPv4 Hardening            ║");
+console.log("╚══════════════════════════════════════════════════════════════╝");
+console.log(`[BOOTSTRAP] DNS order preference: ${order}`);
 
 // Pre-resolve DATABASE_URL hostname to IPv4 and inject into environment
 // This ensures the PostgreSQL pool uses IPv4 address directly
 (async () => {
   if (process.env.DATABASE_URL) {
     try {
-      const url = new URL(process.env.DATABASE_URL);
+      const originalUrl = process.env.DATABASE_URL;
+
+      // Parse without logging password
+      const url = new URL(originalUrl);
       const hostname = url.hostname;
+      const port = url.port || "5432";
+
+      console.log(`[BOOTSTRAP] Original DATABASE_URL hostname: ${hostname}:${port}`);
 
       // Skip if already an IPv4 address
       if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
-        console.log(`✓ DATABASE_URL already uses IPv4: ${hostname}`);
+        console.log(`[BOOTSTRAP] ✓ Already using IPv4 address: ${hostname}`);
       } else {
-        // Resolve to IPv4 only (A records)
-        const addresses = await dnsPromises.resolve4(hostname);
-        if (addresses && addresses.length > 0) {
-          const ipv4 = addresses[0];
-          console.log(`✓ Resolved ${hostname} → ${ipv4}`);
+        console.log(`[BOOTSTRAP] Resolving ${hostname} to IPv4...`);
 
-          // Replace hostname with IPv4 in DATABASE_URL
-          url.hostname = ipv4;
-          process.env.DATABASE_URL = url.toString();
-          console.log(`✓ DATABASE_URL updated to use IPv4 address`);
-        } else {
-          console.warn(`⚠️  No IPv4 address found for ${hostname}`);
+        // Use dns.lookup with family: 4 for maximum reliability
+        // This forces IPv4 resolution even if AAAA records exist
+        const { address, family } = await dnsPromises.lookup(hostname, { family: 4 });
+
+        console.log(`[BOOTSTRAP] ✓ Resolved ${hostname} → ${address} (family: ${family})`);
+
+        // Verify it's actually IPv4
+        if (!/^\d+\.\d+\.\d+\.\d+$/.test(address)) {
+          throw new Error(`Expected IPv4 address but got: ${address}`);
         }
+
+        // Replace hostname with IPv4 in DATABASE_URL
+        url.hostname = address;
+        process.env.DATABASE_URL = url.toString();
+
+        console.log(`[BOOTSTRAP] ✓ DATABASE_URL updated to use IPv4 address`);
+        console.log(`[BOOTSTRAP] ✓ Connection will use: ${address}:${port}`);
+
+        // Mark that bootstrap ran successfully
+        process.env.BOOTSTRAP_IPV4_RESOLVED = "true";
       }
     } catch (error) {
-      console.error(`✗ Failed to resolve DATABASE_URL hostname: ${error.message}`);
-      console.error(`  Will proceed with original DATABASE_URL`);
+      console.error(`[BOOTSTRAP] ✗ CRITICAL: Failed to resolve DATABASE_URL hostname`);
+      console.error(`[BOOTSTRAP] ✗ Error: ${error.message}`);
+      console.error(`[BOOTSTRAP] ✗ Will proceed with original DATABASE_URL - connections may fail!`);
+      console.error(`[BOOTSTRAP] ✗ Check: 1) DNS reachable, 2) Hostname valid, 3) IPv4 records exist`);
     }
+  } else {
+    console.log(`[BOOTSTRAP] ⚠️  DATABASE_URL not set - database will be unavailable`);
   }
+
+  console.log("╔══════════════════════════════════════════════════════════════╗");
+  console.log("║                 Starting Application Server                  ║");
+  console.log("╚══════════════════════════════════════════════════════════════╝");
 
   // Now launch the actual server
   require("./dist/index.cjs");
 })().catch(err => {
-  console.error("Fatal error in bootstrap:", err);
+  console.error("╔══════════════════════════════════════════════════════════════╗");
+  console.error("║                   FATAL BOOTSTRAP ERROR                      ║");
+  console.error("╚══════════════════════════════════════════════════════════════╝");
+  console.error(err);
   process.exit(1);
 });
