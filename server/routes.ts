@@ -1135,8 +1135,22 @@ export async function registerRoutes(
       }
       const duration = Date.now() - startTime;
 
+      // Update recurring groups (wrapped in try-catch to prevent blocking imports)
       if (importedKeyDescs.size > 0) {
-        await updateRecurringGroups(storage, user.id, Array.from(importedKeyDescs));
+        try {
+          await updateRecurringGroups(storage, user.id, Array.from(importedKeyDescs));
+        } catch (recurringError: any) {
+          logger.error("update_recurring_groups_failed", {
+            userId: user.id,
+            uploadId: upload.id,
+            errorName: recurringError.name,
+            errorMessage: recurringError.message,
+            errors: recurringError.errors,
+            stack: recurringError.stack
+          });
+          // Don't fail the entire import if recurring detection fails
+          // Transactions are already imported successfully
+        }
       }
 
       logger.info("upload_complete", {
