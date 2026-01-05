@@ -1,3 +1,8 @@
+// Force Node.js to prefer IPv4 for DNS resolution
+// This fixes ENETUNREACH errors on Render when Supabase returns IPv6 addresses
+import dns from "node:dns";
+dns.setDefaultResultOrder("ipv4first");
+
 import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
 import session from "express-session";
