@@ -1159,9 +1159,20 @@ export async function registerRoutes(
     } catch (error: any) {
       logger.error("upload_server_error", {
         error: error.message,
-        stack: error.stack?.split('\n')[0]
+        stack: error.stack,
+        name: error.name,
+        cause: error.cause
       });
-      res.status(500).json({ error: error.message });
+      res.status(500).json({
+        success: false,
+        message: error.message,
+        error: error.message,
+        details: {
+          name: error.name,
+          stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+          cause: error.cause
+        }
+      });
     }
   });
 
