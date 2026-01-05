@@ -54,6 +54,251 @@ export async function registerRoutes(
     }
   });
 
+  // ===== ADMIN DIAGNOSTICS =====
+  // Comprehensive self-diagnosing endpoint for debugging deployment issues
+  // ADMIN_KEY must be set in environment variables - no default for security
+  const ADMIN_KEY = process.env.ADMIN_KEY;
+  
+  app.get("/api/admin/diagnostics", async (req: Request, res: Response) => {
+    // Verify admin key is configured
+    if (!ADMIN_KEY) {
+      return res.status(503).json({ 
+        error: "Admin diagnostics not configured",
+        hint: "Set ADMIN_KEY environment variable in Render dashboard"
+      });
+    }
+    
+    // Verify provided key
+    const providedKey = req.headers["x-admin-key"];
+    if (providedKey !== ADMIN_KEY) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const diagnostics: Record<string, any> = {
+      timestamp: new Date().toISOString(),
+      version: "1.0.0",
+      environment: process.env.NODE_ENV || "development",
+      checks: {},
+      recommendations: [],
+    };
+
+    // 1. Environment Variables Check
+    const envCheck: Record<string, any> = {
+      DATABASE_URL: {
+        set: !!process.env.DATABASE_URL,
+        format: null as string | null,
+        host: null as string | null,
+        port: null as string | null,
+        pooler: null as string | null,
+      },
+      CORS_ORIGIN: {
+        set: !!process.env.CORS_ORIGIN,
+        value: process.env.CORS_ORIGIN || "(not set)",
+      },
+      NODE_ENV: process.env.NODE_ENV || "(not set)",
+      OPENAI_API_KEY: {
+        set: !!process.env.OPENAI_API_KEY,
+        prefix: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 7) + "..." : null,
+      },
+    };
+
+    // Parse DATABASE_URL safely
+    if (process.env.DATABASE_URL) {
+      try {
+        const url = new URL(process.env.DATABASE_URL);
+        envCheck.DATABASE_URL.format = "valid";
+        envCheck.DATABASE_URL.host = url.hostname;
+        envCheck.DATABASE_URL.port = url.port || "5432";
+        envCheck.DATABASE_URL.pooler = url.hostname.includes("pooler") ? "transaction" : "direct";
+        envCheck.DATABASE_URL.database = url.pathname.replace("/", "");
+        envCheck.DATABASE_URL.ssl = url.searchParams.get("sslmode") || "prefer";
+        
+        // Check for common issues
+        if (!url.hostname.includes("pooler") && !url.hostname.includes("localhost")) {
+          diagnostics.recommendations.push("Consider using Supabase Transaction Pooler (port 6543) for better connection handling");
+        }
+        if (url.port === "5432" && url.hostname.includes("supabase")) {
+          diagnostics.recommendations.push("Port 5432 is direct connection. Use port 6543 for Transaction Pooler");
+        }
+      } catch (e: any) {
+        envCheck.DATABASE_URL.format = "invalid";
+        envCheck.DATABASE_URL.error = e.message;
+        diagnostics.recommendations.push("DATABASE_URL format is invalid - check connection string");
+      }
+    } else {
+      diagnostics.recommendations.push("DATABASE_URL is not set - database operations will fail");
+    }
+
+    diagnostics.checks.environment = envCheck;
+
+    // 2. Database Connection Check
+    const dbCheck: Record<string, any> = {
+      configured: isDatabaseConfigured,
+      connected: false,
+      latencyMs: null as number | null,
+      error: null as string | null,
+    };
+
+    if (isDatabaseConfigured && db) {
+      const startTime = Date.now();
+      try {
+        await db.execute(sql`SELECT 1 as ping`);
+        dbCheck.connected = true;
+        dbCheck.latencyMs = Date.now() - startTime;
+      } catch (e: any) {
+        dbCheck.connected = false;
+        dbCheck.error = e.message;
+        dbCheck.errorCode = e.code;
+        dbCheck.errorDetail = e.detail || null;
+        
+        // Specific error analysis
+        if (e.code === "ECONNREFUSED") {
+          diagnostics.recommendations.push("Connection refused - check if Supabase project is active (not paused)");
+        } else if (e.code === "ENOTFOUND") {
+          diagnostics.recommendations.push("Host not found - check DATABASE_URL hostname");
+        } else if (e.message?.includes("password")) {
+          diagnostics.recommendations.push("Authentication failed - check DATABASE_URL password");
+        } else if (e.message?.includes("SSL")) {
+          diagnostics.recommendations.push("SSL error - try adding ?sslmode=require to DATABASE_URL");
+        } else if (e.message?.includes("timeout")) {
+          diagnostics.recommendations.push("Connection timeout - Supabase project may be paused or firewall blocking");
+        }
+      }
+    }
+
+    diagnostics.checks.database = dbCheck;
+
+    // 3. Table Existence Check
+    const tableCheck: Record<string, any> = {
+      checked: false,
+      tables: {},
+    };
+
+    if (dbCheck.connected) {
+      try {
+        const result = await db.execute(sql`
+          SELECT table_name 
+          FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          ORDER BY table_name
+        `);
+        
+        tableCheck.checked = true;
+        const expectedTables = [
+          "users", "settings", "accounts", "uploads", "upload_errors",
+          "transactions", "rules", "budgets", "goals", "category_goals",
+          "calendar_events", "event_occurrences", "rituals", "notifications", "merchant_metadata"
+        ];
+        
+        const existingTables = (result.rows as any[]).map((r: any) => r.table_name);
+        tableCheck.existingTables = existingTables;
+        tableCheck.tableCount = existingTables.length;
+        
+        for (const table of expectedTables) {
+          const snakeCase = table;
+          const camelCase = table.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+          tableCheck.tables[table] = existingTables.includes(snakeCase) || existingTables.includes(camelCase);
+        }
+        
+        const missingTables = expectedTables.filter(t => !tableCheck.tables[t]);
+        if (missingTables.length > 0) {
+          diagnostics.recommendations.push(`Missing tables: ${missingTables.join(", ")}. Run 'npm run db:push' to apply schema`);
+        }
+      } catch (e: any) {
+        tableCheck.error = e.message;
+      }
+    }
+
+    diagnostics.checks.tables = tableCheck;
+
+    // 4. Row Count Check (quick health indicator)
+    const dataCheck: Record<string, any> = {
+      checked: false,
+    };
+
+    if (dbCheck.connected) {
+      try {
+        const userCount = await db.execute(sql`SELECT COUNT(*) as count FROM users`);
+        const txCount = await db.execute(sql`SELECT COUNT(*) as count FROM transactions`);
+        const ruleCount = await db.execute(sql`SELECT COUNT(*) as count FROM rules`);
+        const uploadCount = await db.execute(sql`SELECT COUNT(*) as count FROM uploads`);
+        
+        dataCheck.checked = true;
+        dataCheck.users = parseInt((userCount.rows[0] as any).count);
+        dataCheck.transactions = parseInt((txCount.rows[0] as any).count);
+        dataCheck.rules = parseInt((ruleCount.rows[0] as any).count);
+        dataCheck.uploads = parseInt((uploadCount.rows[0] as any).count);
+        
+        if (dataCheck.users === 0) {
+          diagnostics.recommendations.push("No users in database - first login will create demo user");
+        }
+      } catch (e: any) {
+        dataCheck.error = e.message;
+      }
+    }
+
+    diagnostics.checks.data = dataCheck;
+
+    // 5. Overall Status
+    if (!isDatabaseConfigured) {
+      diagnostics.status = "CRITICAL";
+      diagnostics.summary = "DATABASE_URL not configured";
+    } else if (!dbCheck.connected) {
+      diagnostics.status = "CRITICAL";
+      diagnostics.summary = `Database connection failed: ${dbCheck.error}`;
+    } else if (tableCheck.checked && Object.values(tableCheck.tables).some(v => !v)) {
+      diagnostics.status = "WARNING";
+      diagnostics.summary = "Database connected but some tables missing";
+    } else {
+      diagnostics.status = "OK";
+      diagnostics.summary = "All systems operational";
+    }
+
+    res.json(diagnostics);
+  });
+
+  // Simplified ping endpoint for quick checks
+  app.get("/api/admin/db-ping", async (req: Request, res: Response) => {
+    if (!ADMIN_KEY) {
+      return res.status(503).json({ 
+        error: "Admin diagnostics not configured",
+        hint: "Set ADMIN_KEY environment variable in Render dashboard"
+      });
+    }
+    
+    const providedKey = req.headers["x-admin-key"];
+    if (providedKey !== ADMIN_KEY) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    if (!isDatabaseConfigured || !db) {
+      return res.json({
+        status: "ERROR",
+        message: "DATABASE_URL not configured",
+        hint: "Use /api/admin/diagnostics for full analysis",
+      });
+    }
+
+    try {
+      const start = Date.now();
+      await db.execute(sql`SELECT 1`);
+      const latency = Date.now() - start;
+      
+      res.json({
+        status: "OK",
+        latencyMs: latency,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (e: any) {
+      res.json({
+        status: "ERROR",
+        error: e.message,
+        code: e.code,
+        hint: "Use /api/admin/diagnostics for full analysis",
+      });
+    }
+  });
+
   // ===== AUTH / USER =====
   app.post("/api/auth/login", async (req: Request, res: Response) => {
     try {
