@@ -356,6 +356,83 @@ export async function registerRoutes(
     }
   });
 
+  // Comprehensive diagnostics endpoint for debugging production issues
+  app.get("/api/admin/diagnostics", async (req: Request, res: Response) => {
+    // Protected with x-admin-key header
+    const adminKey = req.headers["x-admin-key"];
+    const expectedKey = process.env.ADMIN_API_KEY;
+
+    if (!expectedKey || adminKey !== expectedKey) {
+      return res.status(403).json({ ok: false, error: "forbidden" });
+    }
+
+    // Gather comprehensive diagnostic information
+    const diagnostics: any = {
+      timestamp: new Date().toISOString(),
+      server: {
+        nodeVersion: process.version,
+        platform: process.platform,
+        arch: process.arch,
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV || "development",
+        memoryUsage: process.memoryUsage()
+      },
+      database: {
+        configured: isDatabaseConfigured,
+        connectionInfo: {} as any
+      },
+      bootstrap: {
+        ran: process.env.BOOTSTRAP_IPV4_RESOLVED === "true",
+        dnsOrder: "ipv4first (forced)"
+      },
+      environment: {
+        DATABASE_URL_set: !!process.env.DATABASE_URL,
+        ADMIN_API_KEY_set: !!process.env.ADMIN_API_KEY,
+        SESSION_SECRET_set: !!process.env.SESSION_SECRET,
+        CORS_ORIGIN_set: !!process.env.CORS_ORIGIN,
+        NODE_OPTIONS: process.env.NODE_OPTIONS || "not set"
+      }
+    };
+
+    // Parse DATABASE_URL to show connection details (sanitized)
+    if (process.env.DATABASE_URL) {
+      try {
+        const url = new URL(process.env.DATABASE_URL);
+        diagnostics.database.connectionInfo = {
+          host: url.hostname,
+          port: url.port || "5432",
+          database: url.pathname.slice(1),
+          ssl: url.searchParams.get("sslmode") === "require" || url.searchParams.get("ssl") === "true",
+          isIPv4: /^\d+\.\d+\.\d+\.\d+$/.test(url.hostname),
+          isIPv6: url.hostname.includes(":")
+        };
+      } catch (err: any) {
+        diagnostics.database.connectionInfo = { parseError: err.message };
+      }
+    }
+
+    // Test database connectivity
+    const dbStart = Date.now();
+    try {
+      await db.execute(sql`SELECT 1`);
+      diagnostics.database.status = "reachable";
+      diagnostics.database.ping_ms = Date.now() - dbStart;
+    } catch (error: any) {
+      diagnostics.database.status = "unreachable";
+      diagnostics.database.ping_ms = Date.now() - dbStart;
+      diagnostics.database.error = {
+        code: error.code,
+        message: error.message,
+        name: error.name
+      };
+    }
+
+    // Add build info if available
+    diagnostics.build = buildInfo;
+
+    res.json(diagnostics);
+  });
+
   const demoAuthBlocked =
     process.env.NODE_ENV === "production" &&
     process.env.ALLOW_DEMO_AUTH_IN_PROD !== "true";
