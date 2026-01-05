@@ -136,10 +136,18 @@ export default function UploadsPage() {
       setLastError(error?.details?.error || { message: error.message, code: "UNKNOWN" });
       setLastSummary(null);
       setLastUploadId(error?.details?.uploadId || null);
+
+      // Construct comprehensive error message
+      let errorDescription = error.message || t(locale, uploadsCopy.importErrorDesc);
+      if (error.details) {
+        errorDescription += `\n\nDetalhes: ${JSON.stringify(error.details, null, 2)}`;
+      }
+
       toast({
         title: t(locale, uploadsCopy.importErrorTitle),
-        description: error.message || t(locale, uploadsCopy.importErrorDesc),
-        variant: "destructive"
+        description: errorDescription,
+        variant: "destructive",
+        duration: 8000 // 8 seconds as requested
       });
     }
   });
@@ -470,17 +478,7 @@ export default function UploadsPage() {
                     </p>
                   )}
                 </div>
-                <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
-                  <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">{t(locale, uploadsCopy.importDate)}</Label>
-                    <Input
-                      type="date"
-                      value={importDate}
-                      onChange={(e) => setImportDate(e.target.value)}
-                      className="w-[180px]"
-                    />
-                  </div>
-                  <div className="flex gap-2">
+                <div className="flex gap-2">
                     <Button
                       variant="outline"
                       onClick={() => void handlePreview(selectedFile)}
@@ -523,7 +521,7 @@ export default function UploadsPage() {
                   </label>
 
                   {/* Format Info Grid */}
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                     <div className="rounded-md border border-gray-100 bg-gray-50 p-3">
                       <p className="text-muted-foreground">{t(locale, uploadsCopy.previewFormat)}</p>
                       <p className="font-medium">{previewData.format || "-"}</p>
@@ -550,10 +548,6 @@ export default function UploadsPage() {
                           <SelectItem value="all">Todas ({previewData.rows?.length || 0})</SelectItem>
                         </SelectContent>
                       </Select>
-                    </div>
-                    <div className="rounded-md border border-gray-100 bg-gray-50 p-3">
-                      <p className="text-muted-foreground">{t(locale, uploadsCopy.previewRows)}</p>
-                      <p className="font-medium">{previewData.rows?.length || 0}</p>
                     </div>
                   </div>
 
