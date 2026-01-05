@@ -1,0 +1,126 @@
+witching to the Supabase Pooler can be the fastest practical fix for your situation, but your current URL is not “wrong” in general.
+
+1) What’s actually happening
+
+Your Render errors show connect ENETUNREACH <IPv6>:5432 → Render is attempting IPv6 egress and failing.
+
+Your /api/admin/db-ping output shows:
+
+host: db.rmbcplfvucvukiekvtxb.supabase.co
+
+bootstrapRan: false
+This means your “IPv4 hardening” is not being applied, and the connection still resolves to IPv6 first.
+
+2) Are you using the “wrong” Supabase URL?
+
+No: db.<project-ref>.supabase.co:5432 is the direct connection and is valid.
+
+But: Supabase explicitly documents Supavisor Pooler endpoints as an alternative to direct connections in IPv4-only environments (which matches your case). 
+Supabase
+
+Supabase Pooler formats (per docs)
+
+Supabase’s documented examples for Supavisor Pooler: 
+Supabase
+
+Session mode (port 5432)
+postgres://[DB-USER].[PROJECT REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:5432/postgres
+
+Transaction mode (port 6543)
+postgres://[DB-USER].[PROJECT REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres
+
+So the statement “pooler hostname uses pooler.supabase.com and transaction mode is 6543” is aligned with Supabase’s doc examples. 
+Supabase
+
+3) The specific changes you should make now (in order)
+Step 1 — Update DATABASE_URL on Render to the Supabase Pooler (Transaction mode)
+
+In Supabase Dashboard → Connect → Transaction pooler, copy the connection string.
+
+Then in Render → Environment → DATABASE_URL, set it to the pooler string (port 6543). 
+Supabase
+
+Key details to get right:
+
+Host must be aws-0-<region>.pooler.supabase.com
+
+Port must be 6543
+
+Username must be DBUSER.PROJECTREF (note the dot), e.g. postgres.rmbcplfvucvukiekvtxb (as in the Supabase example format). 
+Supabase
+
+Then Save → Manual Deploy.
+
+Step 2 — Keep your “safety net” env var
+
+Keep:
+
+NODE_OPTIONS=--dns-result-order=ipv4first
+
+It may help, but the pooler change is the primary lever now.
+
+Step 3 — Re-test DB reachability
+
+Run:
+
+curl -s -H "x-admin-key: o57JnQ5hvtAZoZr6CxaFwiNQytVehCR0h" https://ritualfin-api.onrender.com/api/admin/db-ping
+
+
+Success looks like:
+
+ok: true
+
+no ENETUNREACH
+
+host/connection no longer goes to that IPv6 address
+
+Step 4 — Only after DB works: re-test upload end-to-end
+
+/api/settings should stop returning 500
+
+/api/uploads/process should stop failing
+
+4) Why jq fails on /api/admin/diagnostics
+
+jq fails because the endpoint is returning HTML, not JSON:
+
+Your curl -i shows content-type: text/html and an HTML page.
+
+Your local grep showed no route exists: grep ... "/api/admin/diagnostics" server returned nothing.
+
+So right now, that endpoint is not implemented in the backend currently deployed (or it was never merged into main). The server is falling back to serving the SPA HTML.
+
+What to do
+
+Don’t spend time on /api/admin/diagnostics right now.
+
+First fix DB connectivity via pooler.
+
+If you still want diagnostics later, you must actually add the route to server/routes.ts, commit to main, and redeploy.
+
+5) “How do I sync Render env vars to the repo?”
+
+You generally do not. Render env vars are runtime configuration and should not be committed.
+
+What you should do instead:
+
+Update .env.example (safe placeholders only)
+
+Add a short docs/deployment.md listing required env vars (names only, no secrets)
+
+6) Points to give Claude/Replit so they stop looping
+
+Give them this checklist (copy/paste):
+
+Assume Render has IPv6 egress issues; prioritize Supabase Pooler aws-0-<region>.pooler.supabase.com.
+
+Prefer Transaction mode 6543 for web services; keep connections low (connection_limit=1 guidance is common for serverless/edge). 
+Supabase
+
+Do not “force IPv4” by replacing host with an IP unless you fully control TLS settings (it often causes certificate mismatch).
+
+Ensure /api/admin/db-ping is the single source of truth for connectivity.
+
+Don’t add new “diagnostics” endpoints unless they are actually wired into server/routes.ts and tested with curl -i to confirm JSON.
+
+If you do Step 1 (switch DATABASE_URL to Supabase pooler) and then paste the updated /api/admin/db-ping response, I can tell you immediately whether the DB layer is fixed or whether there is a second issue (SSL/auth/permissions).
