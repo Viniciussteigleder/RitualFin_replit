@@ -6,9 +6,11 @@ dns.setDefaultResultOrder("ipv4first");
 import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
 import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { pool, isDatabaseConfigured } from "./db";
 
 const app = express();
 const httpServer = createServer(app);
@@ -27,9 +29,19 @@ app.use(
   })
 );
 
-// Session configuration
+// Session configuration with PostgreSQL store (production) or MemoryStore (development)
+const PgSession = connectPgSimple(session);
+const sessionStore = isDatabaseConfigured && pool
+  ? new PgSession({
+      pool: pool,
+      tableName: "session", // Will be auto-created if it doesn't exist
+      createTableIfMissing: true
+    })
+  : undefined; // Falls back to MemoryStore in development
+
 app.use(
   session({
+    store: sessionStore,
     secret: process.env.SESSION_SECRET || "dev-secret-change-in-production",
     resave: false,
     saveUninitialized: false,
@@ -105,12 +117,40 @@ app.use((req, res, next) => {
 (async () => {
   await registerRoutes(httpServer, app);
 
+  // Enhanced error middleware with error codes and safe messages
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+    let message = err.message || "Internal Server Error";
 
-    res.status(status).json({ message });
-    throw err;
+    // Strip sensitive data from message (DATABASE_URL, passwords, etc.)
+    if (message && typeof message === "string") {
+      // Remove DATABASE_URL connection strings
+      message = message.replace(/postgresql:\/\/[^@]+@[^\s]+/g, "postgresql://***:***@***/***");
+      // Remove any potential passwords
+      message = message.replace(/password[=:][^\s&]+/gi, "password=***");
+    }
+
+    // Safe error response with error codes
+    const errorResponse: any = {
+      error: message,
+      code: err.code || err.name || "UNKNOWN_ERROR",
+      timestamp: new Date().toISOString()
+    };
+
+    // Include stack trace in development only
+    if (process.env.NODE_ENV === "development" && err.stack) {
+      errorResponse.stack = err.stack;
+    }
+
+    // Include additional context if available
+    if (err.details) {
+      errorResponse.details = err.details;
+    }
+
+    res.status(status).json(errorResponse);
+
+    // Log error for debugging (without throwing)
+    console.error(`[ERROR] ${status} ${errorResponse.code}: ${message}`);
   });
 
   // importantly only setup vite in development and after
@@ -137,6 +177,17 @@ app.use((req, res, next) => {
     },
     () => {
       log(`serving on port ${port}`);
+
+      // Startup sanity check logging (no secrets)
+      console.log("=== RitualFin Startup Sanity Check ===");
+      console.log(`Node Version: ${process.version}`);
+      console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
+      console.log(`DNS Resolution Order: ipv4first (forced)`);
+      console.log(`DATABASE_URL configured: ${!!process.env.DATABASE_URL}`);
+      console.log(`ADMIN_API_KEY configured: ${!!process.env.ADMIN_API_KEY}`);
+      console.log(`Session Store: ${sessionStore ? "PostgreSQL" : "MemoryStore (dev only)"}`);
+      console.log(`CORS Origins: ${corsOrigins.join(", ")}`);
+      console.log("=====================================");
     },
   );
 })();

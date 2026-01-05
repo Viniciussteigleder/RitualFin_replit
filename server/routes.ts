@@ -303,6 +303,40 @@ export async function registerRoutes(
     });
   });
 
+  // Protected diagnostic endpoint for DB connectivity testing
+  app.get("/api/admin/db-ping", async (req: Request, res: Response) => {
+    // Protected with x-admin-key header
+    const adminKey = req.headers["x-admin-key"];
+    const expectedKey = process.env.ADMIN_API_KEY;
+
+    if (!expectedKey || adminKey !== expectedKey) {
+      return res.status(403).json({ ok: false, error: "forbidden" });
+    }
+
+    const start = Date.now();
+
+    try {
+      await db.execute(sql`SELECT 1`);
+      const elapsed_ms = Date.now() - start;
+      res.json({
+        ok: true,
+        elapsed_ms,
+        db: "reachable",
+        timestamp: new Date().toISOString()
+      });
+    } catch (error: any) {
+      const elapsed_ms = Date.now() - start;
+      res.json({
+        ok: false,
+        elapsed_ms,
+        db: "unreachable",
+        code: error.code,
+        message: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
   const demoAuthBlocked =
     process.env.NODE_ENV === "production" &&
     process.env.ALLOW_DEMO_AUTH_IN_PROD !== "true";
