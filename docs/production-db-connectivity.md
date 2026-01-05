@@ -16,46 +16,69 @@ connect ENETUNREACH 2a05:d018:135e:1609:eafb:13ce:8b0c:1dff:5432 - Local (:::0)
 
 ## Solution
 
-The fix implements a multi-layered approach to force IPv4 DNS resolution:
+The fix uses an **aggressive pre-resolution strategy** to force IPv4 connections:
 
-### 1. Bootstrap File (Primary Fix)
+### Bootstrap DNS Pre-Resolution (Primary Fix)
 
 **File**: `bootstrap.cjs` (repo root)
 
-Forces IPv4 DNS resolution BEFORE any application code runs:
+The bootstrap file resolves the `DATABASE_URL` hostname to an IPv4 address **before** the server starts:
 
 ```javascript
 const dns = require("node:dns");
-const order = process.env.DNS_RESULT_ORDER || "ipv4first";
-dns.setDefaultResultOrder(order);
-console.log(`DNS order: ${order} (bootstrap)`);
+const dnsPromises = require("node:dns/promises");
+
+// Set DNS order preference
+dns.setDefaultResultOrder("ipv4first");
+
+// Pre-resolve DATABASE_URL hostname to IPv4
+if (process.env.DATABASE_URL) {
+  const url = new URL(process.env.DATABASE_URL);
+  const hostname = url.hostname;
+
+  // Resolve using dns.resolve4 (IPv4 A records only)
+  const addresses = await dnsPromises.resolve4(hostname);
+  const ipv4 = addresses[0];
+
+  // Replace hostname with IPv4 address in DATABASE_URL
+  url.hostname = ipv4;
+  process.env.DATABASE_URL = url.toString();
+  console.log(`✓ Resolved ${hostname} → ${ipv4}`);
+}
+
+// Now launch the server with IPv4-resolved DATABASE_URL
 require("./dist/index.cjs");
 ```
 
-**Why it works**: Ensures DNS preference is set before database connection pool initialization.
+**Why it works**:
+1. Uses `dns.resolve4()` which **only** returns IPv4 addresses (A records), never IPv6
+2. Replaces the hostname in `DATABASE_URL` with the resolved IPv4 address
+3. PostgreSQL pool connects directly to the IPv4 address, bypassing DNS entirely
+4. Runs before any server code, ensuring no race conditions
 
-### 2. Database Pool Configuration (Defense in Depth)
+### Database Pool Configuration
 
 **File**: `server/db.ts`
 
-Added `family: 4` to PostgreSQL pool configuration:
+The database pool now uses the pre-resolved IPv4 address from `DATABASE_URL`:
 
 ```typescript
 export const pool = isDatabaseConfigured
   ? new Pool({
-      connectionString: process.env.DATABASE_URL,
-      family: 4, // Force IPv4 connections
+      connectionString: process.env.DATABASE_URL, // Already contains IPv4 address
       ssl: { rejectUnauthorized: true },
-      // ... other settings
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000
     })
   : null;
 ```
 
-### 3. Runtime DNS Forcing (Fallback)
+### Runtime DNS Preference (Defense in Depth)
 
 **File**: `server/index.ts`
 
-Sets DNS order at application startup (runs after bootstrap):
+Sets DNS order preference at runtime (additional safety layer):
 
 ```typescript
 import dns from "node:dns";
@@ -114,8 +137,16 @@ curl -H "x-admin-key: YOUR_ADMIN_API_KEY" \
 
 ## Startup Logging
 
-On successful startup, the application logs a sanity check:
+On successful startup, the application logs show the DNS resolution and sanity check:
 
+### Bootstrap Phase (First)
+```
+DNS order: ipv4first (bootstrap)
+✓ Resolved db.rmbcplfvucvukiekvtxb.supabase.co → 54.247.26.119
+✓ DATABASE_URL updated to use IPv4 address
+```
+
+### Application Startup (Second)
 ```
 === RitualFin Startup Sanity Check ===
 Node Version: v20.x.x
@@ -129,9 +160,16 @@ CORS Origins: https://ritualfin.vercel.app
 ```
 
 **What to check**:
-- `DNS Resolution Order` must show `ipv4first (forced)`
-- `DATABASE_URL configured` must be `true`
-- `Session Store` should be `PostgreSQL` in production
+1. **Bootstrap logs show IPv4 resolution**: `✓ Resolved [hostname] → [IPv4 address]`
+2. **No IPv6 addresses**: The resolved IP should be four dot-separated numbers (e.g., `54.247.26.119`), NOT colons
+3. `DNS Resolution Order` shows `ipv4first (forced)`
+4. `DATABASE_URL configured` is `true`
+5. `Session Store` shows `PostgreSQL` in production
+
+**If DNS resolution fails**:
+- Bootstrap will log: `✗ Failed to resolve DATABASE_URL hostname: [error]`
+- Server will proceed with original hostname (may still fail with ENETUNREACH)
+- Check that Render can reach public DNS servers
 
 ## Testing Steps
 
