@@ -1043,13 +1043,23 @@ export async function registerRoutes(
           importedCount++;
           importedKeyDescs.add(parsed.keyDesc);
         } catch (err: any) {
-          const errorMsg = `Failed to import: ${parsed.descRaw.slice(0, 50)}`;
+          const errorMsg = `Failed to import row: ${parsed.descRaw.slice(0, 50)} - Error: ${err.message}`;
           errors.push(errorMsg);
-          logger.warn("upload_transaction_failed", {
+          logger.error("upload_transaction_failed", {
             userId: user.id,
             uploadId: upload.id,
             accountSource: parsed.accountSource,
-            error: err.message
+            bookingDate: parsed.bookingDate,
+            amount: parsed.amount,
+            key: parsed.key,
+            errorName: err.name,
+            errorMessage: err.message,
+            errorCode: err.code,
+            constraint: err.constraint,
+            detail: err.detail,
+            table: err.table,
+            column: err.column,
+            stack: err.stack
           });
         }
       }
@@ -1125,8 +1135,22 @@ export async function registerRoutes(
       }
       const duration = Date.now() - startTime;
 
+      // Update recurring groups (wrapped in try-catch to prevent blocking imports)
       if (importedKeyDescs.size > 0) {
-        await updateRecurringGroups(storage, user.id, Array.from(importedKeyDescs));
+        try {
+          await updateRecurringGroups(storage, user.id, Array.from(importedKeyDescs));
+        } catch (recurringError: any) {
+          logger.error("update_recurring_groups_failed", {
+            userId: user.id,
+            uploadId: upload.id,
+            errorName: recurringError.name,
+            errorMessage: recurringError.message,
+            errors: recurringError.errors,
+            stack: recurringError.stack
+          });
+          // Don't fail the entire import if recurring detection fails
+          // Transactions are already imported successfully
+        }
       }
 
       logger.info("upload_complete", {
@@ -1157,21 +1181,40 @@ export async function registerRoutes(
         errors: errors.length > 0 ? errors : undefined
       });
     } catch (error: any) {
+      // Handle AggregateError specially (multiple errors from Drizzle ORM)
+      let errorDetails: any = {
+        name: error.name,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+        cause: error.cause
+      };
+
+      // Extract individual errors from AggregateError
+      if (error.name === 'AggregateError' && error.errors) {
+        errorDetails.individualErrors = error.errors.map((e: any) => ({
+          message: e.message,
+          name: e.name,
+          code: e.code,
+          constraint: e.constraint,
+          detail: e.detail,
+          table: e.table,
+          column: e.column
+        }));
+      }
+
       logger.error("upload_server_error", {
         error: error.message,
         stack: error.stack,
         name: error.name,
-        cause: error.cause
+        cause: error.cause,
+        errors: error.errors,
+        aggregateDetails: errorDetails
       });
+
       res.status(500).json({
         success: false,
-        message: error.message,
-        error: error.message,
-        details: {
-          name: error.name,
-          stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
-          cause: error.cause
-        }
+        message: error.message || "Erro durante importação",
+        error: error.message || "Erro desconhecido",
+        details: errorDetails
       });
     }
   });
