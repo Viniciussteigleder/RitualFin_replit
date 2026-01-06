@@ -691,8 +691,8 @@ export default function SettingsPage() {
     <AppLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">{t(locale, settingsCopy.title)}</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">{t(locale, settingsCopy.title)}</h1>
+          <p className="text-muted-foreground text-sm md:text-base mt-1">
             {t(locale, settingsCopy.subtitle)}
           </p>
         </div>
