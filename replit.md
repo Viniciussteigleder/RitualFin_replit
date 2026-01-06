@@ -5,14 +5,34 @@
 RitualFin is a personal finance management web application designed for minimalist, audit-friendly expense tracking. The application is built for Portuguese (Brazil) users with EUR currency, focusing on a "Lazy Mode" philosophy where the app automates as much categorization and processing as possible.
 
 The core workflow centers around:
-1. Uploading bank CSV files (Miles & More format)
-2. Automatic transaction processing with rule-based categorization
+1. Uploading bank CSV files (Miles & More, American Express, Sparkasse formats)
+2. Automatic transaction processing with AI-powered + rule-based categorization
 3. Manual confirmation queue for unresolved items
 4. Dashboard with budget projections and spending breakdowns
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+
+## Deployment Architecture (January 2026)
+
+- **Frontend**: Vercel (ritual-fin-replit.vercel.app) - auto-deploys from main branch
+- **Backend**: Render (ritualfin-api.onrender.com) - auto-deploys from main branch
+- **Database**: Render PostgreSQL (dpg-d5e6moje5dus73es5aug-a, Frankfurt region)
+- **Development DB**: Replit PostgreSQL (helium)
+
+### Authentication
+- **Google OAuth**: Configured with passport-google-oauth20
+  - Callback URL: `https://ritualfin-api.onrender.com/api/auth/google/callback`
+  - Credentials stored in Replit Secrets: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+  - Note: OAuth only works in production (Render) due to callback URL mismatch with Replit
+- **Traditional login**: Username/password with bcrypt
+- **Demo mode**: Fallback to demo user for unauthenticated access
+
+### User Isolation
+- `getAuthenticatedUser()`: Returns null if not authenticated
+- `getAuthenticatedUserOrDemo()`: Returns demo user as fallback for testing
+- All API endpoints use user-scoped queries
 
 ## System Architecture
 
