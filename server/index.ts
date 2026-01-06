@@ -16,8 +16,8 @@ import { passport } from "./passport";
 const app = express();
 const httpServer = createServer(app);
 
-// Default NODE_ENV to development
-process.env.NODE_ENV = process.env.NODE_ENV || "development";
+// Environment setup
+const env = process.env.NODE_ENV || "development";
 
 // Configure CORS for split deployment (Vercel frontend + separate backend)
 const corsOrigins = process.env.CORS_ORIGIN
@@ -50,10 +50,10 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === "production",
+      secure: env === "production",
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      sameSite: env === "production" ? "none" : "lax",
     },
   })
 );
@@ -155,7 +155,7 @@ app.use((req, res, next) => {
     };
 
     // Include stack trace in development only
-    if (process.env.NODE_ENV === "development" && err.stack) {
+    if (env === "development" && err.stack) {
       errorResponse.stack = err.stack;
     }
 
@@ -173,7 +173,7 @@ app.use((req, res, next) => {
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
-  if (process.env.NODE_ENV === "production") {
+  if (env === "production") {
     serveStatic(app);
   } else {
     const { setupVite } = await import("./vite");
@@ -198,7 +198,7 @@ app.use((req, res, next) => {
       // Startup sanity check logging (no secrets)
       console.log("=== RitualFin Startup Sanity Check ===");
       console.log(`Node Version: ${process.version}`);
-      console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
+      console.log(`Environment: ${env}`);
       console.log(`DNS Resolution Order: ipv4first (forced)`);
       console.log(`DATABASE_URL configured: ${!!process.env.DATABASE_URL}`);
       console.log(`ADMIN_API_KEY configured: ${!!process.env.ADMIN_API_KEY}`);
