@@ -75,6 +75,9 @@ export interface ParseResult {
   monthAffected: string;
   format?: "miles_and_more" | "amex" | "sparkasse" | "unknown";
   diagnostics?: ParseDiagnostics;
+  meta?: ParseMeta;
+  sparkasseDiagnostics?: any;
+  sparkasseError?: { code?: string; message?: string } | string;
 }
 
 type CsvFormat = "miles_and_more" | "amex" | "sparkasse" | "unknown";
