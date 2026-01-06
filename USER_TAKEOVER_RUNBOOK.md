@@ -27,15 +27,21 @@ FRONTEND_URL="http://localhost:5001"
 
 **ACTION:** Go to Render Dashboard -> Environment -> Add/Edit:
 
+**CRITICAL:** You must add `FRONTEND_URL` to match your `CLIENT_URL` because the code expects `FRONTEND_URL` for Google OAuth redirects.
+
 | Key | Value / Instructions |
 |-----|----------------------|
 | `DATABASE_URL` | Use the internal connection string (starts with `postgres://`) or the external one above |
 | `NODE_ENV` | `production` |
 | `GOOGLE_CLIENT_ID` | From Google Cloud |
 | `GOOGLE_CLIENT_SECRET` | From Google Cloud |
-| `FRONTEND_URL` | Your Vercel Production URL (e.g., https://ritualfin.vercel.app) |
+| `FRONTEND_URL` | `https://ritual-fin-replit.vercel.app` (Same as CLIENT_URL) |
 | `SESSION_SECRET` | Generate a long random string |
-| `ALLOW_DEMO_AUTH_IN_PROD` | `false` (or remove allow-list logic will handle OAuth) |
+| `ALLOW_DEMO_AUTH_IN_PROD` | `false` (or remove; allow-list logic will handle OAuth) |
+
+**Notes on Variables:**
+- `CLIENT_URL` is likely unused by the backend code directly, but keeping it is fine.
+- `ADMIN_API_KEY` is the correct name used in code. `ADMIN_KEY` appears unused but safe to keep.
 
 ## 3. Google Cloud Console Checklist
 
@@ -43,11 +49,11 @@ FRONTEND_URL="http://localhost:5001"
 
 1.  **Authorized JavaScript Origins**:
     *   `http://localhost:5001` (For local dev)
-    *   `https://<your-vercel-app>.vercel.app` (For production)
+    *   `https://ritual-fin-replit.vercel.app` (For production)
 
 2.  **Authorized Redirect URIs**:
     *   `http://localhost:5001/api/auth/google/callback` (Local)
-    *   `https://<your-render-backend>.onrender.com/api/auth/google/callback` (Production Backend URL)
+    *   `https://ritualfin-api.onrender.com/api/auth/google/callback` (Production Backend URL)
     
     *Note: Since the backend handles the OAuth callback, use the Backend URL.*
 
