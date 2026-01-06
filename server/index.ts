@@ -185,44 +185,59 @@ app.use((req, res, next) => {
   const preferredPort = parseInt(process.env.PORT || "5001", 10);
   const host = process.env.HOST || "0.0.0.0";
 
-  function startServer(port: number, attempt = 0) {
-    if (attempt > 10) {
-      log("Could not find an open port after 10 attempts. Exiting.");
-      process.exit(1);
-    }
-
-    const server = httpServer.listen(
-      {
-        port,
-        host,
-        ...(process.env.REUSE_PORT === "true" ? { reusePort: true } : {}),
-      },
-      () => {
-        log(`serving on port ${port}`);
-
-        // Startup sanity check logging (no secrets)
-        console.log("=== RitualFin Startup Sanity Check ===");
-        console.log(`Node Version: ${process.version}`);
-        console.log(`Environment: ${env}`);
-        console.log(`DNS Resolution Order: ipv4first (forced)`);
-        console.log(`DATABASE_URL configured: ${!!process.env.DATABASE_URL}`);
-        console.log(`ADMIN_API_KEY configured: ${!!process.env.ADMIN_API_KEY}`);
-        console.log(`Session Store: ${sessionStore ? "PostgreSQL" : "MemoryStore (dev only)"}`);
-        console.log(`CORS Origins: ${corsOrigins.join(", ")}`);
-        console.log("=====================================");
-      },
-    );
-
-    server.on("error", (e: any) => {
-      if (e.code === "EADDRINUSE") {
-        log(`Port ${port} is in use, trying ${port + 1}...`);
-        server.close(); // Ensure previous handle is closed
-        startServer(port + 1, attempt + 1);
-      } else {
-        console.error("Server error:", e);
-      }
+  // Check if a port is available
+  function checkPort(port: number): Promise<boolean> {
+    return new Promise((resolve) => {
+      const server = import("net").then(({ createServer }) => {
+        const s = createServer();
+        s.once("error", () => {
+          resolve(false);
+        });
+        s.once("listening", () => {
+          s.close(() => {
+            resolve(true);
+          });
+        });
+        s.listen(port, host);
+      });
     });
   }
 
-  startServer(preferredPort);
+  // Find the first available port
+  async function findAvailablePort(startPort: number): Promise<number> {
+    let port = startPort;
+    while (port < startPort + 10) {
+      if (await checkPort(port)) {
+        return port;
+      }
+      port++;
+    }
+    throw new Error(`Could not find an open port after 10 attempts (starting from ${startPort})`);
+  }
+
+  try {
+    const port = await findAvailablePort(preferredPort);
+    
+    httpServer.listen({
+      port,
+      host,
+      ...(process.env.REUSE_PORT === "true" ? { reusePort: true } : {}),
+    }, () => {
+      log(`serving on port ${port}`);
+
+      // Startup sanity check logging (no secrets)
+      console.log("=== RitualFin Startup Sanity Check ===");
+      console.log(`Node Version: ${process.version}`);
+      console.log(`Environment: ${env}`);
+      console.log(`DNS Resolution Order: ipv4first (forced)`);
+      console.log(`DATABASE_URL configured: ${!!process.env.DATABASE_URL}`);
+      console.log(`ADMIN_API_KEY configured: ${!!process.env.ADMIN_API_KEY}`);
+      console.log(`Session Store: ${sessionStore ? "PostgreSQL" : "MemoryStore (dev only)"}`);
+      console.log(`CORS Origins: ${corsOrigins.join(", ")}`);
+      console.log("=====================================");
+    });
+  } catch (err: any) {
+    log(`Failed to start server: ${err.message}`);
+    process.exit(1);
+  }
 })();

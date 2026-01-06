@@ -481,7 +481,7 @@ export async function registerRoutes(
     }
 
     // Always allow health and version
-    const allowedPaths = ["/health", "/version", "/admin/version", "/admin/db-ping"];
+    const allowedPaths = ["/health", "/version", "/admin/version", "/admin/db-ping", "/auth/google"];
     if (allowedPaths.some(p => req.path.startsWith(p))) {
       return next();
     }
