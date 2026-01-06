@@ -263,6 +263,20 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  // Root route handler
+  // Allows fallthrough to Vite (dev) or serveStatic (prod) if HTML is requested.
+  app.get("/", (req: Request, res: Response, next) => {
+    if (req.accepts("html")) {
+      return next();
+    }
+    res.json({
+      service: "ritualfin-api",
+      status: "running",
+      env: process.env.NODE_ENV,
+      port: process.env.PORT || "5001"
+    });
+  });
+
   // Health check endpoint (required for deployment monitoring)
   app.get("/api/health", async (_req: Request, res: Response) => {
     // If database is not configured, return degraded status
@@ -454,18 +468,30 @@ export async function registerRoutes(
     process.env.NODE_ENV === "production" &&
     process.env.ALLOW_DEMO_AUTH_IN_PROD !== "true";
 
+  if (process.env.NODE_ENV === "development") {
+    console.log(`[AUTH] Demo auth enforcement: DISABLED (development mode)`);
+  } else {
+    console.log(`[AUTH] Demo auth enforcement: ${demoAuthBlocked ? "ENABLED" : "DISABLED"} (ALLOW_DEMO_AUTH_IN_PROD=${process.env.ALLOW_DEMO_AUTH_IN_PROD})`);
+  }
+
   app.use("/api", (req: Request, res: Response, next) => {
+    // Never block if we're not in a blocked state
     if (!demoAuthBlocked) {
       return next();
     }
 
-    const allowedPaths = new Set(["/health", "/version"]);
-    if (allowedPaths.has(req.path)) {
+    // Always allow health and version
+    const allowedPaths = ["/health", "/version", "/admin/version", "/admin/db-ping"];
+    if (allowedPaths.some(p => req.path.startsWith(p))) {
       return next();
     }
 
+    // Log the block
+    logger.warn("demo_auth_blocked", { path: req.path, method: req.method });
+
     return res.status(403).json({
       error: "Demo auth is disabled in production. Set ALLOW_DEMO_AUTH_IN_PROD=true to bypass for demo-only use.",
+      path: req.originalUrl
     });
   });
 

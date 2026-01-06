@@ -79,7 +79,7 @@ This will add the new `email`, `google_id`, `created_at`, and `updated_at` colum
    ```bash
    GOOGLE_CLIENT_ID=533925452264-pbd6qa1fi3uqr1gem94edpk0f0tsi17n.apps.googleusercontent.com
    GOOGLE_CLIENT_SECRET=<get from Render>
-   GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/google/callback
+   GOOGLE_CALLBACK_URL=http://localhost:5001/api/auth/google/callback
    ```
 
 2. Push database schema:
@@ -92,7 +92,7 @@ This will add the new `email`, `google_id`, `created_at`, and `updated_at` colum
    npm run dev
    ```
 
-4. Navigate to `http://localhost:5000/login` and click "Continue with Google"
+4. Navigate to `http://localhost:5001/login` and click "Continue with Google"
 
 ## Google Cloud Console Configuration
 
@@ -100,13 +100,13 @@ Your Google OAuth app needs these settings:
 
 **Authorized JavaScript origins:**
 ```
-http://localhost:5000
+http://localhost:5001
 https://your-frontend.vercel.app
 ```
 
 **Authorized redirect URIs:**
 ```
-http://localhost:5000/api/auth/google/callback
+http://localhost:5001/api/auth/google/callback
 https://your-backend.onrender.com/api/auth/google/callback
 ```
 

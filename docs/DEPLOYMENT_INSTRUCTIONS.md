@@ -114,7 +114,7 @@ Value: production
 #### Variable 3: CORS_ORIGIN (TEMPORARY - will update after Vercel deployment)
 ```
 Key: CORS_ORIGIN
-Value: http://localhost:5000
+Value: http://localhost:5001
 ```
 **NOTE**: We'll update this with the Vercel URL after Step 2
 

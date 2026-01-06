@@ -16,6 +16,9 @@ import { passport } from "./passport";
 const app = express();
 const httpServer = createServer(app);
 
+// Default NODE_ENV to development
+process.env.NODE_ENV = process.env.NODE_ENV || "development";
+
 // Configure CORS for split deployment (Vercel frontend + separate backend)
 const corsOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(",").map(origin => origin.trim())
