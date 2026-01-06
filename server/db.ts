@@ -18,8 +18,14 @@ if (!isDatabaseConfigured) {
 export const pool = isDatabaseConfigured
   ? new Pool({
       connectionString: process.env.DATABASE_URL,
-      // Disable prepared statements for Supabase Transaction Pooler compatibility
-      // PgBouncer in transaction mode doesn't support prepared statements
+      // SSL configuration for Supabase
+      ssl: {
+        rejectUnauthorized: false,
+      },
+      // Connection timeout settings
+      connectionTimeoutMillis: 10000,
+      idleTimeoutMillis: 30000,
+      max: 5,
     })
   : null;
 
