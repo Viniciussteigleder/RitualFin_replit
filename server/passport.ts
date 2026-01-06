@@ -5,7 +5,7 @@ import { logger } from "./logger";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL || "http://localhost:5000/api/auth/google/callback";
+const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL || "http://localhost:5001/api/auth/google/callback";
 
 if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
   logger.warn("google_oauth_not_configured", {
@@ -57,7 +57,6 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
               email,
               username: displayName,
               googleId: profile.id,
-              passwordHash: null, // OAuth users don't have passwords
             });
             logger.info("user_created_via_google", { userId: user.id, email });
           } else {

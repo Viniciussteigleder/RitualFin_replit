@@ -38,11 +38,18 @@ function parseDatabaseUrl(url: string): {
 }
 
 /**
- * Create PostgreSQL connection pool with IPv4 enforcement
- * Uses explicit host/port/user/password to bypass connectionString DNS behavior
- *
- * CRITICAL: This function assumes bootstrap.cjs has already resolved the hostname to IPv4
- * and updated DATABASE_URL. If bootstrap didn't run, connections may fail with ENETUNREACH.
+ * Detect DB provider from hostname
+ */
+function getDbProvider(host: string): "render" | "supabase" | "neon" | "local" | "postgres" {
+  if (host.includes("render.com")) return "render";
+  if (host.includes("supabase.com") || host.includes("supabase.co")) return "supabase";
+  if (host.includes("neon.tech")) return "neon";
+  if (host.includes("localhost") || host.includes("127.0.0.1")) return "local";
+  return "postgres";
+}
+
+/**
+ * Create PostgreSQL connection pool with optimized settings
  */
 function createPool(): pg.Pool | null {
   if (!isDatabaseConfigured) {
@@ -51,37 +58,35 @@ function createPool(): pg.Pool | null {
 
   try {
     const dbConfig = parseDatabaseUrl(process.env.DATABASE_URL!);
-
-    // Check if bootstrap already resolved to IPv4
+    const provider = getDbProvider(dbConfig.host);
     const bootstrapRan = process.env.BOOTSTRAP_IPV4_RESOLVED === "true";
     const isIPv4 = /^\d+\.\d+\.\d+\.\d+$/.test(dbConfig.host);
+
+    console.log(`[DB] Selected provider: ${provider}`);
 
     if (bootstrapRan && isIPv4) {
       console.log(`[DB] ✓ Bootstrap resolved hostname to IPv4: ${dbConfig.host}`);
     } else if (isIPv4) {
       console.log(`[DB] ✓ DATABASE_URL already uses IPv4 address: ${dbConfig.host}`);
-    } else {
-      console.warn(`[DB] ⚠️  WARNING: Bootstrap did NOT run or failed - using hostname: ${dbConfig.host}`);
-      console.warn(`[DB] ⚠️  Connection may fail with ENETUNREACH on Render (IPv6 not supported)`);
-      console.warn(`[DB] ⚠️  Ensure Render Start Command is: npm start (not node dist/index.cjs)`);
+    } else if (process.env.NODE_ENV === "production" && provider === "render") {
+      console.warn(`[DB] ⚠️ WARNING: Not using IPv4 yet. On Render, consider using 'npm start' to trigger IPv4 resolution.`);
     }
 
-    // Create pool with explicit configuration
-    // This bypasses pg's internal DNS resolution which might prefer IPv6
+    // SSL defaults
+    let sslConfig: pg.PoolConfig["ssl"] = undefined;
+    if (dbConfig.ssl) {
+      // For Render and Supabase, we typically need to allow unauthorized certs when connecting via IPv4
+      // or using the external connection strings.
+      sslConfig = { rejectUnauthorized: false };
+    }
+
     const poolConfig: pg.PoolConfig = {
       user: dbConfig.user,
       password: dbConfig.password,
-      host: dbConfig.host, // IPv4 address (if bootstrap ran) or hostname (fallback)
+      host: dbConfig.host,
       port: dbConfig.port,
       database: dbConfig.database,
-      // SSL configuration for Supabase
-      // Use rejectUnauthorized: false for two reasons:
-      // 1. When connecting to an IPv4 address, the cert is issued for the hostname
-      // 2. Supabase uses valid certs but rejectUnauthorized can be too strict
-      ssl: dbConfig.ssl ? {
-        rejectUnauthorized: false
-      } : undefined,
-      // Connection pool settings
+      ssl: sslConfig,
       max: 10,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 10000,
@@ -89,13 +94,11 @@ function createPool(): pg.Pool | null {
       keepAliveInitialDelayMillis: 10000
     };
 
-    console.log(`[DB] Creating pool: ${dbConfig.user}@${dbConfig.host}:${dbConfig.port}/${dbConfig.database}`);
-    console.log(`[DB] SSL enabled: ${!!poolConfig.ssl}`);
+    console.log(`[DB] Connecting to ${dbConfig.host}:${dbConfig.port}/${dbConfig.database} (SSL: ${!!sslConfig})`);
 
     return new Pool(poolConfig);
   } catch (error: any) {
     console.error(`[DB] ✗ CRITICAL: Failed to create database pool: ${error.message}`);
-    console.error(`[DB] ✗ Database will be unavailable`);
     return null;
   }
 }

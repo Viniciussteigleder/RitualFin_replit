@@ -264,6 +264,20 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  // Root route handler
+  // Allows fallthrough to Vite (dev) or serveStatic (prod) if HTML is requested.
+  app.get("/", (req: Request, res: Response, next) => {
+    if (req.accepts("html")) {
+      return next();
+    }
+    res.json({
+      service: "ritualfin-api",
+      status: "running",
+      env: process.env.NODE_ENV,
+      port: process.env.PORT || "5001"
+    });
+  });
+
   // Health check endpoint (required for deployment monitoring)
   app.get("/api/health", async (_req: Request, res: Response) => {
     // If database is not configured, return degraded status
@@ -455,18 +469,30 @@ export async function registerRoutes(
     process.env.NODE_ENV === "production" &&
     process.env.ALLOW_DEMO_AUTH_IN_PROD !== "true";
 
+  if (process.env.NODE_ENV === "development") {
+    console.log(`[AUTH] Demo auth enforcement: DISABLED (development mode)`);
+  } else {
+    console.log(`[AUTH] Demo auth enforcement: ${demoAuthBlocked ? "ENABLED" : "DISABLED"} (ALLOW_DEMO_AUTH_IN_PROD=${process.env.ALLOW_DEMO_AUTH_IN_PROD})`);
+  }
+
   app.use("/api", (req: Request, res: Response, next) => {
+    // Never block if we're not in a blocked state
     if (!demoAuthBlocked) {
       return next();
     }
 
-    const allowedPaths = new Set(["/health", "/version"]);
-    if (allowedPaths.has(req.path)) {
+    // Always allow health and version
+    const allowedPaths = ["/health", "/version", "/admin/version", "/admin/db-ping"];
+    if (allowedPaths.some(p => req.path.startsWith(p))) {
       return next();
     }
 
+    // Log the block
+    logger.warn("demo_auth_blocked", { path: req.path, method: req.method });
+
     return res.status(403).json({
       error: "Demo auth is disabled in production. Set ALLOW_DEMO_AUTH_IN_PROD=true to bypass for demo-only use.",
+      path: req.originalUrl
     });
   });
 
@@ -527,9 +553,9 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
-      // Validate password via verifyPassword
-      const isValid = await verifyPassword(password, user.passwordHash || "");
-      if (!isValid) {
+      // Verify password using bcrypt
+      const isPasswordValid = await verifyPassword(password, user.passwordHash || user.password || "");
+      if (!isPasswordValid) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
@@ -574,7 +600,7 @@ export async function registerRoutes(
     "/api/auth/google/callback",
     (req: Request, res: Response, next: any) => {
       const passport = require("passport");
-      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5000";
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5001";
 
       passport.authenticate("google", (err: any, user: any, info: any) => {
         if (err) {

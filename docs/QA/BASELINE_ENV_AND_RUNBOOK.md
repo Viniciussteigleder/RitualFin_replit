@@ -75,7 +75,7 @@ npm run db:push
 ### 3. Start Development Server
 ```bash
 npm run dev
-# Server: http://localhost:5000
+# Server: http://localhost:5001
 # Client HMR: Vite dev server proxied through Express
 ```
 
