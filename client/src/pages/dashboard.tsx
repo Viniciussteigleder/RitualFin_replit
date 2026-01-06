@@ -50,6 +50,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useState } from "react";
 import { dashboardCopy, translateCategory, t } from "@/lib/i18n";
 import { useLocale } from "@/hooks/use-locale";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 
 const CATEGORY_ICONS: Record<string, any> = {
   "Moradia": Home,
@@ -184,10 +186,10 @@ export default function DashboardPage() {
 
   const recentTransactions = filteredTransactions.slice(0, 5);
 
-  const estimatedIncome = 8500;
+  const estimatedIncome = dashboard?.estimatedIncome || 8500;
   const spent = dashboard?.totalSpent || 0;
   const income = dashboard?.totalIncome || 0;
-  
+
   const today = new Date();
   const [year, monthNum] = month.split("-").map(Number);
   const currentMonthDate = new Date(year, monthNum - 1, 1);
@@ -197,9 +199,10 @@ export default function DashboardPage() {
   const projection = spent + dailyAvg * (daysInMonth - daysPassed);
   const daysRemaining = today.getMonth() === monthNum - 1 && today.getFullYear() === year ? daysInMonth - today.getDate() : 0;
 
-  const upcomingCommitments = calendarEvents.filter((e: any) => e.isActive).slice(0, 3);
+  const upcomingCommitments = calendarEvents.filter((e: any) => e.isActive).slice(0, 5);
   const totalCommitted = upcomingCommitments.reduce((sum: number, e: any) => sum + e.amount, 0);
   const remaining = Math.max(0, estimatedIncome - spent);
+  const disponielReal = estimatedIncome - spent - totalCommitted;
 
   const generateInsights = (): Insight[] => {
     const insights: Insight[] = [];
@@ -360,93 +363,192 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="bg-white border-0 shadow-sm overflow-hidden relative">
-            <div className="absolute top-0 right-0 w-48 h-48 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-            <CardContent className="p-6 relative">
-              <div className="flex items-center gap-2 text-primary font-bold text-sm uppercase tracking-wide mb-2">
-                <TrendingUp className="h-5 w-5" />
-                {t(locale, dashboardCopy.monthlyProjection)}
+        {transactions.length === 0 && (dashboard?.spentByCategory || []).length === 0 ? (
+          <Card className="bg-white border-0 shadow-sm">
+            <CardContent className="p-12 text-center">
+              <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
+                <Wallet className="h-8 w-8 text-muted-foreground" />
               </div>
-              <p className="text-4xl lg:text-5xl font-black text-foreground tracking-tight">
-                {currencyFormatter.format(projection)}
-              </p>
-              
-              <div className="grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-border">
-                <div className="p-3 rounded-xl bg-primary/5 border border-primary/10">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">{t(locale, dashboardCopy.remainingMonth)}</p>
-                  <p className="text-primary font-bold flex items-center gap-1 text-xl">
-                    <ArrowUpRight className="h-5 w-5" />
-                    {currencyFormatter.format(remaining)}
-                  </p>
-                </div>
-                <div className="p-3 rounded-xl bg-rose-50 border border-rose-100">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">{t(locale, dashboardCopy.alreadyCommitted)}</p>
-                  <p className="text-rose-600 font-bold flex items-center gap-1 text-xl">
-                    <ArrowDownRight className="h-5 w-5" />
-                    {currencyFormatter.format(spent)}
-                  </p>
-                </div>
-              </div>
+              <h3 className="font-semibold text-lg mb-2">{t(locale, dashboardCopy.emptyDashboard)}</h3>
+              <p className="text-muted-foreground mb-6">{t(locale, dashboardCopy.startByUploadingData)}</p>
+              <Link href="/uploads">
+                <Button className="gap-2">
+                  <ArrowUpRight className="h-4 w-4" />
+                  {t(locale, dashboardCopy.uploadNow)}
+                </Button>
+              </Link>
             </CardContent>
           </Card>
+        ) : (
+          <>
+            {/* Disponível Real - Hero KPI */}
+            <Card className="bg-gradient-to-br from-primary via-primary to-primary/90 border-0 shadow-lg overflow-hidden relative">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+              <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
+              <CardContent className="p-8 relative">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Wallet className="h-6 w-6 text-white/90" />
+                      <span className="text-white/90 font-bold text-sm uppercase tracking-wider">
+                        {t(locale, dashboardCopy.disponivelReal)}
+                      </span>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <AlertCircle className="h-4 w-4 text-white/70 cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs bg-white text-foreground border shadow-lg p-4">
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">{t(locale, dashboardCopy.estimatedIncome)}</span>
+                                <span className="font-semibold">{currencyFormatter.format(estimatedIncome)}</span>
+                              </div>
+                              <div className="flex justify-between text-rose-600">
+                                <span>- {t(locale, dashboardCopy.alreadyCommitted)}</span>
+                                <span className="font-semibold">-{currencyFormatter.format(spent)}</span>
+                              </div>
+                              <div className="flex justify-between text-orange-600">
+                                <span>- {t(locale, dashboardCopy.futureCommitments)}</span>
+                                <span className="font-semibold">-{currencyFormatter.format(totalCommitted)}</span>
+                              </div>
+                              <div className="border-t pt-2 flex justify-between font-bold">
+                                <span>= {t(locale, dashboardCopy.disponivelReal)}</span>
+                                <span className={disponielReal < 0 ? "text-rose-600" : "text-primary"}>
+                                  {currencyFormatter.format(disponielReal)}
+                                </span>
+                              </div>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <p className="text-5xl lg:text-6xl font-black text-white tracking-tight mb-2">
+                      {currencyFormatter.format(disponielReal)}
+                    </p>
+                    <p className="text-white/80 text-sm max-w-md">
+                      {t(locale, dashboardCopy.disponivelRealDescription)}
+                    </p>
+                    {estimatedIncome === 8500 && (
+                      <Link href="/goals">
+                        <Button variant="secondary" size="sm" className="mt-4 gap-2">
+                          <AlertCircle className="h-4 w-4" />
+                          {t(locale, dashboardCopy.defineIncomeGoals)}
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
 
-          <Card className="bg-white border-0 shadow-sm overflow-hidden relative">
-            <div className="absolute top-0 right-0 w-48 h-48 bg-rose-100 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-            <CardContent className="p-6 relative">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2 text-rose-600 font-bold text-sm uppercase tracking-wide">
-                  <Calendar className="h-5 w-5" />
-                  {t(locale, dashboardCopy.remainingCommitments)}
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                      <p className="text-white/70 text-xs font-semibold uppercase mb-1">
+                        {t(locale, dashboardCopy.estimatedIncome)}
+                      </p>
+                      <p className="text-white font-bold text-xl">
+                        {currencyFormatter.format(estimatedIncome)}
+                      </p>
+                    </div>
+                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                      <p className="text-white/70 text-xs font-semibold uppercase mb-1">
+                        {t(locale, dashboardCopy.alreadyCommitted)}
+                      </p>
+                      <p className="text-white font-bold text-xl">
+                        {currencyFormatter.format(spent)}
+                      </p>
+                    </div>
+                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 col-span-2 lg:col-span-1">
+                      <p className="text-white/70 text-xs font-semibold uppercase mb-1">
+                        {t(locale, dashboardCopy.futureCommitments)}
+                      </p>
+                      <p className="text-white font-bold text-xl">
+                        {currencyFormatter.format(totalCommitted)}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <Link href="/calendar">
-                  <Button variant="ghost" size="sm" className="text-xs text-primary">
-                    {t(locale, dashboardCopy.viewAll)}
-                    <ChevronRight className="h-3 w-3 ml-1" />
-                  </Button>
-                </Link>
-              </div>
-              <p className="text-4xl lg:text-5xl font-black text-foreground tracking-tight">
-                {currencyFormatter.format(totalCommitted)}
-              </p>
-              
-              <div className="flex items-center gap-2 mt-6 pt-4 border-t border-border">
-                {upcomingCommitments.length > 0 ? (
-                  <>
-                    <div className="flex gap-1">
-                      {upcomingCommitments.map((event: any) => {
+              </CardContent>
+            </Card>
+
+            {/* Projection & Commitments */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="bg-white border-0 shadow-sm overflow-hidden relative">
+                <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                <CardContent className="p-6 relative">
+                  <div className="flex items-center gap-2 text-emerald-600 font-bold text-sm uppercase tracking-wide mb-2">
+                    <TrendingUp className="h-5 w-5" />
+                    {t(locale, dashboardCopy.monthlyProjection)}
+                  </div>
+                  <p className="text-4xl lg:text-5xl font-black text-foreground tracking-tight">
+                    {currencyFormatter.format(projection)}
+                  </p>
+
+                  <div className="mt-6 pt-4 border-t border-border space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Dias restantes</span>
+                      <span className="font-semibold">{daysRemaining}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Média diária</span>
+                      <span className="font-semibold">{currencyFormatter.format(dailyAvg)}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white border-0 shadow-sm overflow-hidden relative">
+                <div className="absolute top-0 right-0 w-48 h-48 bg-rose-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                <CardContent className="p-6 relative">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 text-rose-600 font-bold text-sm uppercase tracking-wide">
+                      <Calendar className="h-5 w-5" />
+                      {t(locale, dashboardCopy.criticalCommitments)}
+                    </div>
+                    <Link href="/calendar">
+                      <Button variant="ghost" size="sm" className="text-xs text-primary">
+                        {t(locale, dashboardCopy.viewAll)}
+                        <ChevronRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    </Link>
+                  </div>
+                  <p className="text-4xl lg:text-5xl font-black text-foreground tracking-tight mb-4">
+                    {currencyFormatter.format(totalCommitted)}
+                  </p>
+
+                  <div className="space-y-2">
+                    {upcomingCommitments.length > 0 ? (
+                      upcomingCommitments.slice(0, 3).map((event: any) => {
                         const Icon = CATEGORY_ICONS[event.category1] || CreditCard;
                         const color = CATEGORY_COLORS[event.category1] || "#6b7280";
                         return (
-                          <div 
-                            key={event.id}
-                            className="w-8 h-8 rounded-full flex items-center justify-center"
-                            style={{ backgroundColor: `${color}20` }}
-                            title={event.name}
-                          >
-                            <Icon className="h-4 w-4" style={{ color }} />
+                          <div key={event.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/30 transition-colors">
+                            <div
+                              className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                              style={{ backgroundColor: `${color}15` }}
+                            >
+                              <Icon className="h-4 w-4" style={{ color }} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{event.name}</p>
+                              <p className="text-xs text-muted-foreground">{translateCategory(locale, event.category1)}</p>
+                            </div>
+                            <span className="font-bold text-sm text-rose-600">
+                              {currencyFormatter.format(event.amount)}
+                            </span>
                           </div>
                         );
-                      })}
-                    </div>
-                    {upcomingCommitments.length > 0 && (
-                      <span className="text-sm text-muted-foreground ml-auto">
-                        {formatMessage(t(locale, dashboardCopy.eventsThisMonth), {
-                          count: upcomingCommitments.length
-                        })}
-                      </span>
+                      })
+                    ) : (
+                      <p className="text-sm text-muted-foreground py-4 text-center">
+                        {t(locale, dashboardCopy.noCommitments)}{" "}
+                        <Link href="/calendar" className="text-primary underline">{t(locale, dashboardCopy.addAction)}</Link>
+                      </p>
                     )}
-                  </>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    {t(locale, dashboardCopy.noCommitments)}{" "}
-                    <Link href="/calendar" className="text-primary underline">{t(locale, dashboardCopy.addAction)}</Link>
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </>
+        )}
 
         {mainInsight && (
           <Card className={cn(

@@ -542,13 +542,13 @@ export default function RulesPage() {
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-2xl font-bold">{t(locale, rulesCopy.title)}</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground">{t(locale, rulesCopy.title)}</h1>
               <Badge variant="secondary" className="bg-primary/10 text-primary text-xs gap-1">
                 <Sparkles className="h-3 w-3" />
                 {t(locale, rulesCopy.aiBadge)}
               </Badge>
             </div>
-            <p className="text-muted-foreground">{t(locale, rulesCopy.subtitle)}</p>
+            <p className="text-muted-foreground text-sm md:text-base">{t(locale, rulesCopy.subtitle)}</p>
           </div>
           
           <div className="flex gap-2">

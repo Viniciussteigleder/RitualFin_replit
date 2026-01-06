@@ -330,15 +330,18 @@ export default function UploadsPage() {
   return (
     <AppLayout>
       <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex flex-col gap-4">
           <div>
-            <h1 className="text-2xl font-bold">{t(locale, uploadsCopy.title)}</h1>
-            <p className="text-muted-foreground">{t(locale, uploadsCopy.subtitle)}</p>
-            <div className="flex flex-wrap gap-2 mt-2">
-              <BankBadge provider="miles_and_more" size="sm" variant="compact" />
-              <BankBadge provider="amex" size="sm" variant="compact" />
-              <BankBadge provider="sparkasse" size="sm" variant="compact" />
-            </div>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">{t(locale, uploadsCopy.title)}</h1>
+            <p className="text-muted-foreground text-sm md:text-base mt-1">{t(locale, uploadsCopy.subtitle)}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mr-2">
+              Formatos suportados:
+            </span>
+            <BankBadge provider="miles_and_more" size="sm" variant="compact" />
+            <BankBadge provider="amex" size="sm" variant="compact" />
+            <BankBadge provider="sparkasse" size="sm" variant="compact" />
           </div>
         </div>
 

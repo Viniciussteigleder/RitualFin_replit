@@ -498,6 +498,40 @@ export async function registerRoutes(
     }
   });
 
+  // Google OAuth routes
+  app.get(
+    "/api/auth/google",
+    (req: Request, res: Response, next: any) => {
+      const passport = require("passport");
+      passport.authenticate("google", { scope: ["profile", "email"] })(req, res, next);
+    }
+  );
+
+  app.get(
+    "/api/auth/google/callback",
+    (req: Request, res: Response, next: any) => {
+      const passport = require("passport");
+      passport.authenticate("google", {
+        failureRedirect: "/login",
+        successRedirect: "/dashboard"
+      })(req, res, next);
+    }
+  );
+
+  app.get("/api/auth/logout", (req: Request, res: Response) => {
+    req.logout((err) => {
+      if (err) {
+        return res.status(500).json({ error: "Logout failed" });
+      }
+      req.session.destroy((err) => {
+        if (err) {
+          return res.status(500).json({ error: "Session destruction failed" });
+        }
+        res.json({ success: true });
+      });
+    });
+  });
+
   // ===== SETTINGS =====
   app.get("/api/settings", async (_req: Request, res: Response) => {
     try {

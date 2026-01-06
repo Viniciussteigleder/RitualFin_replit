@@ -83,65 +83,77 @@ export default function CalendarPage() {
 
   return (
     <AppLayout>
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">{translate(locale, calendarCopy.title)}</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">{translate(locale, calendarCopy.title)}</h1>
+            <p className="text-muted-foreground text-sm md:text-base">
               {translate(locale, calendarCopy.subtitle)}
             </p>
           </div>
 
           {/* Month Navigation */}
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={handlePrevMonth}>
+            <Button variant="outline" size="icon" onClick={handlePrevMonth} className="h-9 w-9 shadow-sm">
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-lg font-semibold min-w-[150px] text-center">
+            <span className="text-base md:text-lg font-semibold min-w-[140px] md:min-w-[160px] text-center">
               {formatMonth(month)}
             </span>
-            <Button variant="outline" size="icon" onClick={handleNextMonth}>
+            <Button variant="outline" size="icon" onClick={handleNextMonth} className="h-9 w-9 shadow-sm">
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
-        {/* View Toggle */}
+        {/* View Toggle with Enhanced Legend */}
         <Tabs value={view} onValueChange={(v) => setView(v as "month" | "week")}>
-          <div className="flex flex-wrap items-center gap-4 mb-3 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-              Realizado
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full border border-dashed border-amber-500" />
-              Projetado
-            </span>
-            <div className="flex items-center gap-2">
-              <Switch
-                id="toggle-realized"
-                checked={showRealized}
-                onCheckedChange={setShowRealized}
-              />
-              <Label htmlFor="toggle-realized" className="text-xs text-muted-foreground">
-                Mostrar realizados
-              </Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch
-                id="toggle-projected"
-                checked={showProjected}
-                onCheckedChange={setShowProjected}
-              />
-              <Label htmlFor="toggle-projected" className="text-xs text-muted-foreground">
-                Mostrar projetados
-              </Label>
+          <div className="bg-white rounded-lg border-0 shadow-sm p-4 mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex flex-wrap items-center gap-4 text-xs font-medium">
+                <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Legenda:</span>
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-emerald-50 border border-emerald-200">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                  <span className="text-emerald-700 font-medium">Realizado</span>
+                </span>
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-amber-50 border border-amber-200 border-dashed">
+                  <span className="w-2.5 h-2.5 rounded-full border-2 border-dashed border-amber-500" />
+                  <span className="text-amber-700 font-medium">Projetado</span>
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="toggle-realized"
+                    checked={showRealized}
+                    onCheckedChange={setShowRealized}
+                  />
+                  <Label htmlFor="toggle-realized" className="text-xs font-medium text-muted-foreground cursor-pointer">
+                    Mostrar realizados
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="toggle-projected"
+                    checked={showProjected}
+                    onCheckedChange={setShowProjected}
+                  />
+                  <Label htmlFor="toggle-projected" className="text-xs font-medium text-muted-foreground cursor-pointer">
+                    Mostrar projetados
+                  </Label>
+                </div>
+              </div>
             </div>
           </div>
-          <TabsList className="grid w-full max-w-[400px] grid-cols-2">
-            <TabsTrigger value="month">{translate(locale, calendarCopy.viewMonth)}</TabsTrigger>
-            <TabsTrigger value="week">{translate(locale, calendarCopy.viewWeek)}</TabsTrigger>
+
+          <TabsList className="grid w-full max-w-[400px] grid-cols-2 h-11">
+            <TabsTrigger value="month" className="data-[state=active]:bg-primary data-[state=active]:text-white">
+              {translate(locale, calendarCopy.viewMonth)}
+            </TabsTrigger>
+            <TabsTrigger value="week" className="data-[state=active]:bg-primary data-[state=active]:text-white">
+              {translate(locale, calendarCopy.viewWeek)}
+            </TabsTrigger>
           </TabsList>
 
           {/* Month View + Detail Panel */}

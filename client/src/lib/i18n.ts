@@ -980,6 +980,56 @@ export const dashboardCopy = {
     "de-DE": "Jetzt prüfen",
     "en-US": "Review now"
   },
+  disponivelReal: {
+    "pt-BR": "Disponível Real",
+    "de-DE": "Tatsächlich verfügbar",
+    "en-US": "Real Available"
+  },
+  disponivelRealDescription: {
+    "pt-BR": "O que você pode gastar agora, depois de compromissos",
+    "de-DE": "Was Sie jetzt ausgeben können, nach Verpflichtungen",
+    "en-US": "What you can spend now, after commitments"
+  },
+  disponivelRealBreakdown: {
+    "pt-BR": "Renda estimada: {income}\nJá gasto: {spent}\nCompromissos futuros: {commitments}\n= Disponível: {available}",
+    "de-DE": "Geschätztes Einkommen: {income}\nBereits ausgegeben: {spent}\nZukünftige Verpflichtungen: {commitments}\n= Verfügbar: {available}",
+    "en-US": "Estimated income: {income}\nAlready spent: {spent}\nFuture commitments: {commitments}\n= Available: {available}"
+  },
+  estimatedIncome: {
+    "pt-BR": "Renda Estimada",
+    "de-DE": "Geschätztes Einkommen",
+    "en-US": "Estimated Income"
+  },
+  futureCommitments: {
+    "pt-BR": "Compromissos Futuros",
+    "de-DE": "Zukünftige Verpflichtungen",
+    "en-US": "Future Commitments"
+  },
+  defineIncomeGoals: {
+    "pt-BR": "Definir em Metas",
+    "de-DE": "In Zielen definieren",
+    "en-US": "Define in Goals"
+  },
+  emptyDashboard: {
+    "pt-BR": "Nenhum dado encontrado para este mês",
+    "de-DE": "Keine Daten für diesen Monat gefunden",
+    "en-US": "No data found for this month"
+  },
+  startByUploadingData: {
+    "pt-BR": "Comece fazendo upload dos seus extratos",
+    "de-DE": "Beginnen Sie mit dem Hochladen Ihrer Kontoauszüge",
+    "en-US": "Start by uploading your bank statements"
+  },
+  uploadNow: {
+    "pt-BR": "Fazer Upload",
+    "de-DE": "Hochladen",
+    "en-US": "Upload Now"
+  },
+  criticalCommitments: {
+    "pt-BR": "Compromissos Críticos",
+    "de-DE": "Kritische Verpflichtungen",
+    "en-US": "Critical Commitments"
+  },
   insightSaveTitle: {
     "pt-BR": "Economia em {category}",
     "de-DE": "Ersparnis bei {category}",

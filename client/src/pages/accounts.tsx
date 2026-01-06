@@ -163,15 +163,15 @@ export default function AccountsPage() {
 
   return (
     <AppLayout>
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">{translate(locale, accountsCopy.title)}</h1>
-            <p className="text-muted-foreground">{translate(locale, accountsCopy.subtitle)}</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">{translate(locale, accountsCopy.title)}</h1>
+            <p className="text-muted-foreground text-sm md:text-base">{translate(locale, accountsCopy.subtitle)}</p>
           </div>
-          <Button onClick={openCreateDialog}>
-            <Plus className="w-4 h-4 mr-2" />
+          <Button onClick={openCreateDialog} className="gap-2">
+            <Plus className="w-4 h-4" />
             {translate(locale, accountsCopy.newAccount)}
           </Button>
         </div>

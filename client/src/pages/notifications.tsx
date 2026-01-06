@@ -200,7 +200,7 @@ export default function NotificationsPage() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold">{translate(locale, notificationsCopy.title)}</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground">{translate(locale, notificationsCopy.title)}</h1>
               {unreadCount > 0 && (
                 <Badge className="bg-primary/10 text-primary border-0">
                   {unreadCount} {unreadCount === 1
@@ -209,7 +209,7 @@ export default function NotificationsPage() {
                 </Badge>
               )}
             </div>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-muted-foreground text-sm md:text-base mt-1">
               {translate(locale, notificationsCopy.subtitle)}
             </p>
           </div>

@@ -163,14 +163,14 @@ export default function CategoriesPage() {
 
   return (
     <AppLayout>
-      <div className="container mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Categorias</h1>
-            <p className="text-muted-foreground">Organize a hierarquia N1 → N2 → N3</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">Categorias</h1>
+            <p className="text-muted-foreground text-sm md:text-base">Organize a hierarquia N1 → N2 → N3</p>
           </div>
-          <Button variant="outline" onClick={openNewDialog}>
-            <Plus className="h-4 w-4 mr-2" />
+          <Button variant="outline" onClick={openNewDialog} className="gap-2">
+            <Plus className="h-4 w-4" />
             Nova Categoria
           </Button>
         </div>

@@ -25,11 +25,17 @@ export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  email: text("email").unique(),
+  googleId: text("google_id").unique(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
+  email: true,
+  googleId: true,
 });
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
