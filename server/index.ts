@@ -11,6 +11,7 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { pool, isDatabaseConfigured } from "./db";
+import { passport } from "./passport";
 
 const app = express();
 const httpServer = createServer(app);
@@ -53,6 +54,10 @@ app.use(
     },
   })
 );
+
+// Initialize Passport after session middleware
+app.use(passport.initialize());
+app.use(passport.session());
 
 declare module "express-session" {
   interface SessionData {

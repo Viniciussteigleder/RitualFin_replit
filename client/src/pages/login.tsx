@@ -124,7 +124,9 @@ export default function LoginPage() {
                 animations.delay[300]
               )}
               type="button"
-              onClick={() => loginMutation.mutate()}
+              onClick={() => {
+                window.location.href = "/api/auth/google";
+              }}
               disabled={loginMutation.isPending || isSuccess}
               data-testid="btn-google-login"
             >
