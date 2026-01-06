@@ -4911,5 +4911,45 @@ Retorne APENAS um array JSON válido, sem markdown ou texto adicional.`;
     }
   });
 
+  // Migration endpoint to add account_id column to uploads table
+  // Call once: POST /api/admin/migrate-uploads-account-id
+  app.post("/api/admin/migrate-uploads-account-id", async (req, res) => {
+    try {
+      if (!db) {
+        return res.status(500).json({ error: "Database not configured" });
+      }
+      
+      // Check if column already exists
+      const checkResult = await db.execute(sql`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'uploads' AND column_name = 'account_id'
+      `);
+      
+      if (checkResult.rows && checkResult.rows.length > 0) {
+        return res.json({ 
+          success: true, 
+          message: "Column account_id already exists in uploads table" 
+        });
+      }
+      
+      // Add the column
+      await db.execute(sql`
+        ALTER TABLE uploads ADD COLUMN account_id UUID REFERENCES accounts(id)
+      `);
+      
+      res.json({ 
+        success: true, 
+        message: "Column account_id added to uploads table successfully" 
+      });
+    } catch (error: any) {
+      console.error("Migration failed:", error);
+      res.status(500).json({ 
+        success: false, 
+        error: error.message 
+      });
+    }
+  });
+
   return httpServer;
 }
