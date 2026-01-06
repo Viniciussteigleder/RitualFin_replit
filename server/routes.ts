@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { passport } from "./passport";
 import { storage } from "./storage";
+import { requireAuth, optionalAuth } from "./auth-middleware";
 import {
   insertRuleSchema,
   insertGoalSchema,
@@ -513,10 +514,18 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/auth/me", async (req: Request, res: Response) => {
+  app.get("/api/auth/me", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
-      res.json({ id: user.id, username: user.username, email: user.email });
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      res.json({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        googleId: user.googleId
+      });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
@@ -551,9 +560,10 @@ export async function registerRoutes(
   });
 
   // ===== SETTINGS =====
-  app.get("/api/settings", async (req: Request, res: Response) => {
+  app.get("/api/settings", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "Authentication required" });
 
       let userSettings = await storage.getSettings(user.id);
 
@@ -568,9 +578,10 @@ export async function registerRoutes(
     }
   });
 
-  app.patch("/api/settings", async (req: Request, res: Response) => {
+  app.patch("/api/settings", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "Authentication required" });
 
       const updated = await storage.updateSettings(user.id, req.body);
       if (!updated) {
@@ -584,9 +595,10 @@ export async function registerRoutes(
   });
 
   // ===== NOTIFICATIONS =====
-  app.get("/api/notifications", async (req: Request, res: Response) => {
+  app.get("/api/notifications", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.json([]);
 
       const limitParam = req.query.limit ? Number(req.query.limit) : undefined;
       const limit = Number.isFinite(limitParam) && limitParam ? Math.min(Math.max(limitParam, 1), 200) : 200;
@@ -597,9 +609,12 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/notifications", async (req: Request, res: Response) => {
+  app.post("/api/notifications", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      let user = req.user;
+      if (!user) {
+        user = await storage.createUser({ username: "demo", password: "demo" });
+      }
 
       if (!req.body.title || !req.body.message) {
         return res.status(400).json({ error: "Title and message are required" });
@@ -618,9 +633,10 @@ export async function registerRoutes(
     }
   });
 
-  app.patch("/api/notifications/:id", async (req: Request, res: Response) => {
+  app.patch("/api/notifications/:id", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
 
       const updateData: UpdateNotification = {};
       if (req.body.title !== undefined) updateData.title = req.body.title;
@@ -638,8 +654,10 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/notifications/:id", async (req: Request, res: Response) => {
+  app.delete("/api/notifications/:id", requireAuth, async (req: Request, res: Response) => {
     try {
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
       const user = await getAuthenticatedUserOrDemo(req);
 
       await storage.deleteNotification(req.params.id, user.id);
@@ -650,8 +668,10 @@ export async function registerRoutes(
   });
 
   // ===== AUDIT LOGS =====
-  app.get("/api/audit-logs", async (req: Request, res: Response) => {
+  app.get("/api/audit-logs", requireAuth, async (req: Request, res: Response) => {
     try {
+      const user = req.user;
+      if (!user) return res.json([]);
       const user = await getAuthenticatedUserOrDemo(req);
 
       const limitParam = req.query.limit ? Number(req.query.limit) : undefined;
@@ -663,9 +683,10 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/audit-logs/export-csv", async (req: Request, res: Response) => {
+  app.get("/api/audit-logs/export-csv", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
 
       const logs = await storage.getAuditLogs(user.id, 1000);
       const rows = logs.map((log) => ({
@@ -687,9 +708,10 @@ export async function registerRoutes(
   });
 
   // ===== ACCOUNTS =====
-  app.get("/api/accounts", async (req: Request, res: Response) => {
+  app.get("/api/accounts", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.json([]);
       const accounts = await storage.getAccounts(user.id);
       res.json(accounts);
     } catch (error: any) {
@@ -697,7 +719,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/accounts/:id", async (req: Request, res: Response) => {
+  app.get("/api/accounts/:id", requireAuth, async (req: Request, res: Response) => {
     try {
       const account = await storage.getAccount(req.params.id);
       if (!account) {
@@ -709,9 +731,12 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/accounts", async (req: Request, res: Response) => {
+  app.post("/api/accounts", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
 
       const accountData = {
         userId: user.id,
@@ -730,9 +755,12 @@ export async function registerRoutes(
     }
   });
 
-  app.put("/api/accounts/:id", async (req: Request, res: Response) => {
+  app.put("/api/accounts/:id", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
 
       const updateData: any = {};
       if (req.body.name !== undefined) updateData.name = req.body.name;
@@ -752,9 +780,12 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/accounts/:id", async (req: Request, res: Response) => {
+  app.delete("/api/accounts/:id", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
 
       await storage.archiveAccount(req.params.id, user.id);
       res.status(204).send();
@@ -763,9 +794,12 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/accounts/:id/balance", async (req: Request, res: Response) => {
+  app.get("/api/accounts/:id/balance", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
 
       // Verify account exists and belongs to user
       const account = await storage.getAccount(req.params.id);
@@ -791,9 +825,10 @@ export async function registerRoutes(
   });
 
   // ===== UPLOADS =====
-  app.get("/api/uploads", async (req: Request, res: Response) => {
+  app.get("/api/uploads", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.json([]);
       const uploads = await storage.getUploads(user.id);
       res.json(uploads);
     } catch (error: any) {
@@ -802,9 +837,10 @@ export async function registerRoutes(
   });
 
   // Get last upload status by account (Sparkasse, Amex, Miles & More)
-  app.get("/api/uploads/last-by-account", async (req: Request, res: Response) => {
+  app.get("/api/uploads/last-by-account", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.json([]);
 
       const uploads = await storage.getUploads(user.id);
 
@@ -864,7 +900,7 @@ export async function registerRoutes(
   });
 
   // Process CSV upload
-  app.post("/api/imports/preview", async (req: Request, res: Response) => {
+  app.post("/api/imports/preview", requireAuth, async (req: Request, res: Response) => {
     try {
       const { filename, csvContent, encoding, fileBase64, fileType, importDate } = req.body;
       if (!csvContent) {
@@ -897,10 +933,13 @@ export async function registerRoutes(
   });
 
   // Process CSV upload
-  app.post("/api/uploads/process", async (req: Request, res: Response) => {
+  app.post("/api/uploads/process", requireAuth, async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      let user = req.user;
+      if (!user) {
+        user = await storage.createUser({ username: "demo", password: "demo" });
+      }
 
       const { filename, csvContent, encoding, fileBase64, fileType, importDate } = req.body;
 
@@ -1388,9 +1427,12 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/imports/conflicts/resolve", async (req: Request, res: Response) => {
+  app.post("/api/imports/conflicts/resolve", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      let user = req.user;
+      if (!user) {
+        user = await storage.createUser({ username: "demo", password: "demo" });
+      }
       const { uploadId, action, duplicateCount } = req.body || {};
       if (!uploadId || !action) {
         return res.status(400).json({ error: "uploadId e action são obrigatórios" });
@@ -1420,9 +1462,10 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/data-imports/preview", async (req: Request, res: Response) => {
+  app.post("/api/data-imports/preview", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
 
       const { dataset, filename, fileBase64, confirmRemap } = req.body as {
         dataset: CsvDataset;
@@ -1519,10 +1562,11 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/data-imports/confirm", async (req: Request, res: Response) => {
+  app.post("/api/data-imports/confirm", requireAuth, async (req: Request, res: Response) => {
     let importRun;
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
 
       const { importId, confirmRemap } = req.body as { importId?: string; confirmRemap?: boolean };
       if (!importId) return res.status(400).json({ error: "importId obrigatório" });
@@ -1773,9 +1817,10 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/data-imports/last", async (req: Request, res: Response) => {
+  app.get("/api/data-imports/last", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
 
       const dataset = String(req.query.dataset || "");
       if (!dataset || !csvContracts[dataset as CsvDataset]) {
@@ -1790,9 +1835,12 @@ export async function registerRoutes(
   });
 
   // Get errors for a specific upload
-  app.get("/api/uploads/:id/errors", async (req: Request, res: Response) => {
+  app.get("/api/uploads/:id/errors", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
 
       // Verify upload exists and belongs to user
       const upload = await storage.getUpload(req.params.id);
@@ -1813,9 +1861,12 @@ export async function registerRoutes(
   });
 
   // Get diagnostics for a specific upload
-  app.get("/api/uploads/:id/diagnostics", async (req: Request, res: Response) => {
+  app.get("/api/uploads/:id/diagnostics", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
 
       const upload = await storage.getUpload(req.params.id);
       if (!upload || upload.userId !== user.id) {
@@ -1830,9 +1881,10 @@ export async function registerRoutes(
   });
 
   // ===== CLASSIFICATION & DATA =====
-  app.get("/api/classification/export", async (req: Request, res: Response) => {
+  app.get("/api/classification/export", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
 
       const [levels1, levels2, leaves, appCats, appLeafs, rules] = await Promise.all([
         storage.getTaxonomyLevel1(user.id),
@@ -1879,9 +1931,10 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/classification/export-csv", async (req: Request, res: Response) => {
+  app.get("/api/classification/export-csv", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
 
       const [levels1, levels2, leaves, appCats, appLeafs, rules] = await Promise.all([
         storage.getTaxonomyLevel1(user.id),
@@ -1925,7 +1978,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/classification/template-csv", async (_req: Request, res: Response) => {
+  app.get("/api/classification/template-csv", requireAuth, async (_req: Request, res: Response) => {
     try {
       const csvContent = buildCsvFromRows(csvContracts.classification, []);
       res.setHeader("Content-Type", "text/csv; charset=utf-8");
@@ -1936,9 +1989,10 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/classification/import/preview", async (req: Request, res: Response) => {
+  app.post("/api/classification/import/preview", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
 
       const { fileBase64 } = req.body;
       if (!fileBase64) return res.status(400).json({ error: "Arquivo Excel obrigatório" });
@@ -1978,9 +2032,10 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/classification/import/apply", async (req: Request, res: Response) => {
+  app.post("/api/classification/import/apply", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
 
       const { fileBase64, confirmRemap } = req.body;
       if (!fileBase64) return res.status(400).json({ error: "Arquivo Excel obrigatório" });
@@ -2101,9 +2156,10 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/classification/rule-test", async (req: Request, res: Response) => {
+  app.post("/api/classification/rule-test", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
 
       const { keyDesc } = req.body;
       if (!keyDesc) return res.status(400).json({ error: "key_desc obrigatório" });
@@ -2117,9 +2173,10 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/classification/leaves", async (req: Request, res: Response) => {
+  app.get("/api/classification/leaves", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
 
       const [leaves, levels2, levels1] = await Promise.all([
         storage.getTaxonomyLeaf(user.id),
@@ -2150,9 +2207,10 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/classification/rules", async (req: Request, res: Response) => {
+  app.get("/api/classification/rules", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
 
       const rules = await storage.getRules(user.id);
       res.json(rules);
@@ -2161,8 +2219,10 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/classification/rules/append", async (req: Request, res: Response) => {
+  app.post("/api/classification/rules/append", requireAuth, async (req: Request, res: Response) => {
     try {
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
       const user = await getAuthenticatedUserOrDemo(req);
 
       const schema = z.object({
@@ -2221,9 +2281,10 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/classification/rules/append-negative", async (req: Request, res: Response) => {
+  app.post("/api/classification/rules/append-negative", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
 
       const schema = z.object({
         leafId: z.string(),
@@ -2281,9 +2342,10 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/classification/review-queue", async (req: Request, res: Response) => {
+  app.get("/api/classification/review-queue", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
 
       const transactions = await storage.getTransactionsWithMerchantAlias(user.id);
       const open = transactions.filter(tx => tx.status === "OPEN" || tx.needsReview);
@@ -2293,9 +2355,10 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/classification/review/assign", async (req: Request, res: Response) => {
+  app.post("/api/classification/review/assign", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
 
       const schema = z.object({
         transactionId: z.string(),
@@ -2348,9 +2411,10 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/aliases/export", async (req: Request, res: Response) => {
+  app.get("/api/aliases/export", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
 
       const [keyDescRows, aliasRows] = await Promise.all([
         storage.getKeyDescMap(user.id),
@@ -2386,9 +2450,10 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/aliases/key-desc/export-csv", async (req: Request, res: Response) => {
+  app.get("/api/aliases/key-desc/export-csv", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
 
       const keyDescRows = await storage.getKeyDescMap(user.id);
       const rows = keyDescRows.map((row) => ({
@@ -2406,7 +2471,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/aliases/key-desc/template-csv", async (_req: Request, res: Response) => {
+  app.get("/api/aliases/key-desc/template-csv", requireAuth, async (_req: Request, res: Response) => {
     try {
       const csvContent = buildCsvFromRows(csvContracts.aliases_key_desc, []);
       res.setHeader("Content-Type", "text/csv; charset=utf-8");
@@ -2417,9 +2482,10 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/aliases/assets/export-csv", async (req: Request, res: Response) => {
+  app.get("/api/aliases/assets/export-csv", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
 
       const aliasRows = await storage.getAliasAssets(user.id);
       const rows = aliasRows.map((row) => ({
@@ -2438,7 +2504,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/aliases/assets/template-csv", async (_req: Request, res: Response) => {
+  app.get("/api/aliases/assets/template-csv", requireAuth, async (_req: Request, res: Response) => {
     try {
       const csvContent = buildCsvFromRows(csvContracts.aliases_assets, []);
       res.setHeader("Content-Type", "text/csv; charset=utf-8");
@@ -2449,9 +2515,10 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/aliases/logos/template", async (req: Request, res: Response) => {
+  app.get("/api/aliases/logos/template", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
 
       const aliasRows = await storage.getAliasAssets(user.id);
       const wsLogos = XLSX.utils.json_to_sheet(
@@ -2475,9 +2542,10 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/aliases/import/preview", async (req: Request, res: Response) => {
+  app.post("/api/aliases/import/preview", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
 
       const { fileBase64 } = req.body;
       if (!fileBase64) return res.status(400).json({ error: "Arquivo Excel obrigatório" });
@@ -2505,9 +2573,10 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/aliases/import/apply", async (req: Request, res: Response) => {
+  app.post("/api/aliases/import/apply", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
 
       const { fileBase64 } = req.body;
       if (!fileBase64) return res.status(400).json({ error: "Arquivo Excel obrigatório" });
@@ -2586,9 +2655,10 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/aliases/logos/import", async (req: Request, res: Response) => {
+  app.post("/api/aliases/logos/import", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
 
       const { fileBase64 } = req.body;
       if (!fileBase64) return res.status(400).json({ error: "Arquivo Excel ou CSV obrigatório" });
@@ -2659,9 +2729,10 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/aliases/test", async (req: Request, res: Response) => {
+  app.post("/api/aliases/test", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
 
       const { keyDesc } = req.body;
       if (!keyDesc) return res.status(400).json({ error: "key_desc obrigatório" });
@@ -2680,9 +2751,10 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/aliases/refresh-logos", async (req: Request, res: Response) => {
+  app.post("/api/aliases/refresh-logos", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
 
       const { force } = req.body || {};
       const aliases = await storage.getAliasAssets(user.id);
@@ -2723,9 +2795,10 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/settings/reset", async (req: Request, res: Response) => {
+  app.post("/api/settings/reset", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
 
       await db.delete(transactions).where(eq(transactions.userId, user.id));
 
@@ -2873,9 +2946,10 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/settings/delete-data", async (req: Request, res: Response) => {
+  app.post("/api/settings/delete-data", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
 
       const schema = z.object({
         deleteTransactions: z.boolean().optional(),
@@ -2937,9 +3011,12 @@ export async function registerRoutes(
   });
 
   // ===== MERCHANT METADATA =====
-  app.get("/api/merchant-metadata", async (req: Request, res: Response) => {
+  app.get("/api/merchant-metadata", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
 
       const metadata = await storage.getMerchantMetadata(user.id);
       res.json(metadata);
@@ -2949,9 +3026,12 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/merchant-metadata", async (req: Request, res: Response) => {
+  app.post("/api/merchant-metadata", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
 
       const { pattern, friendlyName, icon, color } = req.body;
 
@@ -2974,9 +3054,12 @@ export async function registerRoutes(
     }
   });
 
-  app.put("/api/merchant-metadata/:id", async (req: Request, res: Response) => {
+  app.put("/api/merchant-metadata/:id", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
 
       const updateData: Partial<MerchantMetadata> = { updatedAt: new Date() };
       if (req.body.pattern !== undefined) updateData.pattern = req.body.pattern.toUpperCase();
@@ -2997,9 +3080,12 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/merchant-metadata/:id", async (req: Request, res: Response) => {
+  app.delete("/api/merchant-metadata/:id", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
 
       await storage.deleteMerchantMetadata(req.params.id, user.id);
       res.status(204).send();
@@ -3009,9 +3095,12 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/merchant-metadata/match", async (req: Request, res: Response) => {
+  app.get("/api/merchant-metadata/match", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
 
       const { description } = req.query;
       if (!description) {
@@ -3027,9 +3116,10 @@ export async function registerRoutes(
   });
 
   // ===== TRANSACTIONS =====
-  app.get("/api/transactions", async (req: Request, res: Response) => {
+  app.get("/api/transactions", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.json([]);
 
       const month = req.query.month as string | undefined;
       const transactions = await storage.getTransactionsWithMerchantAlias(user.id, month);
@@ -3039,9 +3129,10 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/transactions/confirm-queue", async (req: Request, res: Response) => {
+  app.get("/api/transactions/confirm-queue", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.json([]);
       
       const transactions = await storage.getTransactionsWithMerchantAlias(user.id);
       const needsReview = transactions.filter(tx => tx.status === "OPEN" || tx.needsReview);
@@ -3058,7 +3149,7 @@ export async function registerRoutes(
     }
   });
 
-  app.patch("/api/transactions/:id", async (req: Request, res: Response) => {
+  app.patch("/api/transactions/:id", requireAuth, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       const data = req.body;
@@ -3073,7 +3164,7 @@ export async function registerRoutes(
   });
 
   // Bulk confirm with optional rule creation
-  app.post("/api/transactions/confirm", async (req: Request, res: Response) => {
+  app.post("/api/transactions/confirm", requireAuth, async (req: Request, res: Response) => {
     try {
       const { ids, createRule, keyword, type, fixVar, category1, category2, category3, excludeFromBudget } = req.body;
 
@@ -3102,17 +3193,18 @@ export async function registerRoutes(
       // Create rule if requested
       let createdRule = null;
       if (createRule && keyword && type && fixVar && category1) {
-        const user = await getAuthenticatedUserOrDemo(req);
-        createdRule = await storage.createRule({
-          userId: user.id,
-          name: keyword,
-          keywords: keyword,
-          type,
-          fixVar,
-          category1,
-          category2,
-          category3
-        });
+        let user = req.user;
+        if (user) {
+          createdRule = await storage.createRule({
+            userId: user.id,
+            name: keyword,
+            keywords: keyword,
+            type,
+            fixVar,
+            category1,
+            category2,
+            category3
+          });
 
         // Update transactions with the new rule ID
         await storage.bulkUpdateTransactions(ids, { ruleIdApplied: createdRule.id });
@@ -3130,9 +3222,10 @@ export async function registerRoutes(
   });
 
   // ===== RULES =====
-  app.get("/api/rules", async (req: Request, res: Response) => {
+  app.get("/api/rules", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.json([]);
       
       const rules = await storage.getRules(user.id);
       res.json(rules);
@@ -3141,9 +3234,12 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/rules", async (req: Request, res: Response) => {
+  app.post("/api/rules", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      let user = req.user;
+      if (!user) {
+        user = await storage.createUser({ username: "demo", password: "demo" });
+      }
       
       const ruleData = insertRuleSchema.parse({ ...req.body, userId: user.id });
       const rule = await storage.createRule(ruleData);
@@ -3165,9 +3261,12 @@ export async function registerRoutes(
   });
 
   // Seed AI-powered rules
-  app.post("/api/rules/seed", async (req: Request, res: Response) => {
+  app.post("/api/rules/seed", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      let user = req.user;
+      if (!user) {
+        user = await storage.createUser({ username: "demo", password: "demo" });
+      }
       
       let count = 0;
       for (const seedRule of AI_SEED_RULES) {
@@ -3185,9 +3284,10 @@ export async function registerRoutes(
   });
 
   // Re-apply ALL rules to pending transactions
-  app.post("/api/rules/reapply-all", async (req: Request, res: Response) => {
+  app.post("/api/rules/reapply-all", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "Authentication required" });
 
       const rules = await storage.getRules(user.id);
       let userSettings = await storage.getSettings(user.id);
@@ -3237,7 +3337,7 @@ export async function registerRoutes(
   });
 
   // Apply rules to existing transactions
-  app.post("/api/rules/:id/apply", async (req: Request, res: Response) => {
+  app.post("/api/rules/:id/apply", requireAuth, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       const rule = await storage.getRule(id);
@@ -3245,7 +3345,8 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Rule not found" });
       }
 
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "Authentication required" });
 
       // Get unreviewed transactions
       const transactions = await storage.getTransactionsByNeedsReview(user.id);
@@ -3287,10 +3388,11 @@ export async function registerRoutes(
     }
   });
 
-  app.patch("/api/rules/:id", async (req: Request, res: Response) => {
+  app.patch("/api/rules/:id", requireAuth, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "Authentication required" });
       const updated = await storage.updateRule(id, req.body);
       if (!updated) {
         return res.status(404).json({ error: "Rule not found" });
@@ -3308,10 +3410,11 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/rules/:id", async (req: Request, res: Response) => {
+  app.delete("/api/rules/:id", requireAuth, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "Authentication required" });
       await storage.deleteRule(id);
       await writeAuditLog({
         userId: user.id,
@@ -3327,9 +3430,20 @@ export async function registerRoutes(
   });
 
   // ===== DASHBOARD =====
-  app.get("/api/dashboard", async (req: Request, res: Response) => {
+  app.get("/api/dashboard", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) {
+        return res.json({
+          spentByCategory: [],
+          totalSpent: 0,
+          totalIncome: 0,
+          pendingReviewCount: 0,
+          fixedExpenses: 0,
+          variableExpenses: 0,
+          month: req.query.month || new Date().toISOString().slice(0, 7),
+        });
+      }
       
       const month = (req.query.month as string) || new Date().toISOString().slice(0, 7);
       const data = await storage.getDashboardData(user.id, month);
@@ -3341,9 +3455,10 @@ export async function registerRoutes(
 
   // ===== MERCHANT DICTIONARY =====
   // List merchant descriptions
-  app.get("/api/merchant-descriptions", async (req: Request, res: Response) => {
+  app.get("/api/merchant-descriptions", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.json([]);
 
       const { source, search, isManual } = req.query;
       const filters: any = {};
@@ -3360,9 +3475,10 @@ export async function registerRoutes(
   });
 
   // Create merchant description
-  app.post("/api/merchant-descriptions", async (req: Request, res: Response) => {
+  app.post("/api/merchant-descriptions", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "Authentication required" });
 
       const { source, keyDesc, aliasDesc } = req.body;
       const description = await storage.createMerchantDescription({
@@ -3390,7 +3506,7 @@ export async function registerRoutes(
   });
 
   // Update merchant description
-  app.patch("/api/merchant-descriptions/:id", async (req: Request, res: Response) => {
+  app.patch("/api/merchant-descriptions/:id", requireAuth, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       const { aliasDesc } = req.body;
@@ -3411,7 +3527,7 @@ export async function registerRoutes(
   });
 
   // Delete merchant description
-  app.delete("/api/merchant-descriptions/:id", async (req: Request, res: Response) => {
+  app.delete("/api/merchant-descriptions/:id", requireAuth, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       await storage.deleteMerchantDescription(id);
@@ -3422,9 +3538,10 @@ export async function registerRoutes(
   });
 
   // Export merchant descriptions to Excel
-  app.get("/api/merchant-descriptions/export", async (req: Request, res: Response) => {
+  app.get("/api/merchant-descriptions/export", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.json([]);
 
       const descriptions = await storage.getMerchantDescriptions(user.id);
 
@@ -3445,9 +3562,10 @@ export async function registerRoutes(
   });
 
   // AI suggest alias for merchant description
-  app.post("/api/merchant-descriptions/ai-suggest", async (req: Request, res: Response) => {
+  app.post("/api/merchant-descriptions/ai-suggest", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "Usuário não encontrado" });
 
       if (!openai) {
         return res.status(503).json({ error: "OpenAI não configurado" });
@@ -3499,9 +3617,10 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
   });
 
   // List merchant icons
-  app.get("/api/merchant-icons", async (req: Request, res: Response) => {
+  app.get("/api/merchant-icons", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.json([]);
 
       const { needsFetch, search } = req.query;
       const filters: any = {};
@@ -3517,9 +3636,10 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
   });
 
   // Update merchant icon
-  app.patch("/api/merchant-icons/:aliasDesc", async (req: Request, res: Response) => {
+  app.patch("/api/merchant-icons/:aliasDesc", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "Authentication required" });
 
       const { aliasDesc } = req.params;
       const data = req.body;
@@ -3537,9 +3657,10 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
   });
 
   // ===== BUDGETS =====
-  app.get("/api/budgets", async (req: Request, res: Response) => {
+  app.get("/api/budgets", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.json([]);
       
       const month = (req.query.month as string) || new Date().toISOString().slice(0, 7);
       const budgets = await storage.getBudgets(user.id, month);
@@ -3549,9 +3670,12 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
     }
   });
 
-  app.post("/api/budgets", async (req: Request, res: Response) => {
+  app.post("/api/budgets", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      let user = req.user;
+      if (!user) {
+        user = await storage.createUser({ username: "demo", password: "demo" });
+      }
 
       const budget = await storage.createBudget({
         ...req.body,
@@ -3563,9 +3687,10 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
     }
   });
 
-  app.patch("/api/budgets/:id", async (req: Request, res: Response) => {
+  app.patch("/api/budgets/:id", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
 
       const { id } = req.params;
       const updated = await storage.updateBudget(id, req.body);
@@ -3578,9 +3703,10 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
     }
   });
 
-  app.delete("/api/budgets/:id", async (req: Request, res: Response) => {
+  app.delete("/api/budgets/:id", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
 
       const { id } = req.params;
       await storage.deleteBudget(id, user.id);
@@ -3591,10 +3717,21 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
   });
 
   // ===== GOALS =====
-  app.get("/api/goals", async (req: Request, res: Response) => {
+  app.get("/api/goals", requireAuth, async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) {
+        console.log(JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: "INFO",
+          endpoint: `${req.method} ${req.path}`,
+          userId: "none",
+          action: "get_goals_no_user",
+          metadata: {}
+        }));
+        return res.json({ goals: [] });
+      }
 
       const month = req.query.month as string | undefined;
 
@@ -3646,10 +3783,13 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
     }
   });
 
-  app.post("/api/goals", async (req: Request, res: Response) => {
+  app.post("/api/goals", requireAuth, async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      let user = req.user;
+      if (!user) {
+        user = await storage.createUser({ username: "demo", password: "demo" });
+      }
 
       console.log(JSON.stringify({
         timestamp: new Date().toISOString(),
@@ -3717,10 +3857,11 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
     }
   });
 
-  app.patch("/api/goals/:id", async (req: Request, res: Response) => {
+  app.patch("/api/goals/:id", requireAuth, async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
 
       const goalId = req.params.id;
 
@@ -3778,10 +3919,11 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
     }
   });
 
-  app.delete("/api/goals/:id", async (req: Request, res: Response) => {
+  app.delete("/api/goals/:id", requireAuth, async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
 
       const goalId = req.params.id;
 
@@ -3839,10 +3981,11 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
     }
   });
 
-  app.get("/api/goals/:goalId/categories", async (req: Request, res: Response) => {
+  app.get("/api/goals/:goalId/categories", requireAuth, async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.json({ categoryGoals: [] });
 
       const goalId = req.params.goalId;
 
@@ -3895,10 +4038,13 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
     }
   });
 
-  app.post("/api/goals/:goalId/categories", async (req: Request, res: Response) => {
+  app.post("/api/goals/:goalId/categories", requireAuth, async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      let user = req.user;
+      if (!user) {
+        user = await storage.createUser({ username: "demo", password: "demo" });
+      }
 
       const goalId = req.params.goalId;
 
@@ -3990,10 +4136,11 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
     }
   });
 
-  app.delete("/api/category-goals/:id", async (req: Request, res: Response) => {
+  app.delete("/api/category-goals/:id", requireAuth, async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
 
       const categoryGoalId = req.params.id;
 
@@ -4049,10 +4196,11 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
     }
   });
 
-  app.get("/api/goals/:id/progress", async (req: Request, res: Response) => {
+  app.get("/api/goals/:id/progress", requireAuth, async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
 
       const goalId = req.params.id;
 
@@ -4109,9 +4257,10 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
   });
 
   // ===== CALENDAR EVENTS =====
-  app.get("/api/calendar-events", async (req: Request, res: Response) => {
+  app.get("/api/calendar-events", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.json([]);
       
       const events = await storage.getCalendarEvents(user.id);
       res.json(events);
@@ -4120,7 +4269,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
     }
   });
 
-  app.get("/api/calendar-events/:id", async (req: Request, res: Response) => {
+  app.get("/api/calendar-events/:id", requireAuth, async (req: Request, res: Response) => {
     try {
       const event = await storage.getCalendarEvent(req.params.id);
       if (!event) {
@@ -4132,9 +4281,12 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
     }
   });
 
-  app.post("/api/calendar-events", async (req: Request, res: Response) => {
+  app.post("/api/calendar-events", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      let user = req.user;
+      if (!user) {
+        user = await storage.createUser({ username: "demo", password: "demo" });
+      }
       
       const event = await storage.createCalendarEvent({
         ...req.body,
@@ -4146,7 +4298,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
     }
   });
 
-  app.patch("/api/calendar-events/:id", async (req: Request, res: Response) => {
+  app.patch("/api/calendar-events/:id", requireAuth, async (req: Request, res: Response) => {
     try {
       const updated = await storage.updateCalendarEvent(req.params.id, req.body);
       if (!updated) {
@@ -4158,7 +4310,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
     }
   });
 
-  app.delete("/api/calendar-events/:id", async (req: Request, res: Response) => {
+  app.delete("/api/calendar-events/:id", requireAuth, async (req: Request, res: Response) => {
     try {
       await storage.deleteCalendarEvent(req.params.id);
       res.json({ success: true });
@@ -4167,7 +4319,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
     }
   });
 
-  app.get("/api/calendar-events/:id/occurrences", async (req: Request, res: Response) => {
+  app.get("/api/calendar-events/:id/occurrences", requireAuth, async (req: Request, res: Response) => {
     try {
       const occurrences = await storage.getEventOccurrences(req.params.id);
       res.json(occurrences);
@@ -4176,7 +4328,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
     }
   });
 
-  app.post("/api/event-occurrences", async (req: Request, res: Response) => {
+  app.post("/api/event-occurrences", requireAuth, async (req: Request, res: Response) => {
     try {
       const occurrence = await storage.createEventOccurrence(req.body);
       res.status(201).json(occurrence);
@@ -4185,7 +4337,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
     }
   });
 
-  app.patch("/api/event-occurrences/:id", async (req: Request, res: Response) => {
+  app.patch("/api/event-occurrences/:id", requireAuth, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       const updated = await storage.updateEventOccurrence(id, req.body);
@@ -4199,10 +4351,21 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
   });
 
   // ===== RITUALS =====
-  app.get("/api/rituals", async (req: Request, res: Response) => {
+  app.get("/api/rituals", requireAuth, async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) {
+        console.log(JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: "INFO",
+          endpoint: `${req.method} ${req.path}`,
+          userId: "none",
+          action: "get_rituals_no_user",
+          metadata: {}
+        }));
+        return res.json({ rituals: [] });
+      }
 
       const type = req.query.type as string | undefined;
       const period = req.query.period as string | undefined;
@@ -4242,10 +4405,13 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
     }
   });
 
-  app.post("/api/rituals", async (req: Request, res: Response) => {
+  app.post("/api/rituals", requireAuth, async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      let user = req.user;
+      if (!user) {
+        user = await storage.createUser({ username: "demo", password: "demo" });
+      }
 
       console.log(JSON.stringify({
         timestamp: new Date().toISOString(),
@@ -4299,10 +4465,11 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
     }
   });
 
-  app.patch("/api/rituals/:id", async (req: Request, res: Response) => {
+  app.patch("/api/rituals/:id", requireAuth, async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
 
       const ritualId = req.params.id;
 
@@ -4360,10 +4527,11 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
     }
   });
 
-  app.delete("/api/rituals/:id", async (req: Request, res: Response) => {
+  app.delete("/api/rituals/:id", requireAuth, async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
 
       const ritualId = req.params.id;
 
@@ -4416,10 +4584,11 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
     }
   });
 
-  app.post("/api/rituals/:id/complete", async (req: Request, res: Response) => {
+  app.post("/api/rituals/:id/complete", requireAuth, async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
 
       const ritualId = req.params.id;
       const { notes } = req.body;
@@ -4472,9 +4641,10 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
   });
 
   // ===== AI KEYWORD ANALYSIS =====
-  app.get("/api/ai/usage", async (req: Request, res: Response) => {
+  app.get("/api/ai/usage", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.json([]);
 
       const limitParam = req.query.limit ? Number(req.query.limit) : undefined;
       const limit = Number.isFinite(limitParam) && limitParam ? Math.min(Math.max(limitParam, 1), 200) : 100;
@@ -4485,9 +4655,12 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
     }
   });
 
-  app.post("/api/ai/analyze-keywords", async (req: Request, res: Response) => {
+  app.post("/api/ai/analyze-keywords", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ error: "Usuário não encontrado" });
+      }
 
       if (!openai) {
         return res.status(503).json({ error: "OpenAI não configurado" });
@@ -4648,9 +4821,12 @@ Retorne APENAS um array JSON válido, sem markdown ou texto adicional.`;
   });
 
   // Apply AI suggestions as rules
-  app.post("/api/ai/apply-suggestions", async (req: Request, res: Response) => {
+  app.post("/api/ai/apply-suggestions", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ error: "Usuário não encontrado" });
+      }
 
       const [leaves, levels2, levels1] = await Promise.all([
         storage.getTaxonomyLeaf(user.id),
@@ -4775,7 +4951,8 @@ Retorne APENAS um array JSON válido, sem markdown ou texto adicional.`;
   // Migration endpoint to import categories and aliases from /tmp JSON files
   app.post("/api/admin/migrate-categories", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUserOrDemo(req);
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "User not found" });
 
       const CATEGORIAS_JSON = '/tmp/categorias.json';
       const ALIAS_JSON = '/tmp/alias.json';

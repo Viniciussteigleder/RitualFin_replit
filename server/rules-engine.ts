@@ -55,19 +55,21 @@ export function matchRules(descNorm: string, rules: Rule[], settings: UserSettin
     // Example: "LIDL;SV Fuerstenfeldbrucker Wasserratten e.V.;REWE"
     // Results in 3 expressions: ["LIDL", "SV Fuerstenfeldbrucker Wasserratten e.V.", "REWE"]
     // Spaces within expressions are PRESERVED and normalized together
+    if (!rule.keywords) continue; // Skip rules without keywords
+
     const keywords = rule.keywords
       .split(";")
       .map(k => normalizeForMatch(k))
       .filter(k => k.length > 0);
 
     const matchedKeyword = keywords.find(keyword => haystack.includes(keyword));
-    
+
     if (matchedKeyword) {
       const match: RuleMatch = {
         ruleId: rule.id,
-        type: rule.type,
-        fixVar: rule.fixVar,
-        category1: rule.category1,
+        type: rule.type || "Despesa",
+        fixVar: rule.fixVar || "Variável",
+        category1: rule.category1 || "Outros",
         category2: rule.category2 || undefined,
         category3: rule.category3 || undefined,
         priority: rule.priority || 500,

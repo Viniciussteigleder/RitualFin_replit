@@ -65,6 +65,12 @@ declare module "express-session" {
   }
 }
 
+declare module "express-serve-static-core" {
+  interface Request {
+    user?: import("@shared/schema").User;
+  }
+}
+
 declare module "http" {
   interface IncomingMessage {
     rawBody: unknown;

@@ -6,7 +6,7 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import fs from 'fs';
-import { db } from '../db';
+import { db } from './db';
 import { taxonomyLevel1, taxonomyLevel2, taxonomyLeaf, rules, aliasAssets, users } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 
@@ -70,9 +70,9 @@ migrationRouter.post('/api/admin/migrate-categories', async (req: Request, res: 
           level1Id = existing.level1Id;
         } else {
           const [newLevel1] = await db.insert(taxonomyLevel1).values({ userId, nivel1Pt }).returning();
-          level1Id = newLevel1.level1Id;
+          level1Id = newLevel1!.level1Id;
         }
-        level1Map.set(nivel1Pt, level1Id);
+        level1Map.set(nivel1Pt, level1Id!);
       }
 
       // Level 2
@@ -82,7 +82,7 @@ migrationRouter.post('/api/admin/migrate-categories', async (req: Request, res: 
         const existing = await db.query.taxonomyLevel2.findFirst({
           where: and(
             eq(taxonomyLevel2.userId, userId),
-            eq(taxonomyLevel2.level1Id, level1Id),
+            eq(taxonomyLevel2.level1Id, level1Id!),
             eq(taxonomyLevel2.nivel2Pt, nivel2Pt)
           )
         });
@@ -90,14 +90,14 @@ migrationRouter.post('/api/admin/migrate-categories', async (req: Request, res: 
           level2Id = existing.level2Id;
         } else {
           const [newLevel2] = await db.insert(taxonomyLevel2).values({
-            userId, level1Id, nivel2Pt,
+            userId, level1Id: level1Id!, nivel2Pt,
             recorrenteDefault: recorrente === 'Sim' ? 'Sim' : 'Não',
             fixoVariavelDefault: fixoVariavel,
             receitaDespesaDefault: receitaDespesa
           }).returning();
-          level2Id = newLevel2.level2Id;
+          level2Id = newLevel2!.level2Id;
         }
-        level2Map.set(level2Key, level2Id);
+        level2Map.set(level2Key, level2Id!);
       }
 
       // Leaf (Level 3)
@@ -107,7 +107,7 @@ migrationRouter.post('/api/admin/migrate-categories', async (req: Request, res: 
         const existing = await db.query.taxonomyLeaf.findFirst({
           where: and(
             eq(taxonomyLeaf.userId, userId),
-            eq(taxonomyLeaf.level2Id, level2Id),
+            eq(taxonomyLeaf.level2Id, level2Id!),
             eq(taxonomyLeaf.nivel3Pt, nivel3Pt)
           )
         });
@@ -115,14 +115,14 @@ migrationRouter.post('/api/admin/migrate-categories', async (req: Request, res: 
           leafId = existing.leafId;
         } else {
           const [newLeaf] = await db.insert(taxonomyLeaf).values({
-            userId, level2Id, nivel3Pt,
+            userId, level2Id: level2Id!, nivel3Pt,
             recorrenteDefault: recorrente === 'Sim' ? 'Sim' : 'Não',
             fixoVariavelDefault: fixoVariavel,
             receitaDespesaDefault: receitaDespesa
           }).returning();
-          leafId = newLeaf.leafId;
+          leafId = newLeaf!.leafId;
         }
-        leafMap.set(leafKey, leafId);
+        leafMap.set(leafKey, leafId!);
       }
 
       // Create rule if keywords exist
@@ -130,13 +130,13 @@ migrationRouter.post('/api/admin/migrate-categories', async (req: Request, res: 
         const existingRule = await db.query.rules.findFirst({
           where: and(
             eq(rules.userId, userId),
-            eq(rules.leafId, leafId),
+            eq(rules.leafId, leafId!),
             eq(rules.keyWords, keyWords)
           )
         });
         if (!existingRule) {
           await db.insert(rules).values({
-            userId, name: `${nivel3Pt} - Auto`, leafId,
+            userId, name: `${nivel3Pt} - Auto`, leafId: leafId!,
             keyWords, keyWordsNegative: keyWordsNegative || null,
             priority: 500, strict: false, active: true
           });

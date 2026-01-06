@@ -77,7 +77,7 @@ export interface ParseResult {
   diagnostics?: ParseDiagnostics;
   meta?: ParseMeta;
   sparkasseDiagnostics?: any;
-  sparkasseError?: { code?: string; message?: string } | string;
+  sparkasseError?: SparkasseError;
 }
 
 type CsvFormat = "miles_and_more" | "amex" | "sparkasse" | "unknown";

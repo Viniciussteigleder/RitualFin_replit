@@ -38,11 +38,20 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
     headers: {
       "Content-Type": "application/json",
     },
+    credentials: "include", // Include cookies for session authentication
     ...options,
   });
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({ message: `HTTP ${res.status}: ${res.statusText}` }));
+
+    // Handle 401 Unauthorized - redirect to login
+    if (res.status === 401) {
+      // Only redirect if not already on login page
+      if (!window.location.pathname.includes("/login")) {
+        window.location.href = "/login";
+      }
+    }
 
     // Create detailed error message
     let errorMessage = errorData.message || errorData.error || `HTTP ${res.status}: ${res.statusText}`;
@@ -64,10 +73,18 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
 
 async function fetchBlob(endpoint: string, options?: RequestInit): Promise<Blob> {
   const res = await fetch(`${API_BASE}${endpoint}`, {
+    credentials: "include", // Include cookies for session authentication
     ...options,
   });
 
   if (!res.ok) {
+    // Handle 401 Unauthorized - redirect to login
+    if (res.status === 401) {
+      if (!window.location.pathname.includes("/login")) {
+        window.location.href = "/login";
+      }
+    }
+
     const error = await res.json().catch(() => ({ message: "Request failed" }));
     throw new Error(error.message || error.error || "Request failed");
   }
@@ -524,6 +541,7 @@ export const dashboardApi = {
       pendingReviewCount: number;
       fixedExpenses: number;
       variableExpenses: number;
+      estimatedIncome?: number;
       month: string;
     }>(`/dashboard${month ? `?month=${month}` : ""}`),
 };

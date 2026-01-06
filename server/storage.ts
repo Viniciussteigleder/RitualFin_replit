@@ -156,6 +156,9 @@ export interface IStorage {
     totalSpent: number;
     totalIncome: number;
     pendingReviewCount: number;
+    fixedExpenses: number;
+    variableExpenses: number;
+    estimatedIncome?: number;
   }>;
   
   // Calendar Events
@@ -825,6 +828,7 @@ export class DatabaseStorage implements IStorage {
     pendingReviewCount: number;
     fixedExpenses: number;
     variableExpenses: number;
+    estimatedIncome?: number;
   }> {
     const startDate = new Date(`${month}-01`);
     const endDate = new Date(startDate);
@@ -858,7 +862,7 @@ export class DatabaseStorage implements IStorage {
         totalSpent += absAmount;
         const cat = tx.leafId ? (leafToApp.get(tx.leafId) ?? "Em aberto") : "Em aberto";
         spentByCategory[cat] = (spentByCategory[cat] || 0) + absAmount;
-        
+
         if (tx.fixVar === "Fixo") {
           fixedExpenses += absAmount;
         } else {
@@ -869,6 +873,14 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
+    // Fetch estimated income from Goals table
+    const [goal] = await db.select().from(goals)
+      .where(and(
+        eq(goals.userId, userId),
+        eq(goals.month, month)
+      ))
+      .limit(1);
+
     return {
       spentByCategory: Object.entries(spentByCategory).map(([category, amount]) => ({ category, amount })).sort((a, b) => b.amount - a.amount),
       totalSpent,
@@ -876,6 +888,7 @@ export class DatabaseStorage implements IStorage {
       pendingReviewCount,
       fixedExpenses,
       variableExpenses,
+      estimatedIncome: goal?.targetIncome,
     };
   }
 

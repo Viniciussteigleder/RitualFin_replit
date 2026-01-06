@@ -57,6 +57,7 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
               email,
               username: displayName,
               googleId: profile.id,
+              password: "", // OAuth users don't have passwords
             });
             logger.info("user_created_via_google", { userId: user.id, email });
           } else {
