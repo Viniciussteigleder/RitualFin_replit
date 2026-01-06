@@ -1,0 +1,44 @@
+You have two important confirmations now:
+
+/api/admin/version shows bootstrapRan: true → your deployed code is running and bootstrap executes.
+
+/api/admin/db-ping shows timeout while using host: "54.247.26.119", port: "6543" → the app is trying to reach the Supabase pooler, but it is using an IP address instead of the pooler hostname.
+
+That combination strongly suggests the current “force IPv4 by replacing hostname with IPv4” approach is now hurting you with the Transaction Pooler.
+
+Why this is happening (in one line)
+
+For Supabase pooler connections (*.pooler.supabase.com:6543), rewriting the hostname to an IP can break TLS/SNI and/or pooler routing, resulting in a connect/handshake stall that ends as a timeout.
+
+What to change (specific, minimal)
+Change 1 — Stop rewriting the hostname to IPv4 when using the Supabase pooler
+
+In bootstrap.cjs (and any fallback in server/db.ts) add a guard:
+
+If url.hostname contains pooler.supabase.com OR url.port === "6543", do not replace hostname with an IPv4.
+
+Still keep DNS preference: dns.setDefaultResultOrder("ipv4first") and your Render NODE_OPTIONS=--dns-result-order=ipv4first.
+
+Expected result: /api/admin/db-ping should show connection.host as aws-1-eu-west-1.pooler.supabase.com (hostname), not an IPv4.
+
+Change 2 — Keep SSL enabled, but don’t rely on IP-based TLS
+
+You already have sslmode=require. Keep it.
+If your code sets rejectUnauthorized:false, that’s fine short-term, but the key is: do not convert pooler hostnames to IPs.
+
+The next 10 steps (execution order)
+
+Confirm Render env: DATABASE_URL is the pooler string (it is).
+
+Confirm Render env: NODE_OPTIONS=--dns-result-order=ipv4first (you set it).
+
+In GitHub/your repo, edit bootstrap.cjs: skip IPv4 rewrite for pooler.supabase.com / port 6543.
+
+In server/db.ts, ensure the fallback resolver also does not convert pooler hostname to IP.
+
+Commit to main and push (so Render auto-deploys).
+
+Manual deploy on Render (optional) to avoid waiting.
+
+Call: curl -s https://ritualfin-api.onrender.com/api/admin/version
+Verify buildTime changed.
