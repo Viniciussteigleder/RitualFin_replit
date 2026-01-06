@@ -196,14 +196,14 @@ export default function ConfirmPage() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-2xl font-bold">{t(locale, confirmCopy.title)}</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground">{t(locale, confirmCopy.title)}</h1>
               {items.length > 0 && (
                 <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-amber-100 text-amber-700 text-sm font-bold">
                   {items.length}
                 </span>
               )}
             </div>
-            <p className="text-muted-foreground">{t(locale, confirmCopy.subtitle)}</p>
+            <p className="text-muted-foreground text-sm md:text-base">{t(locale, confirmCopy.subtitle)}</p>
           </div>
           
           {highConfidenceCount > 0 && (
