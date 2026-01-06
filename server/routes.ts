@@ -469,20 +469,72 @@ export async function registerRoutes(
   });
 
   // ===== AUTH / USER =====
+  app.post("/api/auth/signup", async (req: Request, res: Response) => {
+    try {
+      const { username, email, password } = req.body;
+
+      if (!username || !password) {
+        return res.status(400).json({ error: "Username and password are required" });
+      }
+
+      // Check if user already exists
+      const existingUser = email
+        ? await storage.getUserByEmail(email)
+        : await storage.getUserByUsername(username);
+
+      if (existingUser) {
+        return res.status(409).json({ error: "User already exists" });
+      }
+
+      // Create new user
+      const user = await storage.createUser({
+        username,
+        email: email || undefined,
+        password,
+      });
+
+      // Set session
+      req.session.userId = user.id;
+
+      logger.info("user_signup_success", { userId: user.id, username, hasEmail: !!email });
+      res.json({ success: true, user: { id: user.id, username: user.username, email: user.email } });
+    } catch (error: any) {
+      logger.error("signup_error", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.post("/api/auth/login", async (req: Request, res: Response) => {
     try {
       const { username, password } = req.body;
-      let user = await storage.getUserByUsername(username || "demo");
+
+      if (!username || !password) {
+        return res.status(400).json({ error: "Username and password are required" });
+      }
+
+      // Find user by username or email
+      let user = await storage.getUserByUsername(username);
+      if (!user && username.includes("@")) {
+        user = await storage.getUserByEmail(username);
+      }
 
       if (!user) {
-        user = await storage.createUser({ username: username || "demo", password: password || "demo" });
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      // TODO: Add proper password hashing and verification
+      // For now, just check if password matches (INSECURE - needs bcrypt)
+      if (user.password !== password) {
+        return res.status(401).json({ error: "Invalid credentials" });
       }
 
       // Set session
       req.session.userId = user.id;
 
+      logger.info("user_login_success", { userId: user.id, username });
       res.json({ success: true, user: { id: user.id, username: user.username } });
     } catch (error: any) {
+      logger.error("login_error", { error: error.message });
       res.status(500).json({ error: error.message });
     }
   });
@@ -3202,13 +3254,13 @@ export async function registerRoutes(
             category3
           });
 
-          // Update transactions with the new rule ID
-          await storage.bulkUpdateTransactions(ids, { ruleIdApplied: createdRule.id });
+        // Update transactions with the new rule ID
+        await storage.bulkUpdateTransactions(ids, { ruleIdApplied: createdRule.id });
         }
       }
 
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         count: ids.length,
         ruleCreated: createdRule ? true : false,
         ruleId: createdRule?.id
