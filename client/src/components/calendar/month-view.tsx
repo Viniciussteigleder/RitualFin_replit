@@ -16,12 +16,12 @@ import {
   isSameMonth,
   isToday,
   isSameDay,
-  format,
   isAfter,
   startOfWeek,
   endOfWeek,
 } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { calendarMonthCopy, t as translate } from "@/lib/i18n";
+import { useLocale } from "@/hooks/use-locale";
 
 interface Transaction {
   id: string;
@@ -40,17 +40,20 @@ interface MonthViewProps {
 }
 
 export function MonthView({ month, transactions, selectedDay, onDaySelect }: MonthViewProps) {
+  const locale = useLocale();
   const [year, monthNum] = month.split("-").map(Number);
   const monthDate = new Date(year, monthNum - 1, 1);
   const monthStart = startOfMonth(monthDate);
   const monthEnd = endOfMonth(monthDate);
 
   // Get calendar grid (includes days from prev/next month)
-  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1, locale: ptBR });
-  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1, locale: ptBR });
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
   const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
   const today = new Date();
+  const dayFormatter = new Intl.DateTimeFormat(locale, { day: "numeric" });
+  const numberFormatter = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
 
   // Calculate totals for a day
   const getDayTotals = (day: Date) => {
@@ -73,7 +76,7 @@ export function MonthView({ month, transactions, selectedDay, onDaySelect }: Mon
     return { income, expense, hasProjected };
   };
 
-  const weekDays = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+  const weekDays = calendarMonthCopy.weekDays[locale] || calendarMonthCopy.weekDays["pt-BR"];
 
   return (
     <div className="bg-white rounded-lg border overflow-hidden">
@@ -117,11 +120,11 @@ export function MonthView({ month, transactions, selectedDay, onDaySelect }: Mon
                     isTodayDate && "bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
                   )}
                 >
-                  {format(day, "d")}
+                  {dayFormatter.format(day)}
                 </span>
                 {isFuture && totals.hasProjected && (
                   <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">
-                    Proj
+                    {translate(locale, calendarMonthCopy.projected)}
                   </span>
                 )}
               </div>
@@ -137,7 +140,7 @@ export function MonthView({ month, transactions, selectedDay, onDaySelect }: Mon
                         : "bg-emerald-500 text-white"
                     )}
                   >
-                    +{totals.income.toFixed(0)}
+                    +{numberFormatter.format(totals.income)}
                   </div>
                 )}
                 {totals.expense > 0 && (
@@ -149,7 +152,7 @@ export function MonthView({ month, transactions, selectedDay, onDaySelect }: Mon
                         : "bg-rose-500 text-white"
                     )}
                   >
-                    -{totals.expense.toFixed(0)}
+                    -{numberFormatter.format(totals.expense)}
                   </div>
                 )}
               </div>

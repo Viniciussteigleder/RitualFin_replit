@@ -151,6 +151,36 @@ npm run db:push          # Push schema changes to PostgreSQL (no migrations)
 
 **Important**: This project uses `drizzle-kit push` for schema updates, NOT traditional migrations. The schema is in `shared/schema.ts`, and changes are applied directly to the database.
 
+### Deployment
+
+**Architecture**: Split deployment (Frontend on Vercel, Backend on Render, Database on Supabase)
+
+```
+┌─────────────┐         ┌──────────────┐         ┌─────────────┐
+│   Vercel    │ ──────> │    Render    │ ──────> │  Supabase   │
+│  (Frontend) │  HTTPS  │  (Backend)   │   PG    │  (Database) │
+│  Static SPA │         │  Express API │         │  PostgreSQL │
+└─────────────┘         └──────────────┘         └─────────────┘
+```
+
+**Required Environment Variables**:
+- **Vercel** (Frontend):
+  - `VITE_API_URL` - Backend API URL (e.g., `https://ritualfin-api.onrender.com`)
+- **Render** (Backend):
+  - `DATABASE_URL` - PostgreSQL connection string from Supabase (Transaction Pooler, port 6543)
+  - `CORS_ORIGIN` - Vercel frontend URL(s) for CORS (e.g., `https://ritualfin.vercel.app`)
+  - `NODE_ENV=production`
+  - `SESSION_SECRET` - Strong random secret (32+ chars)
+  - `OPENAI_API_KEY` (optional) - For AI features
+
+**Deployment Guide**: See `docs/DEPLOYMENT_GUIDE.md` for complete step-by-step instructions, troubleshooting, and monitoring setup.
+
+**Key Points**:
+- `vercel.json` configures ONLY frontend (SPA routing, security headers)
+- Backend is deployed separately to avoid serverless cold starts
+- CORS must be configured on backend to allow frontend domain
+- All API calls from frontend use `VITE_API_URL` environment variable
+
 ## Architecture
 
 ### Monorepo Structure

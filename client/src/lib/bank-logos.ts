@@ -24,6 +24,7 @@ export const BANK_PROVIDERS: Record<string, BankProvider> = {
     displayName: "Miles & More Gold",
     icon: Plane,
     color: "#002654",
+    logoUrl: "/providers/miles-and-more.svg",
     description: "Lufthansa Miles & More Credit Card"
   },
   "amex": {
@@ -32,6 +33,7 @@ export const BANK_PROVIDERS: Record<string, BankProvider> = {
     displayName: "American Express",
     icon: CreditCard,
     color: "#006FCF",
+    logoUrl: "/providers/american-express.svg",
     description: "American Express Credit Card"
   },
   "sparkasse": {
@@ -40,6 +42,7 @@ export const BANK_PROVIDERS: Record<string, BankProvider> = {
     displayName: "Sparkasse",
     icon: Landmark,
     color: "#FF0000",
+    logoUrl: "/providers/sparkasse.svg",
     description: "Sparkasse Bank Account"
   },
   "nubank": {

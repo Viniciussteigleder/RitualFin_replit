@@ -1,6 +1,7 @@
 // Rules Engine for AI-powered transaction categorization with confidence levels
 
 import type { Rule, Transaction } from "@shared/schema";
+import { evaluateRuleMatch } from "./classification-utils";
 
 export interface RuleMatch {
   ruleId: string;
@@ -49,11 +50,16 @@ export function matchRules(descNorm: string, rules: Rule[], settings: UserSettin
   const sortedRules = [...rules].sort((a, b) => (b.priority || 500) - (a.priority || 500));
 
   for (const rule of sortedRules) {
+    // CRITICAL: Keywords are split ONLY on semicolon (;) separator
+    // Each expression between semicolons is preserved as a whole unit
+    // Example: "LIDL;SV Fuerstenfeldbrucker Wasserratten e.V.;REWE"
+    // Results in 3 expressions: ["LIDL", "SV Fuerstenfeldbrucker Wasserratten e.V.", "REWE"]
+    // Spaces within expressions are PRESERVED and normalized together
     const keywords = rule.keywords
       .split(";")
       .map(k => normalizeForMatch(k))
       .filter(k => k.length > 0);
-    
+
     const matchedKeyword = keywords.find(keyword => haystack.includes(keyword));
     
     if (matchedKeyword) {
@@ -212,6 +218,27 @@ export function suggestKeyword(descNorm: string): string {
     return words;
   }
   return descNorm.slice(0, 30);
+}
+
+export interface KeyDescMatchResult {
+  ruleId?: string;
+  leafId?: string;
+  matchedExpression?: string;
+}
+
+export function classifyByKeyDesc(keyDesc: string, rules: Rule[]): KeyDescMatchResult {
+  for (const rule of rules.filter(r => r.active !== false && r.keyWords)) {
+    const result = evaluateRuleMatch(keyDesc, rule);
+    if (result.isMatch) {
+      return {
+        ruleId: rule.id,
+        leafId: rule.leafId || undefined,
+        matchedExpression: result.positiveMatch || undefined
+      };
+    }
+  }
+
+  return {};
 }
 
 export const AI_SEED_RULES = [

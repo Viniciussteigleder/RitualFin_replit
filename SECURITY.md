@@ -18,6 +18,7 @@ RitualFin is currently in **Phase C (Pre-Production)** and has **known security 
    - No session management
    - No password verification
    - All API endpoints are effectively public
+   - Production guardrail: API requests are blocked unless `ALLOW_DEMO_AUTH_IN_PROD=true`
    - **Status**: Planned for Phase D
 
 2. **No Row Level Security (RLS)**
@@ -39,12 +40,17 @@ RitualFin is currently in **Phase C (Pre-Production)** and has **known security 
    - Timeout risk on serverless platforms
    - **Status**: Refactoring planned for Phase C.7
 
-5. **No Session Storage**
+5. **Dependency Vulnerabilities (Audit)**
+   - `xlsx` prototype pollution/ReDoS; no fix available in current version
+   - `esbuild` dev-server exposure via `drizzle-kit` chain (dev-only)
+   - **Status**: Mitigation required before production
+
+6. **No Session Storage**
    - Cannot maintain persistent user sessions
    - No proper logout functionality
    - **Status**: Planned for Phase D
 
-6. **Simplistic Duplicate Detection**
+7. **Simplistic Duplicate Detection**
    - Can miss near-duplicates
    - Can block legitimate multiple transactions
    - **Status**: Improvement planned for Phase D
@@ -146,6 +152,7 @@ If you discover a security vulnerability in RitualFin, please report it responsi
 **Safe to commit** (public values):
 - `VITE_API_URL` - Frontend API base URL
 - `CORS_ORIGIN` - CORS allowed origins
+- `ALLOW_DEMO_AUTH_IN_PROD` - Demo-only bypass (should remain unset for real production)
 
 ### Credential Rotation Schedule
 
@@ -230,5 +237,5 @@ We appreciate responsible disclosure of security issues. Contributors who report
 
 ---
 
-**Last Updated**: 2025-12-29
+**Last Updated**: 2026-01-02
 **Next Review**: After Phase D completion

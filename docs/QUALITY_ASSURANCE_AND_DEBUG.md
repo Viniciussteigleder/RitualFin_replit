@@ -16,6 +16,24 @@ npm --version         # >= 9.x
 psql --version        # PostgreSQL client installed
 ```
 
+### Automation shortcuts (new)
+```bash
+# API smoke tests (requires backend running)
+scripts/qa/run_api_smoke.sh
+
+# API contract tests (requires backend running)
+scripts/qa/run_api_contracts.sh
+
+# DB invariants (scripted runner)
+scripts/qa/run_db_invariants.sh
+
+# DB dedupe (optional, destructive)
+DATABASE_URL=... npx --no-install tsx scripts/qa/dedupe_transactions.ts --apply
+
+# Playwright E2E (runs Vite dev server on 5173)
+scripts/qa/run_e2e.sh
+```
+
 ### Environment Setup
 ```bash
 # Required environment variables

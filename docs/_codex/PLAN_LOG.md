@@ -29,3 +29,15 @@
 - Status: Approved
 - Scope: docs/_codex/CODEX_HANDOFF_TO_CLAUDE.md, docs/_codex/CODEX_ACTIVITY_LOG.md, docs/_codex/DECISION_LOG.md, docs/_codex/ISSUES_REGISTER.md, docs/_codex/DIFF_SUMMARY.md, docs/_codex/QA_NOTES.md.
 - Approval source: User instruction to proceed (2025-12-29T13:07:57Z).
+
+## 2026-01-01T16:59:01Z (UTC)
+- Plan: Implement Classification + Alias + Logos + Excel roundtrip capability (schema, backend, frontend, migration/reset, tests, README updates) per user spec.
+- Status: Pending approval
+- Scope: shared/schema.ts, server/* (csv-parser, rules engine, storage, routes, logo downloader, excel helpers), client/src/pages/settings.tsx (new tabs), client/src/components (logo display), client/src/lib/api.ts, docs/README.md, docs/IMPLEMENTATION_LOG.md, docs/ARCHITECTURE_AND_AI_LOGIC.md, docs/_codex/* logs, migrations/* or drizzle schema push, tests/*.
+- Approval source: Pending user confirmation.
+
+## 2026-01-01T17:03:30Z (UTC)
+- Plan: Implement Classification + Alias + Logos + Excel roundtrip capability (schema, backend, frontend, migration/reset, tests, README updates) per user spec.
+- Status: Approved
+- Scope: shared/schema.ts, server/* (csv-parser, rules engine, storage, routes, logo downloader, excel helpers), client/src/pages/settings.tsx (new tabs), client/src/components (logo display), client/src/lib/api.ts, docs/README.md, docs/IMPLEMENTATION_LOG.md, docs/ARCHITECTURE_AND_AI_LOGIC.md, docs/_codex/* logs, tests/*.
+- Approval source: User instruction "implemente o projeto" (2026-01-01).

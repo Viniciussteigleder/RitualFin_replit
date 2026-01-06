@@ -14,13 +14,12 @@ import {
   eachWeekOfInterval,
   startOfWeek,
   endOfWeek,
-  format,
   isSameWeek,
   isAfter,
-  isBefore,
 } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { TrendingUp, TrendingDown, Calendar } from "lucide-react";
+import { calendarWeekCopy, t as translate } from "@/lib/i18n";
+import { useLocale } from "@/hooks/use-locale";
 
 interface Transaction {
   id: string;
@@ -38,6 +37,7 @@ interface WeekBlocksViewProps {
 }
 
 export function WeekBlocksView({ month, transactions, selectedWeek, onWeekSelect }: WeekBlocksViewProps) {
+  const locale = useLocale();
   const [year, monthNum] = month.split("-").map(Number);
   const monthDate = new Date(year, monthNum - 1, 1);
   const monthStart = startOfMonth(monthDate);
@@ -46,14 +46,19 @@ export function WeekBlocksView({ month, transactions, selectedWeek, onWeekSelect
   // Get weeks of the month
   const weeks = eachWeekOfInterval(
     { start: monthStart, end: monthEnd },
-    { weekStartsOn: 1, locale: ptBR }
+    { weekStartsOn: 1 }
   );
 
   const today = new Date();
+  const currencyFormatter = new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" });
+  const dayFormatter = new Intl.DateTimeFormat(locale, { day: "2-digit" });
+  const dayMonthFormatter = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short" });
+  const formatMessage = (template: string, vars: Record<string, string | number>) =>
+    Object.entries(vars).reduce((result, [key, value]) => result.replace(`{${key}}`, String(value)), template);
 
   // Calculate totals for a week
   const getWeekTotals = (weekStart: Date) => {
-    const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1, locale: ptBR });
+    const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
 
     const weekTransactions = transactions.filter((t) => {
       const tDate = new Date(t.paymentDate);
@@ -84,7 +89,7 @@ export function WeekBlocksView({ month, transactions, selectedWeek, onWeekSelect
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {weeks.map((weekStart, idx) => {
-        const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1, locale: ptBR });
+        const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
         const totals = getWeekTotals(weekStart);
         const isSelected = selectedWeek && isSameWeek(weekStart, selectedWeek, { weekStartsOn: 1 });
         const isFuture = isFutureWeek(weekStart);
@@ -105,20 +110,19 @@ export function WeekBlocksView({ month, transactions, selectedWeek, onWeekSelect
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <span className="font-semibold text-sm">
-                    Semana {idx + 1}
+                    {formatMessage(translate(locale, calendarWeekCopy.weekLabel), { index: idx + 1 })}
                   </span>
                 </div>
                 {isFuture && (
                   <span className="text-xs text-muted-foreground bg-amber-100 px-2 py-0.5 rounded-full">
-                    Projetado
+                    {translate(locale, calendarWeekCopy.projected)}
                   </span>
                 )}
               </div>
 
               {/* Date Range */}
               <p className="text-xs text-muted-foreground">
-                {format(weekStart, "dd", { locale: ptBR })} -{" "}
-                {format(weekEnd, "dd MMM", { locale: ptBR })}
+                {dayFormatter.format(weekStart)} - {dayMonthFormatter.format(weekEnd)}
               </p>
 
               {/* Income/Expense Totals */}
@@ -126,26 +130,20 @@ export function WeekBlocksView({ month, transactions, selectedWeek, onWeekSelect
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <TrendingUp className="h-4 w-4 text-emerald-600" />
-                    <span className="text-xs text-muted-foreground">Receitas</span>
+                    <span className="text-xs text-muted-foreground">{translate(locale, calendarWeekCopy.income)}</span>
                   </div>
                   <span className="text-sm font-bold text-emerald-600">
-                    {totals.income.toLocaleString("pt-BR", {
-                      style: "currency",
-                      currency: "EUR",
-                    })}
+                    {currencyFormatter.format(totals.income)}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <TrendingDown className="h-4 w-4 text-rose-600" />
-                    <span className="text-xs text-muted-foreground">Despesas</span>
+                    <span className="text-xs text-muted-foreground">{translate(locale, calendarWeekCopy.expense)}</span>
                   </div>
                   <span className="text-sm font-bold text-rose-600">
-                    {totals.expense.toLocaleString("pt-BR", {
-                      style: "currency",
-                      currency: "EUR",
-                    })}
+                    {currencyFormatter.format(totals.expense)}
                   </span>
                 </div>
               </div>
@@ -153,17 +151,14 @@ export function WeekBlocksView({ month, transactions, selectedWeek, onWeekSelect
               {/* Net */}
               <div className="pt-2 border-t">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-muted-foreground">Saldo</span>
+                  <span className="text-xs font-medium text-muted-foreground">{translate(locale, calendarWeekCopy.balance)}</span>
                   <span
                     className={cn(
                       "text-sm font-bold",
                       totals.net >= 0 ? "text-emerald-600" : "text-rose-600"
                     )}
                   >
-                    {totals.net.toLocaleString("pt-BR", {
-                      style: "currency",
-                      currency: "EUR",
-                    })}
+                    {currencyFormatter.format(totals.net)}
                   </span>
                 </div>
               </div>
@@ -172,7 +167,7 @@ export function WeekBlocksView({ month, transactions, selectedWeek, onWeekSelect
               {isFuture && (
                 <div className="pt-2 border-t">
                   <p className="text-xs text-amber-600 font-medium">
-                    💡 Capacidade de gasto disponível
+                    💡 {translate(locale, calendarWeekCopy.capacityNote)}
                   </p>
                 </div>
               )}

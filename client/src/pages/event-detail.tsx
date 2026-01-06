@@ -28,13 +28,13 @@ import {
   Music,
   Dumbbell
 } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { eventOccurrencesApi } from "@/lib/api";
+import { eventDetailCopy, translateCategory, t as translate } from "@/lib/i18n";
+import { useLocale } from "@/hooks/use-locale";
 
 const CATEGORY_ICONS: Record<string, any> = {
   "Moradia": Home,
@@ -62,14 +62,6 @@ const CATEGORY_COLORS: Record<string, string> = {
   "Outros": "#6b7280"
 };
 
-const RECURRENCE_LABELS: Record<string, string> = {
-  "none": "Único",
-  "weekly": "Toda semana",
-  "biweekly": "Quinzenal",
-  "monthly": "Todo mês",
-  "yearly": "Todo ano"
-};
-
 interface CalendarEvent {
   id: string;
   name: string;
@@ -94,14 +86,21 @@ export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const locale = useLocale();
   const queryClient = useQueryClient();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const currencyFormatter = new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" });
+  const dateFormatter = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "long" });
+  const dateLongFormatter = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "long", year: "numeric" });
+  const monthFormatter = new Intl.DateTimeFormat(locale, { month: "short" });
+  const formatMessage = (template: string, vars: Record<string, string | number>) =>
+    Object.entries(vars).reduce((result, [key, value]) => result.replace(`{${key}}`, String(value)), template);
 
   const { data: event, isLoading } = useQuery<CalendarEvent>({
     queryKey: ["calendar-event", id],
     queryFn: async () => {
       const res = await fetch(`/api/calendar-events/${id}`);
-      if (!res.ok) throw new Error("Evento não encontrado");
+      if (!res.ok) throw new Error(translate(locale, eventDetailCopy.errorNotFound));
       return res.json();
     },
     enabled: !!id
@@ -120,11 +119,11 @@ export default function EventDetailPage() {
   const deleteEvent = useMutation({
     mutationFn: async () => {
       const res = await fetch(`/api/calendar-events/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Erro ao excluir evento");
+      if (!res.ok) throw new Error(translate(locale, eventDetailCopy.errorDelete));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
-      toast({ title: "Evento excluído com sucesso" });
+      toast({ title: translate(locale, eventDetailCopy.toastDeleted) });
       navigate("/calendar");
     }
   });
@@ -134,7 +133,7 @@ export default function EventDetailPage() {
       eventOccurrencesApi.update(occId, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["event-occurrences", id] });
-      toast({ title: "Status atualizado" });
+      toast({ title: translate(locale, eventDetailCopy.toastStatusUpdated) });
     },
   });
 
@@ -151,6 +150,7 @@ export default function EventDetailPage() {
   const Icon = CATEGORY_ICONS[event.category1] || CreditCard;
   const color = CATEGORY_COLORS[event.category1] || "#6b7280";
   const dueDate = new Date(event.nextDueDate);
+  const recurrenceLabels = translate(locale, eventDetailCopy.recurrenceLabels) as Record<string, string>;
 
   const totalPaid = occurrences.filter(o => o.status === "paid").reduce((sum, o) => sum + o.amount, 0);
   const avgAmount = occurrences.length > 0 
@@ -161,19 +161,19 @@ export default function EventDetailPage() {
     <AppLayout>
       <div className="space-y-6">
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <Link href="/calendar" className="hover:text-primary transition-colors">Calendário</Link>
+          <Link href="/calendar" className="hover:text-primary transition-colors">{translate(locale, eventDetailCopy.breadcrumbCalendar)}</Link>
           <span>/</span>
-          <Link href="/calendar" className="hover:text-primary transition-colors">Eventos</Link>
+          <Link href="/calendar" className="hover:text-primary transition-colors">{translate(locale, eventDetailCopy.breadcrumbEvents)}</Link>
           <span>/</span>
           <span className="text-foreground font-medium">{event.name}</span>
         </div>
 
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Detalhes do Evento</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">{translate(locale, eventDetailCopy.title)}</h1>
           <Link href="/calendar">
             <Button variant="ghost" size="sm" className="gap-2">
               <ArrowLeft className="h-4 w-4" />
-              Voltar
+              {translate(locale, eventDetailCopy.back)}
             </Button>
           </Link>
         </div>
@@ -192,18 +192,22 @@ export default function EventDetailPage() {
                   <div className="flex items-center gap-2 mb-1">
                     <h2 className="text-xl md:text-2xl font-bold text-foreground">{event.name}</h2>
                     <Badge variant={event.isActive ? "default" : "secondary"} className={event.isActive ? "bg-green-100 text-green-700" : ""}>
-                      {event.isActive ? "Ativo" : "Inativo"}
+                      {event.isActive ? translate(locale, eventDetailCopy.active) : translate(locale, eventDetailCopy.inactive)}
                     </Badge>
                   </div>
                   <p className="text-muted-foreground text-sm">
-                    Próximo vencimento: <span className="font-semibold text-foreground">{format(dueDate, "dd 'de' MMMM", { locale: ptBR })}</span>
+                    {formatMessage(translate(locale, eventDetailCopy.nextDue), { date: dateFormatter.format(dueDate) })}
                   </p>
                   <div className="mt-3">
                     <span className="text-4xl md:text-5xl font-black text-foreground">
-                      {event.amount.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                      {currencyFormatter.format(event.amount)}
                     </span>
                     {event.recurrence !== "none" && (
-                      <span className="text-muted-foreground ml-2">/ {RECURRENCE_LABELS[event.recurrence].toLowerCase()}</span>
+                      <span className="text-muted-foreground ml-2">
+                        {formatMessage(translate(locale, eventDetailCopy.recurrencePer), {
+                          label: recurrenceLabels[event.recurrence]?.toLowerCase() || event.recurrence
+                        })}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -212,25 +216,29 @@ export default function EventDetailPage() {
               <div className="flex gap-3">
                 <Button variant="outline" className="gap-2">
                   <Edit2 className="h-4 w-4" />
-                  Editar Evento
+                  {translate(locale, eventDetailCopy.editEvent)}
                 </Button>
                 <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
                   <DialogTrigger asChild>
                     <Button variant="outline" className="gap-2 text-rose-600 hover:bg-rose-50 border-rose-200">
                       <Trash2 className="h-4 w-4" />
-                      Excluir
+                      {translate(locale, eventDetailCopy.delete)}
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Confirmar Exclusão</DialogTitle>
+                      <DialogTitle>{translate(locale, eventDetailCopy.deleteTitle)}</DialogTitle>
                     </DialogHeader>
                     <p className="text-muted-foreground py-4">
-                      Tem certeza que deseja excluir o evento "{event.name}"? Esta ação não pode ser desfeita.
+                      {formatMessage(translate(locale, eventDetailCopy.deleteBody), { name: event.name })}
                     </p>
                     <div className="flex gap-3 justify-end">
-                      <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>Cancelar</Button>
-                      <Button variant="destructive" onClick={() => deleteEvent.mutate()}>Excluir</Button>
+                      <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
+                        {translate(locale, eventDetailCopy.cancel)}
+                      </Button>
+                      <Button variant="destructive" onClick={() => deleteEvent.mutate()}>
+                        {translate(locale, eventDetailCopy.delete)}
+                      </Button>
                     </div>
                   </DialogContent>
                 </Dialog>
@@ -243,27 +251,29 @@ export default function EventDetailPage() {
           <div className="lg:col-span-2 space-y-6">
             <Card className="bg-white border-0 shadow-sm">
               <CardHeader className="border-b">
-                <CardTitle className="text-lg font-semibold">Informações Detalhadas</CardTitle>
+                <CardTitle className="text-lg font-semibold">{translate(locale, eventDetailCopy.detailsTitle)}</CardTitle>
               </CardHeader>
               <CardContent className="p-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Categoria</p>
+                    <p className="text-sm text-muted-foreground mb-1">{translate(locale, eventDetailCopy.category)}</p>
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-                      <span className="font-semibold">{event.category1}</span>
+                      <span className="font-semibold">
+                        {translateCategory(locale, event.category1)}
+                      </span>
                     </div>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Recorrência</p>
+                    <p className="text-sm text-muted-foreground mb-1">{translate(locale, eventDetailCopy.recurrence)}</p>
                     <div className="flex items-center gap-2">
                       <Repeat className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-semibold">{RECURRENCE_LABELS[event.recurrence]}</span>
+                      <span className="font-semibold">{recurrenceLabels[event.recurrence] || event.recurrence}</span>
                     </div>
                   </div>
                   {event.paymentMethod && (
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">Método de Pagamento</p>
+                      <p className="text-sm text-muted-foreground mb-1">{translate(locale, eventDetailCopy.paymentMethod)}</p>
                       <div className="flex items-center gap-2">
                         <CreditCard className="h-4 w-4 text-muted-foreground" />
                         <span className="font-semibold">{event.paymentMethod}</span>
@@ -276,34 +286,34 @@ export default function EventDetailPage() {
 
             <Card className="bg-white border-0 shadow-sm">
               <CardHeader className="border-b flex flex-row items-center justify-between">
-                <CardTitle className="text-lg font-semibold">Histórico de Ocorrências</CardTitle>
-                <Button variant="ghost" size="sm" className="text-primary">Ver tudo</Button>
+                <CardTitle className="text-lg font-semibold">{translate(locale, eventDetailCopy.historyTitle)}</CardTitle>
+                <Button variant="ghost" size="sm" className="text-primary">{translate(locale, eventDetailCopy.viewAll)}</Button>
               </CardHeader>
               <CardContent className="p-0">
                 {occurrences.length === 0 ? (
                   <div className="p-8 text-center text-muted-foreground">
                     <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>Nenhum histórico de pagamentos</p>
-                    <p className="text-xs mt-1">O histórico será criado conforme os pagamentos forem registrados</p>
+                    <p>{translate(locale, eventDetailCopy.historyEmptyTitle)}</p>
+                    <p className="text-xs mt-1">{translate(locale, eventDetailCopy.historyEmptyBody)}</p>
                   </div>
                 ) : (
                   <table className="w-full">
                     <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
                       <tr>
-                        <th className="px-6 py-3 text-left">Data</th>
-                        <th className="px-6 py-3 text-left">Valor</th>
-                        <th className="px-6 py-3 text-left">Status</th>
-                        <th className="px-6 py-3 text-right">Ação</th>
+                        <th className="px-6 py-3 text-left">{translate(locale, eventDetailCopy.tableDate)}</th>
+                        <th className="px-6 py-3 text-left">{translate(locale, eventDetailCopy.tableAmount)}</th>
+                        <th className="px-6 py-3 text-left">{translate(locale, eventDetailCopy.tableStatus)}</th>
+                        <th className="px-6 py-3 text-right">{translate(locale, eventDetailCopy.tableAction)}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
                       {occurrences.slice(0, 5).map(occurrence => (
                         <tr key={occurrence.id} className="hover:bg-muted/30 transition-colors">
                           <td className="px-6 py-4 text-sm font-medium">
-                            {format(new Date(occurrence.date), "dd MMM, yyyy", { locale: ptBR })}
+                            {dateLongFormatter.format(new Date(occurrence.date))}
                           </td>
                           <td className="px-6 py-4 text-sm font-bold">
-                            {occurrence.amount.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                            {currencyFormatter.format(occurrence.amount)}
                           </td>
                           <td className="px-6 py-4">
                             <Badge 
@@ -320,7 +330,9 @@ export default function EventDetailPage() {
                               ) : (
                                 <Clock className="h-3 w-3" />
                               )}
-                              {occurrence.status === "paid" ? "Pago" : "Pendente"}
+                              {occurrence.status === "paid"
+                                ? translate(locale, eventDetailCopy.statusPaid)
+                                : translate(locale, eventDetailCopy.statusPending)}
                             </Badge>
                           </td>
                           <td className="px-6 py-4 text-right">
@@ -336,7 +348,9 @@ export default function EventDetailPage() {
                               disabled={updateOccurrence.isPending}
                               className="text-xs"
                             >
-                              {occurrence.status === "paid" ? "Marcar pendente" : "Marcar pago"}
+                              {occurrence.status === "paid"
+                                ? translate(locale, eventDetailCopy.markPending)
+                                : translate(locale, eventDetailCopy.markPaid)}
                             </Button>
                           </td>
                         </tr>
@@ -353,15 +367,15 @@ export default function EventDetailPage() {
               <CardHeader>
                 <CardTitle className="text-base font-semibold flex items-center gap-2 text-amber-800">
                   <Lightbulb className="h-5 w-5 text-amber-500" />
-                  Insights Relacionados
+                  {translate(locale, eventDetailCopy.insightsTitle)}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   <div className="p-3 bg-white/50 rounded-lg">
-                    <p className="text-sm font-semibold text-amber-900">Gasto acima da média</p>
+                    <p className="text-sm font-semibold text-amber-900">{translate(locale, eventDetailCopy.insightAboveAvgTitle)}</p>
                     <p className="text-xs text-amber-700 mt-1">
-                      Este evento representou <span className="font-bold">12%</span> dos gastos totais do último mês. Considere revisar.
+                      {formatMessage(translate(locale, eventDetailCopy.insightAboveAvgBody), { percent: 12 })}
                     </p>
                   </div>
                 </div>
@@ -370,13 +384,13 @@ export default function EventDetailPage() {
 
             <Card className="bg-white border-0 shadow-sm">
               <CardHeader>
-                <CardTitle className="text-base font-semibold">Tendência de Gastos</CardTitle>
+                <CardTitle className="text-base font-semibold">{translate(locale, eventDetailCopy.trendTitle)}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-sm text-muted-foreground">Média</span>
+                  <span className="text-sm text-muted-foreground">{translate(locale, eventDetailCopy.average)}</span>
                   <span className="font-semibold">
-                    {avgAmount.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                    {currencyFormatter.format(avgAmount)}
                   </span>
                 </div>
                 <div className="h-24 flex items-end gap-1">
@@ -385,19 +399,19 @@ export default function EventDetailPage() {
                       key={o.id}
                       className="flex-1 bg-primary/20 rounded-t transition-all hover:bg-primary/40"
                       style={{ height: `${(o.amount / (avgAmount * 1.5)) * 100}%`, minHeight: "10%" }}
-                      title={`${format(new Date(o.date), "MMM", { locale: ptBR })}: ${o.amount.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}`}
+                      title={`${monthFormatter.format(new Date(o.date))}: ${currencyFormatter.format(o.amount)}`}
                     />
                   ))}
                   {occurrences.length === 0 && (
                     <div className="flex-1 text-center text-sm text-muted-foreground">
-                      Sem dados suficientes
+                      {translate(locale, eventDetailCopy.noData)}
                     </div>
                   )}
                 </div>
                 {occurrences.length > 0 && (
                   <div className="flex justify-between mt-2 text-[10px] text-muted-foreground">
                     {occurrences.slice(-6).map((o, i) => (
-                      <span key={i}>{format(new Date(o.date), "MMM", { locale: ptBR })}</span>
+                      <span key={i}>{monthFormatter.format(new Date(o.date))}</span>
                     ))}
                   </div>
                 )}

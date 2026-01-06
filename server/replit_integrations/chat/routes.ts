@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import OpenAI from "openai";
 import { chatStorage } from "./storage";
+import { storage } from "../../storage";
 import { logOpenAIUsage } from "../../ai-usage";
 
 const openai = new OpenAI({
@@ -8,11 +9,20 @@ const openai = new OpenAI({
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
+async function getDemoUser() {
+  let user = await storage.getUserByUsername("demo");
+  if (!user) {
+    user = await storage.createUser({ username: "demo", password: "demo" });
+  }
+  return user;
+}
+
 export function registerChatRoutes(app: Express): void {
   // Get all conversations
   app.get("/api/conversations", async (req: Request, res: Response) => {
     try {
-      const conversations = await chatStorage.getAllConversations();
+      const user = await getDemoUser();
+      const conversations = await chatStorage.getAllConversations(user.id);
       res.json(conversations);
     } catch (error) {
       console.error("Error fetching conversations:", error);
@@ -23,8 +33,9 @@ export function registerChatRoutes(app: Express): void {
   // Get single conversation with messages
   app.get("/api/conversations/:id", async (req: Request, res: Response) => {
     try {
+      const user = await getDemoUser();
       const id = req.params.id;
-      const conversation = await chatStorage.getConversation(id);
+      const conversation = await chatStorage.getConversation(id, user.id);
       if (!conversation) {
         return res.status(404).json({ error: "Conversation not found" });
       }
@@ -40,7 +51,8 @@ export function registerChatRoutes(app: Express): void {
   app.post("/api/conversations", async (req: Request, res: Response) => {
     try {
       const { title } = req.body;
-      const conversation = await chatStorage.createConversation(title || "New Chat");
+      const user = await getDemoUser();
+      const conversation = await chatStorage.createConversation(user.id, title || "New Chat");
       res.status(201).json(conversation);
     } catch (error) {
       console.error("Error creating conversation:", error);
@@ -51,8 +63,9 @@ export function registerChatRoutes(app: Express): void {
   // Delete conversation
   app.delete("/api/conversations/:id", async (req: Request, res: Response) => {
     try {
+      const user = await getDemoUser();
       const id = req.params.id;
-      await chatStorage.deleteConversation(id);
+      await chatStorage.deleteConversation(id, user.id);
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting conversation:", error);
@@ -65,6 +78,12 @@ export function registerChatRoutes(app: Express): void {
     const conversationId = req.params.id;
     try {
       const { content } = req.body;
+      const user = await getDemoUser();
+      const conversation = await chatStorage.getConversation(conversationId, user.id);
+
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
 
       // Save user message
       await chatStorage.createMessage(conversationId, "user", content);

@@ -1,0 +1,44 @@
+viniciussteigleder@MacBookPro RitualFin_replit % cd ~/RitualFin_replit
+git fetch --all
+git checkout main
+git pull origin main
+cd: no such file or directory: /Users/viniciussteigleder/RitualFin_replit
+remote: Enumerating objects: 61, done.
+remote: Counting objects: 100% (61/61), done.
+remote: Compressing objects: 100% (27/27), done.
+remote: Total 61 (delta 47), reused 47 (delta 34), pack-reused 0 (from 0)
+Unpacking objects: 100% (61/61), 20.22 KiB | 215.00 KiB/s, done.
+From https://github.com/Viniciussteigleder/RitualFin_replit
+   5d9a389..1278e04  main       -> origin/main
+ * [new branch]      claude/plan-open-ui-ux-ARikK -> origin/claude/plan-open-ui-ux-ARikK
+Already on 'main'
+Your branch is behind 'origin/main' by 9 commits, and can be fast-forwarded.
+  (use "git pull" to update your local branch)
+From https://github.com/Viniciussteigleder/RitualFin_replit
+ * branch            main       -> FETCH_HEAD
+Updating 5d9a389..1278e04
+Fast-forward
+ GOOGLE_AUTH_SETUP.md               | 136 +++++++++++++++++++
+ client/src/lib/i18n.ts             |  50 +++++++
+ client/src/pages/accounts.tsx      |  12 +-
+ client/src/pages/calendar.tsx      |  90 +++++++------
+ client/src/pages/categories.tsx    |  12 +-
+ client/src/pages/confirm.tsx       |   4 +-
+ client/src/pages/dashboard.tsx     | 260 ++++++++++++++++++++++++++-----------
+ client/src/pages/login.tsx         |   4 +-
+ client/src/pages/notifications.tsx |   4 +-
+ client/src/pages/rules.tsx         |   4 +-
+ client/src/pages/settings.tsx      |   4 +-
+ client/src/pages/transactions.tsx  |  12 +-
+ client/src/pages/uploads.tsx       |  19 +--
+ package-lock.json                  |  99 ++++++++++++--
+ package.json                       |   2 +
+ server/index.ts                    |   5 +
+ server/passport.ts                 |  80 ++++++++++++
+ server/routes.ts                   |  34 +++++
+ server/storage.ts                  |  17 +++
+ shared/schema.ts                   |   6 +
+ 20 files changed, 688 insertions(+), 166 deletions(-)
+ create mode 100644 GOOGLE_AUTH_SETUP.md
+ create mode 100644 server/passport.ts
+viniciussteigleder@MacBookPro RitualFin_replit % 

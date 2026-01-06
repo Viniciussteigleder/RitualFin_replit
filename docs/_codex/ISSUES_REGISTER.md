@@ -78,3 +78,12 @@
   - Status: Open
   - Owner: Claude
   - Mitigation: Restore or confirm canonical locations for missing docs.
+
+## 2026-01-01
+- Issue: Dashboard and legacy rules still use `category1`/`keywords` fields; new taxonomy/app_category is not yet fully propagated to analytics views.
+- Impact: New classifications may not appear in dashboard aggregates until full migration.
+- Mitigation: Keep legacy fields populated or add dashboard mapping to app_category in a follow-up.
+
+## 2026-01-01
+- Resolution: Dashboard analytics now use app_category via leaf_id mapping in `server/storage.ts`.
+- Status: Resolved (pending UI color mapping refinement).

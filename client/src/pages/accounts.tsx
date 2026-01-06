@@ -4,7 +4,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Archive, Loader2, CreditCard, Landmark, Wallet, Coins, Edit2, CircleCheck, AlertTriangle, TrendingUp, Calendar as CalendarIcon } from "lucide-react";
-import { getAccountIcon } from "@/lib/icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { accountsApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -14,13 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { CardGridSkeleton } from "@/components/skeletons/card-grid-skeleton";
-
-const ACCOUNT_TYPE_LABELS: Record<string, string> = {
-  credit_card: "Cartão de Crédito",
-  debit_card: "Cartão de Débito",
-  bank_account: "Conta Bancária",
-  cash: "Dinheiro"
-};
+import { accountsCopy, t as translate } from "@/lib/i18n";
+import { useLocale } from "@/hooks/use-locale";
 
 const ACCOUNT_TYPE_ICONS: Record<string, any> = {
   credit_card: CreditCard,
@@ -29,22 +23,22 @@ const ACCOUNT_TYPE_ICONS: Record<string, any> = {
   cash: Wallet
 };
 
-const PRESET_COLORS = [
-  { value: "#3b82f6", label: "Azul" },
-  { value: "#ef4444", label: "Vermelho" },
-  { value: "#8b5cf6", label: "Roxo" },
-  { value: "#10b981", label: "Verde" },
-  { value: "#f59e0b", label: "Laranja" },
-  { value: "#ec4899", label: "Rosa" },
-  { value: "#6366f1", label: "Indigo" },
-  { value: "#6b7280", label: "Cinza" }
+const PRESET_COLOR_KEYS = [
+  { value: "#3b82f6", key: "blue" },
+  { value: "#ef4444", key: "red" },
+  { value: "#8b5cf6", key: "purple" },
+  { value: "#10b981", key: "green" },
+  { value: "#f59e0b", key: "orange" },
+  { value: "#ec4899", key: "pink" },
+  { value: "#6366f1", key: "indigo" },
+  { value: "#6b7280", key: "gray" }
 ];
 
-const PRESET_ICONS = [
-  { value: "credit-card", label: "Cartão", Icon: CreditCard },
-  { value: "landmark", label: "Banco", Icon: Landmark },
-  { value: "wallet", label: "Carteira", Icon: Wallet },
-  { value: "coins", label: "Moedas", Icon: Coins }
+const PRESET_ICON_KEYS = [
+  { value: "credit-card", key: "credit-card", Icon: CreditCard },
+  { value: "landmark", key: "landmark", Icon: Landmark },
+  { value: "wallet", key: "wallet", Icon: Wallet },
+  { value: "coins", key: "coins", Icon: Coins }
 ];
 
 interface AccountFormData {
@@ -66,10 +60,18 @@ const EMPTY_ACCOUNT: AccountFormData = {
 export default function AccountsPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const locale = useLocale();
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [editingAccount, setEditingAccount] = useState<any>(null);
   const [formData, setFormData] = useState<AccountFormData>(EMPTY_ACCOUNT);
+  const currencyFormatter = new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" });
+  const dateFormatter = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "2-digit", year: "numeric" });
+  const formatMessage = (template: string, vars: Record<string, string | number>) =>
+    Object.entries(vars).reduce((result, [key, value]) => result.replace(`{${key}}`, String(value)), template);
+  const accountTypeLabels = translate(locale, accountsCopy.typeLabels) as Record<string, string>;
+  const colorLabels = translate(locale, accountsCopy.colorLabels) as Record<string, string>;
+  const iconLabels = translate(locale, accountsCopy.iconLabels) as Record<string, string>;
 
   const { data: accounts = [], isLoading } = useQuery({
     queryKey: ["accounts"],
@@ -81,10 +83,10 @@ export default function AccountsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
       closeDialog();
-      toast({ title: "Conta criada com sucesso" });
+      toast({ title: translate(locale, accountsCopy.toastCreated) });
     },
     onError: (error: any) => {
-      toast({ title: "Erro ao criar conta", description: error.message, variant: "destructive" });
+      toast({ title: translate(locale, accountsCopy.toastCreateError), description: error.message, variant: "destructive" });
     }
   });
 
@@ -93,10 +95,10 @@ export default function AccountsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
       closeDialog();
-      toast({ title: "Conta atualizada" });
+      toast({ title: translate(locale, accountsCopy.toastUpdated) });
     },
     onError: (error: any) => {
-      toast({ title: "Erro ao atualizar conta", description: error.message, variant: "destructive" });
+      toast({ title: translate(locale, accountsCopy.toastUpdateError), description: error.message, variant: "destructive" });
     }
   });
 
@@ -104,10 +106,10 @@ export default function AccountsPage() {
     mutationFn: accountsApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
-      toast({ title: "Conta arquivada" });
+      toast({ title: translate(locale, accountsCopy.toastArchived) });
     },
     onError: (error: any) => {
-      toast({ title: "Erro ao arquivar conta", description: error.message, variant: "destructive" });
+      toast({ title: translate(locale, accountsCopy.toastArchiveError), description: error.message, variant: "destructive" });
     }
   });
 
@@ -144,7 +146,7 @@ export default function AccountsPage() {
   };
 
   const handleArchive = (id: string) => {
-    if (confirm("Arquivar esta conta? As transações existentes não serão afetadas.")) {
+    if (confirm(translate(locale, accountsCopy.confirmArchive))) {
       archiveMutation.mutate(id);
     }
   };
@@ -155,22 +157,22 @@ export default function AccountsPage() {
   );
 
   const getIconComponent = (iconName: string) => {
-    const icon = PRESET_ICONS.find(i => i.value === iconName);
+    const icon = PRESET_ICON_KEYS.find(i => i.value === iconName);
     return icon ? icon.Icon : CreditCard;
   };
 
   return (
     <AppLayout>
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Contas</h1>
-            <p className="text-muted-foreground">Gerencie seus cartões e contas bancárias</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">{translate(locale, accountsCopy.title)}</h1>
+            <p className="text-muted-foreground text-sm md:text-base">{translate(locale, accountsCopy.subtitle)}</p>
           </div>
-          <Button onClick={openCreateDialog}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nova Conta
+          <Button onClick={openCreateDialog} className="gap-2">
+            <Plus className="w-4 h-4" />
+            {translate(locale, accountsCopy.newAccount)}
           </Button>
         </div>
 
@@ -180,7 +182,7 @@ export default function AccountsPage() {
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar conta..."
+                placeholder={translate(locale, accountsCopy.searchPlaceholder)}
                 className="pl-9"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -195,7 +197,7 @@ export default function AccountsPage() {
             <CardContent className="pt-6">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Posição Líquida Simulada</p>
+                  <p className="text-sm text-muted-foreground mb-1">{translate(locale, accountsCopy.netPositionTitle)}</p>
                   <h2 className="text-3xl font-bold text-primary">
                     {(() => {
                       // Calculate: Bank balance - (sum of card balances)
@@ -206,11 +208,11 @@ export default function AccountsPage() {
                       const cardUsed = creditCards.reduce((sum: number, a: any) => sum + Math.abs(a.balance || 0), 0);
                       const netPosition = bankBalance - cardUsed;
 
-                      return netPosition.toLocaleString("pt-BR", { style: "currency", currency: "EUR" });
+                      return currencyFormatter.format(netPosition);
                     })()}
                   </h2>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Saldo bancário menos saldos dos cartões
+                    {translate(locale, accountsCopy.netPositionHint)}
                   </p>
                 </div>
                 {(() => {
@@ -225,7 +227,7 @@ export default function AccountsPage() {
                   return hasStaleBalance && (
                     <div className="flex items-center gap-2 text-amber-600 bg-amber-100 px-3 py-1.5 rounded-lg">
                       <AlertTriangle className="h-4 w-4" />
-                      <span className="text-xs font-medium">Saldos desatualizados</span>
+                      <span className="text-xs font-medium">{translate(locale, accountsCopy.staleBalances)}</span>
                     </div>
                   );
                 })()}
@@ -242,12 +244,12 @@ export default function AccountsPage() {
             <CardContent className="pt-6 text-center py-12">
               <Wallet className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-muted-foreground">
-                {search ? "Nenhuma conta encontrada" : "Nenhuma conta cadastrada"}
+                {search ? translate(locale, accountsCopy.emptySearch) : translate(locale, accountsCopy.emptyAll)}
               </p>
               {!search && (
                 <Button variant="outline" onClick={openCreateDialog} className="mt-4">
                   <Plus className="w-4 h-4 mr-2" />
-                  Criar primeira conta
+                  {translate(locale, accountsCopy.createFirst)}
                 </Button>
               )}
             </CardContent>
@@ -289,12 +291,14 @@ export default function AccountsPage() {
                     <h3 className="font-semibold text-lg mb-1">{account.name}</h3>
                     <div className="flex items-center gap-2 mb-3 flex-wrap">
                       <Badge variant="outline" className="text-xs">
-                        {ACCOUNT_TYPE_LABELS[account.type]}
+                        {accountTypeLabels[account.type] || account.type}
                       </Badge>
                       {account.lastUploadDate && (
                         <Badge variant="secondary" className="text-[10px] px-1.5">
                           <CalendarIcon className="h-3 w-3 mr-1" />
-                          Último upload: {new Date(account.lastUploadDate).toLocaleDateString("pt-BR")}
+                          {formatMessage(translate(locale, accountsCopy.lastUpload), {
+                            date: dateFormatter.format(new Date(account.lastUploadDate))
+                          })}
                         </Badge>
                       )}
                       {account.accountNumber && (
@@ -308,10 +312,12 @@ export default function AccountsPage() {
                     {account.balance !== undefined && account.balance !== null && (
                       <div className="mt-3 pt-3 border-t">
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs text-muted-foreground">Saldo</span>
+                          <span className="text-xs text-muted-foreground">{translate(locale, accountsCopy.balance)}</span>
                           {account.balanceUpdatedAt && (
                             <span className="text-[10px] text-muted-foreground">
-                              Atualizado em {new Date(account.balanceUpdatedAt).toLocaleDateString("pt-BR")}
+                              {formatMessage(translate(locale, accountsCopy.updatedAt), {
+                                date: dateFormatter.format(new Date(account.balanceUpdatedAt))
+                              })}
                             </span>
                           )}
                         </div>
@@ -319,7 +325,7 @@ export default function AccountsPage() {
                           "text-xl font-bold",
                           account.balance >= 0 ? "text-emerald-600" : "text-rose-600"
                         )}>
-                          {account.balance.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                          {currencyFormatter.format(account.balance)}
                         </p>
                       </div>
                     )}
@@ -328,9 +334,9 @@ export default function AccountsPage() {
                     {account.type === "credit_card" && account.limit && (
                       <div className="mt-3 pt-3 border-t space-y-2">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">Limite</span>
+                          <span className="text-muted-foreground">{translate(locale, accountsCopy.limit)}</span>
                           <span className="font-medium">
-                            {account.limit.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                            {currencyFormatter.format(account.limit)}
                           </span>
                         </div>
 
@@ -354,12 +360,12 @@ export default function AccountsPage() {
                               </div>
                               <div className="flex items-center justify-between">
                                 <span className="text-xs text-muted-foreground">
-                                  {used.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })} usado
+                                  {formatMessage(translate(locale, accountsCopy.used), { amount: currencyFormatter.format(used) })}
                                 </span>
                                 <div className="flex items-center gap-1">
                                   <TrendingUp className="h-3 w-3 text-emerald-600" />
                                   <span className="text-xs font-bold text-emerald-600">
-                                    {available.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })} disponível
+                                    {formatMessage(translate(locale, accountsCopy.available), { amount: currencyFormatter.format(available) })}
                                   </span>
                                 </div>
                               </div>
@@ -372,7 +378,7 @@ export default function AccountsPage() {
                     {account.isActive && (
                       <div className="flex items-center gap-1 text-xs text-emerald-600 mt-3">
                         <CircleCheck className="h-3 w-3" />
-                        Ativa
+                        {translate(locale, accountsCopy.active)}
                       </div>
                     )}
                   </CardContent>
@@ -387,22 +393,22 @@ export default function AccountsPage() {
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle>
-                {editingAccount ? "Editar Conta" : "Nova Conta"}
+                {editingAccount ? translate(locale, accountsCopy.editAccount) : translate(locale, accountsCopy.createAccountTitle)}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Nome da Conta</Label>
+                <Label htmlFor="name">{translate(locale, accountsCopy.nameLabel)}</Label>
                 <Input
                   id="name"
-                  placeholder="Ex: Nubank, Itaú, Amex..."
+                  placeholder={translate(locale, accountsCopy.namePlaceholder)}
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="type">Tipo</Label>
+                <Label htmlFor="type">{translate(locale, accountsCopy.typeLabel)}</Label>
                 <Select
                   value={formData.type}
                   onValueChange={(value: any) => setFormData({ ...formData, type: value })}
@@ -411,7 +417,7 @@ export default function AccountsPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(ACCOUNT_TYPE_LABELS).map(([value, label]) => (
+                    {Object.entries(accountTypeLabels).map(([value, label]) => (
                       <SelectItem key={value} value={value}>
                         {label}
                       </SelectItem>
@@ -421,7 +427,7 @@ export default function AccountsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="accountNumber">Últimos 4 dígitos (opcional)</Label>
+                <Label htmlFor="accountNumber">{translate(locale, accountsCopy.lastDigitsLabel)}</Label>
                 <Input
                   id="accountNumber"
                   placeholder="1234"
@@ -432,9 +438,9 @@ export default function AccountsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Ícone</Label>
+                <Label>{translate(locale, accountsCopy.iconLabel)}</Label>
                 <div className="grid grid-cols-4 gap-2">
-                  {PRESET_ICONS.map(({ value, label, Icon }) => (
+                  {PRESET_ICON_KEYS.map(({ value, key, Icon }) => (
                     <button
                       key={value}
                       type="button"
@@ -447,16 +453,16 @@ export default function AccountsPage() {
                       )}
                     >
                       <Icon className="h-5 w-5" />
-                      <span className="text-[10px]">{label}</span>
+                      <span className="text-[10px]">{iconLabels[key]}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label>Cor</Label>
+                <Label>{translate(locale, accountsCopy.colorLabel)}</Label>
                 <div className="grid grid-cols-8 gap-2">
-                  {PRESET_COLORS.map(({ value, label }) => (
+                  {PRESET_COLOR_KEYS.map(({ value, key }) => (
                     <button
                       key={value}
                       type="button"
@@ -468,7 +474,7 @@ export default function AccountsPage() {
                           : "border-transparent hover:scale-105"
                       )}
                       style={{ backgroundColor: value }}
-                      title={label}
+                      title={colorLabels[key]}
                     />
                   ))}
                 </div>
@@ -476,7 +482,7 @@ export default function AccountsPage() {
 
               {/* Preview */}
               <div className="p-4 border rounded-lg bg-muted/30">
-                <p className="text-xs text-muted-foreground mb-2">Preview</p>
+                <p className="text-xs text-muted-foreground mb-2">{translate(locale, accountsCopy.previewLabel)}</p>
                 <div className="flex items-center gap-3">
                   <div
                     className="p-2 rounded-lg"
@@ -488,9 +494,9 @@ export default function AccountsPage() {
                     })()}
                   </div>
                   <div>
-                    <p className="font-medium">{formData.name || "Nome da conta"}</p>
+                    <p className="font-medium">{formData.name || translate(locale, accountsCopy.previewFallback)}</p>
                     <p className="text-xs text-muted-foreground">
-                      {ACCOUNT_TYPE_LABELS[formData.type]}
+                      {accountTypeLabels[formData.type] || formData.type}
                       {formData.accountNumber && ` • •••• ${formData.accountNumber}`}
                     </p>
                   </div>
@@ -499,7 +505,7 @@ export default function AccountsPage() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={closeDialog}>
-                Cancelar
+                {translate(locale, accountsCopy.cancel)}
               </Button>
               <Button
                 onClick={handleSubmit}
@@ -508,12 +514,12 @@ export default function AccountsPage() {
                 {createMutation.isPending || updateMutation.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Salvando...
+                    {translate(locale, accountsCopy.saving)}
                   </>
                 ) : editingAccount ? (
-                  "Atualizar"
+                  translate(locale, accountsCopy.update)
                 ) : (
-                  "Criar Conta"
+                  translate(locale, accountsCopy.create)
                 )}
               </Button>
             </DialogFooter>

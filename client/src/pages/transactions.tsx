@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search, Download, Loader2, Edit2, Filter, X, Calendar, TrendingUp, TrendingDown, ArrowUpDown, Eye, Lock, RefreshCw, RotateCcw, ArrowLeftRight } from "lucide-react";
-import { getAccountIcon, getStatusIcon, IconBadge, TRANSACTION_ICONS } from "@/lib/icons";
+import { getStatusIcon, getTransactionIcons, IconBadge } from "@/lib/icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { transactionsApi, accountsApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -13,14 +13,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { AccountBadge } from "@/components/account-badge";
 import { useMonth } from "@/lib/month-context";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TransactionDetailModal } from "@/components/transaction-detail-modal";
-import { getMerchantIcon } from "@/lib/merchant-icons";
+import { AliasLogo } from "@/components/alias-logo";
 import { TransactionListSkeleton } from "@/components/skeletons/transaction-list-skeleton";
+import { transactionsCopy, translateCategory, t as translate } from "@/lib/i18n";
+import { useLocale } from "@/hooks/use-locale";
 
 const CATEGORY_COLORS: Record<string, string> = {
   "Mercado": "#22c55e",
@@ -47,7 +47,23 @@ interface TransactionForm {
 export default function TransactionsPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const locale = useLocale();
+  const transactionIcons = getTransactionIcons(locale);
   const { month } = useMonth();
+  const currencyFormatter = new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" });
+  const dateFormatter = new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  });
+  const dateShortFormatter = new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit"
+  });
+
+  const formatMessage = (template: string, vars: Record<string, string | number>) =>
+    Object.entries(vars).reduce((result, [key, value]) => result.replace(`{${key}}`, String(value)), template);
 
   const [search, setSearch] = useState("");
   const [accountFilter, setAccountFilter] = useState("all");
@@ -81,10 +97,10 @@ export default function TransactionsPage() {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       closeDialog();
-      toast({ title: "Transação atualizada" });
+      toast({ title: translate(locale, transactionsCopy.toastUpdated) });
     },
     onError: (error: any) => {
-      toast({ title: "Erro ao atualizar transação", description: error.message, variant: "destructive" });
+      toast({ title: translate(locale, transactionsCopy.toastUpdateError), description: error.message, variant: "destructive" });
     }
   });
 
@@ -118,10 +134,19 @@ export default function TransactionsPage() {
   };
 
   const handleExportCSV = () => {
+    const csvHeaders = [
+      translate(locale, transactionsCopy.csvHeaderDate),
+      translate(locale, transactionsCopy.csvHeaderAccount),
+      translate(locale, transactionsCopy.csvHeaderDescription),
+      translate(locale, transactionsCopy.csvHeaderAmount),
+      translate(locale, transactionsCopy.csvHeaderCategory),
+      translate(locale, transactionsCopy.csvHeaderType),
+      translate(locale, transactionsCopy.csvHeaderFixVar)
+    ];
     const csv = [
-      ["Data", "Conta", "Descrição", "Valor", "Categoria", "Tipo", "Fix/Var"].join(","),
+      csvHeaders.join(","),
       ...filteredTransactions.map((t: any) => [
-        format(new Date(t.paymentDate), "dd/MM/yyyy"),
+        dateFormatter.format(new Date(t.paymentDate)),
         accountsById[t.accountId]?.name || t.accountSource || "",
         `"${t.descRaw?.replace(/"/g, '""')}"`,
         t.amount,
@@ -134,14 +159,15 @@ export default function TransactionsPage() {
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `transacoes_${month}.csv`;
+    link.download = formatMessage(translate(locale, transactionsCopy.csvFilename), { month });
     link.click();
-    toast({ title: "CSV exportado com sucesso" });
+    toast({ title: translate(locale, transactionsCopy.exportSuccess) });
   };
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((t: any) => {
-      if (search && !t.descRaw?.toLowerCase().includes(search.toLowerCase())) {
+      const haystack = `${t.aliasDesc || ""} ${t.simpleDesc || ""} ${t.descRaw || ""}`.toLowerCase();
+      if (search && !haystack.includes(search.toLowerCase())) {
         return false;
       }
       if (accountFilter !== "all" && t.accountId !== accountFilter) {
@@ -185,16 +211,16 @@ export default function TransactionsPage() {
 
   return (
     <AppLayout>
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Transações</h1>
-            <p className="text-muted-foreground">Visualize e edite todas as suas transações</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">{translate(locale, transactionsCopy.title)}</h1>
+            <p className="text-muted-foreground text-sm md:text-base">{translate(locale, transactionsCopy.subtitle)}</p>
           </div>
-          <Button onClick={handleExportCSV} variant="outline">
-            <Download className="w-4 h-4 mr-2" />
-            Exportar CSV
+          <Button onClick={handleExportCSV} variant="outline" className="shadow-sm gap-2">
+            <Download className="w-4 h-4" />
+            {translate(locale, transactionsCopy.exportCsv)}
           </Button>
         </div>
 
@@ -203,28 +229,28 @@ export default function TransactionsPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-2xl font-bold">{stats.total}</div>
-              <p className="text-xs text-muted-foreground">Total de Transações</p>
+              <p className="text-xs text-muted-foreground">{translate(locale, transactionsCopy.statsTotal)}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
               <div className="text-2xl font-bold text-emerald-600">
-                {stats.totalIncome.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                {currencyFormatter.format(stats.totalIncome)}
               </div>
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <TrendingUp className="h-3 w-3" />
-                Receitas
+                {translate(locale, transactionsCopy.statsIncome)}
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
               <div className="text-2xl font-bold text-rose-600">
-                {stats.totalExpense.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                {currencyFormatter.format(stats.totalExpense)}
               </div>
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <TrendingDown className="h-3 w-3" />
-                Despesas
+                {translate(locale, transactionsCopy.statsExpense)}
               </p>
             </CardContent>
           </Card>
@@ -234,11 +260,11 @@ export default function TransactionsPage() {
                 "text-2xl font-bold",
                 stats.balance >= 0 ? "text-emerald-600" : "text-rose-600"
               )}>
-                {stats.balance.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                {currencyFormatter.format(stats.balance)}
               </div>
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <ArrowUpDown className="h-3 w-3" />
-                Saldo
+                {translate(locale, transactionsCopy.statsBalance)}
               </p>
             </CardContent>
           </Card>
@@ -251,7 +277,7 @@ export default function TransactionsPage() {
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar por descrição..."
+                  placeholder={translate(locale, transactionsCopy.searchPlaceholder)}
                   className="pl-9"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -262,12 +288,12 @@ export default function TransactionsPage() {
                 onClick={() => setShowFilters(!showFilters)}
               >
                 <Filter className="w-4 h-4 mr-2" />
-                Filtros
+                {translate(locale, transactionsCopy.filters)}
               </Button>
               {hasActiveFilters && (
                 <Button variant="ghost" onClick={clearFilters}>
                   <X className="w-4 h-4 mr-2" />
-                  Limpar
+                  {translate(locale, transactionsCopy.clearFilters)}
                 </Button>
               )}
             </div>
@@ -275,13 +301,13 @@ export default function TransactionsPage() {
             {showFilters && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
                 <div className="space-y-2">
-                  <Label>Conta</Label>
+                  <Label>{translate(locale, transactionsCopy.filterAccountLabel)}</Label>
                   <Select value={accountFilter} onValueChange={setAccountFilter}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Todas as contas</SelectItem>
+                      <SelectItem value="all">{translate(locale, transactionsCopy.filterAccountAll)}</SelectItem>
                       {accounts.filter((a: any) => a.isActive).map((account: any) => (
                         <SelectItem key={account.id} value={account.id}>
                           {account.name}
@@ -292,16 +318,16 @@ export default function TransactionsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Categoria</Label>
+                  <Label>{translate(locale, transactionsCopy.filterCategoryLabel)}</Label>
                   <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Todas as categorias</SelectItem>
+                      <SelectItem value="all">{translate(locale, transactionsCopy.filterCategoryAll)}</SelectItem>
                       {Object.keys(CATEGORY_COLORS).map((cat) => (
                         <SelectItem key={cat} value={cat}>
-                          {cat}
+                          {translateCategory(locale, cat)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -309,15 +335,15 @@ export default function TransactionsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Tipo</Label>
+                  <Label>{translate(locale, transactionsCopy.filterTypeLabel)}</Label>
                   <Select value={typeFilter} onValueChange={setTypeFilter}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Todos os tipos</SelectItem>
-                      <SelectItem value="Despesa">Despesas</SelectItem>
-                      <SelectItem value="Receita">Receitas</SelectItem>
+                      <SelectItem value="all">{translate(locale, transactionsCopy.filterTypeAll)}</SelectItem>
+                      <SelectItem value="Despesa">{translate(locale, transactionsCopy.typeExpensePlural)}</SelectItem>
+                      <SelectItem value="Receita">{translate(locale, transactionsCopy.typeIncomePlural)}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -333,7 +359,7 @@ export default function TransactionsPage() {
           <Card>
             <CardContent className="pt-6 text-center py-12">
               <p className="text-muted-foreground">
-                {hasActiveFilters ? "Nenhuma transação encontrada com os filtros aplicados" : "Nenhuma transação neste período"}
+                {hasActiveFilters ? translate(locale, transactionsCopy.emptyWithFilters) : translate(locale, transactionsCopy.emptyPeriod)}
               </p>
             </CardContent>
           </Card>
@@ -344,20 +370,20 @@ export default function TransactionsPage() {
                 <table className="w-full">
                   <thead className="bg-muted/50 border-b">
                     <tr>
-                      <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">Data</th>
-                      <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">Conta</th>
-                      <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">Descrição</th>
-                      <th className="px-5 py-3 text-center font-medium text-xs uppercase tracking-wide">Sinais</th>
-                      <th className="px-5 py-3 text-right font-medium text-xs uppercase tracking-wide">Valor</th>
-                      <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">Categoria</th>
-                      <th className="px-5 py-3 text-center font-medium text-xs uppercase tracking-wide">Status</th>
-                      <th className="px-5 py-3 text-center font-medium text-xs uppercase tracking-wide">Ações</th>
+                      <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">{translate(locale, transactionsCopy.tableDate)}</th>
+                      <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">{translate(locale, transactionsCopy.tableAccount)}</th>
+                      <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">{translate(locale, transactionsCopy.tableDescription)}</th>
+                      <th className="px-5 py-3 text-center font-medium text-xs uppercase tracking-wide">{translate(locale, transactionsCopy.tableSignals)}</th>
+                      <th className="px-5 py-3 text-right font-medium text-xs uppercase tracking-wide">{translate(locale, transactionsCopy.tableAmount)}</th>
+                      <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wide">{translate(locale, transactionsCopy.tableCategory)}</th>
+                      <th className="px-5 py-3 text-center font-medium text-xs uppercase tracking-wide">{translate(locale, transactionsCopy.tableStatus)}</th>
+                      <th className="px-5 py-3 text-center font-medium text-xs uppercase tracking-wide">{translate(locale, transactionsCopy.tableActions)}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/50">
                     {filteredTransactions.map((t: any) => {
                       const categoryColor = CATEGORY_COLORS[t.category1] || "#6b7280";
-                      const merchantInfo = getMerchantIcon(t.descRaw);
+                      const fallbackDesc = t.simpleDesc || t.descRaw?.split(" -- ")[0]?.replace(/\s+\d{4,}/g, '');
                       return (
                         <tr
                           key={t.id}
@@ -365,25 +391,41 @@ export default function TransactionsPage() {
                           onClick={() => setViewingTransaction(t)}
                         >
                           <td className="px-5 py-4 text-muted-foreground whitespace-nowrap">
-                            {format(new Date(t.paymentDate), "dd/MM/yy")}
+                            {dateShortFormatter.format(new Date(t.paymentDate))}
                           </td>
                           <td className="px-5 py-4">
                             <AccountBadge account={accountsById[t.accountId]} size="sm" iconOnly />
                           </td>
                           <td className="px-5 py-4 max-w-[300px]">
                             <div className="flex items-center gap-2">
-                              {merchantInfo && (
-                                <div
-                                  className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                                  style={{ backgroundColor: `${merchantInfo.color}15` }}
-                                >
-                                  <merchantInfo.icon className="w-4 h-4" style={{ color: merchantInfo.color }} />
-                                </div>
-                              )}
+                              <AliasLogo
+                                aliasDesc={t.aliasDesc}
+                                fallbackDesc={fallbackDesc}
+                                logoUrl={t.logoLocalPath}
+                                size={24}
+                                showText={false}
+                              />
                               <div className="flex-1 min-w-0">
-                                <p className="font-medium truncate">
-                                  {t.descRaw?.split(" -- ")[0]?.replace(/\s+\d{4,}/g, '')}
-                                </p>
+                                <div className="flex items-center gap-1.5">
+                                  <p className="font-medium truncate">
+                                    {t.aliasDesc || fallbackDesc}
+                                  </p>
+                                  {/* Icon badges for transaction attributes */}
+                                  <div className="flex items-center gap-1 flex-shrink-0">
+                                    {t.fixVar === "Fixo" && (
+                                      <IconBadge {...transactionIcons.fixed} size="xs" />
+                                    )}
+                                    {(t.recurringFlag || t.recurring) && (
+                                      <IconBadge {...transactionIcons.recurring} size="xs" />
+                                    )}
+                                    {t.isRefund && (
+                                      <IconBadge {...transactionIcons.refund} size="xs" />
+                                    )}
+                                    {t.internalTransfer && (
+                                      <IconBadge {...transactionIcons.internal} size="xs" />
+                                    )}
+                                  </div>
+                                </div>
                                 {(t.category2 || t.category3) && (
                                   <p className="text-xs text-muted-foreground truncate">
                                     {[t.category2, t.category3].filter(Boolean).join(" → ")}
@@ -396,30 +438,30 @@ export default function TransactionsPage() {
                             <div className="flex items-center justify-center gap-1 flex-wrap">
                               {t.type && (
                                 <IconBadge
-                                  {...(t.type === "Receita" ? TRANSACTION_ICONS.income : TRANSACTION_ICONS.expense)}
+                                  {...(t.type === "Receita" ? transactionIcons.income : transactionIcons.expense)}
                                   size="xs"
                                 />
                               )}
                               {t.fixVar === "Fixo" && (
-                                <IconBadge {...TRANSACTION_ICONS.fixed} size="xs" />
+                                <IconBadge {...transactionIcons.fixed} size="xs" />
                               )}
                               {t.fixVar === "Variável" && (
-                                <IconBadge {...TRANSACTION_ICONS.variable} size="xs" />
+                                <IconBadge {...transactionIcons.variable} size="xs" />
                               )}
-                              {t.recurring && (
-                                <IconBadge {...TRANSACTION_ICONS.recurring} size="xs" />
+                              {(t.recurringFlag || t.recurring) && (
+                                <IconBadge {...transactionIcons.recurring} size="xs" />
                               )}
                               {t.isRefund && (
-                                <IconBadge {...TRANSACTION_ICONS.refund} size="xs" />
+                                <IconBadge {...transactionIcons.refund} size="xs" />
                               )}
                               {t.internalTransfer && (
-                                <IconBadge {...TRANSACTION_ICONS.internal} size="xs" />
+                                <IconBadge {...transactionIcons.internal} size="xs" />
                               )}
                             </div>
                           </td>
                           <td className="px-5 py-4 text-right font-semibold whitespace-nowrap">
                             <span className={t.amount > 0 ? "text-emerald-600" : ""}>
-                              {t.amount?.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                              {currencyFormatter.format(t.amount)}
                             </span>
                           </td>
                           <td className="px-5 py-4">
@@ -428,19 +470,21 @@ export default function TransactionsPage() {
                                 className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                                 style={{ backgroundColor: categoryColor }}
                               />
-                              <span className="text-sm">{t.category1}</span>
+                              <span className="text-sm">
+                                {translateCategory(locale, t.category1)}
+                              </span>
                             </div>
                           </td>
                           <td className="px-5 py-4">
                             <div className="flex justify-center">
                               {(() => {
-                                const statusInfo = getStatusIcon(t);
+                                const statusInfo = getStatusIcon(t, locale);
                                 return (
                                   <div className="flex items-center gap-1" title={statusInfo.label}>
                                     <IconBadge {...statusInfo} size="sm" showTooltip={false} />
                                     {t.excludeFromBudget && (
                                       <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                                        Exc
+                                        {translate(locale, transactionsCopy.excludeBadge)}
                                       </Badge>
                                     )}
                                   </div>
@@ -457,7 +501,7 @@ export default function TransactionsPage() {
                                   e.stopPropagation();
                                   setViewingTransaction(t);
                                 }}
-                                title="Ver detalhes"
+                                title={translate(locale, transactionsCopy.viewDetails)}
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
@@ -468,7 +512,7 @@ export default function TransactionsPage() {
                                   e.stopPropagation();
                                   openEditDialog(t);
                                 }}
-                                title="Editar"
+                                title={translate(locale, transactionsCopy.editAction)}
                               >
                                 <Edit2 className="h-4 w-4" />
                               </Button>
@@ -497,12 +541,12 @@ export default function TransactionsPage() {
         <Dialog open={!!editingTransaction} onOpenChange={closeDialog}>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
-              <DialogTitle>Editar Transação</DialogTitle>
+              <DialogTitle>{translate(locale, transactionsCopy.editTitle)}</DialogTitle>
             </DialogHeader>
             {formData && (
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label>Tipo</Label>
+                  <Label>{translate(locale, transactionsCopy.typeLabel)}</Label>
                   <Select
                     value={formData.type}
                     onValueChange={(value) => setFormData({ ...formData, type: value })}
@@ -511,14 +555,14 @@ export default function TransactionsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Despesa">Despesa</SelectItem>
-                      <SelectItem value="Receita">Receita</SelectItem>
+                      <SelectItem value="Despesa">{translate(locale, transactionsCopy.typeExpense)}</SelectItem>
+                      <SelectItem value="Receita">{translate(locale, transactionsCopy.typeIncome)}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Fixo/Variável</Label>
+                  <Label>{translate(locale, transactionsCopy.fixVarLabel)}</Label>
                   <Select
                     value={formData.fixVar}
                     onValueChange={(value) => setFormData({ ...formData, fixVar: value })}
@@ -527,14 +571,14 @@ export default function TransactionsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Fixo">Fixo</SelectItem>
-                      <SelectItem value="Variável">Variável</SelectItem>
+                      <SelectItem value="Fixo">{translate(locale, transactionsCopy.fixedOption)}</SelectItem>
+                      <SelectItem value="Variável">{translate(locale, transactionsCopy.variableOption)}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Categoria Principal</Label>
+                  <Label>{translate(locale, transactionsCopy.categoryMainLabel)}</Label>
                   <Select
                     value={formData.category1}
                     onValueChange={(value) => setFormData({ ...formData, category1: value })}
@@ -545,7 +589,7 @@ export default function TransactionsPage() {
                     <SelectContent>
                       {Object.keys(CATEGORY_COLORS).map((cat) => (
                         <SelectItem key={cat} value={cat}>
-                          {cat}
+                          {translateCategory(locale, cat)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -553,20 +597,20 @@ export default function TransactionsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Subcategoria (opcional)</Label>
+                  <Label>{translate(locale, transactionsCopy.subcategoryLabel)}</Label>
                   <Input
                     value={formData.category2}
                     onChange={(e) => setFormData({ ...formData, category2: e.target.value })}
-                    placeholder="Ex: Supermercado, Gasolina..."
+                    placeholder={translate(locale, transactionsCopy.subcategoryPlaceholder)}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Detalhamento (opcional)</Label>
+                  <Label>{translate(locale, transactionsCopy.detailLabel)}</Label>
                   <Input
                     value={formData.category3}
                     onChange={(e) => setFormData({ ...formData, category3: e.target.value })}
-                    placeholder="Ex: Pão de Açúcar, Shell..."
+                    placeholder={translate(locale, transactionsCopy.detailPlaceholder)}
                   />
                 </div>
 
@@ -579,7 +623,7 @@ export default function TransactionsPage() {
                     }
                   />
                   <Label htmlFor="excludeFromBudget" className="font-normal">
-                    Excluir do orçamento
+                    {translate(locale, transactionsCopy.excludeBudget)}
                   </Label>
                 </div>
 
@@ -592,14 +636,14 @@ export default function TransactionsPage() {
                     }
                   />
                   <Label htmlFor="internalTransfer" className="font-normal">
-                    Transferência interna
+                    {translate(locale, transactionsCopy.internalTransfer)}
                   </Label>
                 </div>
               </div>
             )}
             <DialogFooter>
               <Button variant="outline" onClick={closeDialog}>
-                Cancelar
+                {translate(locale, transactionsCopy.cancel)}
               </Button>
               <Button
                 onClick={handleSubmit}
@@ -608,10 +652,10 @@ export default function TransactionsPage() {
                 {updateMutation.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Salvando...
+                    {translate(locale, transactionsCopy.saving)}
                   </>
                 ) : (
-                  "Salvar"
+                  translate(locale, transactionsCopy.save)
                 )}
               </Button>
             </DialogFooter>

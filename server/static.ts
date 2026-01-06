@@ -13,12 +13,15 @@ export function serveStatic(app: Express) {
   app.use(express.static(distPath));
 
   // SPA fallback: serve index.html for all non-API routes
-  // CRITICAL: Must NOT catch /api/* routes - they should return 404 if not found
+  // CRITICAL: Must NOT catch /api/* routes - they should return JSON 404 if not found
+  // This must be registered AFTER all API routes are registered
   app.use("*", (req, res, next) => {
-    // Skip /api routes - let them fall through to 404
+    // Skip /api routes - let them fall through to proper error handling
     if (req.originalUrl.startsWith("/api")) {
       return next();
     }
+
+    // For all other routes, serve the SPA
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }

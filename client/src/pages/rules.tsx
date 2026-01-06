@@ -3,16 +3,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Trash2, Loader2, Sparkles, BookOpen, Settings2, Zap, Edit2, RefreshCw, ShoppingBag, Home, Car, Heart, Coffee, Globe, CircleDollarSign, ArrowLeftRight, Hash, Filter, Check } from "lucide-react";
+import { Plus, Search, Trash2, Loader2, Sparkles, BookOpen, Settings2, Zap, Edit2, RefreshCw, ShoppingBag, Home, Car, Heart, Coffee, Globe, CircleDollarSign, ArrowLeftRight, Hash, Filter, Check, Download, Upload } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { rulesApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
+import { StatusPanel } from "@/components/status-panel";
+import { parseCsv, toCsv } from "@/lib/csv";
+import { useLocale } from "@/hooks/use-locale";
+import { rulesCopy, translateCategory, t } from "@/lib/i18n";
 
 const TYPE_COLORS: Record<string, string> = {
   "Despesa": "bg-rose-100 text-rose-700",
@@ -75,6 +79,65 @@ export default function RulesPage() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [editingRule, setEditingRule] = useState<any>(null);
   const [formData, setFormData] = useState<RuleFormData>(EMPTY_RULE);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [statusInfo, setStatusInfo] = useState<{ variant: "success" | "warning" | "error"; title: string; description: string; payload?: Record<string, unknown> } | null>(null);
+  const locale = useLocale();
+  const formatMessage = (template: string, vars: Record<string, string | number>) =>
+    Object.entries(vars).reduce((result, [key, value]) => result.replace(`{${key}}`, String(value)), template);
+  const columnLabels = t(locale, rulesCopy.exportColumns);
+  const typeLabelMap: Record<string, string> = {
+    Despesa: t(locale, rulesCopy.fieldTypeExpense),
+    Receita: t(locale, rulesCopy.fieldTypeIncome)
+  };
+  const fixVarLabelMap: Record<string, string> = {
+    Fixo: t(locale, rulesCopy.fieldVariationFixed),
+    Variável: t(locale, rulesCopy.fieldVariationVariable)
+  };
+  const normalize = (value: unknown) => String(value ?? "").trim().toLowerCase();
+  const typeValueMap = new Map<string, RuleFormData["type"]>([
+    ["despesa", "Despesa"],
+    ["receita", "Receita"],
+    [normalize(t(locale, rulesCopy.fieldTypeExpense)), "Despesa"],
+    [normalize(t(locale, rulesCopy.fieldTypeIncome)), "Receita"],
+    ["expense", "Despesa"],
+    ["income", "Receita"],
+    ["ausgabe", "Despesa"],
+    ["einnahme", "Receita"]
+  ]);
+  const fixVarValueMap = new Map<string, RuleFormData["fixVar"]>([
+    ["fixo", "Fixo"],
+    ["variável", "Variável"],
+    ["variavel", "Variável"],
+    [normalize(t(locale, rulesCopy.fieldVariationFixed)), "Fixo"],
+    [normalize(t(locale, rulesCopy.fieldVariationVariable)), "Variável"],
+    ["fixed", "Fixo"],
+    ["variable", "Variável"],
+    ["variabel", "Variável"]
+  ]);
+  const yesValues = new Set([
+    "sim",
+    "yes",
+    "ja",
+    "true",
+    "1",
+    normalize(t(locale, rulesCopy.yes))
+  ]);
+  const columnKeys = {
+    name: [columnLabels.name, "Nome"],
+    type: [columnLabels.type, "Tipo (Despesa/Receita)"],
+    fixVar: [columnLabels.fixVar, "Fixo/Variável"],
+    category1: [columnLabels.category1, "Categoria 1"],
+    category2: [columnLabels.category2, "Categoria 2"],
+    category3: [columnLabels.category3, "Categoria 3"],
+    keywords: [columnLabels.keywords, "Palavras-chave"],
+    priority: [columnLabels.priority, "Prioridade"],
+    strict: [columnLabels.strict, "Regra Estrita"],
+    system: [columnLabels.system, "Sistema"]
+  };
+  const getRowValue = (row: Record<string, any>, keys: string[]) => {
+    const key = keys.find((k) => Object.prototype.hasOwnProperty.call(row, k));
+    return key ? row[key] : undefined;
+  };
 
   const { data: rules = [], isLoading } = useQuery({
     queryKey: ["rules"],
@@ -86,10 +149,21 @@ export default function RulesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rules"] });
       closeDialog();
-      toast({ title: "Regra criada com sucesso" });
+      toast({ title: t(locale, rulesCopy.toastRuleCreated) });
+      setStatusInfo({
+        variant: "success",
+        title: t(locale, rulesCopy.statusRuleCreated),
+        description: t(locale, rulesCopy.statusRuleCreatedBody)
+      });
     },
     onError: (error: any) => {
-      toast({ title: "Erro ao criar regra", description: error.message, variant: "destructive" });
+      toast({ title: t(locale, rulesCopy.toastCreateError), description: error.message, variant: "destructive" });
+      setStatusInfo({
+        variant: "error",
+        title: t(locale, rulesCopy.statusRuleCreateFailed),
+        description: error.message || t(locale, rulesCopy.statusRuleCreateFailedBody),
+        payload: error?.details || null
+      });
     }
   });
 
@@ -98,7 +172,20 @@ export default function RulesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rules"] });
       closeDialog();
-      toast({ title: "Regra atualizada" });
+      toast({ title: t(locale, rulesCopy.toastRuleUpdated) });
+      setStatusInfo({
+        variant: "success",
+        title: t(locale, rulesCopy.statusRuleUpdated),
+        description: t(locale, rulesCopy.statusRuleUpdatedBody)
+      });
+    },
+    onError: (error: any) => {
+      setStatusInfo({
+        variant: "error",
+        title: t(locale, rulesCopy.statusRuleUpdateFailed),
+        description: error.message || t(locale, rulesCopy.statusRuleUpdateFailedBody),
+        payload: error?.details || null
+      });
     }
   });
 
@@ -106,8 +193,21 @@ export default function RulesPage() {
     mutationFn: rulesApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rules"] });
-      toast({ title: "Regra removida" });
+      toast({ title: t(locale, rulesCopy.toastRuleRemoved) });
+      setStatusInfo({
+        variant: "success",
+        title: t(locale, rulesCopy.statusRuleRemoved),
+        description: t(locale, rulesCopy.statusRuleRemovedBody)
+      });
     },
+    onError: (error: any) => {
+      setStatusInfo({
+        variant: "error",
+        title: t(locale, rulesCopy.statusRuleRemoveFailed),
+        description: error.message || t(locale, rulesCopy.statusRuleRemoveFailedBody),
+        payload: error?.details || null
+      });
+    }
   });
 
   const reapplyMutation = useMutation({
@@ -116,9 +216,29 @@ export default function RulesPage() {
       queryClient.invalidateQueries({ queryKey: ["confirm-queue"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      toast({ 
-        title: "Regras reaplicadas", 
-        description: `${result.categorized} categorizadas automaticamente, ${result.stillPending} pendentes`
+      toast({
+        title: t(locale, rulesCopy.reapplyToastTitle),
+        description: formatMessage(t(locale, rulesCopy.reapplyToastBody), {
+          categorized: result.categorized,
+          pending: result.stillPending
+        })
+      });
+      setStatusInfo({
+        variant: "success",
+        title: t(locale, rulesCopy.statusReapplyDone),
+        description: formatMessage(t(locale, rulesCopy.reapplyToastBody), {
+          categorized: result.categorized,
+          pending: result.stillPending
+        }),
+        payload: result
+      });
+    },
+    onError: (error: any) => {
+      setStatusInfo({
+        variant: "error",
+        title: t(locale, rulesCopy.statusReapplyFailed),
+        description: error.message || t(locale, rulesCopy.statusReapplyFailedBody),
+        payload: error?.details || null
       });
     }
   });
@@ -127,8 +247,22 @@ export default function RulesPage() {
     mutationFn: rulesApi.seed,
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["rules"] });
-      toast({ title: `${result.count} regras IA adicionadas` });
+      toast({ title: formatMessage(t(locale, rulesCopy.aiAddedToastTitle), { count: result.count }) });
+      setStatusInfo({
+        variant: "success",
+        title: t(locale, rulesCopy.statusAiAdded),
+        description: formatMessage(t(locale, rulesCopy.aiAddedToastBody), { count: result.count }),
+        payload: result
+      });
     },
+    onError: (error: any) => {
+      setStatusInfo({
+        variant: "error",
+        title: t(locale, rulesCopy.statusAiFailed),
+        description: error.message || t(locale, rulesCopy.statusRuleCreateFailedBody),
+        payload: error?.details || null
+      });
+    }
   });
 
   const closeDialog = () => {
@@ -141,6 +275,213 @@ export default function RulesPage() {
     setEditingRule(null);
     setFormData(EMPTY_RULE);
     setIsOpen(true);
+  };
+
+  const handleDownloadExcel = () => {
+    if (rules.length === 0) {
+      toast({ title: t(locale, rulesCopy.toastExportEmpty), variant: "destructive" });
+      return;
+    }
+
+    const csvData = rules.map((rule: any) => ({
+      [columnLabels.name]: rule.name,
+      [columnLabels.type]: typeLabelMap[rule.type] || rule.type,
+      [columnLabels.fixVar]: fixVarLabelMap[rule.fixVar] || rule.fixVar,
+      [columnLabels.category1]: rule.category1,
+      [columnLabels.category2]: rule.category2 || "",
+      [columnLabels.category3]: rule.category3 || "",
+      [columnLabels.keywords]: rule.keywords,
+      [columnLabels.priority]: String(rule.priority ?? ""),
+      [columnLabels.strict]: rule.strict ? t(locale, rulesCopy.yes) : t(locale, rulesCopy.no),
+      [columnLabels.system]: rule.isSystem ? t(locale, rulesCopy.yes) : t(locale, rulesCopy.no)
+    }));
+
+    const headers = Object.values(columnLabels);
+    const csvContent = toCsv(csvData, headers);
+    const date = new Date().toISOString().split('T')[0];
+    const filename = `ritualfin_rules_${date}.csv`;
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: formatMessage(t(locale, rulesCopy.exportSuccessTitle), { count: rules.length }),
+      description: t(locale, rulesCopy.exportSuccessBody)
+    });
+  };
+
+  const handleUploadExcel = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const data = String(e.target?.result || "");
+        const { headers, rows } = parseCsv(data);
+        const jsonData = rows.map((row) =>
+          headers.reduce<Record<string, string>>((acc, header, index) => {
+            acc[header] = row[index] ?? "";
+            return acc;
+          }, {})
+        );
+
+        if (jsonData.length === 0) {
+          toast({ title: t(locale, rulesCopy.toastFileEmpty), variant: "destructive" });
+          setStatusInfo({
+            variant: "error",
+            title: t(locale, rulesCopy.statusImportFailed),
+            description: t(locale, rulesCopy.importEmptyBody)
+          });
+          return;
+        }
+
+        // Validate and transform data
+        const rulesToImport: any[] = [];
+        const errors: string[] = [];
+
+        jsonData.forEach((row: any, index: number) => {
+          const rowNum = index + 2; // +2 because Excel is 1-indexed and has header row
+          const nameValue = getRowValue(row, columnKeys.name);
+          const keywordsValue = getRowValue(row, columnKeys.keywords);
+          const typeRaw = getRowValue(row, columnKeys.type);
+          const fixVarRaw = getRowValue(row, columnKeys.fixVar);
+          const category1Value = getRowValue(row, columnKeys.category1);
+          const category2Value = getRowValue(row, columnKeys.category2);
+          const category3Value = getRowValue(row, columnKeys.category3);
+          const priorityValue = getRowValue(row, columnKeys.priority);
+          const strictValue = getRowValue(row, columnKeys.strict);
+          const systemValue = getRowValue(row, columnKeys.system);
+
+          // Validate required fields
+          if (!nameValue) {
+            errors.push(formatMessage(t(locale, rulesCopy.importRowNameError), { row: rowNum }));
+            return;
+          }
+          if (!keywordsValue) {
+            errors.push(formatMessage(t(locale, rulesCopy.importRowKeywordsError), { row: rowNum }));
+            return;
+          }
+          const typeValue = typeValueMap.get(normalize(typeRaw));
+          if (!typeValue) {
+            errors.push(formatMessage(t(locale, rulesCopy.importRowTypeError), { row: rowNum }));
+            return;
+          }
+          const fixVarValue = fixVarValueMap.get(normalize(fixVarRaw));
+          if (!fixVarValue) {
+            errors.push(formatMessage(t(locale, rulesCopy.importRowFixVarError), { row: rowNum }));
+            return;
+          }
+          if (!category1Value) {
+            errors.push(formatMessage(t(locale, rulesCopy.importRowCategoryError), { row: rowNum }));
+            return;
+          }
+
+          // Skip system rules (don't allow importing/overwriting system rules)
+          if (yesValues.has(normalize(systemValue))) {
+            return;
+          }
+
+          rulesToImport.push({
+            name: nameValue,
+            keywords: keywordsValue,
+            type: typeValue,
+            fixVar: fixVarValue,
+            category1: category1Value,
+            category2: category2Value || "",
+            category3: category3Value || "",
+            priority: priorityValue || 500,
+            strict: yesValues.has(normalize(strictValue))
+          });
+        });
+
+        if (errors.length > 0) {
+          toast({
+            title: t(locale, rulesCopy.importErrorsTitle),
+            description: errors.slice(0, 3).join('; '),
+            variant: "destructive"
+          });
+          setStatusInfo({
+            variant: "error",
+            title: t(locale, rulesCopy.statusImportFailed),
+            description: errors.slice(0, 3).join('; '),
+            payload: { errors: errors.slice(0, 10) }
+          });
+          return;
+        }
+
+        if (rulesToImport.length === 0) {
+          toast({ title: t(locale, rulesCopy.toastNoValidRules), variant: "destructive" });
+          setStatusInfo({
+            variant: "warning",
+            title: t(locale, rulesCopy.statusImportIgnored),
+            description: t(locale, rulesCopy.importNoValidBody)
+          });
+          return;
+        }
+
+        // Import rules one by one
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const ruleData of rulesToImport) {
+          try {
+            await rulesApi.create(ruleData);
+            successCount++;
+          } catch (error) {
+            failCount++;
+          }
+        }
+
+        // Refresh rules list
+        queryClient.invalidateQueries({ queryKey: ["rules"] });
+
+        if (failCount === 0) {
+          toast({ title: `${successCount} ${t(locale, rulesCopy.toastImportSuccess)}` });
+          setStatusInfo({
+            variant: "success",
+            title: t(locale, rulesCopy.statusImportDone),
+            description: formatMessage(t(locale, rulesCopy.importSuccessBody), { count: successCount })
+          });
+        } else {
+          toast({
+            title: t(locale, rulesCopy.importPartialTitle),
+            description: formatMessage(t(locale, rulesCopy.importPartialBody), { success: successCount, fail: failCount })
+          });
+          setStatusInfo({
+            variant: "warning",
+            title: t(locale, rulesCopy.statusImportDoneErrors),
+            description: formatMessage(t(locale, rulesCopy.importPartialBody), { success: successCount, fail: failCount }),
+            payload: { successCount, failCount }
+          });
+        }
+
+      } catch (error: any) {
+        toast({
+          title: t(locale, rulesCopy.importProcessErrorTitle),
+          description: error.message,
+          variant: "destructive"
+        });
+        setStatusInfo({
+          variant: "error",
+          title: t(locale, rulesCopy.statusFileProcessError),
+          description: error.message || t(locale, rulesCopy.importProcessErrorBody),
+          payload: error?.details || null
+        });
+      }
+    };
+
+    reader.readAsText(file);
+
+    // Reset input so the same file can be uploaded again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const openEditDialog = (rule: any) => {
@@ -161,7 +502,7 @@ export default function RulesPage() {
 
   const handleSave = () => {
     if (!formData.name || !formData.keywords) {
-      toast({ title: "Preencha nome e palavras-chave", variant: "destructive" });
+      toast({ title: t(locale, rulesCopy.toastFillRequired), variant: "destructive" });
       return;
     }
     
@@ -201,32 +542,30 @@ export default function RulesPage() {
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-2xl font-bold">Motor de Regras</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground">{t(locale, rulesCopy.title)}</h1>
               <Badge variant="secondary" className="bg-primary/10 text-primary text-xs gap-1">
                 <Sparkles className="h-3 w-3" />
-                IA
+                {t(locale, rulesCopy.aiBadge)}
               </Badge>
             </div>
-            <p className="text-muted-foreground">
-              Categorize transacoes automaticamente com regras baseadas em palavras-chave.
-            </p>
+            <p className="text-muted-foreground text-sm md:text-base">{t(locale, rulesCopy.subtitle)}</p>
           </div>
           
           <div className="flex gap-2">
             {rules.length === 0 && (
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => seedMutation.mutate()}
                 disabled={seedMutation.isPending}
                 className="gap-2"
               >
                 <Zap className="h-4 w-4" />
-                {seedMutation.isPending ? "Gerando..." : "Criar Regras Padrao"}
+                {seedMutation.isPending ? t(locale, rulesCopy.generating) : t(locale, rulesCopy.createDefault)}
               </Button>
             )}
-            
-            <Button 
-              variant="outline" 
+
+            <Button
+              variant="outline"
               className="gap-2"
               onClick={() => reapplyMutation.mutate()}
               disabled={reapplyMutation.isPending}
@@ -236,22 +575,58 @@ export default function RulesPage() {
               ) : (
                 <RefreshCw className="h-4 w-4" />
               )}
-              Reaplicar Regras
+              {t(locale, rulesCopy.reapply)}
             </Button>
-            
+
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={handleDownloadExcel}
+              disabled={rules.length === 0}
+            >
+              <Download className="h-4 w-4" />
+              {t(locale, rulesCopy.exportLabel)}
+            </Button>
+
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="h-4 w-4" />
+              {t(locale, rulesCopy.importLabel)}
+            </Button>
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleUploadExcel}
+              accept=".csv"
+              className="hidden"
+            />
+
             <Button className="bg-primary hover:bg-primary/90 gap-2" onClick={openNewDialog} data-testid="btn-new-rule">
               <Plus className="h-4 w-4" />
-              Nova Regra
+              {t(locale, rulesCopy.newRule)}
             </Button>
           </div>
         </div>
+
+        {statusInfo && (
+          <StatusPanel
+            title={statusInfo.title}
+            description={statusInfo.description}
+            variant={statusInfo.variant}
+            payload={statusInfo.payload}
+          />
+        )}
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="bg-white border-0 shadow-sm">
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total Regras</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(locale, rulesCopy.totalRules)}</p>
                   <p className="text-3xl font-bold mt-1">{rules.length}</p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -265,7 +640,7 @@ export default function RulesPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Regras IA</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(locale, rulesCopy.aiRules)}</p>
                   <p className="text-3xl font-bold mt-1 text-primary">{systemRules.length}</p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
@@ -279,7 +654,7 @@ export default function RulesPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Suas Regras</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(locale, rulesCopy.userRules)}</p>
                   <p className="text-3xl font-bold mt-1">{userRules.length}</p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
@@ -293,7 +668,9 @@ export default function RulesPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Categorias</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    {t(locale, rulesCopy.categoriesLabel)}
+                  </p>
                   <p className="text-3xl font-bold mt-1">{categories.length}</p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
@@ -308,7 +685,7 @@ export default function RulesPage() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Buscar regras por palavra-chave..." 
+              placeholder={t(locale, rulesCopy.searchPlaceholder)}
               className="pl-9 bg-white border-0 shadow-sm"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -318,12 +695,14 @@ export default function RulesPage() {
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger className="w-[180px] bg-white border-0 shadow-sm">
               <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
-              <SelectValue placeholder="Categoria" />
+              <SelectValue placeholder={t(locale, rulesCopy.filterCategoryPlaceholder)} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas Categorias</SelectItem>
+              <SelectItem value="all">{t(locale, rulesCopy.filterAllCategories)}</SelectItem>
               {categories.map((cat) => (
-                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                <SelectItem key={cat} value={cat}>
+                  {translateCategory(locale, cat)}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -335,9 +714,9 @@ export default function RulesPage() {
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                 <Sparkles className="h-8 w-8 text-primary/50" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Nenhuma regra configurada</h3>
+              <h3 className="text-lg font-semibold mb-2">{t(locale, rulesCopy.emptyTitle)}</h3>
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                Crie regras para categorizar suas transacoes automaticamente durante a importacao.
+                {t(locale, rulesCopy.emptyBody)}
               </p>
               <div className="flex gap-3 justify-center">
                 <Button 
@@ -347,11 +726,11 @@ export default function RulesPage() {
                   className="gap-2"
                 >
                   <Zap className="h-4 w-4" />
-                  Criar Regras Padrao
+                  {t(locale, rulesCopy.createDefault)}
                 </Button>
                 <Button className="gap-2" onClick={openNewDialog}>
                   <Plus className="h-4 w-4" />
-                  Criar Manualmente
+                  {t(locale, rulesCopy.createManual)}
                 </Button>
               </div>
             </CardContent>
@@ -384,11 +763,13 @@ export default function RulesPage() {
                           <div className="flex items-center gap-2">
                             <h3 className="font-semibold">{rule.name}</h3>
                             {rule.isSystem && (
-                              <Badge className="text-[10px] bg-primary/10 text-primary border-0">IA</Badge>
+                              <Badge className="text-[10px] bg-primary/10 text-primary border-0">
+                                {t(locale, rulesCopy.aiBadge)}
+                              </Badge>
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            {[rule.category1, rule.category2, rule.category3]
+                            {[translateCategory(locale, rule.category1), rule.category2, rule.category3]
                               .filter(Boolean)
                               .join(" → ")}
                           </p>
@@ -443,7 +824,7 @@ export default function RulesPage() {
                       {rule.strict && (
                         <Badge variant="outline" className="text-[10px] border-amber-300 text-amber-700">
                           <Zap className="h-2.5 w-2.5 mr-1" />
-                          Estrita
+                          {t(locale, rulesCopy.strictBadge)}
                         </Badge>
                       )}
                     </div>
@@ -459,16 +840,16 @@ export default function RulesPage() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5 text-primary" />
-                {editingRule ? "Editar Regra" : "Nova Regra"}
+                {editingRule ? t(locale, rulesCopy.dialogEditTitle) : t(locale, rulesCopy.dialogNewTitle)}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Nome</Label>
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide">{t(locale, rulesCopy.fieldNameLabel)}</Label>
                 <Input
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Ex: Supermercado LIDL"
+                  placeholder={t(locale, rulesCopy.fieldNamePlaceholder)}
                   className="bg-muted/30 border-0"
                   data-testid="input-rule-name"
                 />
@@ -476,7 +857,7 @@ export default function RulesPage() {
 
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-                  Categoria (Nível 1) <span className="text-rose-500">*</span>
+                  {t(locale, rulesCopy.fieldCategory1Label)} <span className="text-rose-500">*</span>
                 </Label>
                 <Select
                   value={formData.category1}
@@ -486,15 +867,21 @@ export default function RulesPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Mercado">Mercado</SelectItem>
-                    <SelectItem value="Moradia">Moradia</SelectItem>
-                    <SelectItem value="Transporte">Transporte</SelectItem>
-                    <SelectItem value="Saúde">Saude</SelectItem>
-                    <SelectItem value="Lazer">Lazer</SelectItem>
-                    <SelectItem value="Compras Online">Compras Online</SelectItem>
-                    <SelectItem value="Receitas">Receitas</SelectItem>
-                    <SelectItem value="Interno">Interno</SelectItem>
-                    <SelectItem value="Outros">Outros</SelectItem>
+                    {[
+                      "Mercado",
+                      "Moradia",
+                      "Transporte",
+                      "Saúde",
+                      "Lazer",
+                      "Compras Online",
+                      "Receitas",
+                      "Interno",
+                      "Outros"
+                    ].map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        {translateCategory(locale, cat)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -502,24 +889,24 @@ export default function RulesPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-                    Subcategoria (Nível 2)
+                    {t(locale, rulesCopy.fieldCategory2Label)}
                   </Label>
                   <Input
                     value={formData.category2}
                     onChange={(e) => setFormData({ ...formData, category2: e.target.value })}
-                    placeholder="Ex: Supermercado"
+                    placeholder={t(locale, rulesCopy.fieldCategory2Placeholder)}
                     className="bg-muted/30 border-0"
                     data-testid="input-rule-category2"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-                    Especificação (Nível 3)
+                    {t(locale, rulesCopy.fieldCategory3Label)}
                   </Label>
                   <Input
                     value={formData.category3}
                     onChange={(e) => setFormData({ ...formData, category3: e.target.value })}
-                    placeholder="Ex: LIDL"
+                    placeholder={t(locale, rulesCopy.fieldCategory3Placeholder)}
                     className="bg-muted/30 border-0"
                     data-testid="input-rule-category3"
                   />
@@ -527,20 +914,25 @@ export default function RulesPage() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Palavras-chave</Label>
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Palavras-chave <span className="text-rose-500">*</span></Label>
                 <Input
                   value={formData.keywords}
                   onChange={(e) => setFormData({ ...formData, keywords: e.target.value })}
-                  placeholder="REWE;EDEKA;ALDI (separar com ;)"
+                  placeholder="REWE;EDEKA;ALDI;SV Wasserratten e.V. (separar com ;)"
                   className="bg-muted/30 border-0"
                   data-testid="input-rule-keywords"
                 />
-                <p className="text-xs text-muted-foreground">Separe multiplas palavras com ponto e virgula (;)</p>
+                <p className="text-xs text-muted-foreground">
+                  Separe múltiplas expressões com ponto e vírgula (;). Expressões podem conter espaços e serão preservadas integralmente.
+                </p>
+                <p className="text-xs text-amber-600 font-medium">
+                  Exemplo: "LIDL;SV Fuerstenfeldbrucker Wasserratten e.V.;REWE MARKT"
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Tipo</Label>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">{t(locale, rulesCopy.fieldTypeLabel)}</Label>
                   <div className="flex gap-2">
                     <Button
                       type="button"
@@ -552,7 +944,7 @@ export default function RulesPage() {
                       )}
                       onClick={() => setFormData({ ...formData, type: "Despesa" })}
                     >
-                      Despesa
+                      {t(locale, rulesCopy.fieldTypeExpense)}
                     </Button>
                     <Button
                       type="button"
@@ -564,12 +956,12 @@ export default function RulesPage() {
                       )}
                       onClick={() => setFormData({ ...formData, type: "Receita" })}
                     >
-                      Receita
+                      {t(locale, rulesCopy.fieldTypeIncome)}
                     </Button>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Variacao</Label>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">{t(locale, rulesCopy.fieldVariationLabel)}</Label>
                   <div className="flex gap-2">
                     <Button
                       type="button"
@@ -578,7 +970,7 @@ export default function RulesPage() {
                       className="flex-1"
                       onClick={() => setFormData({ ...formData, fixVar: "Fixo" })}
                     >
-                      Fixo
+                      {t(locale, rulesCopy.fieldVariationFixed)}
                     </Button>
                     <Button
                       type="button"
@@ -587,7 +979,7 @@ export default function RulesPage() {
                       className="flex-1"
                       onClick={() => setFormData({ ...formData, fixVar: "Variável" })}
                     >
-                      Variavel
+                      {t(locale, rulesCopy.fieldVariationVariable)}
                     </Button>
                   </div>
                 </div>
@@ -595,8 +987,8 @@ export default function RulesPage() {
 
               <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
                 <div>
-                  <p className="font-medium text-sm">Regra Estrita</p>
-                  <p className="text-xs text-muted-foreground">Aplicar automaticamente com 100% confianca</p>
+                  <p className="font-medium text-sm">{t(locale, rulesCopy.strictTitle)}</p>
+                  <p className="text-xs text-muted-foreground">{t(locale, rulesCopy.strictDescription)}</p>
                 </div>
                 <Switch
                   checked={formData.strict}
@@ -606,7 +998,7 @@ export default function RulesPage() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={closeDialog}>
-                Cancelar
+                {t(locale, rulesCopy.cancel)}
               </Button>
               <Button 
                 className="bg-primary hover:bg-primary/90 gap-2"
@@ -618,7 +1010,7 @@ export default function RulesPage() {
                   <Loader2 className="h-4 w-4 animate-spin" />
                 )}
                 <Check className="h-4 w-4" />
-                {editingRule ? "Salvar" : "Criar"}
+                {editingRule ? t(locale, rulesCopy.save) : t(locale, rulesCopy.create)}
               </Button>
             </DialogFooter>
           </DialogContent>

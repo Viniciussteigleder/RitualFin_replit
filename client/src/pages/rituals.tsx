@@ -29,15 +29,16 @@ import {
   Lightbulb,
   PenLine
 } from "lucide-react";
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { startOfWeek, endOfWeek } from "date-fns";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useMonth } from "@/lib/month-context";
-import { Link } from "wouter";
-import { useState } from "react";
+import { Link, useLocation } from "wouter";
+import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { ritualsApi } from "@/lib/api";
+import { ritualsApi, dashboardApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
+import { ritualsCopy, translateCategory, t as translate } from "@/lib/i18n";
+import { useLocale } from "@/hooks/use-locale";
 
 const CATEGORY_ICONS: Record<string, any> = {
   "Moradia": Home,
@@ -80,12 +81,36 @@ function getISOWeek(date: Date): string {
 export default function RitualsPage() {
   const { month, formatMonth } = useMonth();
   const { toast } = useToast();
+  const locale = useLocale();
+  const [location, setLocation] = useLocation();
   const [ritualType, setRitualType] = useState<"weekly" | "monthly">("weekly");
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 4;
   const [filter, setFilter] = useState("all");
   const [weeklyNotes, setWeeklyNotes] = useState("");
-  const [weeklyGoals, setWeeklyGoals] = useState<string[]>([]);
+  const currencyFormatter = new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" });
+  const dateFormatter = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "long", year: "numeric" });
+  const timeFormatter = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" });
+  const dayFormatter = new Intl.DateTimeFormat(locale, { day: "2-digit" });
+  const dayMonthFormatter = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "long" });
+  const formatMessage = (template: string, vars: Record<string, string | number>) =>
+    Object.entries(vars).reduce((result, [key, value]) => result.replace(`{${key}}`, String(value)), template);
+
+  useEffect(() => {
+    const search = location.split("?")[1] || "";
+    const nextType = new URLSearchParams(search).get("type");
+    if (nextType === "weekly" || nextType === "monthly") {
+      setRitualType(nextType);
+    }
+  }, [location]);
+
+  useEffect(() => {
+    const search = location.split("?")[1] || "";
+    const currentType = new URLSearchParams(search).get("type");
+    if (currentType !== ritualType) {
+      setLocation(`/rituals?type=${ritualType}`);
+    }
+  }, [location, ritualType, setLocation]);
 
   const today = new Date();
   const currentWeek = getISOWeek(today);
@@ -93,26 +118,23 @@ export default function RitualsPage() {
 
   const { data: dashboard } = useQuery({
     queryKey: ["dashboard", month],
-    queryFn: async () => {
-      const res = await fetch(`/api/dashboard?month=${month}`);
-      if (!res.ok) return null;
-      return res.json();
-    }
+    queryFn: () => dashboardApi.get(month),
   });
 
   const { data: previousMonth } = useQuery({
     queryKey: ["dashboard-previous", getPreviousMonth(month)],
-    queryFn: async () => {
-      const res = await fetch(`/api/dashboard?month=${getPreviousMonth(month)}`);
-      if (!res.ok) return null;
-      return res.json();
-    }
+    queryFn: () => dashboardApi.get(getPreviousMonth(month)),
   });
 
   // Fetch existing rituals for current period
   const { data: ritualsData } = useQuery({
     queryKey: ["rituals", ritualType, currentPeriod],
     queryFn: () => ritualsApi.list(ritualType, currentPeriod),
+  });
+
+  const { data: ritualsHistory } = useQuery({
+    queryKey: ["rituals-history", ritualType],
+    queryFn: () => ritualsApi.list(ritualType),
   });
 
   const currentRitual = ritualsData?.rituals?.[0];
@@ -132,7 +154,9 @@ export default function RitualsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rituals", ritualType, currentPeriod] });
       toast({
-        title: ritualType === "weekly" ? "Revisão Semanal iniciada" : "Revisão Mensal iniciada",
+        title: ritualType === "weekly"
+          ? translate(locale, ritualsCopy.toastWeeklyStarted)
+          : translate(locale, ritualsCopy.toastMonthlyStarted),
       });
     },
   });
@@ -148,8 +172,8 @@ export default function RitualsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rituals", ritualType, currentPeriod] });
       toast({
-        title: "Ritual concluído!",
-        description: "Suas reflexões foram salvas.",
+        title: translate(locale, ritualsCopy.toastCompletedTitle),
+        description: translate(locale, ritualsCopy.toastCompletedBody),
       });
       setWeeklyNotes("");
     },
@@ -175,10 +199,12 @@ export default function RitualsPage() {
     const prevCat = previousMonth?.spentByCategory?.find((c: any) => c.category === cat.category);
     const target = prevCat?.amount || cat.amount;
     const percentage = target > 0 ? (cat.amount / target) * 100 : 0;
+    const essentialsLabel = translate(locale, ritualsCopy.filterEssentials);
+    const lifestyleLabel = translate(locale, ritualsCopy.filterLifestyle);
     
     return {
       category: cat.category,
-      label: cat.category === "Mercado" ? "Essenciais" : cat.category === "Lazer" ? "Lazer" : "Essenciais",
+      label: cat.category === "Mercado" ? essentialsLabel : cat.category === "Lazer" ? lifestyleLabel : essentialsLabel,
       currentAmount: cat.amount,
       targetAmount: target,
       status: percentage > 100 ? "exceeded" : percentage > 80 ? "warning" : "within"
@@ -191,8 +217,17 @@ export default function RitualsPage() {
     ? Math.round(((totalCurrentSpent - previousMonth.totalSpent) / previousMonth.totalSpent) * 100)
     : 0;
 
+  const historyItems = (ritualsHistory?.rituals || [])
+    .filter((r: any) => r.completedAt && r.period !== currentPeriod)
+    .slice(0, 5);
+
   const copyPreviousGoals = () => {
-    toast({ title: `Metas de ${previousMonthName} copiadas para ${currentMonthName}` });
+    toast({
+      title: formatMessage(translate(locale, ritualsCopy.toastCopyGoals), {
+        prev: previousMonthName,
+        next: currentMonthName
+      })
+    });
   };
 
   const startWeeklyRitual = () => {
@@ -226,22 +261,22 @@ export default function RitualsPage() {
   };
 
   const filters = [
-    { id: "all", label: "Todas" },
-    { id: "essenciais", label: "Essenciais" },
-    { id: "lifestyle", label: "Estilo de Vida" },
-    { id: "investments", label: "Investimentos" }
+    { id: "all", label: translate(locale, ritualsCopy.filterAll) },
+    { id: "essenciais", label: translate(locale, ritualsCopy.filterEssentials) },
+    { id: "lifestyle", label: translate(locale, ritualsCopy.filterLifestyle) },
+    { id: "investments", label: translate(locale, ritualsCopy.filterInvestments) }
   ];
 
-  const weekStart = startOfWeek(today, { locale: ptBR });
-  const weekEnd = endOfWeek(today, { locale: ptBR });
+  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
 
   return (
     <AppLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Rituais Financeiros</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">{translate(locale, ritualsCopy.title)}</h1>
           <p className="text-muted-foreground mt-1">
-            Revisões guiadas para manter suas finanças sob controle
+            {translate(locale, ritualsCopy.subtitle)}
           </p>
         </div>
 
@@ -249,11 +284,11 @@ export default function RitualsPage() {
           <TabsList className="grid w-full max-w-md grid-cols-2">
             <TabsTrigger value="weekly" className="gap-2">
               <CalendarDays className="h-4 w-4" />
-              Semanal
+              {translate(locale, ritualsCopy.tabWeekly)}
             </TabsTrigger>
             <TabsTrigger value="monthly" className="gap-2">
               <CalendarCheck className="h-4 w-4" />
-              Mensal
+              {translate(locale, ritualsCopy.tabMonthly)}
             </TabsTrigger>
           </TabsList>
 
@@ -280,20 +315,23 @@ export default function RitualsPage() {
                         "font-bold text-lg",
                         isCompleted ? "text-green-900" : "text-blue-900"
                       )}>
-                        {isCompleted ? "Revisão Semanal Concluída" : "Revisão Semanal"}
+                        {isCompleted ? translate(locale, ritualsCopy.weeklyDone) : translate(locale, ritualsCopy.weeklyTitle)}
                       </h3>
                       <p className={cn(
                         "text-sm mt-0.5",
                         isCompleted ? "text-green-700/80" : "text-blue-700/80"
                       )}>
-                        Semana de {format(weekStart, "dd", { locale: ptBR })} a {format(weekEnd, "dd 'de' MMMM", { locale: ptBR })}
+                        {formatMessage(translate(locale, ritualsCopy.weekRange), {
+                          start: dayFormatter.format(weekStart),
+                          end: dayMonthFormatter.format(weekEnd)
+                        })}
                       </p>
                     </div>
                   </div>
                   {!isCompleted && (
                     <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2" onClick={startWeeklyRitual}>
                       <Sparkles className="h-4 w-4" />
-                      Iniciar Revisão
+                      {translate(locale, ritualsCopy.startReview)}
                     </Button>
                   )}
                 </div>
@@ -304,35 +342,41 @@ export default function RitualsPage() {
               <Card className="bg-white border-0 shadow-sm">
                 <CardContent className="p-5">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Gasto esta Semana</span>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{translate(locale, ritualsCopy.weeklySpend)}</span>
                     <TrendingUp className="h-4 w-4 text-primary" />
                   </div>
                   <p className="text-2xl font-bold text-foreground">
-                    {(totalCurrentSpent * 0.25).toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                    {currencyFormatter.format(totalCurrentSpent * 0.25)}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">Média diária: € {((totalCurrentSpent * 0.25) / 7).toFixed(0)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formatMessage(translate(locale, ritualsCopy.dailyAverage), {
+                      amount: currencyFormatter.format((totalCurrentSpent * 0.25) / 7)
+                    })}
+                  </p>
                 </CardContent>
               </Card>
 
               <Card className="bg-white border-0 shadow-sm">
                 <CardContent className="p-5">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Transações</span>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{translate(locale, ritualsCopy.weeklyTransactions)}</span>
                     <CheckCircle2 className="h-4 w-4 text-primary" />
                   </div>
                   <p className="text-2xl font-bold text-foreground">23</p>
-                  <p className="text-xs text-muted-foreground mt-1">14 categorizadas automaticamente</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formatMessage(translate(locale, ritualsCopy.weeklyAutoCategorized), { count: 14 })}
+                  </p>
                 </CardContent>
               </Card>
 
               <Card className="bg-white border-0 shadow-sm">
                 <CardContent className="p-5">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Objetivo</span>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{translate(locale, ritualsCopy.weeklyGoal)}</span>
                     <Target className="h-4 w-4 text-amber-500" />
                   </div>
                   <p className="text-2xl font-bold text-foreground">82%</p>
-                  <p className="text-xs text-muted-foreground mt-1">do orçamento semanal</p>
+                  <p className="text-xs text-muted-foreground mt-1">{translate(locale, ritualsCopy.weeklyBudget)}</p>
                 </CardContent>
               </Card>
             </div>
@@ -341,25 +385,27 @@ export default function RitualsPage() {
               <CardHeader>
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
                   <Lightbulb className="h-5 w-5 text-amber-500" />
-                  Reflexões da Semana
+                  {translate(locale, ritualsCopy.reflectionsTitle)}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                    O que funcionou bem esta semana?
+                    {translate(locale, ritualsCopy.reflectionPrompt)}
                   </label>
                   <textarea
                     className="w-full p-3 border rounded-lg resize-none focus:ring-2 focus:ring-primary focus:border-primary"
                     rows={3}
-                    placeholder="Ex: Consegui evitar compras por impulso..."
+                    placeholder={translate(locale, ritualsCopy.reflectionPlaceholder)}
                     value={isCompleted && currentRitual?.notes ? currentRitual.notes : weeklyNotes}
                     onChange={(e) => setWeeklyNotes(e.target.value)}
                     disabled={isCompleted}
                   />
                   {isCompleted && currentRitual?.notes && (
                     <p className="text-xs text-muted-foreground mt-2">
-                      Concluído em {format(new Date(currentRitual.completedAt!), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
+                      {formatMessage(translate(locale, ritualsCopy.completedAt), {
+                        date: `${dateFormatter.format(new Date(currentRitual.completedAt!))} ${timeFormatter.format(new Date(currentRitual.completedAt!))}`
+                      })}
                     </p>
                   )}
                 </div>
@@ -370,7 +416,7 @@ export default function RitualsPage() {
                     disabled={!weeklyNotes.trim() || completeRitual.isPending}
                   >
                     <CheckCircle2 className="h-4 w-4" />
-                    {completeRitual.isPending ? "Salvando..." : "Concluir Revisão"}
+                    {completeRitual.isPending ? translate(locale, ritualsCopy.saving) : translate(locale, ritualsCopy.completeReview)}
                   </Button>
                 )}
               </CardContent>
@@ -381,9 +427,24 @@ export default function RitualsPage() {
             <div className="flex flex-col gap-3">
               <div className="flex justify-between items-end">
                 <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                  Passo {currentStep} de {totalSteps}: {currentStep === 1 ? "Revisão" : currentStep === 2 ? "Análise" : currentStep === 3 ? "Planejamento" : "Confirmação"}
+                  {formatMessage(translate(locale, ritualsCopy.stepLabel), {
+                    step: currentStep,
+                    total: totalSteps,
+                    label:
+                      currentStep === 1
+                        ? translate(locale, ritualsCopy.stepReview)
+                        : currentStep === 2
+                          ? translate(locale, ritualsCopy.stepAnalysis)
+                          : currentStep === 3
+                            ? translate(locale, ritualsCopy.stepPlanning)
+                            : translate(locale, ritualsCopy.stepConfirm)
+                  })}
                 </p>
-                <span className="text-xs text-muted-foreground">{Math.round((currentStep / totalSteps) * 100)}% Concluído</span>
+                <span className="text-xs text-muted-foreground">
+                  {formatMessage(translate(locale, ritualsCopy.percentComplete), {
+                    percent: Math.round((currentStep / totalSteps) * 100)
+                  })}
+                </span>
               </div>
               <Progress value={(currentStep / totalSteps) * 100} className="h-3" />
             </div>
@@ -392,9 +453,9 @@ export default function RitualsPage() {
               <CardContent className="p-6 md:p-8">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
                   <div>
-                    <h3 className="text-xl font-bold text-foreground">Quer manter o ritmo?</h3>
+                    <h3 className="text-xl font-bold text-foreground">{translate(locale, ritualsCopy.keepRhythmTitle)}</h3>
                     <p className="text-muted-foreground mt-1">
-                      Copie as metas de {previousMonthName} e ajuste apenas o necessário.
+                      {formatMessage(translate(locale, ritualsCopy.keepRhythmBody), { month: previousMonthName })}
                     </p>
                   </div>
                   <Button 
@@ -402,7 +463,7 @@ export default function RitualsPage() {
                     onClick={copyPreviousGoals}
                   >
                     <Copy className="h-4 w-4" />
-                    Copiar Metas de {previousMonthName}
+                    {formatMessage(translate(locale, ritualsCopy.copyGoals), { month: previousMonthName })}
                   </Button>
                 </div>
               </CardContent>
@@ -428,7 +489,9 @@ export default function RitualsPage() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Calendar className="h-5 w-5 text-muted-foreground" />
-                  <h3 className="text-lg font-bold text-foreground">{previousMonthName} (Realizado)</h3>
+                  <h3 className="text-lg font-bold text-foreground">
+                    {formatMessage(translate(locale, ritualsCopy.actualLabel), { month: previousMonthName })}
+                  </h3>
                 </div>
 
                 {categorySummaries.slice(0, 4).map(cat => {
@@ -448,7 +511,9 @@ export default function RitualsPage() {
                               <Icon className="h-5 w-5" style={{ color }} />
                             </div>
                             <div>
-                              <p className="font-bold text-foreground">{cat.category}</p>
+                              <p className="font-bold text-foreground">
+                                {translateCategory(locale, cat.category)}
+                              </p>
                               <p className="text-xs text-muted-foreground">{cat.label}</p>
                             </div>
                           </div>
@@ -457,10 +522,10 @@ export default function RitualsPage() {
                               "font-bold",
                               cat.status === "exceeded" ? "text-rose-600" : "text-foreground"
                             )}>
-                              {cat.currentAmount.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                              {currencyFormatter.format(cat.currentAmount)}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              de {cat.targetAmount.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                              {currencyFormatter.format(cat.targetAmount)}
                             </p>
                           </div>
                         </div>
@@ -479,10 +544,12 @@ export default function RitualsPage() {
                             cat.status === "exceeded" ? "text-rose-500" : cat.status === "within" ? "text-primary" : "text-amber-500"
                           )}>
                             {cat.status === "exceeded" 
-                              ? `Ultrapassou ${(cat.currentAmount - cat.targetAmount).toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}`
+                              ? formatMessage(translate(locale, ritualsCopy.statusExceeded), {
+                                amount: currencyFormatter.format(cat.currentAmount - cat.targetAmount)
+                              })
                               : cat.status === "within" 
-                                ? "Dentro da meta!"
-                                : "Atenção"}
+                                ? translate(locale, ritualsCopy.statusWithin)
+                                : translate(locale, ritualsCopy.statusWarning)}
                           </p>
                         </div>
                       </CardContent>
@@ -494,7 +561,9 @@ export default function RitualsPage() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Target className="h-5 w-5 text-primary" />
-                  <h3 className="text-lg font-bold text-foreground">{currentMonthName} (Planejado)</h3>
+                  <h3 className="text-lg font-bold text-foreground">
+                    {formatMessage(translate(locale, ritualsCopy.plannedLabel), { month: currentMonthName })}
+                  </h3>
                 </div>
 
                 {categorySummaries.slice(0, 4).map(cat => {
@@ -505,11 +574,13 @@ export default function RitualsPage() {
                       <CardContent className="p-5">
                         <div className="flex justify-between items-center mb-2">
                           <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                            Meta para {cat.category}
+                            {formatMessage(translate(locale, ritualsCopy.plannedForCategory), {
+                              category: translateCategory(locale, cat.category)
+                            })}
                           </label>
                           {isAboveAverage && (
                             <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary">
-                              Sugestão: Aumentar?
+                              {translate(locale, ritualsCopy.suggestionIncrease)}
                             </Badge>
                           )}
                         </div>
@@ -533,11 +604,11 @@ export default function RitualsPage() {
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Total Planejado para {currentMonthName}
+                      {formatMessage(translate(locale, ritualsCopy.plannedTotal), { month: currentMonthName })}
                     </p>
                     <div className="flex items-center gap-3 mt-1">
                       <span className="text-3xl font-black text-foreground">
-                        {totalPlanned.toLocaleString("pt-BR", { style: "currency", currency: "EUR" })}
+                        {currencyFormatter.format(totalPlanned)}
                       </span>
                       {changeFromPrevious !== 0 && (
                         <Badge variant="secondary" className={cn(
@@ -545,24 +616,28 @@ export default function RitualsPage() {
                           changeFromPrevious > 0 ? "bg-rose-100 text-rose-700" : "bg-green-100 text-green-700"
                         )}>
                           {changeFromPrevious > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                          {changeFromPrevious > 0 ? "+" : ""}{changeFromPrevious}% vs {previousMonthName}
+                          {changeFromPrevious > 0 ? "+" : ""}
+                          {formatMessage(translate(locale, ritualsCopy.changeVs), {
+                            value: changeFromPrevious,
+                            month: previousMonthName
+                          })}
                         </Badge>
                       )}
                     </div>
                   </div>
                   <div className="flex gap-3">
                     <Button variant="outline" className="gap-2" onClick={prevStep} disabled={currentStep === 1}>
-                      Voltar
+                      {translate(locale, ritualsCopy.back)}
                     </Button>
                     {currentStep < totalSteps ? (
                       <Button className="bg-primary hover:bg-primary/90 gap-2" onClick={nextStep}>
-                        Próximo
+                        {translate(locale, ritualsCopy.next)}
                         <ArrowRight className="h-4 w-4" />
                       </Button>
                     ) : (
                       <Link href="/goals">
                         <Button className="bg-primary hover:bg-primary/90 gap-2">
-                          Confirmar
+                          {translate(locale, ritualsCopy.confirm)}
                           <CheckCircle2 className="h-4 w-4" />
                         </Button>
                       </Link>
@@ -573,6 +648,49 @@ export default function RitualsPage() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        <Card className="bg-white border-0 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <CalendarCheck className="h-5 w-5 text-primary" />
+                Histórico de rituais
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Acompanhe acordos e decisões anteriores
+              </p>
+            </div>
+            <Badge variant="secondary">{historyItems.length} itens</Badge>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {historyItems.length === 0 ? (
+              <div className="text-sm text-muted-foreground">
+                Nenhum ritual concluído anteriormente.
+              </div>
+            ) : (
+              historyItems.map((item: any) => (
+                <div key={item.id} className="border rounded-lg p-3 flex items-start justify-between gap-4">
+                  <div>
+                    <p className="font-medium">
+                      {item.type === "weekly" ? "Ritual Semanal" : "Ritual Mensal"} • {item.period}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Concluído em {new Date(item.completedAt).toLocaleDateString("pt-BR")}
+                    </p>
+                    {item.notes && (
+                      <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                        {item.notes}
+                      </p>
+                    )}
+                  </div>
+                  <Badge variant="outline" className="text-[10px]">
+                    Concluído
+                  </Badge>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
       </div>
     </AppLayout>
   );

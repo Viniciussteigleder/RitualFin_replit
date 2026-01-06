@@ -29,12 +29,15 @@ import {
   Utensils,
   type LucideIcon,
 } from "lucide-react";
+import { iconCopy, Locale, t as translate } from "@/lib/i18n";
+
+type IconConfig = { icon: LucideIcon; color: string; label: string };
 
 // ============================================================================
 // ACCOUNT ICONS
 // ============================================================================
 
-export const ACCOUNT_ICONS: Record<string, { icon: LucideIcon; color: string; label: string }> = {
+export const ACCOUNT_ICONS: Record<string, IconConfig> = {
   sparkasse: {
     icon: Building2,
     color: "#FF0000", // Sparkasse red
@@ -70,8 +73,13 @@ export const ACCOUNT_ICONS: Record<string, { icon: LucideIcon; color: string; la
 /**
  * Get account icon configuration by account name or ID
  */
-export function getAccountIcon(accountName?: string): { icon: LucideIcon; color: string; label: string } {
-  if (!accountName) return ACCOUNT_ICONS.default;
+export function getAccountIcon(accountName?: string, locale: Locale = "pt-BR"): IconConfig {
+  if (!accountName) {
+    return {
+      ...ACCOUNT_ICONS.default,
+      label: translate(locale, iconCopy.accountDefault),
+    };
+  }
 
   const normalized = accountName.toLowerCase();
 
@@ -80,77 +88,109 @@ export function getAccountIcon(accountName?: string): { icon: LucideIcon; color:
   if (normalized.includes("miles") || normalized.includes("dkb")) return ACCOUNT_ICONS["miles-more"];
   if (normalized.includes("paypal")) return ACCOUNT_ICONS.paypal;
 
-  return ACCOUNT_ICONS.default;
+  return {
+    ...ACCOUNT_ICONS.default,
+    label: translate(locale, iconCopy.accountDefault),
+  };
 }
 
 // ============================================================================
 // TRANSACTION ATTRIBUTE ICONS
 // ============================================================================
 
-export const TRANSACTION_ICONS = {
+const TRANSACTION_ICON_DEFS = {
   income: {
     icon: ArrowUpCircle,
     color: "#10B981", // Green
-    label: "Receita",
   },
   expense: {
     icon: ArrowDownCircle,
     color: "#EF4444", // Red
-    label: "Despesa",
   },
   fixed: {
     icon: Lock,
     color: "#8B5CF6", // Purple
-    label: "Fixo",
   },
   variable: {
     icon: RefreshCw,
     color: "#F59E0B", // Amber
-    label: "Variável",
   },
   recurring: {
     icon: RotateCcw,
     color: "#3B82F6", // Blue
-    label: "Recorrente",
   },
   refund: {
     icon: RotateCcw,
     color: "#10B981", // Green
-    label: "Reembolso",
   },
   internal: {
     icon: ArrowLeftRight,
     color: "#6B7280", // Gray
-    label: "Interna",
   },
 };
+
+export function getTransactionIcons(locale: Locale): Record<keyof typeof TRANSACTION_ICON_DEFS, IconConfig> {
+  return {
+    income: {
+      ...TRANSACTION_ICON_DEFS.income,
+      label: translate(locale, iconCopy.transaction.income),
+    },
+    expense: {
+      ...TRANSACTION_ICON_DEFS.expense,
+      label: translate(locale, iconCopy.transaction.expense),
+    },
+    fixed: {
+      ...TRANSACTION_ICON_DEFS.fixed,
+      label: translate(locale, iconCopy.transaction.fixed),
+    },
+    variable: {
+      ...TRANSACTION_ICON_DEFS.variable,
+      label: translate(locale, iconCopy.transaction.variable),
+    },
+    recurring: {
+      ...TRANSACTION_ICON_DEFS.recurring,
+      label: translate(locale, iconCopy.transaction.recurring),
+    },
+    refund: {
+      ...TRANSACTION_ICON_DEFS.refund,
+      label: translate(locale, iconCopy.transaction.refund),
+    },
+    internal: {
+      ...TRANSACTION_ICON_DEFS.internal,
+      label: translate(locale, iconCopy.transaction.internal),
+    },
+  };
+}
 
 // ============================================================================
 // STATUS ICONS
 // ============================================================================
 
-export const STATUS_ICONS = {
+const STATUS_ICON_DEFS = {
   unclassified: {
     icon: AlertCircle,
     color: "#F59E0B", // Amber
-    label: "Não classificado",
   },
   lowConfidence: {
     icon: HelpCircle,
     color: "#F97316", // Orange
-    label: "Baixa confiança",
   },
   confirmed: {
     icon: CheckCircle2,
     color: "#10B981", // Green
-    label: "Confirmado",
   },
   needsReview: {
     icon: AlertCircle,
     color: "#EF4444", // Red
-    label: "Requer revisão",
   },
 };
+
+function buildStatusIcon(locale: Locale, key: keyof typeof STATUS_ICON_DEFS): IconConfig {
+  return {
+    ...STATUS_ICON_DEFS[key],
+    label: translate(locale, iconCopy.status[key]),
+  };
+}
 
 /**
  * Get status icon based on transaction state
@@ -159,14 +199,14 @@ export function getStatusIcon(transaction: {
   needsReview?: boolean;
   manualOverride?: boolean;
   confidence?: number;
-}): { icon: LucideIcon; color: string; label: string } {
-  if (transaction.needsReview) return STATUS_ICONS.needsReview;
-  if (transaction.manualOverride) return STATUS_ICONS.confirmed;
+}, locale: Locale): IconConfig {
+  if (transaction.needsReview) return buildStatusIcon(locale, "needsReview");
+  if (transaction.manualOverride) return buildStatusIcon(locale, "confirmed");
   if (transaction.confidence !== undefined) {
-    if (transaction.confidence >= 80) return STATUS_ICONS.confirmed;
-    if (transaction.confidence >= 50) return STATUS_ICONS.lowConfidence;
+    if (transaction.confidence >= 80) return buildStatusIcon(locale, "confirmed");
+    if (transaction.confidence >= 50) return buildStatusIcon(locale, "lowConfidence");
   }
-  return STATUS_ICONS.unclassified;
+  return buildStatusIcon(locale, "unclassified");
 }
 
 // ============================================================================

@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Send, Loader2, TrendingUp, FileText, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/hooks/use-locale";
+import { aiChatCopy, t as translate } from "@/lib/i18n";
 
 interface Message {
   id: string;
@@ -20,18 +22,13 @@ interface Message {
   timestamp: Date;
 }
 
-const QUICK_ACTIONS = [
-  { icon: TrendingUp, label: "Analise este mês", prompt: "Analise meus gastos este mês e dê sugestões." },
-  { icon: Target, label: "Sugerir economia", prompt: "Onde posso economizar mais?" },
-  { icon: FileText, label: "Encontrar duplicatas", prompt: "Há transações duplicadas?" },
-];
+type AiChatKey = keyof typeof aiChatCopy;
 
-const WELCOME_MESSAGE: Message = {
-  id: "welcome",
-  role: "assistant",
-  content: "Olá! 👋 Sou seu assistente financeiro inteligente. Posso ajudar a analisar seus gastos, encontrar padrões, e dar sugestões personalizadas. Como posso ajudar?",
-  timestamp: new Date()
-};
+const QUICK_ACTIONS: Array<{ icon: typeof TrendingUp; labelKey: AiChatKey; promptKey: AiChatKey }> = [
+  { icon: TrendingUp, labelKey: "quickActionMonthLabel", promptKey: "quickActionMonthPrompt" },
+  { icon: Target, labelKey: "quickActionSaveLabel", promptKey: "quickActionSavePrompt" },
+  { icon: FileText, labelKey: "quickActionDupesLabel", promptKey: "quickActionDupesPrompt" },
+];
 
 interface AIChatModalProps {
   isOpen: boolean;
@@ -39,9 +36,17 @@ interface AIChatModalProps {
 }
 
 export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
-  const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE]);
+  const locale = useLocale();
+  const welcomeMessage: Message = {
+    id: "welcome",
+    role: "assistant",
+    content: translate(locale, aiChatCopy.welcomeMessage),
+    timestamp: new Date()
+  };
+  const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const timeFormatter = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" });
 
   const handleSend = async (prompt?: string) => {
     const messageText = prompt || input;
@@ -63,7 +68,7 @@ export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "🚧 **Backend em desenvolvimento**\n\nEste é um protótipo da interface do assistente IA. A integração com OpenAI será implementada pelo Codex.\n\nFuncionalidades planejadas:\n- Análise de gastos com insights personalizados\n- Detecção de padrões e anomalias\n- Sugestões de economia baseadas em histórico\n- Busca natural por transações\n- Previsões de gastos futuros",
+        content: translate(locale, aiChatCopy.backendStub),
         timestamp: new Date()
       };
       setMessages(prev => [...prev, aiMessage]);
@@ -81,30 +86,32 @@ export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
               <Sparkles className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">Assistente IA</h2>
-              <p className="text-white/80 text-sm">Powered by GPT-4</p>
+              <h2 className="text-xl font-bold text-white">{translate(locale, aiChatCopy.title)}</h2>
+              <p className="text-white/80 text-sm">{translate(locale, aiChatCopy.poweredBy)}</p>
             </div>
             <Badge className="ml-auto bg-white/20 text-white border-0">
-              Beta
+              {translate(locale, aiChatCopy.beta)}
             </Badge>
           </div>
         </div>
 
         {/* Quick Actions */}
         <div className="px-6 py-4 border-b bg-muted/30 flex-shrink-0">
-          <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wide">Ações Rápidas</p>
+          <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wide">
+            {translate(locale, aiChatCopy.quickActions)}
+          </p>
           <div className="flex gap-2">
             {QUICK_ACTIONS.map((action) => (
               <Button
-                key={action.label}
+                key={action.labelKey}
                 variant="outline"
                 size="sm"
-                onClick={() => handleSend(action.prompt)}
+                onClick={() => handleSend(translate(locale, aiChatCopy[action.promptKey]))}
                 className="gap-2"
                 disabled={isLoading}
               >
                 <action.icon className="h-3.5 w-3.5" />
-                {action.label}
+                {translate(locale, aiChatCopy[action.labelKey])}
               </Button>
             ))}
           </div>
@@ -135,12 +142,14 @@ export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
               >
                 <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                 <p className="text-xs opacity-70 mt-1">
-                  {message.timestamp.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                  {timeFormatter.format(message.timestamp)}
                 </p>
               </div>
               {message.role === "user" && (
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <span className="text-sm font-semibold text-primary">V</span>
+                  <span className="text-sm font-semibold text-primary">
+                    {translate(locale, aiChatCopy.userInitial)}
+                  </span>
                 </div>
               )}
             </div>
@@ -161,7 +170,7 @@ export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
         {/* Input */}
         <div className="border-t p-4 flex gap-2 flex-shrink-0">
           <Input
-            placeholder="Digite sua pergunta..."
+            placeholder={translate(locale, aiChatCopy.inputPlaceholder)}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {

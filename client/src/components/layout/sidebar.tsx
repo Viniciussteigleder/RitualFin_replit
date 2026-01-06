@@ -3,147 +3,131 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
   Upload,
-  CheckCircle2,
   Settings,
   LogOut,
   Menu,
   X,
   ChevronLeft,
   ChevronRight,
-  BookOpen,
-  Sparkles,
   Calendar,
   Target,
-  Brain,
   Wallet,
   Receipt,
-  Bell
+  Bell,
+  Lightbulb,
+  ListChecks,
+  Filter,
+  Brain,
+  CalendarCheck,
+  TrendingUp
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
-import { transactionsApi } from "@/lib/api";
 import { useMonth } from "@/lib/month-context";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useLocale } from "@/hooks/use-locale";
+import { layoutCopy, t as translate } from "@/lib/i18n";
+import { useMemo } from "react";
 
-const NAV_CLUSTERS = [
+const GROUP_STATE_KEY = "ritualfin_sidebar_groups";
+
+const NAV_CLUSTER_DEFS = [
   {
-    label: "Visão Geral",
+    id: "overview",
     items: [
-      {
-        label: "Dashboard",
-        icon: LayoutDashboard,
-        href: "/dashboard",
-        description: "Visão geral do mês"
-      },
-      {
-        label: "Calendário",
-        icon: Calendar,
-        href: "/calendar",
-        description: "Eventos e compromissos"
-      },
-      {
-        label: "Notificações",
-        icon: Bell,
-        href: "/notifications",
-        description: "Alertas e mensagens"
-      },
+      { id: "dashboard", icon: LayoutDashboard, href: "/dashboard", labelKey: "dashboard", descriptionKey: "dashboard" },
+      { id: "calendar", icon: Calendar, href: "/calendar", labelKey: "calendar", descriptionKey: "calendar" },
     ]
   },
   {
-    label: "Planejamento",
+    id: "action",
     items: [
-      {
-        label: "Orçamentos",
-        icon: Wallet,
-        href: "/budgets",
-        description: "Limites por categoria"
-      },
-      {
-        label: "Metas",
-        icon: Target,
-        href: "/goals",
-        description: "Planejamento financeiro"
-      },
+      { id: "confirm", icon: ListChecks, href: "/confirm", labelKey: "confirm", descriptionKey: "confirm" },
+      { id: "transactions", icon: Receipt, href: "/transactions", labelKey: "transactions", descriptionKey: "transactions" },
     ]
   },
   {
-    label: "Ações",
+    id: "planning",
     items: [
-      {
-        label: "Confirmar",
-        icon: CheckCircle2,
-        href: "/confirm",
-        showBadge: true,
-        description: "Transações pendentes"
-      },
-      {
-        label: "Transações",
-        icon: Receipt,
-        href: "/transactions",
-        description: "Histórico completo"
-      },
+      { id: "budgets", icon: Wallet, href: "/budgets", labelKey: "budgets", descriptionKey: "budgets" },
+      { id: "goals", icon: Target, href: "/goals", labelKey: "goals", descriptionKey: "goals" },
     ]
   },
   {
-    label: "Automação",
+    id: "automation",
     items: [
-      {
-        label: "Regras",
-        icon: BookOpen,
-        href: "/rules",
-        description: "Categorização automática"
-      },
-      {
-        label: "IA Keywords",
-        icon: Brain,
-        href: "/ai-keywords",
-        description: "Análise inteligente em lote"
-      },
+      { id: "rules", icon: Filter, href: "/rules", labelKey: "rules", descriptionKey: "rules" },
+      { id: "ai-keywords", icon: Brain, href: "/ai-keywords", labelKey: "aiKeywords", descriptionKey: "aiKeywords" },
     ]
   },
   {
-    label: "Operações",
+    id: "operations",
     items: [
-      {
-        label: "Uploads",
-        icon: Upload,
-        href: "/uploads",
-        description: "Importar CSV"
-      },
-      {
-        label: "Contas",
-        icon: Wallet,
-        href: "/accounts",
-        description: "Gerenciar cartões e contas"
-      },
+      { id: "upload", icon: Upload, href: "/uploads", labelKey: "upload", descriptionKey: "upload" },
+      { id: "accounts", icon: Wallet, href: "/accounts", labelKey: "accounts", descriptionKey: "accounts" },
     ]
   },
   {
-    label: "Colaboração",
+    id: "collaboration",
     items: [
-      {
-        label: "Rituais",
-        icon: Sparkles,
-        href: "/rituals",
-        description: "Revisão semanal e mensal"
-      },
+      { id: "rituals", icon: CalendarCheck, href: "/rituals", labelKey: "rituals", descriptionKey: "rituals" },
     ]
   },
 ];
 
 export function Sidebar() {
   const [location] = useLocation();
+  const normalizedLocation = location.split("?")[0];
   const [isOpen, setIsOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const { month, setMonth, formatMonth } = useMonth();
-
-  const { data: confirmQueue = [] } = useQuery({
-    queryKey: ["confirm-queue"],
-    queryFn: transactionsApi.confirmQueue,
+  const locale = useLocale();
+  const sidebarLabels = useMemo(() => translate(locale, layoutCopy.sidebar), [locale]);
+  const formatMessage = (template: string, vars: Record<string, string>) =>
+    Object.entries(vars).reduce((result, [key, value]) => result.replace(`{${key}}`, value), template);
+  const [groupOpenState, setGroupOpenState] = useState<Record<string, boolean>>(() => {
+    const defaultState = Object.fromEntries(NAV_CLUSTER_DEFS.map((cluster) => [cluster.id, true]));
+    if (typeof window === "undefined") {
+      return defaultState;
+    }
+    const stored = window.localStorage.getItem(GROUP_STATE_KEY);
+    if (!stored) {
+      return defaultState;
+    }
+    try {
+      const parsed = JSON.parse(stored) as Record<string, boolean>;
+      return Object.fromEntries(
+        NAV_CLUSTER_DEFS.map((cluster) => [cluster.id, parsed[cluster.id] ?? true])
+      );
+    } catch {
+      return defaultState;
+    }
   });
+  const { month, setMonth, formatMonth } = useMonth();
+  const navClusters = useMemo(() => {
+    return NAV_CLUSTER_DEFS.map((cluster) => ({
+      id: cluster.id,
+      label: sidebarLabels.groups[cluster.id as keyof typeof sidebarLabels.groups],
+      items: cluster.items.map((item) => ({
+        ...item,
+        label: sidebarLabels.items[item.labelKey as keyof typeof sidebarLabels.items],
+        description: sidebarLabels.descriptions[item.descriptionKey as keyof typeof sidebarLabels.descriptions]
+      }))
+    }));
+  }, [sidebarLabels]);
 
-  const pendingCount = confirmQueue.length;
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(GROUP_STATE_KEY, JSON.stringify(groupOpenState));
+  }, [groupOpenState]);
+
+  useEffect(() => {
+    const activeCluster = NAV_CLUSTER_DEFS.find((cluster) =>
+      cluster.items.some((item) => normalizedLocation === item.href.split("?")[0])
+    );
+    if (activeCluster && !groupOpenState[activeCluster.id]) {
+      setGroupOpenState((prev) => ({ ...prev, [activeCluster.id]: true }));
+    }
+  }, [normalizedLocation, groupOpenState]);
 
   const prevMonth = () => {
     const [year, m] = month.split("-").map(Number);
@@ -168,7 +152,7 @@ export function Sidebar() {
             <img 
               src="/ritualfin-logo.png" 
               alt="RitualFin" 
-              className="w-8 h-8 rounded-lg"
+              className="h-8 w-auto object-contain"
             />
             <span className="font-semibold text-lg tracking-tight">RitualFin</span>
           </div>
@@ -204,7 +188,7 @@ export function Sidebar() {
             <img 
               src="/ritualfin-logo.png" 
               alt="RitualFin" 
-              className="w-9 h-9 rounded-xl shadow-lg"
+              className="h-9 w-auto object-contain"
             />
             {!isCollapsed && (
               <span className="font-bold text-lg text-white tracking-tight">RitualFin</span>
@@ -216,7 +200,9 @@ export function Sidebar() {
           <div className="px-4 py-4 border-b border-white/10">
             <div className="bg-white/5 rounded-xl p-3">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] uppercase tracking-wider text-white/50 font-medium">Período</span>
+                <span className="text-[10px] uppercase tracking-wider text-white/50 font-medium">
+                  {sidebarLabels.period}
+                </span>
                 <Calendar className="h-3.5 w-3.5 text-primary" />
               </div>
               <div className="flex items-center gap-1">
@@ -245,19 +231,38 @@ export function Sidebar() {
         )}
 
         <nav className="flex-1 py-4 px-3 overflow-y-auto">
-          {NAV_CLUSTERS.map((cluster, clusterIdx) => (
-            <div key={cluster.label} className={clusterIdx > 0 ? "mt-6" : ""}>
+          {navClusters.map((cluster, clusterIdx) => (
+            <div key={cluster.id} className={clusterIdx > 0 ? "mt-6" : ""}>
               {!isCollapsed && (
-                <div className="px-3 mb-2">
+                <div className="px-3 mb-2 flex items-center justify-between">
                   <span className="text-[10px] uppercase tracking-wider text-white/40 font-bold">
                     {cluster.label}
                   </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setGroupOpenState((prev) => ({
+                        ...prev,
+                        [cluster.id]: !prev[cluster.id]
+                      }))
+                    }
+                    className="text-white/50 hover:text-white transition-colors"
+                    aria-label={formatMessage(sidebarLabels.toggleGroup, { group: cluster.label })}
+                  >
+                    {groupOpenState[cluster.id] ? (
+                      <ChevronLeft className="h-3.5 w-3.5 rotate-90" />
+                    ) : (
+                      <ChevronRight className="h-3.5 w-3.5 rotate-90" />
+                    )}
+                  </button>
                 </div>
               )}
-              <div className="space-y-1">
+              {groupOpenState[cluster.id] && (
+                <div className="space-y-1">
                 {cluster.items.map((item) => {
-                  const isActive = location === item.href;
-                  const badge = item.showBadge && pendingCount > 0 ? pendingCount : null;
+                  const isActive = item.href.includes("?")
+                    ? location.startsWith(item.href)
+                    : normalizedLocation === item.href;
 
                   const NavLink = (
                     <Link
@@ -270,7 +275,7 @@ export function Sidebar() {
                           ? "bg-primary text-white shadow-lg shadow-primary/30"
                           : "text-white/70 hover:bg-white/10 hover:text-white"
                       )}
-                      data-testid={`nav-${item.label.toLowerCase()}`}
+                      data-testid={`nav-${item.id}`}
                     >
                       <item.icon className={cn(
                         "h-5 w-5 transition-colors",
@@ -279,22 +284,7 @@ export function Sidebar() {
                       {!isCollapsed && (
                         <>
                           <span className="flex-1">{item.label}</span>
-                          {badge && (
-                            <span className={cn(
-                              "text-[10px] font-bold px-2 py-0.5 rounded-full",
-                              isActive
-                                ? "bg-white/20 text-white"
-                                : "bg-amber-500/20 text-amber-400"
-                            )}>
-                              {badge > 99 ? "99+" : badge}
-                            </span>
-                          )}
                         </>
-                      )}
-                      {isCollapsed && badge && (
-                        <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                          {badge > 9 ? "9+" : badge}
-                        </span>
                       )}
                     </Link>
                   );
@@ -305,7 +295,6 @@ export function Sidebar() {
                         <TooltipTrigger asChild>{NavLink}</TooltipTrigger>
                         <TooltipContent side="right" className="font-medium">
                           {item.label}
-                          {badge && <span className="ml-2 text-amber-500">({badge})</span>}
                         </TooltipContent>
                       </Tooltip>
                     );
@@ -314,11 +303,19 @@ export function Sidebar() {
                   return NavLink;
                 })}
               </div>
+              )}
             </div>
           ))}
         </nav>
 
         <div className="p-3 border-t border-white/10 space-y-1">
+          {!isCollapsed && (
+            <div className="px-3 mb-2">
+              <span className="text-[10px] uppercase tracking-wider text-white/40 font-bold">
+                {sidebarLabels.system}
+              </span>
+            </div>
+          )}
           {isCollapsed ? (
             <>
               <Tooltip delayDuration={0}>
@@ -335,7 +332,7 @@ export function Sidebar() {
                     <Settings className="h-5 w-5" />
                   </Link>
                 </TooltipTrigger>
-                <TooltipContent side="right">Configuracoes</TooltipContent>
+                <TooltipContent side="right">{sidebarLabels.items.settings}</TooltipContent>
               </Tooltip>
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
@@ -346,7 +343,7 @@ export function Sidebar() {
                     <LogOut className="h-5 w-5" />
                   </Link>
                 </TooltipTrigger>
-                <TooltipContent side="right">Sair</TooltipContent>
+                <TooltipContent side="right">{sidebarLabels.items.logout}</TooltipContent>
               </Tooltip>
             </>
           ) : (
@@ -363,7 +360,7 @@ export function Sidebar() {
                 data-testid="nav-settings"
               >
                 <Settings className="h-5 w-5" />
-                Configuracoes
+                {sidebarLabels.items.settings}
               </Link>
               <Link
                 href="/login"
@@ -372,7 +369,7 @@ export function Sidebar() {
                 data-testid="nav-logout"
               >
                 <LogOut className="h-5 w-5" />
-                Sair
+                {sidebarLabels.items.logout}
               </Link>
             </>
           )}

@@ -14,6 +14,7 @@
 - `CORS_ORIGIN` - ✅ Optional (has safe defaults)
 - `NODE_ENV` - ✅ Auto-set by platform
 - `PORT` - ✅ Auto-set by Render
+- `ALLOW_DEMO_AUTH_IN_PROD` - ⚠️ Demo-only bypass (leave unset for real production)
 - `OPENAI_API_KEY` - ⚠️ Optional (AI features disabled without it)
 
 **Frontend (Vercel):**
