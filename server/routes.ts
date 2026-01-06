@@ -4933,9 +4933,9 @@ Retorne APENAS um array JSON válido, sem markdown ou texto adicional.`;
         });
       }
       
-      // Add the column
+      // Add the column without foreign key constraint (to avoid dependency issues)
       await db.execute(sql`
-        ALTER TABLE uploads ADD COLUMN account_id UUID REFERENCES accounts(id)
+        ALTER TABLE uploads ADD COLUMN account_id UUID
       `);
       
       res.json({ 
