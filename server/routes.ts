@@ -3,7 +3,6 @@ import { hashPassword, verifyPassword } from "./auth/password";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { requireAuth, optionalAuth } from "./auth-middleware";
-import { hashPassword, verifyPassword } from "./auth/password";
 import {
   insertRuleSchema,
   insertGoalSchema,
@@ -554,7 +553,7 @@ export async function registerRoutes(
       }
 
       // Verify password using bcrypt
-      const isPasswordValid = await verifyPassword(password, user.passwordHash || user.password || "");
+      const isPasswordValid = await verifyPassword(password, user.passwordHash || "");
       if (!isPasswordValid) {
         return res.status(401).json({ error: "Invalid credentials" });
       }

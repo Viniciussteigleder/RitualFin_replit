@@ -24,7 +24,6 @@ export const transactionClassifiedByEnum = pgEnum("transaction_classified_by", [
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
-  password: text("password"), // Legacy plaintext field
   passwordHash: text("password_hash"), // Secure hashed password
   email: text("email").unique(),
   googleId: text("google_id").unique(),
