@@ -556,7 +556,7 @@ export type CalendarEvent = typeof calendarEvents.$inferSelect;
 export const eventOccurrences = pgTable("event_occurrences", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   eventId: varchar("event_id").notNull().references(() => calendarEvents.id),
-  date: timestamp("date").notNull(),
+  date: timestamp("occurrence_date").notNull(),
   amount: real("amount").notNull(),
   status: text("status").notNull().default("pending"),
   transactionId: varchar("transaction_id").references(() => transactions.id),

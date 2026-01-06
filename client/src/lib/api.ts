@@ -10,7 +10,8 @@ function getApiBase(): string {
   const envUrl = import.meta.env.VITE_API_URL;
 
   // Development fallback: relative URL (proxied by Vite)
-  if (!envUrl) {
+  // Ignore VITE_API_URL in development to ensure we use the local proxy
+  if (import.meta.env.DEV || !envUrl) {
     return "/api";
   }
 
