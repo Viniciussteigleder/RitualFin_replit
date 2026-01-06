@@ -36,7 +36,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
   email: true,
   googleId: true,
-});
+}).partial({ password: true }); // Password is optional for OAuth users
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 

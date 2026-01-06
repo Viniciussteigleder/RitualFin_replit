@@ -93,9 +93,9 @@ async function importCategories(userId: string) {
           userId,
           nivel1Pt
         }).returning({ level1Id: taxonomyLevel1.level1Id });
-        level1Id = newLevel1.level1Id;
+        level1Id = newLevel1!.level1Id;
       }
-      level1Map.set(nivel1Pt, level1Id);
+      level1Map.set(nivel1Pt, level1Id!);
     }
 
     // Create or get Level 2
@@ -105,7 +105,7 @@ async function importCategories(userId: string) {
       const existing = await db.query.taxonomyLevel2.findFirst({
         where: and(
           eq(taxonomyLevel2.userId, userId),
-          eq(taxonomyLevel2.level1Id, level1Id),
+          eq(taxonomyLevel2.level1Id, level1Id!),
           eq(taxonomyLevel2.nivel2Pt, nivel2Pt)
         )
       });
@@ -115,15 +115,15 @@ async function importCategories(userId: string) {
       } else {
         const [newLevel2] = await db.insert(taxonomyLevel2).values({
           userId,
-          level1Id,
+          level1Id: level1Id!,
           nivel2Pt,
           recorrenteDefault: recorrente === 'Sim' ? 'Sim' : 'Não',
           fixoVariavelDefault: fixoVariavel,
           receitaDespesaDefault: receitaDespesa
         }).returning({ level2Id: taxonomyLevel2.level2Id });
-        level2Id = newLevel2.level2Id;
+        level2Id = newLevel2!.level2Id;
       }
-      level2Map.set(level2Key, level2Id);
+      level2Map.set(level2Key, level2Id!);
     }
 
     // Create or get Leaf (Level 3)
@@ -133,7 +133,7 @@ async function importCategories(userId: string) {
       const existing = await db.query.taxonomyLeaf.findFirst({
         where: and(
           eq(taxonomyLeaf.userId, userId),
-          eq(taxonomyLeaf.level2Id, level2Id),
+          eq(taxonomyLeaf.level2Id, level2Id!),
           eq(taxonomyLeaf.nivel3Pt, nivel3Pt)
         )
       });
@@ -143,15 +143,15 @@ async function importCategories(userId: string) {
       } else {
         const [newLeaf] = await db.insert(taxonomyLeaf).values({
           userId,
-          level2Id,
+          level2Id: level2Id!,
           nivel3Pt,
           recorrenteDefault: recorrente === 'Sim' ? 'Sim' : 'Não',
           fixoVariavelDefault: fixoVariavel,
           receitaDespesaDefault: receitaDespesa
         }).returning({ leafId: taxonomyLeaf.leafId });
-        leafId = newLeaf.leafId;
+        leafId = newLeaf!.leafId;
       }
-      leafMap.set(leafKey, leafId);
+      leafMap.set(leafKey, leafId!);
     }
 
     // Create rule if keywords exist
@@ -159,7 +159,7 @@ async function importCategories(userId: string) {
       const existingRule = await db.query.rules.findFirst({
         where: and(
           eq(rules.userId, userId),
-          eq(rules.leafId, leafId),
+          eq(rules.leafId, leafId!),
           eq(rules.keyWords, keyWords)
         )
       });
@@ -168,7 +168,7 @@ async function importCategories(userId: string) {
         await db.insert(rules).values({
           userId,
           name: `${nivel3Pt} - Auto`,
-          leafId,
+          leafId: leafId!,
           keyWords: keyWords,
           keyWordsNegative: keyWordsNegative || null,
           priority: 500,

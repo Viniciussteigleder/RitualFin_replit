@@ -524,6 +524,7 @@ export const dashboardApi = {
       pendingReviewCount: number;
       fixedExpenses: number;
       variableExpenses: number;
+      estimatedIncome?: number;
       month: string;
     }>(`/dashboard${month ? `?month=${month}` : ""}`),
 };
