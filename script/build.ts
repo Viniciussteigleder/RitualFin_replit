@@ -85,6 +85,9 @@ async function buildAll() {
   });
 
   await cp("server/seed-data", "dist/seed-data", { recursive: true });
+
+  // Copy IPv4 resolver to dist (needed by server/db.ts at runtime)
+  await cp("server/ipv4-resolver.cjs", "dist/ipv4-resolver.cjs");
 }
 
 buildAll().catch((err) => {

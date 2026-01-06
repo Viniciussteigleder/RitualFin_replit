@@ -1,8 +1,25 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import * as schema from "@shared/schema";
+import { createRequire } from "node:module";
 
 const { Pool } = pg;
+
+// CRITICAL: Ensure IPv4 resolution happens BEFORE creating pool
+// This is a safety net if bootstrap.cjs didn't run (e.g., Render custom Start Command)
+// In dev (ESM), requires from server/ipv4-resolver.cjs
+// In prod (CJS bundle), requires from dist/ipv4-resolver.cjs (copied during build)
+const require = createRequire(import.meta.url);
+let ensureIPv4DatabaseUrl: () => void;
+try {
+  // Try loading from same directory as this file
+  ({ ensureIPv4DatabaseUrl } = require("./ipv4-resolver.cjs"));
+} catch (err) {
+  // Fallback for development/different paths
+  console.warn("[DB] Could not load ipv4-resolver.cjs, skipping fallback IPv4 resolution");
+  ensureIPv4DatabaseUrl = () => {}; // no-op
+}
+ensureIPv4DatabaseUrl();
 
 // Check DATABASE_URL is set (required for production)
 // Export flag for graceful degradation in health checks
@@ -52,18 +69,23 @@ function createPool(): pg.Pool | null {
   try {
     const dbConfig = parseDatabaseUrl(process.env.DATABASE_URL!);
 
-    // Check if bootstrap already resolved to IPv4
+    // Check if bootstrap or fallback resolved to IPv4
     const bootstrapRan = process.env.BOOTSTRAP_IPV4_RESOLVED === "true";
+    const fallbackRan = process.env.FALLBACK_IPV4_RESOLVED === "true";
     const isIPv4 = /^\d+\.\d+\.\d+\.\d+$/.test(dbConfig.host);
 
     if (bootstrapRan && isIPv4) {
       console.log(`[DB] ✓ Bootstrap resolved hostname to IPv4: ${dbConfig.host}`);
+    } else if (fallbackRan && isIPv4) {
+      console.log(`[DB] ✓ Fallback resolver forced IPv4: ${dbConfig.host}`);
+      console.log(`[DB] ℹ️  Note: Fallback is slower than bootstrap - set Render Start Command to: npm start`);
     } else if (isIPv4) {
       console.log(`[DB] ✓ DATABASE_URL already uses IPv4 address: ${dbConfig.host}`);
     } else {
-      console.warn(`[DB] ⚠️  WARNING: Bootstrap did NOT run or failed - using hostname: ${dbConfig.host}`);
-      console.warn(`[DB] ⚠️  Connection may fail with ENETUNREACH on Render (IPv6 not supported)`);
-      console.warn(`[DB] ⚠️  Ensure Render Start Command is: npm start (not node dist/index.cjs)`);
+      console.error(`[DB] ✗ CRITICAL: Neither bootstrap nor fallback resolved to IPv4!`);
+      console.error(`[DB] ✗ Current hostname: ${dbConfig.host}`);
+      console.error(`[DB] ✗ Connection will FAIL with ENETUNREACH on Render (IPv6 not supported)`);
+      console.error(`[DB] ✗ FIX: Set Render Start Command to: npm start`);
     }
 
     // Create pool with explicit configuration

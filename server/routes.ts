@@ -397,7 +397,8 @@ export async function registerRoutes(
         connectionInfo: {} as any
       },
       bootstrap: {
-        ran: process.env.BOOTSTRAP_IPV4_RESOLVED === "true",
+        bootstrapRan: process.env.BOOTSTRAP_IPV4_RESOLVED === "true",
+        fallbackRan: process.env.FALLBACK_IPV4_RESOLVED === "true",
         dnsOrder: "ipv4first (forced)"
       },
       environment: {
