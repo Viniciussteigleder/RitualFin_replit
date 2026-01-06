@@ -3,6 +3,7 @@ import { hashPassword, verifyPassword } from "./auth/password";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { requireAuth, optionalAuth } from "./auth-middleware";
+import { passport } from "./passport";
 import {
   insertRuleSchema,
   insertGoalSchema,
@@ -590,7 +591,6 @@ export async function registerRoutes(
   app.get(
     "/api/auth/google",
     (req: Request, res: Response, next: any) => {
-      const passport = require("passport");
       passport.authenticate("google", { scope: ["profile", "email"] })(req, res, next);
     }
   );
@@ -598,7 +598,6 @@ export async function registerRoutes(
   app.get(
     "/api/auth/google/callback",
     (req: Request, res: Response, next: any) => {
-      const passport = require("passport");
       const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5001";
 
       passport.authenticate("google", (err: any, user: any, info: any) => {
