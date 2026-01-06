@@ -1,6 +1,5 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
-import { passport } from "./passport";
 import { storage } from "./storage";
 import { requireAuth, optionalAuth } from "./auth-middleware";
 import {
@@ -59,32 +58,6 @@ const buildInfo = {
   buildTime: process.env.BUILD_TIME || "unknown",
   env: process.env.NODE_ENV || "unknown",
 };
-
-async function getAuthenticatedUser(req: Request): Promise<{ id: string; username: string; email?: string | null } | null> {
-  if (req.user) {
-    return req.user as { id: string; username: string; email?: string };
-  }
-  if (req.session?.userId) {
-    const user = await storage.getUserById(req.session.userId);
-    if (user) return user;
-  }
-  return null;
-}
-
-async function getAuthenticatedUserOrDemo(req: Request): Promise<{ id: string; username: string; email?: string | null }> {
-  const authUser = await getAuthenticatedUser(req);
-  if (authUser) return authUser;
-  
-  let demoUser = await storage.getUserByUsername("demo");
-  if (!demoUser) {
-    demoUser = await storage.createUser({ username: "demo", password: "demo" });
-  }
-  return demoUser!;
-}
-
-function isDemoUser(user: { id: string; username: string; email?: string | null }): boolean {
-  return user.username === "demo";
-}
 
 async function writeAuditLog(params: {
   userId: string;
@@ -534,15 +507,41 @@ export async function registerRoutes(
   // Google OAuth routes
   app.get(
     "/api/auth/google",
-    passport.authenticate("google", { scope: ["profile", "email"] })
+    (req: Request, res: Response, next: any) => {
+      const passport = require("passport");
+      passport.authenticate("google", { scope: ["profile", "email"] })(req, res, next);
+    }
   );
 
   app.get(
     "/api/auth/google/callback",
-    passport.authenticate("google", {
-      failureRedirect: "/login",
-      successRedirect: "/dashboard"
-    })
+    (req: Request, res: Response, next: any) => {
+      const passport = require("passport");
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5000";
+
+      passport.authenticate("google", (err: any, user: any, info: any) => {
+        if (err) {
+          logger.error("google_auth_callback_error", { error: err.message });
+          return res.redirect(`${frontendUrl}/login?error=auth_failed`);
+        }
+
+        if (!user) {
+          logger.warn("google_auth_no_user", { info });
+          return res.redirect(`${frontendUrl}/login?error=no_user`);
+        }
+
+        // Log in the user (establishes session)
+        req.logIn(user, (loginErr) => {
+          if (loginErr) {
+            logger.error("google_login_error", { error: loginErr.message });
+            return res.redirect(`${frontendUrl}/login?error=login_failed`);
+          }
+
+          logger.info("google_auth_success", { userId: user.id, email: user.email });
+          return res.redirect(`${frontendUrl}/dashboard`);
+        });
+      })(req, res, next);
+    }
   );
 
   app.get("/api/auth/logout", (req: Request, res: Response) => {
@@ -658,7 +657,6 @@ export async function registerRoutes(
     try {
       const user = req.user;
       if (!user) return res.status(401).json({ error: "User not found" });
-      const user = await getAuthenticatedUserOrDemo(req);
 
       await storage.deleteNotification(req.params.id, user.id);
       res.status(204).send();
@@ -672,7 +670,6 @@ export async function registerRoutes(
     try {
       const user = req.user;
       if (!user) return res.json([]);
-      const user = await getAuthenticatedUserOrDemo(req);
 
       const limitParam = req.query.limit ? Number(req.query.limit) : undefined;
       const limit = Number.isFinite(limitParam) && limitParam ? Math.min(Math.max(limitParam, 1), 500) : 200;
@@ -1034,8 +1031,8 @@ export async function registerRoutes(
             rowsTotal: diag.rowsTotal,
             rowsPreview: diag.rowsPreview,
             stage: diag.stage,
-            errorCode: diag.errorCode || parseResult.sparkasseError || null,
-            errorMessage: diag.errorMessage || parseResult.sparkasseError || null,
+            errorCode: diag.errorCode || parseResult.sparkasseError?.code || null,
+            errorMessage: diag.errorMessage || parseResult.sparkasseError?.message || null,
             errorDetails: {
               ...(diag.errorDetails || {}),
               rowErrors: diag.rowErrors.slice(0, 10)
@@ -2223,7 +2220,6 @@ export async function registerRoutes(
     try {
       const user = req.user;
       if (!user) return res.status(401).json({ error: "User not found" });
-      const user = await getAuthenticatedUserOrDemo(req);
 
       const schema = z.object({
         leafId: z.string(),
@@ -3206,8 +3202,9 @@ export async function registerRoutes(
             category3
           });
 
-        // Update transactions with the new rule ID
-        await storage.bulkUpdateTransactions(ids, { ruleIdApplied: createdRule.id });
+          // Update transactions with the new rule ID
+          await storage.bulkUpdateTransactions(ids, { ruleIdApplied: createdRule.id });
+        }
       }
 
       res.json({ 
@@ -5084,46 +5081,6 @@ Retorne APENAS um array JSON válido, sem markdown ou texto adicional.`;
         success: false,
         error: error.message,
         stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-      });
-    }
-  });
-
-  // Migration endpoint to add account_id column to uploads table
-  // Call once: POST /api/admin/migrate-uploads-account-id
-  app.post("/api/admin/migrate-uploads-account-id", async (req, res) => {
-    try {
-      if (!db) {
-        return res.status(500).json({ error: "Database not configured" });
-      }
-      
-      // Check if column already exists
-      const checkResult = await db.execute(sql`
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name = 'uploads' AND column_name = 'account_id'
-      `);
-      
-      if (checkResult.rows && checkResult.rows.length > 0) {
-        return res.json({ 
-          success: true, 
-          message: "Column account_id already exists in uploads table" 
-        });
-      }
-      
-      // Add the column without foreign key constraint (to avoid dependency issues)
-      await db.execute(sql`
-        ALTER TABLE uploads ADD COLUMN account_id UUID
-      `);
-      
-      res.json({ 
-        success: true, 
-        message: "Column account_id added to uploads table successfully" 
-      });
-    } catch (error: any) {
-      console.error("Migration failed:", error);
-      res.status(500).json({ 
-        success: false, 
-        error: error.message 
       });
     }
   });
