@@ -181,30 +181,48 @@ app.use((req, res, next) => {
   }
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || "5001", 10);
+  // Other ports are firewalled. Default to 5001 if not specified.
+  const preferredPort = parseInt(process.env.PORT || "5001", 10);
   const host = process.env.HOST || "0.0.0.0";
-  httpServer.listen(
-    {
-      port,
-      host,
-      ...(process.env.REUSE_PORT === "true" ? { reusePort: true } : {}),
-    },
-    () => {
-      log(`serving on port ${port}`);
 
-      // Startup sanity check logging (no secrets)
-      console.log("=== RitualFin Startup Sanity Check ===");
-      console.log(`Node Version: ${process.version}`);
-      console.log(`Environment: ${env}`);
-      console.log(`DNS Resolution Order: ipv4first (forced)`);
-      console.log(`DATABASE_URL configured: ${!!process.env.DATABASE_URL}`);
-      console.log(`ADMIN_API_KEY configured: ${!!process.env.ADMIN_API_KEY}`);
-      console.log(`Session Store: ${sessionStore ? "PostgreSQL" : "MemoryStore (dev only)"}`);
-      console.log(`CORS Origins: ${corsOrigins.join(", ")}`);
-      console.log("=====================================");
-    },
-  );
+  function startServer(port: number, attempt = 0) {
+    if (attempt > 10) {
+      log("Could not find an open port after 10 attempts. Exiting.");
+      process.exit(1);
+    }
+
+    const server = httpServer.listen(
+      {
+        port,
+        host,
+        ...(process.env.REUSE_PORT === "true" ? { reusePort: true } : {}),
+      },
+      () => {
+        log(`serving on port ${port}`);
+
+        // Startup sanity check logging (no secrets)
+        console.log("=== RitualFin Startup Sanity Check ===");
+        console.log(`Node Version: ${process.version}`);
+        console.log(`Environment: ${env}`);
+        console.log(`DNS Resolution Order: ipv4first (forced)`);
+        console.log(`DATABASE_URL configured: ${!!process.env.DATABASE_URL}`);
+        console.log(`ADMIN_API_KEY configured: ${!!process.env.ADMIN_API_KEY}`);
+        console.log(`Session Store: ${sessionStore ? "PostgreSQL" : "MemoryStore (dev only)"}`);
+        console.log(`CORS Origins: ${corsOrigins.join(", ")}`);
+        console.log("=====================================");
+      },
+    );
+
+    server.on("error", (e: any) => {
+      if (e.code === "EADDRINUSE") {
+        log(`Port ${port} is in use, trying ${port + 1}...`);
+        server.close(); // Ensure previous handle is closed
+        startServer(port + 1, attempt + 1);
+      } else {
+        console.error("Server error:", e);
+      }
+    });
+  }
+
+  startServer(preferredPort);
 })();

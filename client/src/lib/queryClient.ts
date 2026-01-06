@@ -8,7 +8,7 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
  */
 function getApiBaseUrl(): string {
   const envUrl = import.meta.env.VITE_API_URL;
-  if (!envUrl) {
+  if (import.meta.env.DEV || !envUrl) {
     return ""; // Development: use relative URLs
   }
   // Production: remove trailing slash for consistent URL building
