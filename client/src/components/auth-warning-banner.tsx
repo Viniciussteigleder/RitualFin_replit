@@ -1,20 +1,28 @@
 import { AlertTriangle, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { authApi } from "@/lib/api";
 
 /**
  * Auth Warning Banner
  *
- * Displays a security warning when the app is running in demo authentication mode.
+ * Displays a security warning when the app is running with a demo user.
  * This is a critical security notice for users to understand the limitations.
  *
  * The banner:
- * - Shows only in demo auth mode (when auto-creating "demo" user)
+ * - Shows only when logged in as "demo" user
  * - Can be dismissed but reappears on new sessions
  * - Uses warning colors (amber) to draw attention
  */
 export function AuthWarningBanner() {
   const [isDismissed, setIsDismissed] = useState(false);
+
+  const { data: user } = useQuery({
+    queryKey: ["auth", "me"],
+    queryFn: () => authApi.getMe(),
+    retry: false,
+  });
 
   useEffect(() => {
     // Check if user has dismissed the banner in this session
@@ -34,10 +42,8 @@ export function AuthWarningBanner() {
     return null;
   }
 
-  // In a real production app, you would check if demo auth is enabled
-  // For now, we show the banner always as the app uses demo auth
-  // TODO: Add environment check when multi-user auth is implemented
-  const isDemoAuth = true; // Always true in current implementation
+  // Only show banner if user is logged in as "demo" user
+  const isDemoAuth = user?.username === "demo";
 
   if (!isDemoAuth) {
     return null;

@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { MonthProvider } from "@/lib/month-context";
 import NotFound from "@/pages/not-found";
 import LoginPage from "@/pages/login";
+import SignupPage from "@/pages/signup";
 import DashboardPage from "@/pages/dashboard";
 import UploadsPage from "@/pages/uploads";
 import SettingsPage from "@/pages/settings";
@@ -29,6 +30,7 @@ function Router() {
     <Switch>
       <Route path="/" component={LoginPage} />
       <Route path="/login" component={LoginPage} />
+      <Route path="/signup" component={SignupPage} />
       <Route path="/dashboard" component={DashboardPage} />
       <Route path="/notifications" component={NotificationsPage} />
       <Route path="/calendar" component={CalendarPage} />

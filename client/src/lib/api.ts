@@ -94,12 +94,17 @@ async function fetchBlob(endpoint: string, options?: RequestInit): Promise<Blob>
 
 // Auth
 export const authApi = {
+  signup: (username: string, email: string, password: string) =>
+    fetchApi<{ success: boolean; user: { id: string; username: string; email?: string } }>("/auth/signup", {
+      method: "POST",
+      body: JSON.stringify({ username, email, password }),
+    }),
   login: (username: string, password: string) =>
     fetchApi<{ success: boolean; user: { id: string; username: string } }>("/auth/login", {
       method: "POST",
       body: JSON.stringify({ username, password }),
     }),
-  getMe: () => fetchApi<{ id: string; username: string }>("/auth/me"),
+  getMe: () => fetchApi<{ id: string; username: string; email?: string; googleId?: string }>("/auth/me"),
 };
 
 // Settings
