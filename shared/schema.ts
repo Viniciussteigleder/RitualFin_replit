@@ -24,7 +24,7 @@ export const transactionClassifiedByEnum = pgEnum("transaction_classified_by", [
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
-  password: text("password"),
+  passwordHash: text("password_hash"), // New hashed password
   email: text("email").unique(),
   googleId: text("google_id").unique(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -33,10 +33,10 @@ export const users = pgTable("users", {
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
-  password: true,
+  passwordHash: true,
   email: true,
   googleId: true,
-}).partial({ password: true }); // Password is optional for OAuth users
+}).partial({ passwordHash: true }); // Optional for OAuth users
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 

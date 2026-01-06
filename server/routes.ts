@@ -488,11 +488,14 @@ export async function registerRoutes(
         return res.status(409).json({ error: "User already exists" });
       }
 
+      // Hash password
+      const hashedPassword = await hashPassword(password);
+
       // Create new user
       const user = await storage.createUser({
         username,
         email: email || undefined,
-        password,
+        passwordHash: hashedPassword,
       });
 
       // Set session
@@ -524,9 +527,9 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
-      // TODO: Add proper password hashing and verification
-      // For now, just check if password matches (INSECURE - needs bcrypt)
-      if (user.password !== password) {
+      // Validate password via verifyPassword
+      const isValid = await verifyPassword(password, user.passwordHash || "");
+      if (!isValid) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
@@ -666,7 +669,7 @@ export async function registerRoutes(
     try {
       let user = req.user;
       if (!user) {
-        user = await storage.createUser({ username: "demo", password: "demo" });
+        return res.status(401).json({ error: "Authentication required" });
       }
 
       if (!req.body.title || !req.body.message) {
@@ -989,7 +992,7 @@ export async function registerRoutes(
     try {
       let user = req.user;
       if (!user) {
-        user = await storage.createUser({ username: "demo", password: "demo" });
+        return res.status(401).json({ error: "Authentication required" });
       }
 
       const { filename, csvContent, encoding, fileBase64, fileType, importDate } = req.body;
@@ -1482,7 +1485,7 @@ export async function registerRoutes(
     try {
       let user = req.user;
       if (!user) {
-        user = await storage.createUser({ username: "demo", password: "demo" });
+        return res.status(401).json({ error: "Authentication required" });
       }
       const { uploadId, action, duplicateCount } = req.body || {};
       if (!uploadId || !action) {
@@ -3289,7 +3292,7 @@ export async function registerRoutes(
     try {
       let user = req.user;
       if (!user) {
-        user = await storage.createUser({ username: "demo", password: "demo" });
+        return res.status(401).json({ error: "Authentication required" });
       }
       
       const ruleData = insertRuleSchema.parse({ ...req.body, userId: user.id });
@@ -3316,7 +3319,7 @@ export async function registerRoutes(
     try {
       let user = req.user;
       if (!user) {
-        user = await storage.createUser({ username: "demo", password: "demo" });
+        return res.status(401).json({ error: "Authentication required" });
       }
       
       let count = 0;
@@ -3725,7 +3728,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
     try {
       let user = req.user;
       if (!user) {
-        user = await storage.createUser({ username: "demo", password: "demo" });
+        return res.status(401).json({ error: "Authentication required" });
       }
 
       const budget = await storage.createBudget({
@@ -3839,7 +3842,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
     try {
       let user = req.user;
       if (!user) {
-        user = await storage.createUser({ username: "demo", password: "demo" });
+        return res.status(401).json({ error: "Authentication required" });
       }
 
       console.log(JSON.stringify({
@@ -4094,7 +4097,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
     try {
       let user = req.user;
       if (!user) {
-        user = await storage.createUser({ username: "demo", password: "demo" });
+        return res.status(401).json({ error: "Authentication required" });
       }
 
       const goalId = req.params.goalId;
@@ -4336,7 +4339,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
     try {
       let user = req.user;
       if (!user) {
-        user = await storage.createUser({ username: "demo", password: "demo" });
+        return res.status(401).json({ error: "Authentication required" });
       }
       
       const event = await storage.createCalendarEvent({
@@ -4461,7 +4464,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
     try {
       let user = req.user;
       if (!user) {
-        user = await storage.createUser({ username: "demo", password: "demo" });
+        return res.status(401).json({ error: "Authentication required" });
       }
 
       console.log(JSON.stringify({
