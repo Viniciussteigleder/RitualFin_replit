@@ -59,7 +59,7 @@ const buildInfo = {
   env: process.env.NODE_ENV || "unknown",
 };
 
-async function getAuthenticatedUser(req: Request) {
+async function getAuthenticatedUser(req: Request): Promise<{ id: string; username: string; email?: string | null } | null> {
   if (req.user) {
     return req.user as { id: string; username: string; email?: string };
   }
@@ -67,11 +67,22 @@ async function getAuthenticatedUser(req: Request) {
     const user = await storage.getUserById(req.session.userId);
     if (user) return user;
   }
+  return null;
+}
+
+async function getAuthenticatedUserOrDemo(req: Request): Promise<{ id: string; username: string; email?: string | null }> {
+  const authUser = await getAuthenticatedUser(req);
+  if (authUser) return authUser;
+  
   let demoUser = await storage.getUserByUsername("demo");
   if (!demoUser) {
     demoUser = await storage.createUser({ username: "demo", password: "demo" });
   }
-  return demoUser;
+  return demoUser!;
+}
+
+function isDemoUser(user: { id: string; username: string; email?: string | null }): boolean {
+  return user.username === "demo";
 }
 
 async function writeAuditLog(params: {
@@ -504,7 +515,7 @@ export async function registerRoutes(
 
   app.get("/api/auth/me", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
       res.json({ id: user.id, username: user.username, email: user.email });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -542,7 +553,7 @@ export async function registerRoutes(
   // ===== SETTINGS =====
   app.get("/api/settings", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       let userSettings = await storage.getSettings(user.id);
 
@@ -559,7 +570,7 @@ export async function registerRoutes(
 
   app.patch("/api/settings", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const updated = await storage.updateSettings(user.id, req.body);
       if (!updated) {
@@ -575,7 +586,7 @@ export async function registerRoutes(
   // ===== NOTIFICATIONS =====
   app.get("/api/notifications", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const limitParam = req.query.limit ? Number(req.query.limit) : undefined;
       const limit = Number.isFinite(limitParam) && limitParam ? Math.min(Math.max(limitParam, 1), 200) : 200;
@@ -588,7 +599,7 @@ export async function registerRoutes(
 
   app.post("/api/notifications", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       if (!req.body.title || !req.body.message) {
         return res.status(400).json({ error: "Title and message are required" });
@@ -609,7 +620,7 @@ export async function registerRoutes(
 
   app.patch("/api/notifications/:id", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const updateData: UpdateNotification = {};
       if (req.body.title !== undefined) updateData.title = req.body.title;
@@ -629,7 +640,7 @@ export async function registerRoutes(
 
   app.delete("/api/notifications/:id", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       await storage.deleteNotification(req.params.id, user.id);
       res.status(204).send();
@@ -641,7 +652,7 @@ export async function registerRoutes(
   // ===== AUDIT LOGS =====
   app.get("/api/audit-logs", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const limitParam = req.query.limit ? Number(req.query.limit) : undefined;
       const limit = Number.isFinite(limitParam) && limitParam ? Math.min(Math.max(limitParam, 1), 500) : 200;
@@ -654,7 +665,7 @@ export async function registerRoutes(
 
   app.get("/api/audit-logs/export-csv", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const logs = await storage.getAuditLogs(user.id, 1000);
       const rows = logs.map((log) => ({
@@ -678,7 +689,7 @@ export async function registerRoutes(
   // ===== ACCOUNTS =====
   app.get("/api/accounts", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
       const accounts = await storage.getAccounts(user.id);
       res.json(accounts);
     } catch (error: any) {
@@ -700,7 +711,7 @@ export async function registerRoutes(
 
   app.post("/api/accounts", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const accountData = {
         userId: user.id,
@@ -721,7 +732,7 @@ export async function registerRoutes(
 
   app.put("/api/accounts/:id", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const updateData: any = {};
       if (req.body.name !== undefined) updateData.name = req.body.name;
@@ -743,7 +754,7 @@ export async function registerRoutes(
 
   app.delete("/api/accounts/:id", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       await storage.archiveAccount(req.params.id, user.id);
       res.status(204).send();
@@ -754,7 +765,7 @@ export async function registerRoutes(
 
   app.get("/api/accounts/:id/balance", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       // Verify account exists and belongs to user
       const account = await storage.getAccount(req.params.id);
@@ -782,7 +793,7 @@ export async function registerRoutes(
   // ===== UPLOADS =====
   app.get("/api/uploads", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
       const uploads = await storage.getUploads(user.id);
       res.json(uploads);
     } catch (error: any) {
@@ -793,7 +804,7 @@ export async function registerRoutes(
   // Get last upload status by account (Sparkasse, Amex, Miles & More)
   app.get("/api/uploads/last-by-account", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const uploads = await storage.getUploads(user.id);
 
@@ -889,7 +900,7 @@ export async function registerRoutes(
   app.post("/api/uploads/process", async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const { filename, csvContent, encoding, fileBase64, fileType, importDate } = req.body;
 
@@ -1379,7 +1390,7 @@ export async function registerRoutes(
 
   app.post("/api/imports/conflicts/resolve", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
       const { uploadId, action, duplicateCount } = req.body || {};
       if (!uploadId || !action) {
         return res.status(400).json({ error: "uploadId e action são obrigatórios" });
@@ -1411,7 +1422,7 @@ export async function registerRoutes(
 
   app.post("/api/data-imports/preview", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const { dataset, filename, fileBase64, confirmRemap } = req.body as {
         dataset: CsvDataset;
@@ -1511,7 +1522,7 @@ export async function registerRoutes(
   app.post("/api/data-imports/confirm", async (req: Request, res: Response) => {
     let importRun;
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const { importId, confirmRemap } = req.body as { importId?: string; confirmRemap?: boolean };
       if (!importId) return res.status(400).json({ error: "importId obrigatório" });
@@ -1764,7 +1775,7 @@ export async function registerRoutes(
 
   app.get("/api/data-imports/last", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const dataset = String(req.query.dataset || "");
       if (!dataset || !csvContracts[dataset as CsvDataset]) {
@@ -1781,7 +1792,7 @@ export async function registerRoutes(
   // Get errors for a specific upload
   app.get("/api/uploads/:id/errors", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       // Verify upload exists and belongs to user
       const upload = await storage.getUpload(req.params.id);
@@ -1804,7 +1815,7 @@ export async function registerRoutes(
   // Get diagnostics for a specific upload
   app.get("/api/uploads/:id/diagnostics", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const upload = await storage.getUpload(req.params.id);
       if (!upload || upload.userId !== user.id) {
@@ -1821,7 +1832,7 @@ export async function registerRoutes(
   // ===== CLASSIFICATION & DATA =====
   app.get("/api/classification/export", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const [levels1, levels2, leaves, appCats, appLeafs, rules] = await Promise.all([
         storage.getTaxonomyLevel1(user.id),
@@ -1870,7 +1881,7 @@ export async function registerRoutes(
 
   app.get("/api/classification/export-csv", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const [levels1, levels2, leaves, appCats, appLeafs, rules] = await Promise.all([
         storage.getTaxonomyLevel1(user.id),
@@ -1927,7 +1938,7 @@ export async function registerRoutes(
 
   app.post("/api/classification/import/preview", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const { fileBase64 } = req.body;
       if (!fileBase64) return res.status(400).json({ error: "Arquivo Excel obrigatório" });
@@ -1969,7 +1980,7 @@ export async function registerRoutes(
 
   app.post("/api/classification/import/apply", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const { fileBase64, confirmRemap } = req.body;
       if (!fileBase64) return res.status(400).json({ error: "Arquivo Excel obrigatório" });
@@ -2092,7 +2103,7 @@ export async function registerRoutes(
 
   app.post("/api/classification/rule-test", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const { keyDesc } = req.body;
       if (!keyDesc) return res.status(400).json({ error: "key_desc obrigatório" });
@@ -2108,7 +2119,7 @@ export async function registerRoutes(
 
   app.get("/api/classification/leaves", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const [leaves, levels2, levels1] = await Promise.all([
         storage.getTaxonomyLeaf(user.id),
@@ -2141,7 +2152,7 @@ export async function registerRoutes(
 
   app.get("/api/classification/rules", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const rules = await storage.getRules(user.id);
       res.json(rules);
@@ -2152,7 +2163,7 @@ export async function registerRoutes(
 
   app.post("/api/classification/rules/append", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const schema = z.object({
         leafId: z.string(),
@@ -2212,7 +2223,7 @@ export async function registerRoutes(
 
   app.post("/api/classification/rules/append-negative", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const schema = z.object({
         leafId: z.string(),
@@ -2272,7 +2283,7 @@ export async function registerRoutes(
 
   app.get("/api/classification/review-queue", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const transactions = await storage.getTransactionsWithMerchantAlias(user.id);
       const open = transactions.filter(tx => tx.status === "OPEN" || tx.needsReview);
@@ -2284,7 +2295,7 @@ export async function registerRoutes(
 
   app.post("/api/classification/review/assign", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const schema = z.object({
         transactionId: z.string(),
@@ -2339,7 +2350,7 @@ export async function registerRoutes(
 
   app.get("/api/aliases/export", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const [keyDescRows, aliasRows] = await Promise.all([
         storage.getKeyDescMap(user.id),
@@ -2377,7 +2388,7 @@ export async function registerRoutes(
 
   app.get("/api/aliases/key-desc/export-csv", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const keyDescRows = await storage.getKeyDescMap(user.id);
       const rows = keyDescRows.map((row) => ({
@@ -2408,7 +2419,7 @@ export async function registerRoutes(
 
   app.get("/api/aliases/assets/export-csv", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const aliasRows = await storage.getAliasAssets(user.id);
       const rows = aliasRows.map((row) => ({
@@ -2440,7 +2451,7 @@ export async function registerRoutes(
 
   app.get("/api/aliases/logos/template", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const aliasRows = await storage.getAliasAssets(user.id);
       const wsLogos = XLSX.utils.json_to_sheet(
@@ -2466,7 +2477,7 @@ export async function registerRoutes(
 
   app.post("/api/aliases/import/preview", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const { fileBase64 } = req.body;
       if (!fileBase64) return res.status(400).json({ error: "Arquivo Excel obrigatório" });
@@ -2496,7 +2507,7 @@ export async function registerRoutes(
 
   app.post("/api/aliases/import/apply", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const { fileBase64 } = req.body;
       if (!fileBase64) return res.status(400).json({ error: "Arquivo Excel obrigatório" });
@@ -2577,7 +2588,7 @@ export async function registerRoutes(
 
   app.post("/api/aliases/logos/import", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const { fileBase64 } = req.body;
       if (!fileBase64) return res.status(400).json({ error: "Arquivo Excel ou CSV obrigatório" });
@@ -2650,7 +2661,7 @@ export async function registerRoutes(
 
   app.post("/api/aliases/test", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const { keyDesc } = req.body;
       if (!keyDesc) return res.status(400).json({ error: "key_desc obrigatório" });
@@ -2671,7 +2682,7 @@ export async function registerRoutes(
 
   app.post("/api/aliases/refresh-logos", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const { force } = req.body || {};
       const aliases = await storage.getAliasAssets(user.id);
@@ -2714,7 +2725,7 @@ export async function registerRoutes(
 
   app.post("/api/settings/reset", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       await db.delete(transactions).where(eq(transactions.userId, user.id));
 
@@ -2864,7 +2875,7 @@ export async function registerRoutes(
 
   app.post("/api/settings/delete-data", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const schema = z.object({
         deleteTransactions: z.boolean().optional(),
@@ -2928,7 +2939,7 @@ export async function registerRoutes(
   // ===== MERCHANT METADATA =====
   app.get("/api/merchant-metadata", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const metadata = await storage.getMerchantMetadata(user.id);
       res.json(metadata);
@@ -2940,7 +2951,7 @@ export async function registerRoutes(
 
   app.post("/api/merchant-metadata", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const { pattern, friendlyName, icon, color } = req.body;
 
@@ -2965,7 +2976,7 @@ export async function registerRoutes(
 
   app.put("/api/merchant-metadata/:id", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const updateData: Partial<MerchantMetadata> = { updatedAt: new Date() };
       if (req.body.pattern !== undefined) updateData.pattern = req.body.pattern.toUpperCase();
@@ -2988,7 +2999,7 @@ export async function registerRoutes(
 
   app.delete("/api/merchant-metadata/:id", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       await storage.deleteMerchantMetadata(req.params.id, user.id);
       res.status(204).send();
@@ -3000,7 +3011,7 @@ export async function registerRoutes(
 
   app.get("/api/merchant-metadata/match", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const { description } = req.query;
       if (!description) {
@@ -3018,7 +3029,7 @@ export async function registerRoutes(
   // ===== TRANSACTIONS =====
   app.get("/api/transactions", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const month = req.query.month as string | undefined;
       const transactions = await storage.getTransactionsWithMerchantAlias(user.id, month);
@@ -3030,7 +3041,7 @@ export async function registerRoutes(
 
   app.get("/api/transactions/confirm-queue", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
       
       const transactions = await storage.getTransactionsWithMerchantAlias(user.id);
       const needsReview = transactions.filter(tx => tx.status === "OPEN" || tx.needsReview);
@@ -3091,7 +3102,7 @@ export async function registerRoutes(
       // Create rule if requested
       let createdRule = null;
       if (createRule && keyword && type && fixVar && category1) {
-        const user = await getAuthenticatedUser(req);
+        const user = await getAuthenticatedUserOrDemo(req);
         createdRule = await storage.createRule({
           userId: user.id,
           name: keyword,
@@ -3121,7 +3132,7 @@ export async function registerRoutes(
   // ===== RULES =====
   app.get("/api/rules", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
       
       const rules = await storage.getRules(user.id);
       res.json(rules);
@@ -3132,7 +3143,7 @@ export async function registerRoutes(
 
   app.post("/api/rules", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
       
       const ruleData = insertRuleSchema.parse({ ...req.body, userId: user.id });
       const rule = await storage.createRule(ruleData);
@@ -3156,7 +3167,7 @@ export async function registerRoutes(
   // Seed AI-powered rules
   app.post("/api/rules/seed", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
       
       let count = 0;
       for (const seedRule of AI_SEED_RULES) {
@@ -3176,7 +3187,7 @@ export async function registerRoutes(
   // Re-apply ALL rules to pending transactions
   app.post("/api/rules/reapply-all", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const rules = await storage.getRules(user.id);
       let userSettings = await storage.getSettings(user.id);
@@ -3234,7 +3245,7 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Rule not found" });
       }
 
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       // Get unreviewed transactions
       const transactions = await storage.getTransactionsByNeedsReview(user.id);
@@ -3279,7 +3290,7 @@ export async function registerRoutes(
   app.patch("/api/rules/:id", async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
       const updated = await storage.updateRule(id, req.body);
       if (!updated) {
         return res.status(404).json({ error: "Rule not found" });
@@ -3300,7 +3311,7 @@ export async function registerRoutes(
   app.delete("/api/rules/:id", async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
       await storage.deleteRule(id);
       await writeAuditLog({
         userId: user.id,
@@ -3318,7 +3329,7 @@ export async function registerRoutes(
   // ===== DASHBOARD =====
   app.get("/api/dashboard", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
       
       const month = (req.query.month as string) || new Date().toISOString().slice(0, 7);
       const data = await storage.getDashboardData(user.id, month);
@@ -3332,7 +3343,7 @@ export async function registerRoutes(
   // List merchant descriptions
   app.get("/api/merchant-descriptions", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const { source, search, isManual } = req.query;
       const filters: any = {};
@@ -3351,7 +3362,7 @@ export async function registerRoutes(
   // Create merchant description
   app.post("/api/merchant-descriptions", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const { source, keyDesc, aliasDesc } = req.body;
       const description = await storage.createMerchantDescription({
@@ -3413,7 +3424,7 @@ export async function registerRoutes(
   // Export merchant descriptions to Excel
   app.get("/api/merchant-descriptions/export", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const descriptions = await storage.getMerchantDescriptions(user.id);
 
@@ -3436,7 +3447,7 @@ export async function registerRoutes(
   // AI suggest alias for merchant description
   app.post("/api/merchant-descriptions/ai-suggest", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       if (!openai) {
         return res.status(503).json({ error: "OpenAI não configurado" });
@@ -3490,7 +3501,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
   // List merchant icons
   app.get("/api/merchant-icons", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const { needsFetch, search } = req.query;
       const filters: any = {};
@@ -3508,7 +3519,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
   // Update merchant icon
   app.patch("/api/merchant-icons/:aliasDesc", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const { aliasDesc } = req.params;
       const data = req.body;
@@ -3528,7 +3539,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
   // ===== BUDGETS =====
   app.get("/api/budgets", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
       
       const month = (req.query.month as string) || new Date().toISOString().slice(0, 7);
       const budgets = await storage.getBudgets(user.id, month);
@@ -3540,7 +3551,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
 
   app.post("/api/budgets", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const budget = await storage.createBudget({
         ...req.body,
@@ -3554,7 +3565,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
 
   app.patch("/api/budgets/:id", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const { id } = req.params;
       const updated = await storage.updateBudget(id, req.body);
@@ -3569,7 +3580,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
 
   app.delete("/api/budgets/:id", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const { id } = req.params;
       await storage.deleteBudget(id, user.id);
@@ -3583,7 +3594,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
   app.get("/api/goals", async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const month = req.query.month as string | undefined;
 
@@ -3638,7 +3649,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
   app.post("/api/goals", async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       console.log(JSON.stringify({
         timestamp: new Date().toISOString(),
@@ -3709,7 +3720,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
   app.patch("/api/goals/:id", async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const goalId = req.params.id;
 
@@ -3770,7 +3781,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
   app.delete("/api/goals/:id", async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const goalId = req.params.id;
 
@@ -3831,7 +3842,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
   app.get("/api/goals/:goalId/categories", async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const goalId = req.params.goalId;
 
@@ -3887,7 +3898,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
   app.post("/api/goals/:goalId/categories", async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const goalId = req.params.goalId;
 
@@ -3982,7 +3993,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
   app.delete("/api/category-goals/:id", async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const categoryGoalId = req.params.id;
 
@@ -4041,7 +4052,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
   app.get("/api/goals/:id/progress", async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const goalId = req.params.id;
 
@@ -4100,7 +4111,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
   // ===== CALENDAR EVENTS =====
   app.get("/api/calendar-events", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
       
       const events = await storage.getCalendarEvents(user.id);
       res.json(events);
@@ -4123,7 +4134,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
 
   app.post("/api/calendar-events", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
       
       const event = await storage.createCalendarEvent({
         ...req.body,
@@ -4191,7 +4202,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
   app.get("/api/rituals", async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const type = req.query.type as string | undefined;
       const period = req.query.period as string | undefined;
@@ -4234,7 +4245,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
   app.post("/api/rituals", async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       console.log(JSON.stringify({
         timestamp: new Date().toISOString(),
@@ -4291,7 +4302,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
   app.patch("/api/rituals/:id", async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const ritualId = req.params.id;
 
@@ -4352,7 +4363,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
   app.delete("/api/rituals/:id", async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const ritualId = req.params.id;
 
@@ -4408,7 +4419,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
   app.post("/api/rituals/:id/complete", async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const ritualId = req.params.id;
       const { notes } = req.body;
@@ -4463,7 +4474,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
   // ===== AI KEYWORD ANALYSIS =====
   app.get("/api/ai/usage", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const limitParam = req.query.limit ? Number(req.query.limit) : undefined;
       const limit = Number.isFinite(limitParam) && limitParam ? Math.min(Math.max(limitParam, 1), 200) : 100;
@@ -4476,7 +4487,7 @@ Retorne APENAS o alias sugerido, sem explicações ou formatação adicional.`;
 
   app.post("/api/ai/analyze-keywords", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       if (!openai) {
         return res.status(503).json({ error: "OpenAI não configurado" });
@@ -4639,7 +4650,7 @@ Retorne APENAS um array JSON válido, sem markdown ou texto adicional.`;
   // Apply AI suggestions as rules
   app.post("/api/ai/apply-suggestions", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const [leaves, levels2, levels1] = await Promise.all([
         storage.getTaxonomyLeaf(user.id),
@@ -4764,7 +4775,7 @@ Retorne APENAS um array JSON válido, sem markdown ou texto adicional.`;
   // Migration endpoint to import categories and aliases from /tmp JSON files
   app.post("/api/admin/migrate-categories", async (req: Request, res: Response) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUserOrDemo(req);
 
       const CATEGORIAS_JSON = '/tmp/categorias.json';
       const ALIAS_JSON = '/tmp/alias.json';
