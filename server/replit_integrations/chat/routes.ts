@@ -3,25 +3,19 @@ import OpenAI from "openai";
 import { chatStorage } from "./storage";
 import { storage } from "../../storage";
 import { logOpenAIUsage } from "../../ai-usage";
+import { requireAuth } from "../../auth-middleware";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
-async function getDemoUser() {
-  let user = await storage.getUserByUsername("demo");
-  if (!user) {
-    user = await storage.createUser({ username: "demo", password: "demo" });
-  }
-  return user;
-}
 
 export function registerChatRoutes(app: Express): void {
   // Get all conversations
-  app.get("/api/conversations", async (req: Request, res: Response) => {
+  app.get("/api/conversations", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getDemoUser();
+      const user = req.user!;
       const conversations = await chatStorage.getAllConversations(user.id);
       res.json(conversations);
     } catch (error) {
@@ -31,9 +25,9 @@ export function registerChatRoutes(app: Express): void {
   });
 
   // Get single conversation with messages
-  app.get("/api/conversations/:id", async (req: Request, res: Response) => {
+  app.get("/api/conversations/:id", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getDemoUser();
+      const user = req.user!;
       const id = req.params.id;
       const conversation = await chatStorage.getConversation(id, user.id);
       if (!conversation) {
@@ -48,10 +42,10 @@ export function registerChatRoutes(app: Express): void {
   });
 
   // Create new conversation
-  app.post("/api/conversations", async (req: Request, res: Response) => {
+  app.post("/api/conversations", requireAuth, async (req: Request, res: Response) => {
     try {
       const { title } = req.body;
-      const user = await getDemoUser();
+      const user = req.user!;
       const conversation = await chatStorage.createConversation(user.id, title || "New Chat");
       res.status(201).json(conversation);
     } catch (error) {
@@ -61,9 +55,9 @@ export function registerChatRoutes(app: Express): void {
   });
 
   // Delete conversation
-  app.delete("/api/conversations/:id", async (req: Request, res: Response) => {
+  app.delete("/api/conversations/:id", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await getDemoUser();
+      const user = req.user!;
       const id = req.params.id;
       await chatStorage.deleteConversation(id, user.id);
       res.status(204).send();
@@ -74,11 +68,11 @@ export function registerChatRoutes(app: Express): void {
   });
 
   // Send message and get AI response (streaming)
-  app.post("/api/conversations/:id/messages", async (req: Request, res: Response) => {
+  app.post("/api/conversations/:id/messages", requireAuth, async (req: Request, res: Response) => {
     const conversationId = req.params.id;
     try {
       const { content } = req.body;
-      const user = await getDemoUser();
+      const user = req.user!;
       const conversation = await chatStorage.getConversation(conversationId, user.id);
 
       if (!conversation) {
