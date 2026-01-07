@@ -1,14 +1,20 @@
 import { getTransactions } from "@/lib/actions/transactions";
 import { TransactionList } from "./transaction-list";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default async function TransactionsPage() {
   const transactions = await getTransactions();
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Transactions</h1>
-      </div>
+    <div className="space-y-6">
+      <PageHeader 
+        title="Transactions" 
+        description="Scan, filter, and manage your financial records."
+        breadcrumbs={[
+          { label: "Overview", href: "/dashboard" },
+          { label: "Transactions" }
+        ]}
+      />
 
       <TransactionList transactions={transactions.map(tx => ({
         ...tx,

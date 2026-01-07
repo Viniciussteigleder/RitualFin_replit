@@ -81,7 +81,7 @@ export async function uploadIngestionFile(formData: FormData) {
       .where(eq(ingestionBatches.id, batch.id));
 
     revalidatePath("/uploads");
-    return { success: true, newItems: newCount, duplicates: dupCount };
+    return { success: true, batchId: batch.id, newItems: newCount, duplicates: dupCount };
 
   } catch (error: any) {
     console.error("Ingestion error:", error);

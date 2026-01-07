@@ -38,14 +38,28 @@ const NAV_CLUSTER_DEFS = [
     id: "overview",
     items: [
       { id: "dashboard", icon: LayoutDashboard, href: "/dashboard", labelKey: "dashboard", descriptionKey: "dashboard" },
-      { id: "calendar", icon: Calendar, href: "/calendar", labelKey: "calendar", descriptionKey: "calendar" },
+      { id: "insights", icon: TrendingUp, href: "/insights", labelKey: "insights", descriptionKey: "insights" },
     ]
   },
   {
-    id: "action",
+    id: "transactions",
+    items: [
+      { id: "transactions", icon: Receipt, href: "/transactions", labelKey: "transactions", descriptionKey: "transactions" },
+      { id: "accounts", icon: Wallet, href: "/accounts", labelKey: "accounts", descriptionKey: "accounts" },
+    ]
+  },
+  {
+    id: "imports",
+    items: [
+      { id: "upload", icon: Upload, href: "/uploads", labelKey: "upload", descriptionKey: "upload" },
+    ]
+  },
+  {
+    id: "classification",
     items: [
       { id: "confirm", icon: ListChecks, href: "/confirm", labelKey: "confirm", descriptionKey: "confirm" },
-      { id: "transactions", icon: Receipt, href: "/transactions", labelKey: "transactions", descriptionKey: "transactions" },
+      { id: "rules", icon: Filter, href: "/rules", labelKey: "rules", descriptionKey: "rules" },
+      { id: "ai-keywords", icon: Brain, href: "/ai-keywords", labelKey: "aiKeywords", descriptionKey: "aiKeywords" },
     ]
   },
   {
@@ -56,22 +70,9 @@ const NAV_CLUSTER_DEFS = [
     ]
   },
   {
-    id: "automation",
-    items: [
-      { id: "rules", icon: Filter, href: "/rules", labelKey: "rules", descriptionKey: "rules" },
-      { id: "ai-keywords", icon: Brain, href: "/ai-keywords", labelKey: "aiKeywords", descriptionKey: "aiKeywords" },
-    ]
-  },
-  {
-    id: "operations",
-    items: [
-      { id: "upload", icon: Upload, href: "/uploads", labelKey: "upload", descriptionKey: "upload" },
-      { id: "accounts", icon: Wallet, href: "/accounts", labelKey: "accounts", descriptionKey: "accounts" },
-    ]
-  },
-  {
     id: "collaboration",
     items: [
+      { id: "calendar", icon: Calendar, href: "/calendar", labelKey: "calendar", descriptionKey: "calendar" },
       { id: "rituals", icon: CalendarCheck, href: "/rituals", labelKey: "rituals", descriptionKey: "rituals" },
     ]
   },
@@ -188,6 +189,7 @@ export function Sidebar() {
           isCollapsed ? "px-4 justify-center" : "px-5"
         )}>
           <Link href="/dashboard" className="flex items-center gap-3">
+            <img src="/ritualfin-logo.png" alt="RitualFin Logo" className="h-8 w-8 object-contain" />
             {!isCollapsed && (
               <span className="font-bold text-lg text-white tracking-tight">RitualFin</span>
             )}

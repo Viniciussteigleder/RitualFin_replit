@@ -18,6 +18,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     verificationTokensTable: verificationTokens,
   }),
   session: { strategy: "database" }, // Explicitly use database sessions
+  debug: process.env.NODE_ENV === "development",
   providers: [
     Google({
       clientId: process.env.AUTH_GOOGLE_ID || process.env.GOOGLE_CLIENT_ID,

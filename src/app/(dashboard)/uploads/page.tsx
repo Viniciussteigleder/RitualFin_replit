@@ -2,11 +2,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CSVForm, ScreenshotForm } from "./forms";
 import { BatchList } from "./batch-list";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default function UploadsPage() {
   return (
-    <div className="p-6 space-y-6">
-        <h1 className="text-3xl font-bold">Data Ingestion</h1>
+    <div className="space-y-6">
+      <PageHeader 
+        title="Imports" 
+        description="Connect your bank statements or upload evidence."
+        breadcrumbs={[
+          { label: "Imports" }
+        ]}
+      />
         
         <Tabs defaultValue="csv" className="w-full">
             <TabsList>

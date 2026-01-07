@@ -7,52 +7,97 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UploadCloud, Camera } from "lucide-react";
 import { createWorker } from "tesseract.js";
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
-const initialState = { error: "", success: false, newItems: 0, duplicates: 0 };
+export function CSVForm({ onUploadSuccess }: { onUploadSuccess?: (batchId: string) => void }) {
+    const [isDragging, setIsDragging] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button disabled={pending} className="w-full" data-testid="upload-csv-btn">
-      {pending ? (
-        <span className="flex items-center gap-2">Processing...</span>
-      ) : (
-        <span className="flex items-center gap-2">
-          <UploadCloud className="h-4 w-4" /> Upload CSV
-        </span>
-      )}
-    </Button>
-  );
-}
+    async function handleFile(file: File) {
+        if (!file.name.endsWith(".csv")) {
+            toast.error("Please select a CSV file");
+            return;
+        }
 
-export function CSVForm() {
-    const [state, formAction] = useFormState(async (_prev: any, formData: FormData) => {
-        const result = await uploadIngestionFile(formData);
-        return result;
-     }, initialState);
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            const result = await uploadIngestionFile(formData);
+            if (result.success && result.batchId) {
+                toast.success("File uploaded and parsed successfully!");
+                onUploadSuccess?.(result.batchId);
+            } else {
+                toast.error(result.error || "Upload failed");
+            }
+        } catch (e) {
+            toast.error("An unexpected error occurred");
+        } finally {
+            setIsUploading(false);
+        }
+    }
 
     return (
-        <form action={formAction} className="space-y-4 max-w-md">
-            <div className="grid w-full items-center gap-1.5">
-                <Input id="file" name="file" type="file" accept=".csv" required />
+        <div 
+            className={cn(
+                "border-2 border-dashed rounded-2xl p-12 text-center transition-all cursor-pointer group",
+                isDragging ? "border-primary bg-primary/5 scale-[0.99]" : "border-slate-200 hover:border-slate-300 hover:bg-slate-50",
+                isUploading && "opacity-50 pointer-events-none"
+            )}
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={(e) => {
+                e.preventDefault();
+                setIsDragging(false);
+                const file = e.dataTransfer.files[0];
+                if (file) handleFile(file);
+            }}
+            onClick={() => fileInputRef.current?.click()}
+        >
+            <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept=".csv"
+                onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFile(file);
+                }}
+            />
+            
+            <div className="flex flex-col items-center gap-4">
+                <div className={cn(
+                    "p-4 rounded-full bg-slate-100 text-slate-400 transition-all group-hover:scale-110 group-hover:bg-primary/10 group-hover:text-primary",
+                    isDragging && "scale-110 bg-primary/20 text-primary"
+                )}>
+                    {isUploading ? (
+                        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    ) : (
+                        <UploadCloud className="h-8 w-8" />
+                    )}
+                </div>
+                <div>
+                    <h3 className="text-lg font-bold text-slate-900">
+                        {isUploading ? "Uploading statement..." : "Click or drag your CSV statement"}
+                    </h3>
+                    <p className="text-slate-500 text-sm mt-1 max-w-[280px] mx-auto leading-relaxed">
+                        Supports Miles & More, Amex, and Sparkasse formats. (Max 10MB)
+                    </p>
+                </div>
+                {!isUploading && (
+                    <Button variant="outline" className="mt-2 rounded-xl border-slate-200 font-bold px-8 shadow-sm group-hover:bg-white group-hover:border-primary group-hover:text-primary transition-all">
+                        Select File
+                    </Button>
+                )}
             </div>
-            <SubmitButton />
-            
-            {state?.error && (
-                <div className="p-3 bg-destructive/10 text-destructive rounded-md text-sm">
-                    {state.error}
-                </div>
-            )}
-            
-            {state?.success && (
-                <div className="p-3 bg-green-50 text-green-700 rounded-md text-sm">
-                    Success! Imported {state.newItems} new items ({state.duplicates} duplicates skipped).
-                </div>
-            )}
-        </form>
+        </div>
     );
 }
+
 
 export function ScreenshotForm() {
     const [ocrStatus, setOcrStatus] = useState("idle");

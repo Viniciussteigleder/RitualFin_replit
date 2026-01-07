@@ -1,6 +1,7 @@
 import { getTransactions } from "@/lib/actions/transactions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowUpRight, ArrowDownRight, Activity } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default async function DashboardPage() {
   const transactions = await getTransactions(5); // Get last 5
@@ -12,8 +13,11 @@ export default async function DashboardPage() {
   const expenses = allTx.filter(tx => tx.amount < 0).reduce((acc, tx) => acc + Number(tx.amount), 0);
 
   return (
-    <div className="space-y-6 p-6">
-      <h1 className="text-3xl font-bold">Dashboard</h1>
+    <div className="space-y-6">
+      <PageHeader 
+        title="Dashboard" 
+        description="Your monthly financial health overview."
+      />
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>

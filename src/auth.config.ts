@@ -7,17 +7,13 @@ export const authConfig = {
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const isOnDashboard = nextUrl.pathname.startsWith("/dashboard");
-      const isOnLogin = nextUrl.pathname.startsWith("/login");
+      const isAuthPage = nextUrl.pathname.startsWith("/login") || nextUrl.pathname.startsWith("/signup");
       
-      // Allow legacy API routes to pass through (handled by express if rewrites fail, but for Next.js app)
-      // Actually legacy routes are on port 5001 usually, but if ported:
-      
-      if (isOnDashboard) {
+      if (!isAuthPage) {
         if (isLoggedIn) return true;
         return false; // Redirect to login
-      } else if (isLoggedIn && isOnLogin) {
-        return Response.redirect(new URL("/dashboard", nextUrl));
+      } else if (isLoggedIn && isAuthPage) {
+        return Response.redirect(new URL("/", nextUrl));
       }
       return true;
     },

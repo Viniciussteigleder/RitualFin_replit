@@ -665,7 +665,39 @@ Each contract includes route/placement, JTBD, data dependencies, inputs/outputs,
 - Ticket: Forecast calendar view with confidence display.
 - DoD: recurrence signals visible in transaction detail.
 
-## 15. Open Decisions / Follow-ups
+## 15. UI Upgrade Backlog (Practical Redesign)
+
+### 15.1 Package A — Navigation + IA Polish
+- [ ] **Sidebar IA Reorg**: Move Rules to "Classification", group Uploads under "Imports".
+- [ ] **Consistent Headers**: Add a standardized `PageHeader` component with title, breadcrumbs, and primary action.
+- [ ] **System Status Banner**: Implement a global status banner for system-wide alerts (e.g., sync status).
+- [ ] **Active State Polish**: Improve sidebar active state with subtle glow and refined typography.
+
+### 15.2 Package B — Transactions + Drawer
+- [ ] **Data Density**: Reduce vertical padding in table rows for high-density view.
+- [ ] **Mono Amounts**: Use tabular-nums (monospace) for all currency values to ensure alignment.
+- [ ] **Drawer Audit Trail**: Add a collapsible "History" section in the transaction drawer showing all changes.
+- [ ] **Empty States**: Replace blank screens with "Actionable Empty States" (e.g., "No transactions – Import CSV").
+
+### 15.3 Package C — Imports + Parsing Report
+- [ ] **Import Wizard**: Implement a 3-step wizard (Upload -> Preview -> Confirm).
+- [ ] **Parsing Report**: Add a dedicated section showing detected encoding, delimiter, and row error samples.
+- [ ] **Conflict resolution**: UI for handling duplicate transactions before they hit the DB.
+
+### 15.4 Package D — Rules + Review Queue
+- [ ] **Bulk Actions**: Add multi-select checkboxes to the review queue for rapid classification.
+- [ ] **Impact Preview**: Show "X transactions will be affected" before saving a rule change.
+- [ ] **Keyword Governance**: Client-side validation for ";" separator.
+
+### 15.5 Package E — Budgets/Forecast/Recurrence
+- [ ] **Confidence Metrics**: Add a "Confidence" badge to recurring payments (High/Med/Low).
+- [ ] **Rationale Tooltips**: "Why is this recurring?" tooltips showing historical dates.
+
+### 15.6 Package F — Localization + Microcopy
+- [ ] **Triplet Enforcement**: Centralize all strings in `src/lib/i18n` and ensure PT/DE/EN parity.
+- [ ] **Accent Safety**: Audit all PT-BR strings for correct diacritics.
+
+## 16. Open Decisions / Follow-ups
 - Finalize localization storage format (JSON files vs DB-backed).
 - Confirm forecast data source (calendar_events vs recurring_group from transactions).
 - Decide conflict resolution placement (inline wizard vs standalone screen).

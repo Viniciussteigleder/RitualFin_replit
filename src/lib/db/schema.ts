@@ -27,9 +27,12 @@ export const ingestionBatchStatusEnum = pgEnum("ingestion_batch_status", ["proce
 // Users table
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
+  name: text("name"), // Auth.js standard
+  username: text("username").unique(), // Changed to nullable
   passwordHash: text("password_hash"), // Secure hashed password
   email: text("email").unique(),
+  emailVerified: timestamp("email_verified", { mode: "date" }), // Auth.js standard
+  image: text("image"), // Auth.js standard
   googleId: text("google_id").unique(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

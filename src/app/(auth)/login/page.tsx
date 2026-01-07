@@ -26,9 +26,7 @@ function LoginContent() {
       <div className="w-full max-w-sm space-y-8 bg-white p-8 rounded-xl shadow-lg border border-border/50">
         <div className="text-center space-y-2">
           <div className="flex justify-center">
-            <div className="p-3 bg-primary/10 rounded-full">
-              <Users className="h-6 w-6 text-primary" />
-            </div>
+            <img src="/ritualfin-logo.png" alt="RitualFin Logo" className="h-16 w-16 mb-2" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Welcome to RitualFin</h1>
           <p className="text-sm text-muted-foreground">
