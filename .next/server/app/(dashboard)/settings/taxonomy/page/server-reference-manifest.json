@@ -1,0 +1,35 @@
+{
+  "node": {
+    "00f9c426d2412404caaf150ede9c675cfade1daad5": {
+      "workers": {
+        "app/(dashboard)/settings/taxonomy/page": {
+          "moduleId": 77591,
+          "async": true,
+          "exportedName": "getTaxonomyTree",
+          "filename": "src/lib/actions/taxonomy.ts"
+        }
+      },
+      "layer": {
+        "app/(dashboard)/settings/taxonomy/page": "rsc"
+      },
+      "exportedName": "getTaxonomyTree",
+      "filename": "src/lib/actions/taxonomy.ts"
+    },
+    "4029240b9f5f7e76345e991e577656abae86ac9932": {
+      "workers": {
+        "app/(dashboard)/settings/taxonomy/page": {
+          "moduleId": 77591,
+          "async": true,
+          "exportedName": "createLevel1",
+          "filename": "src/lib/actions/taxonomy.ts"
+        }
+      },
+      "layer": {
+        "app/(dashboard)/settings/taxonomy/page": "rsc"
+      },
+      "exportedName": "createLevel1",
+      "filename": "src/lib/actions/taxonomy.ts"
+    }
+  },
+  "edge": {}
+}

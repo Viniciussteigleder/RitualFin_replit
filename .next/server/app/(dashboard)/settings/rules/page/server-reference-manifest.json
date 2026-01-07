@@ -1,0 +1,50 @@
+{
+  "node": {
+    "0098dadc982ce31f86c900227d53ab42740e48baaf": {
+      "workers": {
+        "app/(dashboard)/settings/rules/page": {
+          "moduleId": 72600,
+          "async": true,
+          "exportedName": "getRules",
+          "filename": "src/lib/actions/rules.ts"
+        }
+      },
+      "layer": {
+        "app/(dashboard)/settings/rules/page": "rsc"
+      },
+      "exportedName": "getRules",
+      "filename": "src/lib/actions/rules.ts"
+    },
+    "403c284cc4c30894195431ad16bc5addcaadb17ed6": {
+      "workers": {
+        "app/(dashboard)/settings/rules/page": {
+          "moduleId": 72600,
+          "async": true,
+          "exportedName": "createRule",
+          "filename": "src/lib/actions/rules.ts"
+        }
+      },
+      "layer": {
+        "app/(dashboard)/settings/rules/page": "rsc"
+      },
+      "exportedName": "createRule",
+      "filename": "src/lib/actions/rules.ts"
+    },
+    "40dbc5236911bb8712ca108c1b9a5bb87de662f8b6": {
+      "workers": {
+        "app/(dashboard)/settings/rules/page": {
+          "moduleId": 72600,
+          "async": true,
+          "exportedName": "testRuleCategorization",
+          "filename": "src/lib/actions/rules.ts"
+        }
+      },
+      "layer": {
+        "app/(dashboard)/settings/rules/page": "rsc"
+      },
+      "exportedName": "testRuleCategorization",
+      "filename": "src/lib/actions/rules.ts"
+    }
+  },
+  "edge": {}
+}

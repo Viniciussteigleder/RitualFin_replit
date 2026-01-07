@@ -1,0 +1,5 @@
+1:"$Sreact.fragment"
+2:I[97367,["/_next/static/chunks/da08699c54aba98f.js","/_next/static/chunks/8c2dc2f651f02e6c.js","/_next/static/chunks/66f59dd126b4f3c7.js","/_next/static/chunks/7340adf74ff47ec0.js"],"ViewportBoundary"]
+3:I[97367,["/_next/static/chunks/da08699c54aba98f.js","/_next/static/chunks/8c2dc2f651f02e6c.js","/_next/static/chunks/66f59dd126b4f3c7.js","/_next/static/chunks/7340adf74ff47ec0.js"],"MetadataBoundary"]
+4:"$Sreact.suspense"
+0:{"buildId":"-cXRTz5mxR1Zr6QkYoJnJ","rsc":["$","$1","h",{"children":[["$","meta",null,{"name":"robots","content":"noindex"}],["$","$L2",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]}],["$","div",null,{"hidden":true,"children":["$","$L3",null,{"children":["$","$4",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"RitualFin"}],["$","meta","1",{"name":"description","content":"Financial Ritual Orchestrator"}]]}]}]}],null]}],"loading":null,"isPartial":false}
