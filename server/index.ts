@@ -14,6 +14,7 @@ import { pool, isDatabaseConfigured } from "./db";
 import { passport } from "./passport";
 
 const app = express();
+app.set("trust proxy", 1); // Trust first proxy (Render load balancer) to get correct protocol
 const httpServer = createServer(app);
 
 // Environment setup
