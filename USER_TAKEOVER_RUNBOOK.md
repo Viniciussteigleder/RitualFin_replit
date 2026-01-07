@@ -7,7 +7,7 @@
 ```bash
 # Database (Render Production Instance)
 # REQUIRED: Use this exact connection string to stop using Supabase locally
-DATABASE_URL="postgresql://ritualfin_db_user:ipuDeOA2qe4hlGuM5iUKOVy9DBEyHPPT@dpg-d5e6moje5dus73es5aug-a.frankfurt-postgres.render.com/ritualfin_db?sslmode=require"
+DATABASE_URL="<YOUR_RENDER_EXTERNAL_DB_URL>"
 
 # Server Configuration
 PORT=5001
