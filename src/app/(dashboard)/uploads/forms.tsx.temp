@@ -1,0 +1,14 @@
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button disabled={pending} className="w-full" data-testid="upload-csv-btn">
+      {pending ? (
+        <span className="flex items-center gap-2">Processing...</span>
+      ) : (
+        <span className="flex items-center gap-2">
+          <UploadCloud className="h-4 w-4" /> Upload CSV
+        </span>
+      )}
+    </Button>
+  );
+}

@@ -1,0 +1,2 @@
+Auftragskonto;Buchungstag;Valutadatum;Buchungstext;Verwendungszweck;Begünstigter/Zahlungspflichtiger;Kontonummer/IBAN;BLZ/BIC;Betrag;Währung;Info
+DE123456789;01.01.24;01.01.24;Kartenzahlung;REWE SAGT DANKE;REWE;DE987654321;GENODEF1MUC;-42,42;EUR;Umsatz gebucht

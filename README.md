@@ -90,6 +90,22 @@ Logo refresh:
 Settings → **Aliases & Logos** → “Atualizar logos”.
 Logos are stored under `public/logos/<user_id>/<slug>.ext` (PNG/JPG/SVG, max 2MB).
 
+## Getting Started
+
+1.  **Environment Setup**: Copy `.env.example` to `.env.local` and fill in your database and auth credentials.
+2.  **Database**: Run migrations with `npm run db:push`.
+3.  **Run Dev**: `npm run dev`.
+4.  **Testing**: See [Testing Guide](docs/TESTING.md).
+
+## Critical Paths & E2E Tests
+
+The application features a robust E2E test suite using Playwright covering:
+- Authentication (Signup/Login)
+- Data Ingestion (CSV upload, preview, commit, rollback)
+- Screenshot Evidence (OCR & Transaction Enrichment)
+
+Run tests with `npx playwright test`.
+
 ## Excel Roundtrip
 
 **Categories & Rules**

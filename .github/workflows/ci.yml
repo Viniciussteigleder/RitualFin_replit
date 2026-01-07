@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    name: Build & Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+        env:
+          # Build requires basic vars (public vars) or mock
+          # We skip strict validation usually or provide mocks
+          AUTH_SECRET: "mock_secret_for_build"
+          AUTH_URL: "http://localhost:3000"
+          DATABASE_URL: "postgresql://mock:mock@localhost:5432/mock" 
+          # Note: Next.js build might try to connect to DB if generating static pages relies on it.
+          # RitualFin seems to use dynamic pages mostly or pure static.
+          # If it fails, we need to mock DB or set ignoreBuildErrors in next.config.ts (which is set)
