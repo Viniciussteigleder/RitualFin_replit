@@ -45,6 +45,21 @@
       "exportedName": "$$RSC_SERVER_ACTION_0",
       "filename": "src/app/(dashboard)/uploads/batch-list.tsx"
     },
+    "40b9fb93cd7dba4f422d8de7ece85a473293a376fe": {
+      "workers": {
+        "app/(dashboard)/uploads/page": {
+          "moduleId": 64953,
+          "async": true,
+          "exportedName": "$$RSC_SERVER_ACTION_1",
+          "filename": "src/app/(dashboard)/uploads/batch-list.tsx"
+        }
+      },
+      "layer": {
+        "app/(dashboard)/uploads/page": "rsc"
+      },
+      "exportedName": "$$RSC_SERVER_ACTION_1",
+      "filename": "src/app/(dashboard)/uploads/batch-list.tsx"
+    },
     "0090d12de9c7e47325da153b3bc9efadef0aa67f80": {
       "workers": {
         "app/(dashboard)/uploads/page": {

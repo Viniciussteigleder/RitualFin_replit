@@ -46,16 +46,17 @@ export async function registerUser(prevState: string | undefined, formData: Form
     await signIn("credentials", {
       email,
       password,
-      redirectTo: "/dashboard",
+      redirectTo: "/",
     });
     
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.digest?.startsWith("NEXT_REDIRECT")) throw error;
     if (error instanceof AuthError) {
       switch (error.type) {
         case "CredentialsSignin":
           return "Invalid credentials.";
         default:
-          throw error; // Rethrow to let NextAuth handle redirect
+          return "Authentication failed.";
       }
     }
     console.error("Registration error:", error);

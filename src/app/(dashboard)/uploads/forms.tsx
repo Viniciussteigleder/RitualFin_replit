@@ -14,7 +14,7 @@ const initialState = { error: "", success: false, newItems: 0, duplicates: 0 };
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <Button disabled={pending} className="w-full">
+    <Button disabled={pending} className="w-full" data-testid="upload-csv-btn">
       {pending ? (
         <span className="flex items-center gap-2">Processing...</span>
       ) : (
@@ -66,14 +66,23 @@ export function ScreenshotForm() {
         if (!file) return;
 
         try {
-            const worker = await createWorker("eng"); // Setup Tesseract
-            await worker.setParameters({
-                tessedit_char_whitelist: '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,:- '
-            });
-            const ret = await worker.recognize(file);
-            const text = ret.data.text;
+            let text = "";
+            // @ts-ignore - Playwright mock
+            if (typeof window !== "undefined" && window.__MOCK_OCR_TEXT__) {
+                // @ts-ignore
+                text = window.__MOCK_OCR_TEXT__;
+                setMessage("Using mock OCR data...");
+            } else {
+                const worker = await createWorker("eng"); // Setup Tesseract
+                await worker.setParameters({
+                    tessedit_char_whitelist: '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,:- '
+                });
+                const ret = await worker.recognize(file);
+                text = ret.data.text;
+                await worker.terminate();
+            }
+            
             setMessage("OCR Complete. Uploading...");
-            await worker.terminate();
 
             // Append text to formData
             formData.set("ocrText", text);
@@ -100,7 +109,7 @@ export function ScreenshotForm() {
                 <Input id="screenshot" name="file" type="file" accept="image/*" required />
             </div>
             
-            <Button disabled={ocrStatus === "processing"} className="w-full">
+            <Button disabled={ocrStatus === "processing"} className="w-full" data-testid="upload-screenshot-btn">
                 {ocrStatus === "processing" ? "Scanning..." : (
                     <span className="flex items-center gap-2">
                         <Camera className="h-4 w-4" /> Scan & Upload
