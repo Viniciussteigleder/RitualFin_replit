@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
   experimental: {},
   // @ts-ignore - Next.js 16/Turbopack custom experimental key
   turbopack: {
-    root: ".",
+    root: process.cwd(),
   },
 };
 
