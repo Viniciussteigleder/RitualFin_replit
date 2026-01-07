@@ -12,6 +12,7 @@ playwright-report
 .env.local
 .env.*.local
 .vercel/
+.next/
 
 # Claude Code local settings
 .claude/settings.local.json
