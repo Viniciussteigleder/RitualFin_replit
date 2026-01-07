@@ -3549,8 +3549,11 @@ export const layoutCopy = {
       toggleGroup: "Alternar grupo {group}",
       groups: {
         overview: "Visão Geral",
-        operations: "Operações",
+        action: "Ações",
         planning: "Planejamento",
+        automation: "Automação",
+        operations: "Operações",
+        collaboration: "Colaboração",
         rituals: "Rituais"
       },
       items: {
@@ -3596,8 +3599,11 @@ export const layoutCopy = {
       toggleGroup: "Gruppe {group} umschalten",
       groups: {
         overview: "Übersicht",
-        operations: "Operationen",
+        action: "Aktionen",
         planning: "Planung",
+        automation: "Automatisierung",
+        operations: "Operationen",
+        collaboration: "Kollaboration",
         rituals: "Rituale"
       },
       items: {
@@ -3643,8 +3649,11 @@ export const layoutCopy = {
       toggleGroup: "Toggle {group} group",
       groups: {
         overview: "Overview",
-        operations: "Operations",
+        action: "Actions",
         planning: "Planning",
+        automation: "Automation",
+        operations: "Operations",
+        collaboration: "Collaboration",
         rituals: "Rituals"
       },
       items: {

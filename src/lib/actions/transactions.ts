@@ -6,6 +6,24 @@ import { transactions } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
+export async function getPendingTransactions() {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+
+  return await db.query.transactions.findMany({
+    where: (tx, { eq, and }) => and(eq(tx.userId, session.user.id), eq(tx.needsReview, true)),
+    orderBy: [desc(transactions.paymentDate)],
+    with: {
+      rule: true,
+      evidenceLinks: {
+        with: {
+          ingestionItem: true
+        }
+      }
+    }
+  });
+}
+
 export async function getTransactions(limit = 50) {
   const session = await auth();
   if (!session?.user?.id) return [];
@@ -13,7 +31,7 @@ export async function getTransactions(limit = 50) {
   // TODO: Add filtering and pagination support
   return await db.query.transactions.findMany({
     where: (tx, { eq }) => eq(tx.userId, session.user.id),
-    orderBy: [desc(transactions.date)],
+    orderBy: [desc(transactions.paymentDate)],
     limit: limit,
     with: {
       rule: true,
@@ -39,7 +57,7 @@ export async function updateTransactionCategory(
       category2: data.category2,
       category3: data.category3,
       needsReview: false, // Auto-confirm on manual edit
-      isManual: true
+      manualOverride: true
     })
     .where(eq(transactions.id, transactionId));
 

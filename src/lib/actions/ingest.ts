@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { ingestionBatches, ingestionItems } from "@/lib/db/schema";
+import { ingestionBatches, ingestionItems, transactions, rules } from "@/lib/db/schema";
 import { parseIngestionFile } from "@/lib/ingest";
 import { generateFingerprint } from "@/lib/ingest/fingerprint";
 import { eq } from "drizzle-orm";
@@ -105,8 +105,8 @@ export async function getIngestionBatches() {
     });
 }
 
-import { transactions, rules } from "@/lib/db/schema";
-import { categorizeTransaction } from "@/lib/rules/engine";
+import { getAICategorization } from "@/lib/ai/openai";
+import { getTaxonomyTree } from "./taxonomy";
 
 export async function commitBatch(batchId: string) {
     const session = await auth();
@@ -120,42 +120,67 @@ export async function commitBatch(batchId: string) {
     if (!batch) return { error: "Batch not found" };
     if (batch.status === "committed") return { error: "Batch already imported" };
 
-    // Fetch user rules for categorization
+    // Fetch user rules and taxonomy for categorization
     const userRules = await db.query.rules.findMany({
         where: eq(rules.userId, session.user.id)
     });
+    
+    const taxonomy = await getTaxonomyTree();
+    const taxonomyContext = JSON.stringify(taxonomy);
 
     let importedCount = 0;
 
     for (const item of batch.items) {
         if (item.status === "imported") continue;
 
-        const data = item.parsedData as any; // Typed as any for now, should be ParsedTransaction
+        const data = item.parsedData as any;
         
-        // Categorize
-        const categorization = categorizeTransaction(data.descNorm || data.description, userRules);
+        // 1. Deterministic Rule Categorization
+        let categorization = categorizeTransaction(data.descNorm || data.description, userRules);
+        let aiResult = null;
+
+        // 2. AI Fallback (only if no rules match)
+        if (!categorization.ruleIdApplied && process.env.OPENAI_API_KEY) {
+            aiResult = await getAICategorization(data.descNorm || data.descRaw || data.description, taxonomyContext);
+            if (aiResult && aiResult.confidence > 0.7) {
+                // Map AI result to categorization structure
+                categorization = {
+                    ...categorization,
+                    leafId: aiResult.suggested_leaf_id,
+                    confidence: Math.round(aiResult.confidence * 100),
+                    needsReview: aiResult.confidence < 0.9,
+                    suggestedKeyword: aiResult.rationale
+                };
+            }
+        }
 
         // Prepare Transaction
         const newTx = {
             userId: session.user.id,
-            accountSource: data.accountSource || "Unknown",
-            date: new Date(data.bookingDate || data.date),
-            description: data.simpleDesc || data.descRaw || "No Description",
-            amount: data.amount.toString(),
+            accountSource: data.accountSource || batch.source || "Unknown",
+            paymentDate: new Date(data.paymentDate || data.date),
+            bookingDate: data.bookingDate ? new Date(data.bookingDate) : null,
+            descRaw: data.descRaw || data.description || "No Description",
+            descNorm: data.descNorm || data.simpleDesc || data.description || "No Description",
+            amount: parseFloat(data.amount),
             currency: data.currency || "EUR",
-            category1: categorization.category1 || "Outros",
+            category1: categorization.category1 || aiResult?.extracted_merchants?.[0] || "Outros",
             category2: categorization.category2,
             category3: categorization.category3,
             needsReview: categorization.needsReview,
-            isManual: false,
+            manualOverride: false,
             type: categorization.type || (data.amount < 0 ? "Despesa" : "Receita"),
             fixVar: categorization.fixVar || "Variável",
             ruleIdApplied: categorization.ruleIdApplied,
-            source: batch.source || "upload"
+            source: batch.source || "upload",
+            key: item.fingerprint, // Use item's fingerprint as the unique key
+            leafId: categorization.leafId,
+            confidence: categorization.confidence,
+            suggestedKeyword: categorization.suggestedKeyword || aiResult?.rationale
         };
 
         // Insert Transaction
-        await db.insert(transactions).values(newTx);
+        await db.insert(transactions).values(newTx).onConflictDoNothing();
 
         // Update Item Status
         await db.update(ingestionItems)

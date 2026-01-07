@@ -23,17 +23,24 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Pull Vercel env for CI
+        run: |
+          npm i -g vercel
+          vercel link --yes --token ${{ secrets.VERCEL_TOKEN }}
+          vercel env pull --yes --environment preview .env.ci --token ${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
       - name: Lint
         run: npm run lint
 
       - name: Build
-        run: npm run build
+        run: |
+          set -a
+          [ -f .env.ci ] && . ./.env.ci
+          set +a
+          npm run build
         env:
-          # Build requires basic vars (public vars) or mock
-          # We skip strict validation usually or provide mocks
-          AUTH_SECRET: "mock_secret_for_build"
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET || 'mock_secret_for_build' }}
           AUTH_URL: "http://localhost:3000"
-          DATABASE_URL: "postgresql://mock:mock@localhost:5432/mock" 
-          # Note: Next.js build might try to connect to DB if generating static pages relies on it.
-          # RitualFin seems to use dynamic pages mostly or pure static.
-          # If it fails, we need to mock DB or set ignoreBuildErrors in next.config.ts (which is set)

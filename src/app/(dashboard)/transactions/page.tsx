@@ -10,7 +10,11 @@ export default async function TransactionsPage() {
         <h1 className="text-3xl font-bold">Transactions</h1>
       </div>
 
-      <TransactionList transactions={transactions} />
+      <TransactionList transactions={transactions.map(tx => ({
+        ...tx,
+        date: tx.paymentDate,
+        description: tx.descNorm || tx.descRaw
+      }))} />
     </div>
   );
 }
