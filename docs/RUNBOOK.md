@@ -38,15 +38,29 @@ If `OPENAI_API_KEY` is missing:
 - Server actions will return `null` or skip AI categorization.
 - UI elements like "Run AI Analysis" will be disabled or show a warning.
 
+### 1.3 Vercel Deployment Hardening
+For **Auth.js v5** to work on Vercel, the following environment variables **MUST** be set in Vercel (Project Settings -> Environment Variables) for both **Production** and **Preview**:
+
+- `AUTH_SECRET`: Generate locally and paste (must match across app instances if using cookies, but for database sessions it's the key for signing).
+- `AUTH_URL`: `https://ritual-fin-replit.vercel.app` (No trailing slash).
+- `AUTH_TRUST_HOST`: `true`
+- `AUTH_GOOGLE_ID`: From Google Cloud.
+- `AUTH_GOOGLE_SECRET`: From Google Cloud.
+- `DATABASE_URL`: Connection string.
+
+## 2. AI Features End-to-End
+... (keep existing)
+
 ## 3. Google OAuth Setup
 Ensure these Authorized Redirect URIs are in Google Cloud Console:
 - `http://localhost:3000/api/auth/callback/google`
 - `https://ritual-fin-replit.vercel.app/api/auth/callback/google`
 
-### Troubleshooting "Request Invalid":
-1. Verify `AUTH_URL` matches the environment you are testing.
-2. Ensure the `redirect_uri` in the browser URL matches exactly what is in the Google Console.
-3. Check that the project is in "External" and "In Production" (or Test mode with your email added).
+### Troubleshooting "Configuration" Error:
+1. **Logs**: Go to Vercel Dashboard -> Logs. Search for `/api/auth`.
+2. **Diagnostic Endpoint**: Hit `https://ritual-fin-replit.vercel.app/api/auth/debug` to verify which env variables are detected by the server.
+3. **Runtime**: Ensure `src/app/api/auth/[...nextauth]/route.ts` has `export const runtime = "nodejs"`.
+4. **JavaScript Origins**: Ensure `https://ritual-fin-replit.vercel.app` is in Authorized JavaScript origins.
 
 ## 4. Deployment
 Deployments are triggered by pushes to `main`.

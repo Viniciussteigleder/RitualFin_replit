@@ -18,7 +18,8 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     verificationTokensTable: verificationTokens,
   }),
   session: { strategy: "database" }, // Explicitly use database sessions
-  debug: process.env.NODE_ENV === "development",
+  debug: process.env.NODE_ENV === "development" || process.env.DEBUG_AUTH === "true",
+  trustHost: true, // Equivalent to AUTH_TRUST_HOST=true, useful on Vercel
   providers: [
     Google({
       clientId: process.env.AUTH_GOOGLE_ID || process.env.GOOGLE_CLIENT_ID,
