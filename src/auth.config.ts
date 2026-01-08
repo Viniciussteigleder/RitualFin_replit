@@ -4,6 +4,8 @@ export const authConfig = {
   pages: {
     signIn: "/login",
   },
+  trustHost: true,
+  session: { strategy: "jwt" },
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
@@ -17,12 +19,17 @@ export const authConfig = {
       }
       return true;
     },
-    session({ session, user, token }) {
-       // Add userId to session
-       if (session.user) {
-         session.user.id = user?.id || token?.sub as string;
+    async session({ session, token }) {
+       if (session.user && token.sub) {
+         session.user.id = token.sub;
        }
        return session;
+    },
+    async jwt({ token, user }) {
+        if (user) {
+            token.sub = user.id;
+        }
+        return token;
     }
   },
   providers: [], // Providers configured in auth.ts
