@@ -10,11 +10,13 @@ import { createWorker } from "tesseract.js";
 import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export function CSVForm({ onUploadSuccess }: { onUploadSuccess?: (batchId: string) => void }) {
     const [isDragging, setIsDragging] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const router = useRouter();
 
     async function handleFile(file: File) {
         if (!file.name.endsWith(".csv")) {
@@ -30,6 +32,10 @@ export function CSVForm({ onUploadSuccess }: { onUploadSuccess?: (batchId: strin
             const result = await uploadIngestionFile(formData);
             if (result.success && result.batchId) {
                 toast.success("File uploaded and parsed successfully!");
+                
+                // Redirect to preview page
+                router.push(`/imports/${result.batchId}/preview`);
+                
                 onUploadSuccess?.(result.batchId);
             } else {
                 toast.error(result.error || "Upload failed");

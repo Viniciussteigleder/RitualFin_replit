@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CSVForm, ScreenshotForm } from "./forms";
 import { BatchList } from "./batch-list";
 import { PageHeader } from "@/components/ui/page-header";
+import { ImportWizard } from "@/components/imports/import-wizard";
 
 export default function UploadsPage() {
   return (
@@ -14,7 +15,8 @@ export default function UploadsPage() {
           { label: "Imports" }
         ]}
       />
-        
+
+      <ImportWizard>
         <Tabs defaultValue="csv" className="w-full">
             <TabsList>
                 <TabsTrigger value="csv">Bank CSV</TabsTrigger>
@@ -43,8 +45,10 @@ export default function UploadsPage() {
                 </Card>
             </TabsContent>
         </Tabs>
+      </ImportWizard>
 
         <BatchList />
     </div>
   );
 }
+
