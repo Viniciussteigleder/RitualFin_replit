@@ -9,6 +9,12 @@ jobs:
   build:
     name: Build & Lint
     runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: "${{ secrets['VERCEL_TOKEN'] }}"
+      VERCEL_ORG_ID: "${{ secrets['VERCEL_ORG_ID'] }}"
+      VERCEL_PROJECT_ID: "${{ secrets['VERCEL_PROJECT_ID'] }}"
+      AUTH_SECRET: "${{ secrets['AUTH_SECRET'] }}"
+      AUTH_URL: "http://localhost:3000"
 
     steps:
       - name: Checkout repo
@@ -26,11 +32,8 @@ jobs:
       - name: Pull Vercel env for CI
         run: |
           npm i -g vercel
-          vercel link --yes --token ${{ secrets.VERCEL_TOKEN }}
-          vercel env pull --yes --environment preview .env.ci --token ${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel link --yes
+          vercel env pull --yes --environment preview .env.ci
 
       - name: Lint
         run: npm run lint
@@ -41,6 +44,3 @@ jobs:
           [ -f .env.ci ] && . ./.env.ci
           set +a
           npm run build
-        env:
-          AUTH_SECRET: ${{ secrets.AUTH_SECRET || 'mock_secret_for_build' }}
-          AUTH_URL: "http://localhost:3000"

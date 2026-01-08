@@ -12,7 +12,7 @@ export default function AIKeywordsPage() {
           <h1 className="text-3xl font-bold tracking-tight">AI Insights & Keywords</h1>
           <p className="text-muted-foreground">Manage AI-suggested rules and transaction enrichment.</p>
         </div>
-        <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 border-none shadow-lg">
+        <Button className="bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 border-none shadow-lg">
           <Sparkles className="mr-2 h-4 w-4" /> Run AI Analysis
         </Button>
       </div>
