@@ -55,10 +55,10 @@ export function matchRules(descNorm: string, rules: Rule[], settings: UserSettin
     const keywordString = rule.keyWords || rule.keywords || "";
     const keywords = keywordString
       .split(";")
-      .map(k => normalizeForMatch(k))
-      .filter(k => k.length > 0);
+      .map((k: string) => normalizeForMatch(k))
+      .filter((k: string) => k.length > 0);
 
-    const matchedKeyword = keywords.find(keyword => haystack.includes(keyword));
+    const matchedKeyword = keywords.find((keyword: string) => haystack.includes(keyword));
 
     if (matchedKeyword) {
       const match: RuleMatch = {

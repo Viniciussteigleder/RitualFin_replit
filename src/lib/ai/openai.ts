@@ -29,7 +29,7 @@ export async function getAICategorization(description: string, taxonomyContext: 
   }
 
   try {
-    const response = await openai.beta.chat.completions.parse({
+    const response = await (openai.beta as any).chat.completions.parse({
       model: AI_DESIGN.model,
       messages: [
         {

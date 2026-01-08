@@ -21,7 +21,8 @@ import {
     CheckCircle2, 
     AlertCircle,
     FileText,
-    ExternalLink
+    ExternalLink,
+    Brain
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 

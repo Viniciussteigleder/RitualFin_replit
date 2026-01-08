@@ -41,10 +41,26 @@ export async function parseMilesMoreCSV(content: string): Promise<ParseResult> {
     return {
         success: true,
         transactions,
-        meta: { filename: "mm.csv", rowCount: transactions.length }
+        rowsTotal: transactions.length,
+        rowsImported: transactions.length,
+        errors: [],
+        monthAffected: "", // To be determined by caller
+        meta: { 
+            delimiter: ";", 
+            warnings: [], 
+            hasMultiline: false,
+            headersFound: Object.keys(records[0] || {})
+        }
     };
   } catch (error: any) {
-    return { success: false, error: error.message, transactions: [] };
+    return { 
+        success: false, 
+        errors: [error.message], 
+        transactions: [],
+        rowsTotal: 0,
+        rowsImported: 0,
+        monthAffected: ""
+    };
   }
 }
 

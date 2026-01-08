@@ -276,6 +276,19 @@ export const taxonomyLeaf = pgTable("taxonomy_leaf", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+export const taxonomyLevel1Relations = relations(taxonomyLevel1, ({ many }) => ({
+  level2s: many(taxonomyLevel2),
+}));
+
+export const taxonomyLevel2Relations = relations(taxonomyLevel2, ({ one, many }) => ({
+  level1: one(taxonomyLevel1, { fields: [taxonomyLevel2.level1Id], references: [taxonomyLevel1.level1Id] }),
+  leaves: many(taxonomyLeaf),
+}));
+
+export const taxonomyLeafRelations = relations(taxonomyLeaf, ({ one }) => ({
+  level2: one(taxonomyLevel2, { fields: [taxonomyLeaf.level2Id], references: [taxonomyLevel2.level2Id] }),
+}));
+
 // App Category (UI Layer)
 export const appCategory = pgTable("app_category", {
   appCatId: varchar("app_cat_id").primaryKey().default(sql`gen_random_uuid()`),
@@ -300,8 +313,8 @@ export const appCategoryLeaf = pgTable("app_category_leaf", {
 export const transactions = pgTable("transactions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
-  paymentDate: timestamp("payment_date").notNull(),
-  bookingDate: date("booking_date"),
+  paymentDate: timestamp("payment_date", { mode: "date" }).notNull(),
+  bookingDate: date("booking_date", { mode: "date" }),
   importedAt: timestamp("imported_at").notNull().defaultNow(),
   accountSource: text("account_source").notNull().default("M&M"), // Legacy
   accountId: varchar("account_id").references(() => accounts.id),
@@ -421,3 +434,22 @@ export const rituals = pgTable("rituals", {
   notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+// Alias Assets table
+export const aliasAssets = pgTable("alias_assets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  aliasDesc: text("alias_desc").notNull(),
+  keyWordsAlias: text("key_words_alias"),
+  logoUrl: text("logo_url"),
+  localLogoPath: text("local_logo_path"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type Transaction = typeof transactions.$inferSelect;
+export type NewTransaction = typeof transactions.$inferInsert;
+export type Rule = typeof rules.$inferSelect;
+export type NewRule = typeof rules.$inferInsert;
+export type IngestionBatch = typeof ingestionBatches.$inferSelect;
+export type IngestionItem = typeof ingestionItems.$inferSelect;
+export type AliasAssets = typeof aliasAssets.$inferSelect;

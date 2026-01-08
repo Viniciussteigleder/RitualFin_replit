@@ -22,7 +22,10 @@ export async function parseIngestionFile(buffer: Buffer | string, filename?: str
     
     return {
         success: false,
-        error: "Unknown CSV format. Could not detect Sparkasse, M&M, or Amex headers.",
-        transactions: []
+        errors: ["Unknown CSV format. Could not detect Sparkasse, M&M, or Amex headers."],
+        transactions: [],
+        rowsTotal: 0,
+        rowsImported: 0,
+        monthAffected: ""
     };
 }

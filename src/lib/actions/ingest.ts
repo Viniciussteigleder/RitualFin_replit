@@ -7,6 +7,7 @@ import { parseIngestionFile } from "@/lib/ingest";
 import { generateFingerprint } from "@/lib/ingest/fingerprint";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { categorizeTransaction } from "@/lib/rules/engine";
 
 export async function uploadIngestionFile(formData: FormData) {
   const session = await auth();
@@ -23,7 +24,7 @@ export async function uploadIngestionFile(formData: FormData) {
     userId: session.user.id,
     filename,
     status: "processing",
-    source: "upload", // or detect from content
+    sourceType: "csv", 
   }).returning();
 
   try {
@@ -32,7 +33,7 @@ export async function uploadIngestionFile(formData: FormData) {
 
     if (!result.success) {
       await db.update(ingestionBatches)
-        .set({ status: "error", logs: result.errors })
+        .set({ status: "error", diagnosticsJson: { errors: result.errors } as any })
         .where(eq(ingestionBatches.id, batch.id));
       return { error: result.errors.join(", ") };
     }
@@ -45,9 +46,8 @@ export async function uploadIngestionFile(formData: FormData) {
       const fingerprint = generateFingerprint(tx);
 
       // Check for existing item with same fingerprint
-      // Ideally this should be a bulk check or upsert with ignore
       const existing = await db.query.ingestionItems.findFirst({
-        where: eq(ingestionItems.fingerprint, fingerprint)
+        where: (items, { eq }) => eq(items.itemFingerprint, fingerprint)
       });
 
       if (existing) {
@@ -57,10 +57,9 @@ export async function uploadIngestionFile(formData: FormData) {
 
       await db.insert(ingestionItems).values({
         batchId: batch.id,
-        fingerprint,
-        checksum: fingerprint, // Using same hash for checksum for now
-        rawContent: JSON.stringify(tx),
-        parsedData: tx,
+        itemFingerprint: fingerprint,
+        rawPayload: tx,
+        parsedPayload: tx,
         status: "pending",
         source: result.format || "unknown"
       });
@@ -70,13 +69,13 @@ export async function uploadIngestionFile(formData: FormData) {
     // 4. Update Batch Status
     await db.update(ingestionBatches)
       .set({ 
-        status: "completed", 
-        itemsTotal: result.rowsTotal,
-        itemsProcessed: newCount,
-        metadata: {
+        status: "preview", 
+        diagnosticsJson: {
+            rowsTotal: result.rowsTotal,
+            newCount,
             duplicates: dupCount,
             diagnostics: result.diagnostics
-        }
+        } as any
       })
       .where(eq(ingestionBatches.id, batch.id));
 
@@ -86,7 +85,7 @@ export async function uploadIngestionFile(formData: FormData) {
   } catch (error: any) {
     console.error("Ingestion error:", error);
     await db.update(ingestionBatches)
-      .set({ status: "error", logs: [error.message] })
+      .set({ status: "error", diagnosticsJson: { errors: [error.message] } as any })
       .where(eq(ingestionBatches.id, batch.id));
     return { error: "Internal server error during processing" };
   }
@@ -133,7 +132,7 @@ export async function commitBatch(batchId: string) {
     for (const item of batch.items) {
         if (item.status === "imported") continue;
 
-        const data = item.parsedData as any;
+        const data = item.parsedPayload as any;
         
         // 1. Deterministic Rule Categorization
         let categorization = categorizeTransaction(data.descNorm || data.description, userRules);
@@ -157,30 +156,30 @@ export async function commitBatch(batchId: string) {
         // Prepare Transaction
         const newTx = {
             userId: session.user.id,
-            accountSource: data.accountSource || batch.source || "Unknown",
+            accountSource: data.accountSource || batch.sourceType || "Unknown",
             paymentDate: new Date(data.paymentDate || data.date),
             bookingDate: data.bookingDate ? new Date(data.bookingDate) : null,
             descRaw: data.descRaw || data.description || "No Description",
             descNorm: data.descNorm || data.simpleDesc || data.description || "No Description",
             amount: parseFloat(data.amount),
             currency: data.currency || "EUR",
-            category1: categorization.category1 || aiResult?.extracted_merchants?.[0] || "Outros",
+            category1: (categorization.category1 || aiResult?.extracted_merchants?.[0] || "Outros") as any,
             category2: categorization.category2,
             category3: categorization.category3,
             needsReview: categorization.needsReview,
             manualOverride: false,
-            type: categorization.type || (data.amount < 0 ? "Despesa" : "Receita"),
-            fixVar: categorization.fixVar || "Variável",
+            type: (categorization.type || (data.amount < 0 ? "Despesa" : "Receita")) as any,
+            fixVar: (categorization.fixVar || "Variável") as any,
             ruleIdApplied: categorization.ruleIdApplied,
-            source: batch.source || "upload",
-            key: item.fingerprint, // Use item's fingerprint as the unique key
+            source: (batch.sourceType || "upload") as any,
+            key: item.itemFingerprint, // Use item's fingerprint as the unique key
             leafId: categorization.leafId,
             confidence: categorization.confidence,
             suggestedKeyword: categorization.suggestedKeyword || aiResult?.rationale
         };
 
         // Insert Transaction
-        await db.insert(transactions).values(newTx).onConflictDoNothing();
+        await db.insert(transactions).values([newTx]).onConflictDoNothing();
 
         // Update Item Status
         await db.update(ingestionItems)

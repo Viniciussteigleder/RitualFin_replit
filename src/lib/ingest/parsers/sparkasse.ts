@@ -1,5 +1,5 @@
 import { parse } from "csv-parse/sync";
-import type { ParsedTransaction } from "../types";
+import type { ParseResult, ParsedTransaction } from "../types";
 import { logger } from "../logger";
 
 // ... Porting sparkasse-pipeline.ts logic ...
@@ -102,18 +102,26 @@ export async function parseSparkasseCSV(content: string): Promise<ParseResult> {
     return {
         success: true,
         transactions,
+        rowsTotal: transactions.length,
+        rowsImported: transactions.length,
+        errors: [],
+        monthAffected: "",
         meta: {
-            filename: "sparkasse.csv",
-            rowCount: transactions.length,
-            // dateRange...
+            delimiter: ";",
+            warnings: [],
+            hasMultiline: false,
+            headersFound: Object.keys(records[0] || {})
         }
     }
 
   } catch (error: any) {
     return {
         success: false,
-        error: error.message,
-        transactions: []
+        errors: [error.message],
+        transactions: [],
+        rowsTotal: 0,
+        rowsImported: 0,
+        monthAffected: ""
     }
   }
 }

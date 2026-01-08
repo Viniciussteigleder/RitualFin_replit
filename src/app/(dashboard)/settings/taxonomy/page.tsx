@@ -13,20 +13,20 @@ export default async function TaxonomyPage() {
 
         <div className="grid gap-4">
             {taxonomy.length === 0 ? <p className="text-muted-foreground">No custom taxonomy defined.</p> : null}
-            {taxonomy.map(level1 => (
-                <Card key={level1.id}>
+            {taxonomy.map((level1: any) => (
+                <Card key={level1.level1Id}>
                     <CardHeader>
                         <CardTitle>{level1.nivel1Pt}</CardTitle>
                     </CardHeader>
                     <CardContent>
                          <ul className="list-disc pl-5 space-y-2">
-                            {level1.level2s.map(level2 => (
-                                <li key={level2.id}>
+                            {level1.level2s.map((level2: any) => (
+                                <li key={level2.level2Id}>
                                     <span className="font-medium">{level2.nivel2Pt}</span>
                                     {level2.leaves.length > 0 && (
                                         <ul className="list-circle pl-5 mt-1 text-sm text-muted-foreground">
-                                            {level2.leaves.map(leaf => (
-                                                <li key={leaf.id}>{leaf.leafPt}</li>
+                                            {level2.leaves.map((leaf: any) => (
+                                                <li key={leaf.leafId}>{leaf.nivel3Pt}</li>
                                             ))}
                                         </ul>
                                     )}

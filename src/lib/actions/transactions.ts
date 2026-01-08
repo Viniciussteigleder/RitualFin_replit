@@ -10,8 +10,10 @@ export async function getPendingTransactions() {
   const session = await auth();
   if (!session?.user?.id) return [];
 
+  const userId = session.user.id;
+
   return await db.query.transactions.findMany({
-    where: (tx, { eq, and }) => and(eq(tx.userId, session.user.id), eq(tx.needsReview, true)),
+    where: (tx, { eq, and }) => and(eq(tx.userId, userId), eq(tx.needsReview, true)),
     orderBy: [desc(transactions.paymentDate)],
     with: {
       rule: true,
@@ -28,9 +30,11 @@ export async function getTransactions(limit = 50) {
   const session = await auth();
   if (!session?.user?.id) return [];
 
+  const userId = session.user.id;
+
   // TODO: Add filtering and pagination support
   return await db.query.transactions.findMany({
-    where: (tx, { eq }) => eq(tx.userId, session.user.id),
+    where: (tx, { eq }) => eq(tx.userId, userId),
     orderBy: [desc(transactions.paymentDate)],
     limit: limit,
     with: {
@@ -53,7 +57,7 @@ export async function updateTransactionCategory(
 
   await db.update(transactions)
     .set({
-      category1: data.category1,
+      category1: data.category1 as any,
       category2: data.category2,
       category3: data.category3,
       needsReview: false, // Auto-confirm on manual edit

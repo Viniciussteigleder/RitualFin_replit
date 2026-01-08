@@ -28,7 +28,7 @@ export async function BatchList() {
                 {batches.map(batch => (
                     <Card key={batch.id} className={cn(
                         "group overflow-hidden transition-all hover:shadow-md border-slate-200",
-                        batch.status === "completed" || batch.status === "preview" ? "border-amber-200 bg-amber-50/30" : ""
+                        batch.status === "preview" ? "border-amber-200 bg-amber-50/30" : ""
                     )}>
                         <CardContent className="p-0">
                             <div className="flex flex-col md:flex-row md:items-center justify-between p-5 gap-4">
@@ -57,11 +57,11 @@ export async function BatchList() {
                                                 <FileText className="h-3 w-3" />
                                                 {batch.items.length} items
                                             </span>
-                                            {batch.metadata?.duplicates > 0 && (
+                                            {((batch.diagnosticsJson as any)?.duplicates > 0) && (
                                                 <>
                                                     <span className="text-slate-300">•</span>
                                                     <span className="text-amber-600 font-bold">
-                                                        {batch.metadata.duplicates} duplicates
+                                                        {(batch.diagnosticsJson as any).duplicates} duplicates
                                                     </span>
                                                 </>
                                             )}
@@ -74,12 +74,12 @@ export async function BatchList() {
                                         "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border-none",
                                         batch.status === "committed" && "bg-emerald-50 text-emerald-700",
                                         batch.status === "error" && "bg-rose-50 text-rose-700",
-                                        (batch.status === "completed" || batch.status === "preview") && "bg-amber-50 text-amber-700 animate-pulse"
+                                        (batch.status === "preview") && "bg-amber-50 text-amber-700 animate-pulse"
                                     )}>
-                                        {batch.status === "completed" || batch.status === "preview" ? "Ready to import" : batch.status}
+                                        {(batch.status === "preview") ? "Ready to import" : batch.status}
                                     </Badge>
 
-                                    {batch.status === "completed" || batch.status === "preview" ? (
+                                    {(batch.status === "preview") ? (
                                         <form action={async () => {
                                             "use server";
                                             await commitBatch(batch.id);
@@ -102,15 +102,15 @@ export async function BatchList() {
                             </div>
                             
                             {/* Diagnostic Report Area */}
-                            {batch.status === "completed" && batch.metadata?.diagnostics && (
+                            {batch.status === "preview" && !!batch.diagnosticsJson && (
                                 <div className="bg-white/50 border-t border-slate-100 p-4 pt-0">
                                     <div className="p-4 bg-slate-900/5 rounded-2xl flex items-start gap-3 mt-4">
                                         <Info className="h-4 w-4 text-slate-400 mt-1 shrink-0" />
                                         <div className="space-y-1">
                                             <div className="text-xs font-bold text-slate-900 uppercase tracking-widest">Parsing Insights</div>
                                             <div className="text-[11px] text-slate-500 leading-relaxed italic">
-                                                Automatically detected format: <span className="text-slate-900 font-bold">{batch.metadata.format || "Standard CSV"}</span>. 
-                                                All financial fields extracted successfully. {batch.metadata.duplicates} records skipped to prevent double counting.
+                                                Automatically detected format: <span className="text-slate-900 font-bold">{(batch.diagnosticsJson as any).format || "Standard CSV"}</span>. 
+                                                All financial fields extracted successfully. {(batch.diagnosticsJson as any).duplicates || 0} records skipped to prevent double counting.
                                             </div>
                                         </div>
                                     </div>

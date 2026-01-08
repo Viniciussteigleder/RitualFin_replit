@@ -26,7 +26,7 @@ export async function uploadScreenshot(formData: FormData) {
       userId: session.user.id,
       filename,
       status: "processing",
-      source: "screenshot",
+      sourceType: "screenshot",
     }).returning();
 
     // 2. Parse OCR Text
@@ -53,38 +53,33 @@ export async function uploadScreenshot(formData: FormData) {
 
     const [item] = await db.insert(ingestionItems).values({
         batchId: batch.id,
-        fingerprint,
-        checksum: fingerprint,
-        rawContent: JSON.stringify({ ocrResult, text: ocrText }),
-        parsedData: txData,
+        itemFingerprint: fingerprint,
+        rawPayload: { ocrResult, text: ocrText },
+        parsedPayload: txData,
         status: "pending",
         source: "screenshot"
     }).returning();
 
     // 4. Save Attachment (Image) - In real app, upload to S3/Blob
-    // For now, we are skipping actual file persistence to disk to avoid complexity in this env
-    // But we record the metadata in 'attachments' table
-    await db.insert(attachments).values({
-        itemId: item.id,
-        filename,
+    const [attachment] = await db.insert(attachments).values({
+        userId: session.user.id,
+        batchId: batch.id,
+        storageKey: `screenshots/${batch.id}/${filename}`,
         mimeType: file.type,
         sizeBytes: file.size,
-        // storagePath: "blobs/...", 
-    });
+    }).returning();
 
     // 5. Save OCR Extraction
     await db.insert(ocrExtractions).values({
-        attachmentId: item.id, // Ideally attachments.id, allowing loose link
-        rawText: ocrText,
-        extractedData: ocrResult,
+        attachmentId: attachment.id,
+        textRaw: ocrText,
+        blocksJson: ocrResult as any,
     });
 
     // 6. Complete Batch
     await db.update(ingestionBatches)
         .set({ 
-            status: "completed",
-            itemsTotal: 1,
-            itemsProcessed: 1 
+            status: "committed", // Or a suitable status from enum
         })
         .where(eq(ingestionBatches.id, batch.id));
 

@@ -65,8 +65,8 @@ export default async function DashboardPage() {
                 {transactions.map((tx) => (
                     <div key={tx.id} className="flex justify-between border-b pb-2 last:border-0">
                         <div>
-                            <div className="font-medium">{tx.description}</div>
-                            <div className="text-xs text-muted-foreground">{new Date(tx.date).toLocaleDateString()}</div>
+                            <div className="font-medium text-slate-900">{tx.descNorm}</div>
+                            <div className="text-xs text-slate-500 font-medium">{new Date(tx.paymentDate).toLocaleDateString()}</div>
                         </div>
                         <div className={tx.amount < 0 ? "" : "text-green-600"}>
                             {new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(tx.amount)}
