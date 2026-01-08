@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Users, AlertCircle } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import Link from "next/link";
 
 function LoginContent() {
   const searchParams = useSearchParams();
@@ -109,6 +110,13 @@ function LoginContent() {
               Sign In
             </Button>
           </form>
+
+          <div className="text-center text-sm">
+            <span className="text-muted-foreground">Don't have an account? </span>
+            <Link href="/signup" className="font-medium hover:underline">
+              Sign Up
+            </Link>
+          </div>
         </div>
       </div>
     </div>
