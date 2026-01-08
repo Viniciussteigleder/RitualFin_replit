@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarNav } from "./calendar-nav";
 import { cn } from "@/lib/utils";
 
 export default async function CalendarPage({
@@ -86,6 +87,9 @@ export default async function CalendarPage({
   const prevMonth = new Date(year, month - 1, 1);
   const nextMonth = new Date(year, month + 1, 1);
 
+  const prevMonthStr = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, "0")}`;
+  const nextMonthStr = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, "0")}`;
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -93,33 +97,11 @@ export default async function CalendarPage({
         description="Visualize your recurring payments and upcoming bills."
         breadcrumbs={[{ label: "Overview" }, { label: "Calendar" }]}
       >
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() =>
-              (window.location.href = `/calendar?month=${prevMonth.getFullYear()}-${String(
-                prevMonth.getMonth() + 1
-              ).padStart(2, "0")}`)
-            }
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="font-bold text-lg min-w-[150px] text-center">
-            {currentDate.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
-          </span>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() =>
-              (window.location.href = `/calendar?month=${nextMonth.getFullYear()}-${String(
-                nextMonth.getMonth() + 1
-              ).padStart(2, "0")}`)
-            }
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+        <CalendarNav
+          currentDate={currentDate}
+          prevMonthStr={prevMonthStr}
+          nextMonthStr={nextMonthStr}
+        />
       </PageHeader>
 
       {/* Calendar Grid */}

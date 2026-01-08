@@ -24,6 +24,7 @@ import {
   CalendarCheck,
   TrendingUp
 } from "lucide-react";
+import { signOut } from "next-auth/react";
 import { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { useMonth } from "@/lib/month-context";
@@ -85,7 +86,7 @@ export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const locale = useLocale();
   const sidebarLabels = useMemo(() => translate(locale, layoutCopy.sidebar), [locale]);
-  
+
   const formatMessage = (template: string, vars: Record<string, string>) =>
     Object.entries(vars).reduce((result, [key, value]) => result.replace(`{${key}}`, value), template);
 
@@ -173,7 +174,7 @@ export function Sidebar() {
       </div>
 
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setIsOpen(false)}
         />
@@ -206,10 +207,10 @@ export function Sidebar() {
                 <Calendar className="h-3.5 w-3.5 text-primary" />
               </div>
               <div className="flex items-center gap-1">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-7 w-7 text-white/70 hover:text-white hover:bg-white/10" 
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-white/70 hover:text-white hover:bg-white/10"
                   onClick={prevMonth}
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -217,10 +218,10 @@ export function Sidebar() {
                 <span className="flex-1 text-center text-sm font-semibold text-white">
                   {formatMonth(month)}
                 </span>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-7 w-7 text-white/70 hover:text-white hover:bg-white/10" 
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-white/70 hover:text-white hover:bg-white/10"
                   onClick={nextMonth}
                 >
                   <ChevronRight className="h-4 w-4" />
@@ -259,47 +260,47 @@ export function Sidebar() {
               )}
               {groupOpenState[cluster.id] && (
                 <div className="space-y-1">
-                {cluster.items.map((item) => {
-                  const isActive = normalizedLocation === item.href;
+                  {cluster.items.map((item) => {
+                    const isActive = normalizedLocation === item.href;
 
-                  const NavLink = (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setIsOpen(false)}
-                      className={cn(
-                        "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group relative",
-                        isActive
-                          ? "bg-primary text-white shadow-lg shadow-primary/30"
-                          : "text-white/70 hover:bg-white/10 hover:text-white"
-                      )}
-                    >
-                      <item.icon className={cn(
-                        "h-5 w-5 transition-colors",
-                        isActive ? "text-white" : "text-white/60 group-hover:text-white"
-                      )} />
-                      {!isCollapsed && (
-                        <>
-                          <span className="flex-1">{item.label}</span>
-                        </>
-                      )}
-                    </Link>
-                  );
-
-                  if (isCollapsed) {
-                    return (
-                      <Tooltip key={item.href} delayDuration={0}>
-                        <TooltipTrigger asChild>{NavLink}</TooltipTrigger>
-                        <TooltipContent side="right" className="font-medium">
-                          {item.label}
-                        </TooltipContent>
-                      </Tooltip>
+                    const NavLink = (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setIsOpen(false)}
+                        className={cn(
+                          "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group relative",
+                          isActive
+                            ? "bg-primary text-white shadow-lg shadow-primary/30"
+                            : "text-white/70 hover:bg-white/10 hover:text-white"
+                        )}
+                      >
+                        <item.icon className={cn(
+                          "h-5 w-5 transition-colors",
+                          isActive ? "text-white" : "text-white/60 group-hover:text-white"
+                        )} />
+                        {!isCollapsed && (
+                          <>
+                            <span className="flex-1">{item.label}</span>
+                          </>
+                        )}
+                      </Link>
                     );
-                  }
 
-                  return NavLink;
-                })}
-              </div>
+                    if (isCollapsed) {
+                      return (
+                        <Tooltip key={item.href} delayDuration={0}>
+                          <TooltipTrigger asChild>{NavLink}</TooltipTrigger>
+                          <TooltipContent side="right" className="font-medium">
+                            {item.label}
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    }
+
+                    return NavLink;
+                  })}
+                </div>
               )}
             </div>
           ))}
@@ -333,12 +334,12 @@ export function Sidebar() {
               </Tooltip>
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
-                  <Link
-                    href="/login"
-                    className="flex items-center justify-center p-2.5 rounded-xl text-sm font-medium text-rose-400/80 hover:bg-rose-500/10 hover:text-rose-400 transition-colors"
+                  <button
+                    onClick={() => signOut({ callbackUrl: "/login" })}
+                    className="flex w-full items-center justify-center p-2.5 rounded-xl text-sm font-medium text-rose-400/80 hover:bg-rose-500/10 hover:text-rose-400 transition-colors"
                   >
                     <LogOut className="h-5 w-5" />
-                  </Link>
+                  </button>
                 </TooltipTrigger>
                 <TooltipContent side="right">{sidebarLabels.items.logout}</TooltipContent>
               </Tooltip>
@@ -358,14 +359,13 @@ export function Sidebar() {
                 <Settings className="h-5 w-5" />
                 {sidebarLabels.items.settings}
               </Link>
-              <Link
-                href="/login"
-                onClick={() => setIsOpen(false)}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-rose-400/80 hover:bg-rose-500/10 hover:text-rose-400 transition-colors"
+              <button
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                className="flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-rose-400/80 hover:bg-rose-500/10 hover:text-rose-400 transition-colors"
               >
                 <LogOut className="h-5 w-5" />
                 {sidebarLabels.items.logout}
-              </Link>
+              </button>
             </>
           )}
         </div>

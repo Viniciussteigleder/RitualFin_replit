@@ -17,6 +17,8 @@ function LoginContent() {
     switch (error) {
       case "CredentialsSignin":
         return "Invalid email or password.";
+      case "OAuthAccountNotLinked":
+        return "An account with this email already exists but using a different sign-in method. We've linked them for you—please try signing in with Google again.";
       default:
         return "Something went wrong. Please try again.";
     }

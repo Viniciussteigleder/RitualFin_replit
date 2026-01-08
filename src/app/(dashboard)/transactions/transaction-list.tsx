@@ -2,48 +2,91 @@
 
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { 
-    Drawer, 
-    DrawerContent, 
-    DrawerHeader, 
-    DrawerTitle, 
+import {
+    Drawer,
+    DrawerContent,
+    DrawerHeader,
+    DrawerTitle,
     DrawerDescription,
     DrawerFooter
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { 
-    Search, 
-    Calendar, 
-    CreditCard, 
-    Tag, 
-    Info, 
-    CheckCircle2, 
+import {
+    Search,
+    Calendar,
+    CreditCard,
+    Tag,
+    Info,
+    CheckCircle2,
     AlertCircle,
     FileText,
     ExternalLink,
     Brain
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { FilterPanel as FilterPanelComp, TransactionFilters } from "@/components/transactions/filter-panel";
+import { BulkActionsBar as BulkActionsBarComp } from "@/components/transactions/bulk-actions-bar";
+import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export function TransactionList({ transactions }: { transactions: any[] }) {
     const [selectedTx, setSelectedTx] = useState<any>(null);
     const [search, setSearch] = useState("");
+    const [filters, setFilters] = useState<TransactionFilters>({});
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-    const filtered = transactions.filter(tx => 
-        tx.description.toLowerCase().includes(search.toLowerCase()) ||
-        tx.category1?.toLowerCase().includes(search.toLowerCase())
-    );
+    const filtered = transactions.filter(tx => {
+        const matchesSearch = tx.description.toLowerCase().includes(search.toLowerCase()) ||
+            tx.category1?.toLowerCase().includes(search.toLowerCase());
+
+        if (!matchesSearch) return false;
+
+        if (filters.categories?.length && !filters.categories.includes(tx.category1)) return false;
+        if (filters.accounts?.length && !filters.accounts.includes(tx.accountSource)) return false;
+        if (filters.minAmount !== undefined && Math.abs(tx.amount) < filters.minAmount) return false;
+        if (filters.maxAmount !== undefined && Math.abs(tx.amount) > filters.maxAmount) return false;
+        if (filters.dateFrom && new Date(tx.date) < filters.dateFrom) return false;
+        if (filters.dateTo && new Date(tx.date) > filters.dateTo) return false;
+
+        return true;
+    });
+
+    const toggleSelect = (id: string) => {
+        const newSelected = new Set(selectedIds);
+        if (newSelected.has(id)) {
+            newSelected.delete(id);
+        } else {
+            newSelected.add(id);
+        }
+        setSelectedIds(newSelected);
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedIds.size === filtered.length) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(filtered.map(tx => tx.id)));
+        }
+    };
 
     return (
         <div className="space-y-6">
-            <div className="relative group">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
-                <Input 
-                    placeholder="Search transactions..." 
-                    className="pl-10 h-10 bg-white border-slate-200 focus:ring-primary/20"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+            <div className="flex gap-2">
+                <div className="relative group flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+                    <Input
+                        placeholder="Search transactions..."
+                        className="pl-10 h-10 bg-white border-slate-200 focus:ring-primary/20 rounded-xl"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                    />
+                </div>
+                <FilterPanelComp
+                    categories={Array.from(new Set(transactions.map(t => t.category1).filter(Boolean)))}
+                    accounts={Array.from(new Set(transactions.map(t => t.accountSource).filter(Boolean)))}
+                    onFilterChange={setFilters}
                 />
             </div>
 
@@ -64,32 +107,42 @@ export function TransactionList({ transactions }: { transactions: any[] }) {
                             filtered.map((tx) => (
                                 <div
                                     key={tx.id}
-                                    className="flex items-center justify-between p-3 cursor-pointer hover:bg-slate-50 transition-all group"
-                                    onClick={() => setSelectedTx(tx)}
+                                    className={cn(
+                                        "flex items-center justify-between p-3 cursor-pointer hover:bg-slate-50 transition-all group",
+                                        selectedIds.has(tx.id) && "bg-indigo-50/50 hover:bg-indigo-50"
+                                    )}
                                 >
                                     <div className="flex gap-4 items-center min-w-0">
-                                        <div className={`shrink-0 p-2 rounded-xl transition-all ${tx.amount < 0 ? "bg-rose-50 text-rose-600 group-hover:scale-110" : "bg-emerald-50 text-emerald-600 group-hover:scale-110"}`}>
-                                            <CreditCard className="h-5 w-5" />
+                                        <div onClick={(e) => { e.stopPropagation(); toggleSelect(tx.id); }} className="px-1">
+                                            <Checkbox checked={selectedIds.has(tx.id)} onCheckedChange={() => toggleSelect(tx.id)} />
                                         </div>
-                                        <div className="space-y-0.5 min-w-0">
-                                            <div className="font-semibold text-slate-900 truncate flex items-center gap-1.5">
-                                                {tx.description}
-                                                {tx.needsReview && (
-                                                    <AlertCircle className="h-3.5 w-3.5 text-amber-500 fill-amber-50" />
-                                                )}
+                                        <div
+                                            className="flex items-center gap-4 min-w-0 flex-1"
+                                            onClick={() => setSelectedTx(tx)}
+                                        >
+                                            <div className={`shrink-0 p-2 rounded-xl transition-all ${tx.amount < 0 ? "bg-rose-50 text-rose-600 group-hover:scale-110" : "bg-emerald-50 text-emerald-600 group-hover:scale-110"}`}>
+                                                <CreditCard className="h-5 w-5" />
                                             </div>
-                                            <div className="text-[11px] text-slate-500 flex items-center gap-2 font-medium">
-                                                <span className="flex items-center gap-1">
-                                                    <Calendar className="h-3 w-3" />
-                                                    {new Date(tx.date).toLocaleDateString()}
-                                                </span>
-                                                <span className="text-slate-200">•</span>
-                                                <Badge variant="secondary" className="text-[9px] px-1.5 py-0 bg-slate-100 text-slate-600 border-none font-bold tracking-tight uppercase">{tx.accountSource}</Badge>
+                                            <div className="space-y-0.5 min-w-0">
+                                                <div className="font-semibold text-slate-900 truncate flex items-center gap-1.5 font-sans">
+                                                    {tx.description}
+                                                    {tx.needsReview && (
+                                                        <AlertCircle className="h-3.5 w-3.5 text-amber-500 fill-amber-50" />
+                                                    )}
+                                                </div>
+                                                <div className="text-[11px] text-slate-500 flex items-center gap-2 font-medium">
+                                                    <span className="flex items-center gap-1">
+                                                        <Calendar className="h-3 w-3" />
+                                                        {new Date(tx.date).toLocaleDateString()}
+                                                    </span>
+                                                    <span className="text-slate-200">•</span>
+                                                    <Badge variant="secondary" className="text-[9px] px-1.5 py-0 bg-slate-100 text-slate-600 border-none font-bold tracking-tight uppercase">{tx.accountSource}</Badge>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="text-right space-y-0.5 shrink-0">
-                                        <div className={`font-mono font-bold tracking-tighter ${tx.amount < 0 ? "text-slate-900" : "text-emerald-600"}`}>
+                                    <div className="text-right space-y-0.5 shrink-0" onClick={() => setSelectedTx(tx)}>
+                                        <div className={`font-mono font-bold tracking-tighter text-lg ${tx.amount < 0 ? "text-slate-900" : "text-emerald-600"}`}>
                                             {tx.amount > 0 ? "+" : ""}{new Intl.NumberFormat("de-DE", {
                                                 style: "currency",
                                                 currency: "EUR",
@@ -123,7 +176,7 @@ export function TransactionList({ transactions }: { transactions: any[] }) {
                                         </DrawerDescription>
                                     </div>
                                     <div className="text-4xl font-mono font-bold tracking-tighter text-slate-900">
-                                         {new Intl.NumberFormat("de-DE", {
+                                        {new Intl.NumberFormat("de-DE", {
                                             style: "currency",
                                             currency: "EUR",
                                         }).format(selectedTx.amount)}
@@ -147,7 +200,7 @@ export function TransactionList({ transactions }: { transactions: any[] }) {
                                             <Tag className="h-4 w-4" /> Intelligence & Context
                                         </h3>
                                     </div>
-                                    
+
                                     {selectedTx.rule ? (
                                         <div className="flex items-start gap-4 p-5 bg-indigo-50/50 text-indigo-900 rounded-2xl border border-indigo-100 shadow-sm transition-all hover:bg-indigo-50">
                                             <div className="shrink-0 p-2.5 bg-indigo-100 rounded-xl">
@@ -221,6 +274,13 @@ export function TransactionList({ transactions }: { transactions: any[] }) {
                 </DrawerContent>
             </Drawer>
 
+            <BulkActionsBarComp
+                selectedCount={selectedIds.size}
+                onClassifyAll={() => toast.success(`Classified ${selectedIds.size} transactions`)}
+                onExport={() => toast.success(`Exporting ${selectedIds.size} transactions`)}
+                onDelete={() => toast.error(`Deleted ${selectedIds.size} transactions`)}
+                onClearSelection={() => setSelectedIds(new Set())}
+            />
         </div>
     );
 }

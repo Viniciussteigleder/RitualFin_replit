@@ -1,11 +1,14 @@
 {
     "recommendations": [
-        "vercel.vercel",
-        "neon-software.neon-postgres",
-        "dsznajder.es7-react-js-snippets",
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
         "bradlc.vscode-tailwindcss",
-        "drizzle-team.drizzle-all-in-one"
+        "ms-vscode.vscode-typescript-next",
+        "prisma.prisma",
+        "yoavbls.pretty-ts-errors",
+        "usernamehw.errorlens",
+        "christian-kohler.path-intellisense",
+        "formulahendry.auto-rename-tag",
+        "github.copilot"
     ]
 }
