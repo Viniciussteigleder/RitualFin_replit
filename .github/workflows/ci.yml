@@ -32,8 +32,8 @@ jobs:
       - name: Pull Vercel env for CI
         run: |
           npm i -g vercel
-          vercel link --yes
-          vercel env pull --yes --environment preview .env.ci
+          vercel link --yes --token "$VERCEL_TOKEN" --org "$VERCEL_ORG_ID" --project "$VERCEL_PROJECT_ID"
+          vercel env pull .env.ci --yes --token "$VERCEL_TOKEN" --environment preview
 
       - name: Lint
         run: npm run lint
