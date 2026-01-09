@@ -84,7 +84,7 @@ export async function BatchList() {
                                             "use server";
                                             await commitBatch(batch.id);
                                         }}>
-                                            <Button size="sm" className="bg-slate-900 text-white hover:bg-slate-800 rounded-xl px-4 font-bold shadow-lg shadow-slate-200 border-none group/btn">
+                                            <Button size="sm" className="bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl px-4 font-bold shadow-lg shadow-emerald-200 border-none group/btn">
                                                 Process & Import <Play className="ml-2 h-3 w-3 fill-current transition-transform group-hover/btn:translate-x-0.5" />
                                             </Button>
                                         </form>
