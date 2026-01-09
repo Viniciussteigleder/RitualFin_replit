@@ -16,53 +16,34 @@ Preferred communication style: Simple, everyday language.
 
 ## Deployment Architecture (January 2026)
 
-- **Frontend**: Vercel (ritual-fin-replit.vercel.app) - auto-deploys from main branch
-- **Backend**: Render (ritualfin-api.onrender.com) - auto-deploys from main branch
-- **Database**: Render PostgreSQL (dpg-d5e6moje5dus73es5aug-a, Frankfurt region)
-- **Development DB**: Replit PostgreSQL (helium)
+- **Platform**: Vercel (ritual-fin-replit.vercel.app)
+- **Framework**: Next.js 15+ (App Router)
+- **Database**: Neon PostgreSQL
+- **Environment**: Single deployment (Frontend + Server Actions)
 
 ### Authentication
-- **Google OAuth**: Configured with passport-google-oauth20
-  - Callback URL: `https://ritualfin-api.onrender.com/api/auth/google/callback`
-  - Credentials stored in Replit Secrets: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
-  - Note: OAuth only works in production (Render) due to callback URL mismatch with Replit
-- **Traditional login**: Username/password with bcrypt
-- **Demo mode**: Fallback to demo user for unauthenticated access
+- **Auth.js v5 (NextAuth)**: Google Provider
+- **Traditional login**: Credentials provider with bcryptjs
+- **Session management**: Database sessions via Drizzle Adapter
 
 ### User Isolation
-- `getAuthenticatedUser()`: Returns null if not authenticated
-- `getAuthenticatedUserOrDemo()`: Returns demo user as fallback for testing
-- All API endpoints use user-scoped queries
+- Multi-tenant architecture using `userId` in all schemas.
+- Middleware handles session validation and redirection.
 
 ## System Architecture
 
 ### Frontend Architecture
-- **Framework**: React 18 with TypeScript
-- **Routing**: Wouter (lightweight client-side routing)
-- **State Management**: TanStack React Query for server state
-- **UI Components**: shadcn/ui component library with Radix UI primitives
-- **Styling**: Tailwind CSS v4 with CSS variables for theming
-- **Build Tool**: Vite
-
-**Key Pages**:
-- `/login` - Simple authentication
-- `/dashboard` - Monthly spending overview with projections
-- `/uploads` - CSV file import interface
-- `/confirm` - Transaction confirmation queue (needs_review items)
-- `/rules` - Categorization rule management
+- **Framework**: Next.js 15+ (React 19)
+- **Routing**: Next.js App Router
+- **State Management**: React Server Components + Client-side State with React Query
+- **UI Components**: shadcn/ui with Tailwind CSS v4
+- **Icons**: Lucide React
 
 ### Backend Architecture
-- **Runtime**: Node.js with Express
-- **Language**: TypeScript (ESM modules)
-- **API Pattern**: RESTful JSON API under `/api/*` prefix
-- **Development**: Vite middleware integration for HMR
-
-**API Endpoints**:
-- Auth: `/api/auth/login`, `/api/auth/me`
-- Uploads: `/api/uploads`
-- Transactions: `/api/transactions`, `/api/transactions/confirm-queue`
-- Rules: `/api/rules`
-- Dashboard: `/api/dashboard`
+- **Environment**: Next.js Edge/Serverless Runtime
+- **API Pattern**: Server Actions & Next.js API Routes
+- **Database Access**: Drizzle ORM (PostgreSQL)
+- **Security**: Auth.js with Middleware protection
 
 ### Data Storage
 - **Database**: PostgreSQL
@@ -90,9 +71,9 @@ Special flags:
 - `needs_review`: Items requiring manual confirmation
 
 ### Build & Deployment
-- Development: `npm run dev` starts Express with Vite middleware
-- Production build: `npm run build` creates `dist/` with bundled server and client
-- Database sync: `npm run db:push` applies schema changes
+- Development: `npm run dev` starts Next.js in development mode
+- Production build: `npm run build` creates `.next/` production artifacts
+- Database sync: `npm run db:push` applies schema changes directly to Neon via Drizzle-kit
 
 ## External Dependencies
 

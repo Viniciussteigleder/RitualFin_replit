@@ -87,13 +87,14 @@ npm run check
 ### 5. Build for Production
 ```bash
 npm run build
-# Output: dist/public (client) + dist/index.cjs (server)
 ```
+**Result**: ✅ **PASS**
+- Output: `.next` directory (Next.js production build)
 
 ### 6. Run Production Build Locally
 ```bash
 npm start
-# Serves from dist/ on port 5000
+# Serves from .next/ on port 3000
 ```
 
 ## Testing Commands

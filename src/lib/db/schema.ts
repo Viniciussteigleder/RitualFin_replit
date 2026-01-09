@@ -24,6 +24,11 @@ export const transactionClassifiedByEnum = pgEnum("transaction_classified_by", [
 export const ingestionSourceTypeEnum = pgEnum("ingestion_source_type", ["csv", "screenshot"]);
 export const ingestionBatchStatusEnum = pgEnum("ingestion_batch_status", ["processing", "preview", "committed", "rolled_back", "error"]);
 
+// NEW ENUMS for V1 Redesign
+export const postingStatusEnum = pgEnum("posting_status", ["pending", "posted"]);
+export const processingStatusEnum = pgEnum("processing_status", ["provisional", "enriched", "reconciled", "void"]);
+export const snapshotSourceTypeEnum = pgEnum("snapshot_source_type", ["print", "csv", "manual"]);
+
 // Users table
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -63,16 +68,26 @@ export const accounts = pgTable("accounts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
   name: text("name").notNull(),
+  institution: text("institution"), // NEW
   type: accountTypeEnum("type").notNull(),
+  accountType: text("account_type"), // NEW
+  currencyDefault: text("currency_default").default("EUR"), // NEW
+  externalRefIban: text("external_ref_iban"), // NEW
+  externalRefLast4: text("external_ref_last4"), // NEW
   accountNumber: text("account_number"),
   icon: text("icon").default("credit-card"),
   color: text("color").default("#6366f1"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  userInstitutionIdx: index("accounts_user_institution_idx").on(table.userId, table.institution),
+  userIbanIdx: index("accounts_user_iban_idx").on(table.userId, table.externalRefIban),
+  userLast4Idx: index("accounts_user_last4_idx").on(table.userId, table.externalRefLast4),
+}));
 
-export const accountsRelations = relations(accounts, ({ one }) => ({
+export const accountsRelations = relations(accounts, ({ one, many }) => ({
   user: one(users, { fields: [accounts.userId], references: [users.id] }),
+  balanceSnapshots: many(accountBalanceSnapshots),
 }));
 
 // --- Auth.js (NextAuth) Tables ---
@@ -147,16 +162,22 @@ export const authenticators = pgTable(
   })
 );
 
-// --- Evidence-First Ingestion Tables (NEW) ---
+// --- Evidence Ingestion Tables ---
 
-// Ingestion Batches: Represents a single upload event (CSV or Screenshot)
 export const ingestionBatches = pgTable("ingestion_batches", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
+  accountId: varchar("account_id").references(() => accounts.id), // NEW
   sourceType: ingestionSourceTypeEnum("source_type").notNull(),
   status: ingestionBatchStatusEnum("status").notNull().default("processing"),
   filename: text("filename"),
-  diagnosticsJson: jsonb("diagnostics_json"), // Stores header info, row counts, etc.
+  importedAt: timestamp("imported_at").notNull().defaultNow(), // NEW
+  sourceSystem: text("source_system"), // NEW
+  sourceFormat: text("source_format"), // NEW
+  detectedAccountId: varchar("detected_account_id"), // NEW
+  detectionConfidence: integer("detection_confidence"), // NEW
+  detectionReasons: jsonb("detection_reasons"), // NEW
+  diagnosticsJson: jsonb("diagnostics_json"), 
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -164,66 +185,59 @@ export const ingestionBatches = pgTable("ingestion_batches", {
 export const ingestionBatchesRelations = relations(ingestionBatches, ({ one, many }) => ({
   user: one(users, { fields: [ingestionBatches.userId], references: [users.id] }),
   items: many(ingestionItems),
+  account: one(accounts, { fields: [ingestionBatches.accountId], references: [accounts.id] }),
 }));
 
-// Ingestion Items: Individual rows/records extracted from a batch
 export const ingestionItems = pgTable("ingestion_items", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   batchId: varchar("batch_id").notNull().references(() => ingestionBatches.id, { onDelete: "cascade" }),
-  rawPayload: jsonb("raw_payload").notNull(), // Original CSV row or OCR text block
-  parsedPayload: jsonb("parsed_payload"), // Normalized candidate data (dates parsed, etc)
-  itemFingerprint: text("item_fingerprint").notNull(), // Hash for deduplication
-  status: text("status").notNull().default("pending"), // pending, imported, error
+  rawPayload: jsonb("raw_payload").notNull(), 
+  parsedPayload: jsonb("parsed_payload"), 
+  itemFingerprint: text("item_fingerprint").notNull(), 
+  status: text("status").notNull().default("pending"), 
   source: text("source"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
   fingerprintIdx: index("ingestion_items_fingerprint_idx").on(table.itemFingerprint),
 }));
 
-export const ingestionItemsRelations = relations(ingestionItems, ({ one }) => ({
-  batch: one(ingestionBatches, { fields: [ingestionItems.batchId], references: [ingestionBatches.id] }),
-}));
-
-// Attachments: Stores references to uploaded files (especially screenshots)
 export const attachments = pgTable("attachments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
-  batchId: varchar("batch_id").references(() => ingestionBatches.id), // Link to batch if related
-  storageKey: text("storage_key").notNull(), // Path in object storage (R2/S3)
+  batchId: varchar("batch_id").references(() => ingestionBatches.id), 
+  storageKey: text("storage_key").notNull(), 
   mimeType: text("mime_type").notNull(),
   sizeBytes: integer("size_bytes").notNull(),
   ocrStatus: text("ocr_status").default("pending"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// OCR Extractions: Stores the raw text blocks from Vision API
 export const ocrExtractions = pgTable("ocr_extractions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   attachmentId: varchar("attachment_id").notNull().references(() => attachments.id, { onDelete: "cascade" }),
   textRaw: text("text_raw"),
-  blocksJson: jsonb("blocks_json"), // Structured blocks/lines from API
+  blocksJson: jsonb("blocks_json"), 
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// Transaction Evidence Link: Links a canonical Transaction to its source Evidence(s)
 export const transactionEvidenceLink = pgTable("transaction_evidence_link", {
   transactionId: varchar("transaction_id").notNull().references(() => transactions.id, { onDelete: "cascade" }),
   ingestionItemId: varchar("ingestion_item_id").notNull().references(() => ingestionItems.id, { onDelete: "cascade" }),
   matchConfidence: integer("match_confidence"),
-  isPrimary: boolean("is_primary").notNull().default(true), // Which source is the "truth"
+  isPrimary: boolean("is_primary").notNull().default(true), 
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
   pk: uniqueIndex("transaction_evidence_link_pk").on(table.transactionId, table.ingestionItemId),
 }));
 
-// --- End New Tables ---
+// --- Rules & Taxonomy ---
 
-// Rules table
 export const rules = pgTable("rules", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => users.id),
+  ruleKey: text("rule_key"), // NEW
   name: text("name"),
-  keywords: text("keywords"), // Legacy field
+  keywords: text("keywords"), 
   type: transactionTypeEnum("type"),
   fixVar: fixVarEnum("fix_var"),
   category1: category1Enum("category_1"),
@@ -237,13 +251,14 @@ export const rules = pgTable("rules", {
   keyWordsNegative: text("key_words_negative"),
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  userRuleKeyIdx: uniqueIndex("rules_user_rule_key_idx").on(table.userId, table.ruleKey),
+}));
 
 export const rulesRelations = relations(rules, ({ one }) => ({
   user: one(users, { fields: [rules.userId], references: [users.id] }),
 }));
 
-// Taxonomy tables (Level 1, 2, Leaf)
 export const taxonomyLevel1 = pgTable("taxonomy_level_1", {
   level1Id: varchar("level_1_id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -276,19 +291,6 @@ export const taxonomyLeaf = pgTable("taxonomy_leaf", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const taxonomyLevel1Relations = relations(taxonomyLevel1, ({ many }) => ({
-  level2s: many(taxonomyLevel2),
-}));
-
-export const taxonomyLevel2Relations = relations(taxonomyLevel2, ({ one, many }) => ({
-  level1: one(taxonomyLevel1, { fields: [taxonomyLevel2.level1Id], references: [taxonomyLevel1.level1Id] }),
-  leaves: many(taxonomyLeaf),
-}));
-
-export const taxonomyLeafRelations = relations(taxonomyLeaf, ({ one }) => ({
-  level2: one(taxonomyLevel2, { fields: [taxonomyLeaf.level2Id], references: [taxonomyLevel2.level2Id] }),
-}));
-
 // App Category (UI Layer)
 export const appCategory = pgTable("app_category", {
   appCatId: varchar("app_cat_id").primaryKey().default(sql`gen_random_uuid()`),
@@ -309,14 +311,21 @@ export const appCategoryLeaf = pgTable("app_category_leaf", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// Transactions table
+// Transactions table (EXTENDED)
 export const transactions = pgTable("transactions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
-  paymentDate: timestamp("payment_date", { mode: "date" }).notNull(),
-  bookingDate: date("booking_date", { mode: "date" }),
+  paymentDate: timestamp("payment_date", { mode: "date" }).notNull(), 
+  bookingDate: date("booking_date", { mode: "date" }), 
+  eventDate: timestamp("event_date", { mode: "date" }), // NEW
+  postingDate: timestamp("posting_date", { mode: "date" }), // NEW
+  valueDate: timestamp("value_date", { mode: "date" }), // NEW
+  eventTimeText: text("event_time_text"), // NEW
+  postingStatus: postingStatusEnum("posting_status").default("posted"), // NEW
+  processingStatus: processingStatusEnum("processing_status").default("provisional"), // NEW
+  externalRef: text("external_ref"), // NEW
+  enrichedAt: timestamp("enriched_at"), // NEW
   importedAt: timestamp("imported_at").notNull().defaultNow(),
-  accountSource: text("account_source").notNull().default("M&M"), // Legacy
   accountId: varchar("account_id").references(() => accounts.id),
   descRaw: text("desc_raw").notNull(),
   descNorm: text("desc_norm").notNull(),
@@ -350,12 +359,15 @@ export const transactions = pgTable("transactions", {
   excludeFromBudget: boolean("exclude_from_budget").notNull().default(false),
   needsReview: boolean("needs_review").notNull().default(true),
   ruleIdApplied: varchar("rule_id_applied").references(() => rules.id),
-  // Deprecated: uploadId link replaced by transactionEvidenceLink
   uploadId: varchar("upload_id"), 
   confidence: integer("confidence"),
   suggestedKeyword: text("suggested_keyword"),
 }, (table) => ({
   uniqueKeyPerUser: uniqueIndex("transactions_unique_key_per_user").on(table.userId, table.key),
+  accAmtPostingIdx: index("transactions_acc_amt_posting_idx").on(table.accountId, table.amount, table.postingDate),
+  accAmtEventIdx: index("transactions_acc_amt_event_idx").on(table.accountId, table.amount, table.eventDate),
+  accPostingStatusIdx: index("transactions_acc_posting_status_idx").on(table.accountId, table.postingStatus),
+  accProcessingStatusIdx: index("transactions_acc_processing_status_idx").on(table.accountId, table.processingStatus),
 }));
 
 export const transactionsRelations = relations(transactions, ({ one, many }) => ({
@@ -363,30 +375,187 @@ export const transactionsRelations = relations(transactions, ({ one, many }) => 
   rule: one(rules, { fields: [transactions.ruleIdApplied], references: [rules.id] }),
   account: one(accounts, { fields: [transactions.accountId], references: [accounts.id] }),
   leaf: one(taxonomyLeaf, { fields: [transactions.leafId], references: [taxonomyLeaf.leafId] }),
-  // New relation
   evidenceLinks: many(transactionEvidenceLink),
 }));
 
-// Legacy Uploads table (kept for backward compatibility during migration)
-export const uploads = pgTable("uploads", {
+// --- NEW TABLES FOR V1 REDESIGN ---
+
+// Print Sessions: Grouping screenshots by capture event
+export const printSessions = pgTable("print_sessions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
-  filename: text("filename").notNull(),
-  status: uploadStatusEnum("status").notNull().default("processing"),
-  rowsTotal: integer("rows_total").notNull().default(0),
-  rowsImported: integer("rows_imported").notNull().default(0),
-  monthAffected: text("month_affected"),
-  errorMessage: text("error_message"),
+  accountId: varchar("account_id").references(() => accounts.id),
+  batchId: varchar("batch_id").references(() => ingestionBatches.id),
+  sourceApp: text("source_app"), // Sparkasse, etc.
+  capturedAt: timestamp("captured_at"),
+  asOfDate: date("as_of_date"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// Relationships for evidence link
-export const transactionEvidenceLinkRelations = relations(transactionEvidenceLink, ({ one }) => ({
-  transaction: one(transactions, { fields: [transactionEvidenceLink.transactionId], references: [transactions.id] }),
-  ingestionItem: one(ingestionItems, { fields: [transactionEvidenceLink.ingestionItemId], references: [ingestionItems.id] }),
+// Print Line Items: Extracted transaction candidates from prints
+export const printLineItems = pgTable("print_line_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  accountId: varchar("account_id").references(() => accounts.id),
+  printSessionId: varchar("print_session_id").references(() => printSessions.id),
+  ingestionItemId: varchar("ingestion_item_id").references(() => ingestionItems.id),
+  section: text("section"), // posted | pending
+  eventDate: timestamp("event_date"),
+  eventTimeText: text("event_time_text"),
+  merchantLine1: text("merchant_line_1"),
+  subText: text("sub_text"),
+  amount: real("amount"),
+  currency: text("currency").default("EUR"),
+  fingerprint: text("fingerprint").notNull(),
+  transactionId: varchar("transaction_id").references(() => transactions.id),
+  confidence: integer("confidence"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Account Balance Snapshots: True balances from any source
+export const accountBalanceSnapshots = pgTable("account_balance_snapshots", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  accountId: varchar("account_id").notNull().references(() => accounts.id),
+  asOfDate: timestamp("as_of_date").notNull(),
+  balanceType: text("balance_type"), // current, available, statement
+  amount: real("amount").notNull(),
+  unit: text("unit").default("EUR"),
+  sourceType: snapshotSourceTypeEnum("source_type").notNull(),
+  ingestionItemId: varchar("ingestion_item_id"),
+  attachmentId: varchar("attachment_id").references(() => attachments.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Typed Source CSV Staging Tables
+export const sourceCsvSparkasse = pgTable("source_csv_sparkasse", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  accountId: varchar("account_id").references(() => accounts.id),
+  batchId: varchar("batch_id").references(() => ingestionBatches.id),
+  ingestionItemId: varchar("ingestion_item_id").references(() => ingestionItems.id),
+  // Columns matching Sparkasse CSV
+  auftragskonto: text("auftragskonto"),
+  buchungstag: date("buchungstag"),
+  valutadatum: date("valutadatum"),
+  buchungstext: text("buchungstext"),
+  verwendungszweck: text("verwendungszweck"),
+  glaeubigerId: text("glaeubiger_id"),
+  mandatsreferenz: text("mandatsreferenz"),
+  kundenreferenz: text("kundenreferenz"),
+  sammlerreferenz: text("sammlerreferenz"),
+  lastschrifteinreicherId: text("lastschrifteinreicher_id"),
+  idEndToEnd: text("id_end_to_end"),
+  beguenstigterZahlungspflichtiger: text("beguenstigter_zahlungspflichtiger"),
+  iban: text("iban"),
+  bic: text("bic"),
+  betrag: real("betrag"),
+  waehrung: text("waehrung"),
+  info: text("info"),
+  rowFingerprint: text("row_fingerprint").notNull(),
+  importedAt: timestamp("imported_at").notNull().defaultNow(),
+}, (table) => ({
+  accBookingIdx: index("sparkasse_acc_booking_idx").on(table.accountId, table.buchungstag),
+  accAmtIdx: index("sparkasse_acc_amt_idx").on(table.accountId, table.betrag),
 }));
 
-// Other legacy tables (simplified port)
+export const sourceCsvMm = pgTable("source_csv_mm", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  accountId: varchar("account_id").references(() => accounts.id),
+  batchId: varchar("batch_id").references(() => ingestionBatches.id),
+  ingestionItemId: varchar("ingestion_item_id").references(() => ingestionItems.id),
+  // Columns matching M&M
+  authorisedOn: date("authorised_on"),
+  processedOn: date("processed_on"),
+  paymentType: text("payment_type"),
+  status: text("status"),
+  amount: real("amount"),
+  currency: text("currency"),
+  description: text("description"),
+  rowFingerprint: text("row_fingerprint").notNull(),
+  importedAt: timestamp("imported_at").notNull().defaultNow(),
+}, (table) => ({
+  accProcessedIdx: index("mm_acc_processed_idx").on(table.accountId, table.processedOn),
+  accAmtIdx: index("mm_acc_amt_idx").on(table.accountId, table.amount),
+}));
+
+export const sourceCsvAmex = pgTable("source_csv_amex", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  accountId: varchar("account_id").references(() => accounts.id),
+  batchId: varchar("batch_id").references(() => ingestionBatches.id),
+  ingestionItemId: varchar("ingestion_item_id").references(() => ingestionItems.id),
+  // Columns matching Amex
+  datum: date("datum"),
+  beschreibung: text("beschreibung"),
+  betrag: real("betrag"),
+  karteninhaber: text("karteninhaber"),
+  kartennummer: text("kartennummer"),
+  referenz: text("referenz"),
+  ort: text("ort"),
+  staat: text("staat"),
+  rowFingerprint: text("row_fingerprint").notNull(),
+  importedAt: timestamp("imported_at").notNull().defaultNow(),
+}, (table) => ({
+  accDatumIdx: index("amex_acc_datum_idx").on(table.accountId, table.datum),
+  accAmtIdx: index("amex_acc_amt_idx").on(table.accountId, table.betrag),
+}));
+
+// Reconciliation Logging Tables
+export const reconciliationRuns = pgTable("reconciliation_runs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  accountId: varchar("account_id").notNull().references(() => accounts.id),
+  leftType: text("left_type").notNull(), // provisional
+  rightType: text("right_type").notNull(), // enriched
+  paramsJson: jsonb("params_json"),
+  status: text("status").notNull().default("running"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
+export const reconciliationCandidates = pgTable("reconciliation_candidates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  runId: varchar("run_id").notNull().references(() => reconciliationRuns.id, { onDelete: "cascade" }),
+  leftTransactionId: varchar("left_transaction_id").notNull(),
+  rightTransactionId: varchar("right_transaction_id").notNull(),
+  scoreTotal: real("score_total"),
+  scoreBreakdown: jsonb("score_breakdown"),
+  decision: text("decision"), // auto_accept, pending_review, rejected
+  reviewedAt: timestamp("reviewed_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Operational Logs
+export const bulkApplyRuns = pgTable("bulk_apply_runs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  type: text("type").notNull(), // rules_import, aliases_import, reapply_rules, reapply_alias
+  paramsJson: jsonb("params_json"),
+  summaryJson: jsonb("summary_json"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Alias Assets (EXTENDED)
+export const aliasAssets = pgTable("alias_assets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  aliasKey: text("alias_key"), // NEW
+  aliasDesc: text("alias_desc").notNull(),
+  keyWordsAlias: text("key_words_alias"),
+  logoUrl: text("logo_url"),
+  localLogoPath: text("local_logo_path"),
+  active: boolean("active").notNull().default(true),
+  priority: integer("priority").notNull().default(500),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  userAliasKeyIdx: uniqueIndex("alias_assets_user_alias_key_idx").on(table.userId, table.aliasKey),
+}));
+
+// --- LEGACY / OTHER ---
+
 export const budgets = pgTable("budgets", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
@@ -434,16 +603,57 @@ export const rituals = pgTable("rituals", {
   notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
-// Alias Assets table
-export const aliasAssets = pgTable("alias_assets", {
+
+// Relations
+export const oauthAccountsRelations = relations(oauthAccounts, ({ one }) => ({
+  user: one(users, { fields: [oauthAccounts.userId], references: [users.id] }),
+}));
+
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+  user: one(users, { fields: [sessions.userId], references: [users.id] }),
+}));
+
+export const authenticatorsRelations = relations(authenticators, ({ one }) => ({
+  user: one(users, { fields: [authenticators.userId], references: [users.id] }),
+}));
+
+export const taxonomyLevel1Relations = relations(taxonomyLevel1, ({ many }) => ({
+  level2s: many(taxonomyLevel2),
+}));
+
+export const taxonomyLevel2Relations = relations(taxonomyLevel2, ({ one, many }) => ({
+  level1: one(taxonomyLevel1, { fields: [taxonomyLevel2.level1Id], references: [taxonomyLevel1.level1Id] }),
+  leaves: many(taxonomyLeaf),
+}));
+
+export const taxonomyLeafRelations = relations(taxonomyLeaf, ({ one }) => ({
+  level2: one(taxonomyLevel2, { fields: [taxonomyLeaf.level2Id], references: [taxonomyLevel2.level2Id] }),
+}));
+
+export const goalsRelations = relations(goals, ({ many }) => ({
+  categoryGoals: many(categoryGoals),
+}));
+
+export const categoryGoalsRelations = relations(categoryGoals, ({ one }) => ({
+  goal: one(goals, { fields: [categoryGoals.goalId], references: [goals.id] }),
+}));
+
+export const transactionEvidenceLinkRelations = relations(transactionEvidenceLink, ({ one }) => ({
+  transaction: one(transactions, { fields: [transactionEvidenceLink.transactionId], references: [transactions.id] }),
+  ingestionItem: one(ingestionItems, { fields: [transactionEvidenceLink.ingestionItemId], references: [ingestionItems.id] }),
+}));
+
+// Legacy Uploads table 
+export const uploads = pgTable("uploads", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
-  aliasDesc: text("alias_desc").notNull(),
-  keyWordsAlias: text("key_words_alias"),
-  logoUrl: text("logo_url"),
-  localLogoPath: text("local_logo_path"),
+  filename: text("filename").notNull(),
+  status: uploadStatusEnum("status").notNull().default("processing"),
+  rowsTotal: integer("rows_total").notNull().default(0),
+  rowsImported: integer("rows_imported").notNull().default(0),
+  monthAffected: text("month_affected"),
+  errorMessage: text("error_message"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export type Transaction = typeof transactions.$inferSelect;
@@ -453,3 +663,5 @@ export type NewRule = typeof rules.$inferInsert;
 export type IngestionBatch = typeof ingestionBatches.$inferSelect;
 export type IngestionItem = typeof ingestionItems.$inferSelect;
 export type AliasAssets = typeof aliasAssets.$inferSelect;
+export type Account = typeof accounts.$inferSelect;
+export type NewAccount = typeof accounts.$inferInsert;

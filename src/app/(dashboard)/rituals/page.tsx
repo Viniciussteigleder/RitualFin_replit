@@ -1,17 +1,143 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { db } from "@/lib/db";
+import { auth } from "@/auth";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { 
+  RefreshCw, 
+  Calendar, 
+  Clock, 
+  ChevronRight, 
+  Target, 
+  Zap, 
+  BarChart3,
+  MoreHorizontal
+} from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import Link from "next/link";
 
-export default function RitualsPage() {
+export default async function RitualsPage() {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return <div>Por favor, faça login para acessar os rituais</div>;
+  }
+
+  const ritualsList = [
+    {
+      id: "daily",
+      name: "Ritual Diário",
+      period: "Diário",
+      estimatedTime: "3–5 min",
+      nextExecution: "Hoje, às 20:00",
+      description: "Revisar pendências, itens não categorizados e verificar previsão.",
+      icon: Zap,
+      status: "Ativo",
+      streak: 5
+    },
+    {
+      id: "weekly",
+      name: "Ritual Semanal",
+      period: "Semanal",
+      estimatedTime: "10–15 min",
+      nextExecution: "Segunda, 12 de Jan",
+      description: "Revisar gastos por categoria, ajustar eventos recorrentes e regras.",
+      icon: BarChart3,
+      status: "Ativo",
+      streak: 2
+    },
+    {
+       id: "monthly",
+       name: "Check-in Mensal",
+       period: "Mensal",
+       estimatedTime: "20–30 min",
+       nextExecution: "31 de Janeiro",
+       description: "Planejamento do próximo mês e análise de fechamento.",
+       icon: Target,
+       status: "Pendente",
+       streak: 1
+    }
+  ];
+
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6">Rituals</h1>
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Financial Rituals</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">Coming soon...</p>
-        </CardContent>
-      </Card>
+    <div className="flex flex-col gap-8 pb-32 max-w-5xl mx-auto">
+      <div className="flex flex-col gap-2 px-1">
+        <h2 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight font-display">Rituais Financeiros</h2>
+        <p className="text-muted-foreground font-medium">Sua consistência operacional é o segredo do controle total.</p>
+      </div>
+
+      <Tabs defaultValue="daily" className="w-full">
+        <div className="flex items-center justify-between mb-8 px-1">
+          <TabsList className="bg-secondary/50 p-1 rounded-2xl border border-border h-auto">
+            <TabsTrigger value="daily" className="rounded-xl px-6 py-2 h-9 text-xs font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Diário</TabsTrigger>
+            <TabsTrigger value="weekly" className="rounded-xl px-6 py-2 h-9 text-xs font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Semanal</TabsTrigger>
+            <TabsTrigger value="monthly" className="rounded-xl px-6 py-2 h-9 text-xs font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Mensal</TabsTrigger>
+          </TabsList>
+          
+          <div className="flex items-center gap-2">
+             <Badge className="bg-primary/10 text-primary border-none text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl">Streak: 5 Dias 🔥</Badge>
+          </div>
+        </div>
+
+        {["daily", "weekly", "monthly"].map((period) => (
+          <TabsContent key={period} value={period} className="focus-visible:outline-none flex flex-col gap-6">
+            {ritualsList.filter(r => r.id === period).map((ritual) => (
+              <Card key={ritual.id} className="rounded-[2.5rem] bg-card border-border shadow-sm overflow-hidden group hover:shadow-lg transition-all duration-500">
+                <CardContent className="p-10">
+                  <div className="flex flex-col md:flex-row gap-10">
+                    <div className="w-24 h-24 rounded-[2rem] bg-primary/10 flex items-center justify-center text-primary shrink-0 transition-transform group-hover:rotate-6">
+                      <ritual.icon className="h-10 w-10" />
+                    </div>
+                    
+                    <div className="flex flex-col gap-6 flex-1">
+                      <div className="flex items-start justify-between">
+                        <div className="flex flex-col gap-1">
+                          <h3 className="text-2xl font-bold text-foreground font-display">{ritual.name}</h3>
+                          <p className="text-muted-foreground font-medium text-sm leading-relaxed max-w-lg">{ritual.description}</p>
+                        </div>
+                        <button className="p-2 hover:bg-secondary rounded-xl text-muted-foreground transition-all">
+                          <MoreHorizontal className="h-6 w-6" />
+                        </button>
+                      </div>
+                      
+                      <div className="flex flex-wrap items-center gap-6">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-xs font-bold text-foreground">{ritual.estimatedTime}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-xs font-bold text-foreground">{ritual.nextExecution}</span>
+                        </div>
+                        <Badge className={cn(
+                          "border-none text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg",
+                          ritual.status === "Ativo" ? "bg-emerald-500/10 text-emerald-500" : "bg-orange-500/10 text-orange-500"
+                        )}>
+                          {ritual.status}
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-center md:justify-end">
+                       <Button className="h-16 px-10 bg-primary text-white font-bold rounded-2xl shadow-xl shadow-primary/20 hover:scale-105 transition-all text-base gap-3">
+                          Iniciar
+                          <ChevronRight className="h-5 w-5" />
+                       </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            
+            <div className="bg-secondary/30 border border-dashed border-border rounded-[2.5rem] p-10 flex flex-col items-center justify-center text-center opacity-60">
+               <RefreshCw className="h-10 w-10 text-muted-foreground mb-4 opacity-30" />
+               <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-1">Nenhum outro ritual</p>
+               <p className="text-xs text-muted-foreground font-medium">Você está em dia com suas obrigações financeiras.</p>
+            </div>
+          </TabsContent>
+        ))}
+      </Tabs>
     </div>
   );
 }

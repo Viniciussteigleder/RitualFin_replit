@@ -3,23 +3,20 @@
 ## 1) Definitions
 
 - Commit/Sync: A GitHub main branch update that triggers platform auto-deploys, without running the full verification workflow.
-- Full Deploy: A complete, end-to-end deployment cycle that confirms the intended commit is live on Render and Vercel, with explicit version verification and smoke checks.
+- **Full Deploy**: A complete, end-to-end deployment cycle that confirms the intended commit is live on Vercel, with explicit version verification and smoke checks.
 
 ## 1.1) Policy Update (Enforced)
 
-- **Full Deploy is required for all changes** (backend, frontend, and UI-only updates).
+- **Full Deploy is required for all changes**.
 - Commit/Sync is **deprecated** and must not be used going forward.
 
 ## 2) Preconditions
 
 - GitHub main is the source of truth for production.
-- Render service is connected to GitHub main and auto-deploy is enabled.
-- Vercel project is connected to GitHub main (fallback: Vercel CLI).
-- Required environment variables are configured:
-  - Render: `DATABASE_URL`, `NODE_ENV=production`, `SESSION_SECRET`, `CORS_ORIGIN`, `ALLOW_DEMO_AUTH_IN_PROD` (demo-only bypass)
-  - Vercel: `VITE_API_URL` is the full Render base URL, no trailing slash, no `/api`
+- Vercel project is connected to GitHub main.
+- Required environment variables are configured in Vercel.
 - Version reporting is enabled:
-  - Backend: `GET /api/version` returns `{ gitSha, buildTime, env }`
+  - App: `GET /api/version` returns `{ gitSha, buildTime, env }`
   - Frontend: `/version.json` returns `{ gitSha, buildTime }`
 
 ## 3) Choose a protocol
@@ -94,45 +91,27 @@ Record all versions and confirm services are live.
 
 1) GitHub SHA intended for deploy:
    - `git rev-parse --short=12 HEAD`
-2) Render deployed version:
-   - `curl https://<render-url>/api/version`
-3) Vercel deployed version:
+2) Vercel deployed version:
    - `curl https://<vercel-url>/version.json`
-4) Backend health check:
-   - `curl https://<render-url>/api/health`
-5) Frontend runtime API base URL:
-   - Confirm frontend requests use Render base URL (no `/api/api`).
-6) Smoke flow:
+3) App health check:
+   - `curl https://<vercel-url>/api/health`
+4) Smoke flow:
    - Load frontend
-   - Login (demo)
+   - Login
    - Visit dashboard and uploads
-
-### Automated verification
-
-Use:
-- `scripts/deploy/verify_live_versions.sh`
 
 ## 7) Post-deploy monitoring (15 minutes)
 
-- Render logs: check for 5xx or database errors.
 - Vercel logs: confirm no failed builds or missing assets.
 - Frontend smoke: upload sample CSV and verify rowsImported > 0.
-- Alerts: watch for CORS errors or /api calls to Vercel origin.
 
 ## 8) Troubleshooting Playbook
 
-- Git integration broken (Vercel): use `scripts/deploy/vercel_prod_deploy.sh`.
-- Render not deploying latest commit:
-  - Confirm Render is connected to the correct GitHub repo and branch.
-  - Trigger a manual deploy on the `main` branch.
-- Cache/env issues:
-  - Recheck `VITE_API_URL` and Render `CORS_ORIGIN` values.
-- CORS failures:
-  - Ensure Render `CORS_ORIGIN` includes the Vercel production URL.
-- vercel.json conflicts:
-  - Avoid mixing `routes` with `rewrites/headers/cleanUrls` in `vercel.json`.
+- Vercel not deploying latest commit:
+  - Confirm Vercel is connected to the correct GitHub repo and branch.
+  - Trigger a manual deploy in Vercel dashboard.
 - API base URL wrong:
-  - `VITE_API_URL` must be Render base URL only (no `/api`, no trailing slash).
+  - Ensure `AUTH_URL` and other env vars are correct in Vercel.
 
 ## 9) Acceptance Criteria Checklist
 

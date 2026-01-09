@@ -1,20 +1,24 @@
+
 import { db } from "@/lib/db";
 import { budgets, transactions } from "@/lib/db/schema";
 import { auth } from "@/auth";
 import { eq, and, sql } from "drizzle-orm";
-import { PageHeader } from "@/components/ui/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Plus, TrendingDown, AlertCircle } from "lucide-react";
+import { Plus, TrendingDown, AlertCircle, PlusCircle, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default async function BudgetsPage() {
   const session = await auth();
 
   if (!session?.user?.id) {
-    return <div>Please log in to view budgets</div>;
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <p className="text-muted-foreground font-bold">Por favor, faça login para ver seus orçamentos.</p>
+      </div>
+    );
   }
 
   const userId = session.user.id;
@@ -22,6 +26,13 @@ export default async function BudgetsPage() {
   const userBudgets = await db.query.budgets.findMany({
     where: eq(budgets.userId, userId),
   });
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("pt-PT", {
+      style: "currency",
+      currency: "EUR",
+    }).format(value);
+  };
 
   // Calculate spent amounts for each budget from transactions
   const budgetsWithSpent = await Promise.all(
@@ -45,36 +56,38 @@ export default async function BudgetsPage() {
   );
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Budget Tracking"
-        description="Monitor your spending limits across categories."
-        breadcrumbs={[{ label: "Planning" }, { label: "Budgets" }]}
-      >
-        <Button className="bg-slate-900 text-white hover:bg-slate-800">
-          <Plus className="mr-2 h-4 w-4" />
-          Create Budget
+    <div className="flex flex-col gap-10 pb-32 max-w-7xl mx-auto px-1">
+      {/* Page Header Area */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight font-display">Orçamentos</h1>
+          <p className="text-muted-foreground font-medium">Defina limites de gastos e mantenha sua saúde financeira sob controle.</p>
+        </div>
+        <Button className="h-14 px-8 bg-primary text-white hover:scale-105 transition-all rounded-2xl font-bold shadow-xl shadow-primary/20 gap-2">
+          <PlusCircle className="h-5 w-5" />
+          Novo Orçamento
         </Button>
-      </PageHeader>
+      </div>
 
       {budgetsWithSpent.length === 0 ? (
-        <Card className="border-dashed border-2 bg-slate-50/50 py-20">
-          <CardContent className="flex flex-col items-center text-center">
-            <div className="p-4 bg-white rounded-2xl shadow-sm mb-6">
-              <TrendingDown className="h-10 w-10 text-slate-200" />
+        <div className="py-32 flex flex-col items-center justify-center text-center bg-card border border-border rounded-[3rem] shadow-sm overflow-hidden relative group">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-80 h-80 bg-primary/5 rounded-full blur-[100px] -mt-40 group-hover:bg-primary/10 transition-colors"></div>
+          
+          <div className="relative z-10 flex flex-col items-center font-sans">
+            <div className="w-24 h-24 bg-secondary/50 rounded-[2.5rem] flex items-center justify-center mb-8 shadow-inner">
+              <TrendingDown className="h-12 w-12 text-muted-foreground/30" />
             </div>
-            <h3 className="text-xl font-bold text-slate-900">No budgets set</h3>
-            <p className="text-slate-500 mt-2 max-w-[320px] leading-relaxed">
-              Create budgets to track your spending and stay on top of your finances.
+            <h3 className="text-2xl font-bold text-foreground mb-3 font-display">Sem orçamentos definidos</h3>
+            <p className="text-muted-foreground max-w-[360px] font-medium leading-relaxed px-6">
+              A melhor forma de economizar é sabendo exatamente quanto você pode gastar em cada categoria.
             </p>
-            <Button className="mt-6 bg-slate-900 text-white">
-              <Plus className="mr-2 h-4 w-4" />
-              Create Your First Budget
+            <Button className="mt-12 h-16 px-12 bg-primary text-white rounded-2xl font-bold transition-all shadow-xl hover:scale-105 active:scale-95">
+              Criar Meu Primeiro Orçamento
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid gap-8">
           {budgetsWithSpent.map((budget) => {
             const spent = budget.spent;
             const limit = budget.amount;
@@ -83,97 +96,88 @@ export default async function BudgetsPage() {
             const isNearLimit = percentage > 80 && percentage <= 100;
 
             return (
-              <Card
+              <div
                 key={budget.id}
                 className={cn(
-                  "border-slate-200 hover:shadow-md transition-all",
-                  isOverBudget && "border-rose-200 bg-rose-50/30",
-                  isNearLimit && "border-amber-200 bg-amber-50/30"
+                  "bg-card border border-border rounded-[2.5rem] p-10 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 overflow-hidden group relative",
+                  isOverBudget && "border-destructive/20 bg-destructive/5"
                 )}
               >
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="font-bold text-lg text-slate-900">{budget.category1}</h3>
-                      <p className="text-sm text-slate-500">
-                        {budget.month 
-                          ? new Date(budget.month).toLocaleDateString("en-US", {
-                              month: "long",
-                              year: "numeric",
-                            })
-                          : "Monthly"}
-                      </p>
-                    </div>
-                    <Badge
-                      variant={isOverBudget ? "destructive" : isNearLimit ? "secondary" : "outline"}
-                      className={cn(
-                        isNearLimit && "bg-amber-100 text-amber-700 border-amber-200"
-                      )}
-                    >
-                      {isOverBudget ? (
-                        <>
-                          <AlertCircle className="h-3 w-3 mr-1" />
-                          Over Budget
-                        </>
-                      ) : isNearLimit ? (
-                        <>
-                          <AlertCircle className="h-3 w-3 mr-1" />
-                          Near Limit
-                        </>
-                      ) : (
-                        "On Track"
-                      )}
-                    </Badge>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-baseline">
-                      <span className="text-2xl font-bold text-slate-900 font-mono">
-                        {new Intl.NumberFormat("de-DE", {
-                          style: "currency",
-                          currency: "EUR",
-                        }).format(spent)}
-                      </span>
-                      <span className="text-sm text-slate-500">
-                        of{" "}
-                        {new Intl.NumberFormat("de-DE", {
-                          style: "currency",
-                          currency: "EUR",
-                        }).format(limit)}
-                      </span>
-                    </div>
-
-                    <Progress
-                      value={Math.min(percentage, 100)}
-                      className={cn(
-                        "h-2",
-                        isOverBudget && "[&>div]:bg-rose-600",
-                        isNearLimit && "[&>div]:bg-amber-600"
-                      )}
-                    />
-
-                    <div className="flex justify-between items-center text-xs">
-                      <span
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-12">
+                  <div className="flex-1 space-y-8">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className={cn(
+                          "w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm",
+                          isOverBudget ? "bg-destructive/10 text-destructive" : isNearLimit ? "bg-orange-500/10 text-orange-500" : "bg-primary/10 text-primary"
+                        )}>
+                           <Target className="h-6 w-6" />
+                        </div>
+                        <div className="flex flex-col">
+                           <h3 className="text-2xl font-bold text-foreground font-display tracking-tight">{budget.category1}</h3>
+                           <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{budget.month ? new Date(budget.month + "-01").toLocaleDateString("pt-PT", { month: "long", year: "numeric" }) : "Orçamento Mensal"}</span>
+                        </div>
+                      </div>
+                      <Badge
                         className={cn(
-                          "font-bold",
-                          isOverBudget && "text-rose-600",
-                          isNearLimit && "text-amber-600",
-                          !isOverBudget && !isNearLimit && "text-slate-500"
+                          "px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border-none h-fit",
+                          isOverBudget ? "bg-destructive text-white" : 
+                          isNearLimit ? "bg-orange-400 text-white" : 
+                          "bg-emerald-500/10 text-emerald-500"
                         )}
                       >
-                        {percentage.toFixed(0)}% used
-                      </span>
-                      <span className="text-slate-500">
-                        {new Intl.NumberFormat("de-DE", {
-                          style: "currency",
-                          currency: "EUR",
-                        }).format(Math.max(0, limit - spent))}{" "}
-                        remaining
-                      </span>
+                        {isOverBudget ? "Excedido" : isNearLimit ? "Atenção" : "Em Dia"}
+                      </Badge>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-end">
+                        <div className="flex items-baseline gap-3">
+                          <span className="text-4xl font-bold text-foreground tracking-tighter">
+                            {formatCurrency(spent)}
+                          </span>
+                          <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
+                            de {formatCurrency(limit)}
+                          </span>
+                        </div>
+                        <span className={cn(
+                          "text-xs font-black uppercase tracking-widest px-3 py-1 rounded-lg",
+                          isOverBudget ? "bg-destructive/10 text-destructive" : isNearLimit ? "bg-orange-500/10 text-orange-500" : "bg-primary/10 text-primary"
+                        )}>
+                          {percentage.toFixed(0)}% utilizado
+                        </span>
+                      </div>
+
+                      <div className="relative h-4 w-full bg-secondary rounded-full overflow-hidden shadow-inner">
+                        <div 
+                          className={cn(
+                            "absolute top-0 left-0 h-full rounded-full transition-all duration-1000 ease-out",
+                            isOverBudget ? "bg-destructive shadow-[0_0_15px_rgba(239,68,68,0.4)]" : isNearLimit ? "bg-orange-400 shadow-[0_0_15px_rgba(251,146,60,0.4)]" : "bg-primary shadow-[0_0_15px_rgba(0,113,227,0.4)]"
+                          )} 
+                          style={{ width: `${Math.min(percentage, 100)}%` }}
+                        />
+                      </div>
+
+                      <div className="flex justify-between items-center text-[11px] font-bold text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                           {isOverBudget ? <AlertCircle className="h-4 w-4" /> : null}
+                           <span className={cn(isOverBudget && "text-destructive")}>
+                             {limit - spent > 0 ? `Saldo disponível: ${formatCurrency(limit - spent)}` : `Excedido em: ${formatCurrency(Math.abs(limit - spent))}`}
+                           </span>
+                        </div>
+                        <span className="opacity-60">{Math.max(0, 100 - percentage).toFixed(0)}% restante</span>
+                      </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                  
+                  <div className="flex items-center gap-4 self-end md:self-center">
+                     <Button variant="secondary" className="h-14 px-8 rounded-2xl bg-secondary/50 border-none hover:bg-secondary font-bold text-sm gap-2">
+                        <Plus className="h-5 w-5" />
+                        Ajustar
+                     </Button>
+                  </div>
+                </div>
+              </div>
             );
           })}
         </div>
