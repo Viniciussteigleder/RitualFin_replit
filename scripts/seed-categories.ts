@@ -2,8 +2,8 @@ import XLSX from "xlsx";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import { db } from "../src/lib/db";
-import { rules, transactions } from "../src/lib/db/schema";
-import { eq, or, and, like, sql } from "drizzle-orm";
+import { rules, transactions, users } from "../src/lib/db/schema";
+import { eq, or, and, like, sql, isNull } from "drizzle-orm";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,11 +29,13 @@ async function seedCategories() {
 
   console.log(`📥 Processing ${data.length} category rules...`);
 
-  // Get the first user (for system rules)
-  const user = await db.query.users.findFirst();
+  // Get the specific user
+  const user = await db.query.users.findFirst({
+    where: eq(users.email, "vinicius.steigleder@gmail.com")
+  });
   
   if (!user) {
-    console.error("❌ No user found. Please seed transactions first.");
+    console.error("❌ User not found.");
     return;
   }
 
@@ -93,19 +95,28 @@ async function seedCategories() {
 async function classifyTransactions() {
   console.log("\n🔍 Classifying transactions...");
 
-  // Get all rules
+  const user = await db.query.users.findFirst({
+    where: eq(users.email, "vinicius.steigleder@gmail.com")
+  });
+
+  if (!user) return;
+
+  // Get all rules for this user
   const allRules = await db.query.rules.findMany({
-    where: eq(rules.active, true),
+    where: and(eq(rules.active, true), eq(rules.userId, user.id)),
     orderBy: (rules, { desc }) => [desc(rules.priority)],
   });
 
-  console.log(`Found ${allRules.length} active rules`);
+  console.log(`Found ${allRules.length} active rules for user`);
 
-  // Get all unclassified transactions
+  // Get all unclassified transactions for this user
   const allTransactions = await db.query.transactions.findMany({
-    where: or(
-      eq(transactions.category1, null as any),
-      eq(transactions.category2, null as any),
+    where: and(
+      eq(transactions.userId, user.id),
+      or(
+        isNull(transactions.category1),
+        isNull(transactions.category2)
+      )
     ),
   });
 
