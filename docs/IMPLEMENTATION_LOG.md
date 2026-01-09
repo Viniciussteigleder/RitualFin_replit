@@ -7232,3 +7232,74 @@ VITE_API_URL=https://ritualfin-api.onrender.com
 
 **Notes**:
 - Diagnostics stored in `upload_diagnostics` with preview rows and row-level errors (no raw file contents).
+
+---
+
+## V1 VIP Redesign — Premium UI/UX & Deployment (2026-01-09)
+
+**Role**: Senior Product Engineer
+**Status**: ✅ COMPLETE
+**Objective**: Implement the V1 VIP redesign for RitualFin across all dashboard pages, ensuring a premium "executive-level" aesthetic, Portuguese (pt-PT) localization, and EUR currency standard.
+
+### Key Achievements
+
+**1. Dashboard & Core Navigation (V1 VIP)**:
+- Rewritten `src/app/page.tsx` with a new 3-column executive layout.
+- Integrated `TopSummaryRow` (Liquidez, Projetado, Previsão), `AccountCardsGrid` (Credit Card usage UI), and `Ritual Insight` cards.
+- Added `Quick Review Queue` for frictionless pending transaction management.
+- Updated `Sidebar` with Rituals and Calendar navigation.
+
+**2. Premium UI Standard**:
+- Implemented `rounded-[2.5rem]` across all major containers.
+- Standardized typography with `font-display` for headers and `font-sans` for data.
+- Applied consistent emerald/green palette with glassmorphism and soft shadows.
+
+**3. Specialized Dashboards**:
+- **Calendar**: Revamped with Monday-start logic, daily event side-panels, and a detailed toolbar (`src/app/(dashboard)/calendar/page.tsx`).
+- **Event Detail**: Created a comprehensive detail page (`/calendar/events/[id]`) with occurrence history, AI insights, and trend charts.
+- **Rituals**: Implemented a tabbed system (Daily/Weekly/Monthly) with premium ritual cards and streak tracking.
+- **Goals (Previsão)**: New predictive dashboard with balance forecasting charts and payment agendas.
+- **Accounts & Budgets**: Rebuilt with rich progress bars, status badges, and physical card-style aesthetics.
+
+**4. Localization & Currency**:
+- Standardized all financial displays to EUR with `pt-PT` formatting (e.g., `1.234,56 €`).
+- Translated every UI label to Portuguese (Portugal).
+- Fixed week-start to Monday across all calendars.
+
+**5. Process & Deployment**:
+- **Import Preview**: Rewritten to provide premium diagnostic insights and clearer data verification (`src/app/(dashboard)/imports/[batchId]/preview/page.tsx`).
+- **Settings**: Defaulted to PT-PT and EUR preference.
+- **Clean-up**: Removed obsolete `calendar-nav.tsx` and resolved all `lucide-react` import issues.
+- **Deployment**: Full commit and push to GitHub `main` branch, triggering Vercel CI/CD.
+
+### Files Touched
+- `src/app/page.tsx`
+- `src/app/layout.tsx`
+- `src/app/globals.css`
+- `src/app/(dashboard)/calendar/page.tsx`
+- `src/app/(dashboard)/calendar/events/[id]/page.tsx`
+- `src/app/(dashboard)/rituals/page.tsx`
+- `src/app/(dashboard)/accounts/page.tsx`
+- `src/app/(dashboard)/budgets/page.tsx`
+- `src/app/(dashboard)/goals/page.tsx`
+- `src/app/(dashboard)/transactions/page.tsx`
+- `src/app/(dashboard)/transactions/transaction-list.tsx`
+- `src/app/(dashboard)/rules/page.tsx`
+- `src/app/(dashboard)/settings/page.tsx`
+- `src/app/(dashboard)/confirm/page.tsx`
+- `src/app/(dashboard)/uploads/upload-client.tsx`
+- `src/app/(dashboard)/imports/[batchId]/preview/page.tsx`
+- `src/components/layout/sidebar.tsx`
+- `SPECIFICATIONS.md`
+
+### Decision Log
+- **Decision**: standardizing on `rounded-[2.5rem]` vs the standard `rounded-xl`.
+  - **Reason**: To create an "iPhone-level" premium feel that distinguishes the V1 app from a generic dashboard.
+- **Decision**: Moving `pt-PT` as the default locale over `pt-BR`.
+  - **Reason**: User requirement for European region (Portugal/Germany context) and EUR currency.
+
+### Status: PRODUCTION READY ✅
+- Build Success: ✅
+- Type Check: ✅
+- Push to Main: ✅
+- Vercel Sync: ✅
