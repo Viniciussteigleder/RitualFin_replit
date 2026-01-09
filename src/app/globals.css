@@ -188,4 +188,95 @@
       transform: translateY(0);
     }
   }
+
+  /* Dark Green Insight Card (Image 1) */
+  .card-dark-green {
+    background: linear-gradient(135deg, #1a4d2e 0%, #0f2818 100%);
+    color: white;
+  }
+
+  .card-dark-green .accent-text {
+    color: #4ade80;
+  }
+
+  .card-dark-green .progress-bar {
+    background: linear-gradient(90deg, #4ade80 0%, #22c55e 100%);
+  }
+
+  /* Bright Insight Card (Image 2) */
+  .card-bright-insight {
+    background: linear-gradient(135deg, #22d3ee 0%, #10b981 100%);
+    color: white;
+  }
+
+  .card-bright-insight .icon-glow {
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
+  }
+
+  /* Category Colors */
+  .category-alimentacao {
+    background-color: #fed7aa;
+    color: #ea580c;
+  }
+
+  .category-moradia {
+    background-color: #bfdbfe;
+    color: #2563eb;
+  }
+
+  .category-transporte {
+    background-color: #e9d5ff;
+    color: #9333ea;
+  }
+
+  .category-saude {
+    background-color: #fbcfe8;
+    color: #db2777;
+  }
+
+  .category-lazer {
+    background-color: #a5f3fc;
+    color: #0891b2;
+  }
+
+  .category-tecnologia {
+    background-color: #ddd6fe;
+    color: #7c3aed;
+  }
+
+  .category-educacao {
+    background-color: #fef08a;
+    color: #ca8a04;
+  }
+
+  /* Green Button Styles */
+  .btn-green {
+    background-color: #059669;
+    color: white;
+  }
+
+  .btn-green:hover {
+    background-color: #047857;
+  }
+
+  /* Status Badge Colors */
+  .badge-processing {
+    background-color: #dbeafe;
+    color: #1e40af;
+  }
+
+  .badge-complete {
+    background-color: #d1fae5;
+    color: #065f46;
+  }
+
+  .badge-duplicate {
+    background-color: #fef3c7;
+    color: #92400e;
+  }
+
+  .badge-error {
+    background-color: #fee2e2;
+    color: #991b1b;
+  }
 }

@@ -51,7 +51,7 @@ export default function AdminImportPage() {
             onClick={handleImport}
             disabled={loading}
             size="lg"
-            className="w-full"
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
           >
             {loading ? (
               <>
