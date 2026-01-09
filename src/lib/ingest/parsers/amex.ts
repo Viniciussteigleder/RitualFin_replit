@@ -24,8 +24,8 @@ export async function parseAmexActivityCSV(content: string): Promise<ParseResult
         const details = record["Weitere Details"] || "";
         
         return {
-            date: parseUSDate(dateStr),
-            amount: parseCommaAmount(amountStr),
+            date: parseEURDate(dateStr),
+            amount: -parseCommaAmount(amountStr), // Invert Amex charges
             currency: "EUR", // Assumed from context
             description: desc,
             rawDescription: `${desc} ${details}`.trim(),
@@ -61,9 +61,10 @@ export async function parseAmexActivityCSV(content: string): Promise<ParseResult
   }
 }
 
-function parseUSDate(dateStr: string): Date {
+function parseEURDate(dateStr: string): Date {
     if (!dateStr) return new Date();
-    const [month, day, year] = dateStr.split("/");
+    // 20/12/2025 -> DD/MM/YYYY
+    const [day, month, year] = dateStr.split("/");
     return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
 }
 

@@ -1,18 +1,35 @@
-
 import { db } from "@/lib/db";
-import { accounts } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { accounts, transactions } from "@/lib/db/schema";
+import { eq, sql } from "drizzle-orm";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 
 export async function getAccounts() {
   const session = await auth();
   if (!session?.user?.id) return [];
+  const userId = session.user.id;
 
-  return await db.query.accounts.findMany({
-    where: eq(accounts.userId, session.user.id),
+  const accountsWithBalance = await db.query.accounts.findMany({
+    where: eq(accounts.userId, userId),
     orderBy: (accounts, { desc }) => [desc(accounts.createdAt)],
   });
+
+  // Fetch balances for all accounts
+  const result = await Promise.all(
+    accountsWithBalance.map(async (account) => {
+      const [balanceRes] = await db
+        .select({ total: sql<number>`COALESCE(SUM(amount), 0)` })
+        .from(transactions)
+        .where(eq(transactions.accountId, account.id));
+      
+      return {
+        ...account,
+        balance: Number(balanceRes?.total || 0)
+      };
+    })
+  );
+
+  return result;
 }
 
 export async function createAccount(data: {

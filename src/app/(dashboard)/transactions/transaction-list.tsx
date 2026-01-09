@@ -41,8 +41,30 @@ import { Input } from "@/components/ui/input";
 import { FilterPanel as FilterPanelComp, TransactionFilters } from "@/components/transactions/filter-panel";
 import { BulkActionsBar as BulkActionsBarComp } from "@/components/transactions/bulk-actions-bar";
 import { Checkbox } from "@/components/ui/checkbox";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { 
+    updateTransactionCategory, 
+    confirmTransaction, 
+    deleteTransaction 
+} from "@/lib/actions/transactions";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+
+// Using categories from schema (simplified list for UI)
+const CATEGORIES = [
+    "Receitas", "Moradia", "Mercado", "Compras Online",
+    "Transporte", "Saúde", "Lazer", "Viagem", "Roupas",
+    "Tecnologia", "Alimentação", "Energia", "Internet",
+    "Educação", "Presentes", "Streaming", "Academia",
+    "Investimentos", "Outros", "Interno", "Assinaturas", "Compras",
+    "Doações", "Esportes", "Finanças", "Férias", "Mobilidade",
+    "Pets", "Telefone", "Trabalho", "Transferências", "Vendas"
+];
 
 export function TransactionList({ transactions }: { transactions: any[] }) {
     const [selectedTx, setSelectedTx] = useState<any>(null);
@@ -83,6 +105,36 @@ export function TransactionList({ transactions }: { transactions: any[] }) {
             setSelectedIds(new Set());
         } else {
             setSelectedIds(new Set(filtered.map(tx => tx.id)));
+        }
+    };
+
+    const handleConfirm = async (id: string) => {
+        try {
+            await confirmTransaction(id);
+            toast.success("Transação confirmada");
+            if (selectedTx?.id === id) setSelectedTx(null);
+        } catch (error) {
+            toast.error("Erro ao confirmar transação");
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm("Tem certeza que deseja deletar esta transação?")) return;
+        try {
+            await deleteTransaction(id);
+            toast.success("Transação deletada");
+            if (selectedTx?.id === id) setSelectedTx(null);
+        } catch (error) {
+            toast.error("Erro ao deletar transação");
+        }
+    };
+
+    const handleCategoryUpdate = async (id: string, category: string) => {
+        try {
+            await updateTransactionCategory(id, { category1: category });
+            toast.success("Categoria atualizada");
+        } catch (error) {
+            toast.error("Erro ao atualizar categoria");
         }
     };
 
@@ -224,10 +276,16 @@ export function TransactionList({ transactions }: { transactions: any[] }) {
 
                                     {/* Column: Ações */}
                                     <div className="md:pr-10 md:py-4 flex items-center justify-end gap-3 text-muted-foreground self-end md:self-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button className="p-3 hover:bg-destructive/10 hover:text-destructive rounded-xl transition-all">
+                                        <button 
+                                            className="p-3 hover:bg-destructive/10 hover:text-destructive rounded-xl transition-all"
+                                            onClick={(e) => { e.stopPropagation(); handleDelete(tx.id); }}
+                                        >
                                             <Trash2 className="h-5 w-5" />
                                         </button>
-                                        <button className="p-3 bg-foreground text-background hover:opacity-90 rounded-xl transition-all shadow-lg shadow-foreground/5">
+                                        <button 
+                                            className="p-3 bg-foreground text-background hover:opacity-90 rounded-xl transition-all shadow-lg shadow-foreground/5"
+                                            onClick={(e) => { e.stopPropagation(); handleConfirm(tx.id); }}
+                                        >
                                             <Check className="h-5 w-5" />
                                         </button>
                                     </div>
@@ -269,11 +327,20 @@ export function TransactionList({ transactions }: { transactions: any[] }) {
 
                                 <div className="w-full grid grid-cols-2 gap-6 mb-10">
                                     <div className="p-6 rounded-3xl bg-secondary/50 border border-border text-left group">
-                                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Categoria AI</p>
-                                        <p className="text-lg font-bold text-foreground flex items-center gap-3">
-                                            <Tag className="h-5 w-5 text-primary" />
-                                            {selectedTx.category1 || "Não classificado"}
-                                        </p>
+                                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Categoria</p>
+                                        <Select 
+                                            defaultValue={selectedTx.category1} 
+                                            onValueChange={(val) => handleCategoryUpdate(selectedTx.id, val)}
+                                        >
+                                            <SelectTrigger className="w-full h-10 bg-transparent border-none p-0 focus:ring-0 text-lg font-bold text-foreground">
+                                                <SelectValue placeholder="Selecionar..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {CATEGORIES.map(cat => (
+                                                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
                                     <div className="p-6 rounded-3xl bg-secondary/50 border border-border text-left group">
                                         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Confiabilidade</p>
@@ -285,7 +352,10 @@ export function TransactionList({ transactions }: { transactions: any[] }) {
                                 </div>
 
                                 <div className="w-full space-y-4">
-                                    <Button className="w-full h-16 bg-primary text-white hover:opacity-95 rounded-2xl font-bold shadow-2xl shadow-primary/20 gap-3 text-lg transition-all active:scale-95">
+                                    <Button 
+                                        className="w-full h-16 bg-primary text-white hover:opacity-95 rounded-2xl font-bold shadow-2xl shadow-primary/20 gap-3 text-lg transition-all active:scale-95"
+                                        onClick={() => handleConfirm(selectedTx.id)}
+                                    >
                                         <CheckCircle2 className="h-6 w-6" />
                                         Confirmar Lançamento
                                     </Button>

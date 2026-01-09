@@ -1,4 +1,4 @@
-import { getTransactions, getPendingTransactions } from "@/lib/actions/transactions";
+import { getTransactions, getPendingTransactions, getDashboardData } from "@/lib/actions/transactions";
 import { getAccounts } from "@/lib/actions/accounts";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
@@ -25,14 +25,18 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { Progress } from "@/components/ui/progress";
+import { SyncStatus } from "@/components/dashboard/SyncStatus";
+import { ForecastCard } from "@/components/dashboard/ForecastCard";
 
 export default async function DashboardPage() {
+  const dashboardData = await getDashboardData();
   const transactionsData = await getTransactions(5);
   const pendingTransactions = await getPendingTransactions();
   const accounts = await getAccounts();
-  const allTx = await getTransactions(1000);
   
-  const totalBalance = allTx.reduce((acc, tx) => acc + Number(tx.amount), 0);
+  if (!dashboardData) return null;
+
+  const { totalBalance, dailyForecast, lastSync } = dashboardData;
   
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-PT", { 
@@ -81,7 +85,7 @@ export default async function DashboardPage() {
                 </div>
               </div>
               <div className="flex flex-col">
-                <h3 className="text-3xl font-bold text-foreground font-display">{formatCurrency(totalBalance)}</h3>
+                <h3 className="text-3xl font-bold text-foreground font-display" suppressHydrationWarning>{formatCurrency(totalBalance)}</h3>
                 <p className="text-[10px] text-muted-foreground mt-1 font-medium italic">Baseado no último snapshot</p>
               </div>
             </div>
@@ -101,32 +105,15 @@ export default async function DashboardPage() {
                 </div>
               </div>
               <div className="flex flex-col">
-                <h3 className="text-3xl font-bold text-foreground font-display">{formatCurrency(totalBalance * 1.05)}</h3>
-                <p className="text-xs text-muted-foreground mt-1 font-medium">Próximos 30 dias</p>
+                <h3 className="text-3xl font-bold text-foreground font-display" suppressHydrationWarning>{formatCurrency(totalBalance)}</h3>
+                <p className="text-xs text-muted-foreground mt-1 font-medium">Próximos 30 dias (Simulação)</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Card: Previsão */}
-        <Card className="rounded-[2rem] border-border bg-foreground text-background shadow-xl hover:-translate-y-1 transition-all overflow-hidden relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-transparent opacity-40"></div>
-          <CardContent className="p-8 relative z-10">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-primary-foreground/60 uppercase tracking-widest">Previsão</span>
-                <div className="bg-white/10 backdrop-blur-sm p-1 rounded-xl flex items-center">
-                  <button className="px-3 py-1 rounded-lg bg-white/20 text-[10px] font-bold">Diária</button>
-                  <button className="px-3 py-1 rounded-lg text-white/40 text-[10px] font-bold hover:text-white transition-colors">Semanal</button>
-                </div>
-              </div>
-              <div className="flex flex-col">
-                <h3 className="text-3xl font-bold text-white font-display">{formatCurrency(1250)}</h3>
-                <p className="text-xs text-white/40 mt-1 font-medium">Gasto médio diário previsto</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <ForecastCard dailyForecast={dailyForecast} />
       </div>
 
       {/* Sync Status Banner */}
@@ -139,7 +126,7 @@ export default async function DashboardPage() {
           <div className="flex flex-col">
             <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Sincronização Ativa</span>
             <div className="flex items-center gap-2">
-              <span className="text-base font-semibold text-foreground">Atualizado hoje às 14:00</span>
+              <SyncStatus lastSync={lastSync} />
               <Link href="/uploads" className="text-sm font-bold text-primary hover:opacity-80 transition-opacity flex items-center gap-1 ml-2">
                 Ver detalhes <ArrowRight className="h-3 w-3" />
               </Link>
@@ -204,20 +191,20 @@ export default async function DashboardPage() {
                       <div className="flex justify-between items-end">
                         <div className="flex flex-col">
                           <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Saldo</span>
-                          <span className="text-xl font-bold text-foreground font-display">{formatCurrency(3450.25)}</span>
+                          <span className="text-xl font-bold text-foreground font-display" suppressHydrationWarning>{formatCurrency(account.balance)}</span>
                         </div>
                         <div className="flex flex-col text-right">
-                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Limite</span>
-                          <span className="text-sm font-bold text-muted-foreground">{formatCurrency(5000)}</span>
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Instituição</span>
+                          <span className="text-sm font-bold text-muted-foreground">{account.institution || "Personal"}</span>
                         </div>
                       </div>
                       
                       <div className="flex flex-col gap-2">
                         <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider">
-                          <span className="text-muted-foreground">Utilização</span>
-                          <span className={cn(usagePercent > 80 ? "text-destructive" : "text-primary")}>{usagePercent}%</span>
+                          <span className="text-muted-foreground">Estado</span>
+                          <span className="text-primary">Ativo</span>
                         </div>
-                        <Progress value={usagePercent} className="h-2" />
+                        <Progress value={100} className="h-2" />
                       </div>
                     </div>
 
