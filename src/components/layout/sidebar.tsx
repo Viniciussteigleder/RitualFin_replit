@@ -18,6 +18,7 @@ import {
   Wallet,
   TrendingUp,
   RefreshCw,
+  Bot,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useState, useMemo } from "react";
@@ -40,7 +41,8 @@ export function Sidebar() {
     { id: "goals", icon: Target, href: "/goals", label: "Metas" },
     { id: "budgets", icon: PieChart, href: "/budgets", label: "Orçamentos" },
     { id: "accounts", icon: Wallet, href: "/accounts", label: "Contas" },
-    { id: "uploads", icon: Receipt, href: "/uploads", label: "Importar" },
+    { id: "uploads", icon: Receipt, href: "/admin/import", label: "Importar" },
+    { id: "ai-rules", icon: Bot, href: "/admin/rules", label: "Regras IA" },
   ];
 
   return (

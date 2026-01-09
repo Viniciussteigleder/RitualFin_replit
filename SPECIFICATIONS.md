@@ -67,6 +67,11 @@
 * **Bulk Actions:** Barra flutuante para ações em massa (Classificar, Excluir, Exportar).
 * **Transaction Drawer:** Detalhes profundos da transação ao clicar, com visualização de categoria e confiabilidade IA.
 
+## 2.9 Estúdio de Regras IA (`/admin/rules`)
+* **Sugestões:** Análise de frequência de termos em transações sem categoria.
+* **Simulador:** Teste em tempo real de keywords ("What-if" analysis) para ver impacto antes de salvar.
+* **Criação de Regras:** Transformação de simulações em regras oficiais do sistema (Prioridade 950).
+
 ---
 
 # 3) Lógica de Inteligência Artificial
