@@ -22,17 +22,24 @@ export async function parseMilesMoreCSV(content: string): Promise<ParseResult> {
     });
 
     const transactions: ParsedTransaction[] = records.map((record: any) => {
-        const dateStr = record["Processed on"] || record["Authorised on"]; // DD.MM.YYYY
-        const amountStr = record["Amount"]; // "-0,02"
-        const desc = record["Description"] || "";
+        const dateStr = record["Processed on"] || record["Authorised on"];
+        const amountStr = record["Amount"];
+        let desc = record["Description"] || "";
         const currency = record["Currency"] || "EUR";
+
+        const amount = parseGermanAmount(amountStr);
+        
+        // Rename generic Lastschrift to avoid confusion with Expenses
+        if (desc === "Lastschrift" && amount > 0) {
+            desc = "Credit Card Payment Received";
+        }
 
         return {
             date: parseGermanDate(dateStr),
-            amount: parseGermanAmount(amountStr),
-            currency: currency,
+            amount,
+            currency,
             description: desc,
-            rawDescription: desc, // M&M usually simple
+            rawDescription: record["Description"] || "",
             source: "M&M",
             metadata: record
         };

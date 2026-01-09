@@ -7,7 +7,7 @@ import { parseIngestionFile } from "@/lib/ingest";
 import { generateFingerprint } from "@/lib/ingest/fingerprint";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { categorizeTransaction } from "@/lib/rules/engine";
+import { categorizeTransaction, AI_SEED_RULES } from "@/lib/rules/engine";
 
 export async function uploadIngestionFile(formData: FormData) {
   const session = await auth();
@@ -110,6 +110,7 @@ import { getTaxonomyTree } from "./taxonomy";
 export async function commitBatch(batchId: string) {
     const session = await auth();
     if (!session?.user?.id) return { error: "Unauthorized" };
+    const userId = session.user.id;
 
     const batch = await db.query.ingestionBatches.findFirst({
         where: eq(ingestionBatches.id, batchId),
@@ -121,8 +122,26 @@ export async function commitBatch(batchId: string) {
 
     // Fetch user rules and taxonomy for categorization
     const userRules = await db.query.rules.findMany({
-        where: eq(rules.userId, session.user.id)
+        where: eq(rules.userId, userId)
     });
+
+    // Map seed rules to Rule interface
+    const seedRules = AI_SEED_RULES.map((r, i) => ({
+      ...r,
+      id: `seed-${i}`,
+      userId: userId, 
+      ruleKey: `SEED-${r.name}`,
+      active: true,
+      createdAt: new Date(),
+      keyWords: r.keywords,
+      keywords: r.keywords,
+      keyWordsNegative: null,
+      leafId: null,
+      category2: r.category2 || null,
+      category3: null
+    } as any));
+
+    const effectiveRules = [...userRules, ...seedRules];
     
     const taxonomy = await getTaxonomyTree();
     const taxonomyContext = JSON.stringify(taxonomy);
@@ -135,7 +154,7 @@ export async function commitBatch(batchId: string) {
         const data = item.parsedPayload as any;
         
         // 1. Deterministic Rule Categorization
-        let categorization = categorizeTransaction(data.descNorm || data.description, userRules);
+        let categorization = categorizeTransaction(data.descNorm || data.description, effectiveRules);
         let aiResult = null;
 
         // 2. AI Fallback (only if no rules match)

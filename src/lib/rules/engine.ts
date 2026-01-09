@@ -242,7 +242,7 @@ export function classifyByKeyDesc(keyDesc: string, rules: Rule[]): KeyDescMatchR
 export const AI_SEED_RULES = [
   {
     name: "Interno",
-    keywords: "AMEX - ZAHLUNG;ZAHLUNG ERHALTEN;PAGAMENTO AMEX;PAGAMENTO M&M;AMERICAN EXPRESS ZAHLUNG;DEUTSCHE KREDITBANK;LASTSCHRIFT",
+    keywords: "AMEX - ZAHLUNG;ZAHLUNG ERHALTEN;PAGAMENTO AMEX;PAGAMENTO M&M;AMERICAN EXPRESS ZAHLUNG;DEUTSCHE KREDITBANK;CREDIT CARD PAYMENT RECEIVED",
     type: "Despesa" as const,
     fixVar: "Fixo" as const,
     category1: "Interno" as const,
