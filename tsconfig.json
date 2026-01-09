@@ -1,8 +1,5 @@
 {
   "include": [
-    "client/src/**/*",
-    "shared/**/*",
-    "server/**/*",
     "src/**/*",
     "next.config.ts",
     ".next/types/**/*.ts",
@@ -39,16 +36,11 @@
       }
     ],
     "types": [
-      "node",
-      "vite/client"
+      "node"
     ],
     "paths": {
       "@/*": [
-        "./src/*",
-        "./client/src/*"
-      ],
-      "@shared/*": [
-        "./shared/*"
+        "./src/*"
       ]
     },
     "target": "ES2017",

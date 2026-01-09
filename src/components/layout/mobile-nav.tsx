@@ -2,45 +2,52 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, CreditCard, Upload, Settings } from "lucide-react";
+import { LayoutDashboard, Receipt, Plus, Target, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/dashboard", label: "Home", icon: Home },
-  { href: "/transactions", label: "Txns", icon: CreditCard },
-  { href: "/uploads", label: "Import", icon: Upload },
-  { href: "/settings", label: "More", icon: Settings },
+  { href: "/dashboard", label: "Painel", icon: LayoutDashboard },
+  { href: "/transactions", label: "Transações", icon: Receipt },
+  { href: "/add", label: "Adicionar", icon: Plus, isCenter: true },
+  { href: "/goals", label: "Metas", icon: Target },
+  { href: "/settings", label: "Ajustes", icon: Settings },
 ];
 
 export function MobileNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 safe-area-inset-bottom">
-      <div className="grid grid-cols-4 h-16">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+    <nav className="md:hidden bg-white dark:bg-[#1a2c26] border-t border-gray-100 dark:border-gray-800 p-2 flex justify-around items-center fixed bottom-0 w-full z-20 pb-safe">
+      {navItems.map((item) => {
+        const Icon = item.icon;
+        const isActive = pathname === item.href || (item.href === '/dashboard' && pathname === '/');
 
+        if (item.isCenter) {
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex flex-col items-center justify-center gap-1 transition-colors",
-                isActive
-                  ? "text-slate-900 bg-slate-50"
-                  : "text-slate-400 hover:text-slate-600"
-              )}
-            >
-              <Icon className={cn("h-5 w-5", isActive && "fill-current")} />
-              <span className="text-[10px] font-bold uppercase tracking-wider">
-                {item.label}
-              </span>
-            </Link>
+            <div key={item.href} className="relative -top-5">
+              <button className="w-14 h-14 rounded-full bg-primary shadow-lg shadow-primary/40 flex items-center justify-center text-[#111816] hover:scale-105 active:scale-95 transition-all">
+                <Plus className="h-8 w-8" />
+              </button>
+            </div>
           );
-        })}
-      </div>
+        }
+
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={cn(
+              "flex flex-col items-center gap-1 p-2 transition-colors",
+              isActive
+                ? "text-primary"
+                : "text-gray-500 dark:text-gray-400"
+            )}
+          >
+            <Icon className="h-6 w-6" />
+            <span className="text-[10px] font-medium">{item.label}</span>
+          </Link>
+        );
+      })}
     </nav>
   );
 }

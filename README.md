@@ -91,20 +91,19 @@ Settings → **Aliases & Logos** → “Atualizar logos”.
 Logos are stored under `public/logos/<user_id>/<slug>.ext` (PNG/JPG/SVG, max 2MB).
 
 ## Getting Started
-
-1.  **Environment Setup**: Copy `.env.example` to `.env.local` and fill in your database and auth credentials.
-2.  **Database**: Run migrations with `npm run db:push`.
-3.  **Run Dev**: `npm run dev`.
-4.  **Testing**: See [Testing Guide](docs/TESTING.md).
-
-## Critical Paths & E2E Tests
-
-The application features a robust E2E test suite using Playwright covering:
-- Authentication (Signup/Login)
-- Data Ingestion (CSV upload, preview, commit, rollback)
-- Screenshot Evidence (OCR & Transaction Enrichment)
-
-Run tests with `npx playwright test`.
+ 
+ 1.  **Environment Setup**: Copy `.env.example` to `.env.local` and fill in your database and auth credentials.
+ 2.  **Database**: Run schema update with `npm run db:push`.
+ 3.  **Run Dev**: `npm run dev`.
+ 
+ ## Critical Paths & E2E Tests
+ 
+ The application features a robust E2E test suite using Playwright covering:
+ - Authentication (Login via Google)
+ - Data Ingestion (CSV upload, preview, commit, rollback)
+ - Screenshot Evidence (OCR & Transaction Enrichment)
+ 
+ Run tests with `npm run test:e2e`.
 
 ## Excel Roundtrip
 
@@ -128,22 +127,9 @@ Stored fields:
 - `recurring_day_window` (max deviation)
 - `recurring_confidence` (ratio of matching deltas)
 
-## Tests (manual script)
+## Database & Storage
 
-```
-tsx script/test-imports.ts
-```
+- The app uses **Neon PostgreSQL** via Drizzle ORM.
+- Logo storage is local (`public/logos`) during development.
+- Forensic deduplication is handled at the `ingestion_items` level prior to transaction commit.
 
-Validates parsing and key_desc tagging on the three sample files under `attached_assets/`.
-
-## Supabase RLS & Storage
-
-Apply `migrations/004_classification_alias_logos.sql` in Supabase to:
-- Enable RLS on new tables
-- Create `logos` bucket and per-user policies
-
-## Assumptions
-
-- The app uses Drizzle `db:push` to create tables. SQL migration is provided for RLS/bucket only.
-- Amounts remain `real` in the existing schema to avoid breaking legacy reports. New keys still use normalized decimal strings.
-- Logo storage is local (`public/logos`) in this repo; Supabase bucket paths match the same structure for deployment.

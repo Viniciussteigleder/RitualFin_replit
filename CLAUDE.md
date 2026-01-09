@@ -153,167 +153,103 @@ npm run db:push          # Push schema changes to PostgreSQL (no migrations)
 
 ### Deployment
 
-**Architecture**: Split deployment (Frontend on Vercel, Backend on Render, Database on Supabase)
+**Architecture**: Single deployment on Vercel (Frontend + Server Actions) with Neon PostgreSQL.
 
 ```
-┌─────────────┐         ┌──────────────┐         ┌─────────────┐
-│   Vercel    │ ──────> │    Render    │ ──────> │  Supabase   │
-│  (Frontend) │  HTTPS  │  (Backend)   │   PG    │  (Database) │
-│  Static SPA │         │  Express API │         │  PostgreSQL │
-└─────────────┘         └──────────────┘         └─────────────┘
+┌─────────────┐         ┌─────────────┐
+│   Vercel    │ ──────> │    Neon     │
+│ (App Router)│  HTTPS  │  (Database) │
+│ Next.js 15+ │   PG    │  PostgreSQL │
+└─────────────┘         └─────────────┘
 ```
 
 **Required Environment Variables**:
-- **Vercel** (Frontend):
-  - `VITE_API_URL` - Backend API URL (e.g., `https://ritualfin-api.onrender.com`)
-- **Render** (Backend):
-  - `DATABASE_URL` - PostgreSQL connection string from Supabase (Transaction Pooler, port 6543)
-  - `CORS_ORIGIN` - Vercel frontend URL(s) for CORS (e.g., `https://ritualfin.vercel.app`)
-  - `NODE_ENV=production`
-  - `SESSION_SECRET` - Strong random secret (32+ chars)
-  - `OPENAI_API_KEY` (optional) - For AI features
-
-**Deployment Guide**: See `docs/DEPLOYMENT_GUIDE.md` for complete step-by-step instructions, troubleshooting, and monitoring setup.
+- `DATABASE_URL` - Neon PostgreSQL connection string
+- `AUTH_SECRET` - Secret for Auth.js v5
+- `AUTH_GOOGLE_ID` - Google OAuth Client ID
+- `AUTH_GOOGLE_SECRET` - Google OAuth Client Secret
+- `OPENAI_API_KEY` (optional) - For AI features
 
 **Key Points**:
-- `vercel.json` configures ONLY frontend (SPA routing, security headers)
-- Backend is deployed separately to avoid serverless cold starts
-- CORS must be configured on backend to allow frontend domain
-- All API calls from frontend use `VITE_API_URL` environment variable
+- Next.js App Router handles both UI and Backend logic (Server Actions)
+- Drizzle ORM used for database operations
+- Auth.js v5 for authentication
+- Deployed entirely on Vercel
+
 
 ## Architecture
 
-### Monorepo Structure
-- **`client/`** - React frontend (Vite)
-- **`server/`** - Express backend (TypeScript ESM)
-- **`shared/`** - Shared types and database schema (Drizzle ORM)
-- **`script/`** - Build scripts
+### Structure
+- **`src/app/`** - Next.js App Router pages and API routes
+- **`src/components/`** - React components (UI and shared)
+- **`src/lib/`** - Core business logic, DB schema, and utilities
+  - **`actions/`** - Server Actions (Backend logic replacement)
+  - **`db/`** - Drizzle ORM schema and connection
+  - **`ingest/`** - CSV parsing logic (Sparkasse, Amex, M&M)
+  - **`rules/`** - Categorization rules engine
+- **`scripts/`** - Utility scripts for seeding and data management
 
 ### TypeScript Path Aliases
-- `@/*` → `client/src/*`
-- `@shared/*` → `shared/*`
+- `@/*` → `src/*`
 
 ### Key Technologies
-- **Frontend**: React 19, Wouter (routing), TanStack Query, shadcn/ui, Tailwind CSS v4
-- **Backend**: Express, Passport (local auth), OpenAI API
-- **Database**: PostgreSQL via Drizzle ORM
-- **Build**: Vite (client), esbuild (server)
+- **Frontend**: Next.js 15+, React 19, Tailwind CSS v4, shadcn/ui, Lucide icons
+- **Backend/API**: Next.js Server Actions & API Routes
+- **Authentication**: Auth.js v5 (NextAuth) with Google Provider
+- **Database**: PostgreSQL (Neon) via Drizzle ORM
+- **AI**: OpenAI API for categorization suggestions
 
 ## Core Data Model
 
 ### Schema Location
-All database tables are defined in `shared/schema.ts` using Drizzle ORM with PostgreSQL enums.
-
-### Transaction Categorization System
-Transactions use a hierarchical categorization model:
-- `type`: "Despesa" (Expense) | "Receita" (Income)
-- `fix_var`: "Fixo" (Fixed) | "Variável" (Variable)
-- `category_1`: Primary category (see `category1Enum` in schema)
-- `category_2`: Optional subcategory (free text)
-
-Special transaction flags:
-- `internal_transfer`: Marks internal account movements (excluded from budgets)
-- `exclude_from_budget`: Manual per-transaction budget exclusion
-- `needs_review`: True when transaction requires manual confirmation
-- `manual_override`: User has manually edited categorization
+All database tables are defined in `src/lib/db/schema.ts` using Drizzle ORM.
 
 ### Key Tables
-- **`transactions`** - Canonical ledger with categorization fields
-- **`rules`** - Keyword-based auto-categorization rules (AI-assisted)
-- **`uploads`** - CSV import history with status tracking
-- **`budgets`** - Monthly budget targets per category
-- **`calendar_events`** - Recurring payment tracking
-- **`goals`** - Monthly financial targets with category breakdowns
+- **`users`** - User profiles and Auth.js integration
+- **`transactions`** - Canonical ledger with categorization and metadata
+- **`ingestion_batches`** - History of file uploads/imports
+- **`ingestion_items`** - Individual records extracted before commit
+- **`rules`** - Keyword-based categorization rules
+- **`taxonomy_*`** - Multi-level category definitions
+- **`accounts`** - Financial accounts (Bank, Credit Card, etc.)
 
-## CSV Import Flow
+## Ingestion Flow
 
-1. User uploads Miles & More bank CSV via `/uploads` page
-2. Backend parses CSV using `server/csv-parser.ts`
-3. Each transaction is processed through `server/rules-engine.ts`:
-   - Keyword matching against user rules
-   - AI-powered keyword suggestion (OpenAI API)
-   - Bulk categorization for multiple similar transactions
-4. Transactions with low confidence → `needs_review = true`
-5. User reviews and confirms via `/confirm` page
-6. Confirmed transactions update existing rules or create new ones
+1. User uploads a CSV file (Sparkasse, Amex, or Miles & More) via `/uploads`
+2. `uploadIngestionFile` Server Action parses the file using `src/lib/ingest`
+3. Forensic fingerprinting prevents duplicates at the `ingestion_items` level
+4. User reviews the "Preview" in the UI
+5. `commitBatch` Server Action processes items:
+   - Applies deterministic rules first
+   - Uses AI (OpenAI) as fallback for categorization
+   - Normalizes descriptions and extracts metadata
+6. Transactions are saved to the `transactions` table
 
-### CSV Parser
-- Expects Miles & More format (Portuguese headers)
-- Required columns: "Authorised on", "Amount", "Currency", "Description", "Payment type", "Status"
-- Generates unique `key` field for duplicate detection (user_id + date + desc + amount)
+## Key Pages
 
-### Rules Engine
-- Matches keywords using normalized text (uppercase, no accents)
-- Priority-based rule application (higher priority wins)
-- "Strict" rules auto-categorize without review
-- Confidence levels (0-100) determine if review is needed
-
-## API Structure
-
-All backend routes are in `server/routes.ts`:
-
-**Authentication** (auto-creates demo user if missing):
-- `POST /api/auth/login` - Login/create user
-- `GET /api/auth/me` - Get current user
-
-**Core Features**:
-- `GET /api/uploads` - List upload history
-- `POST /api/uploads/process` - Process CSV file
-- `GET /api/transactions` - List transactions (with filters)
-- `GET /api/transactions/confirm-queue` - Get pending review items
-- `POST /api/transactions/bulk-confirm` - Batch confirmation
-- `GET /api/rules` - List categorization rules
-- `POST /api/rules` - Create new rule
-- `GET /api/dashboard` - Monthly spending overview with projections
-
-**AI Features**:
-- `POST /api/ai/suggest-keyword` - Get AI keyword suggestion for transaction
-- `POST /api/ai/bulk-categorize` - Categorize multiple similar transactions at once
-
-## Frontend Pages
-
-Located in `client/src/pages/`:
-- **`dashboard.tsx`** - Monthly spending overview with budget projections
-- **`uploads.tsx`** - CSV file upload interface
-- **`confirm.tsx`** - Transaction confirmation queue (needs_review items)
-- **`rules.tsx`** - Manage categorization rules
-- **`calendar.tsx`** - Recurring payment tracking
-- **`goals.tsx`** - Monthly budget planning
-- **`ai-keywords.tsx`** - Bulk AI-powered keyword analysis
+- **`/dashboard`** - Spending overview, balance tracking, and monthly health
+- **`/transactions`** - Searchable ledger of all financial activities
+- **`/uploads`** - File ingestion and import history
+- **`/confirm`** - Review queue for low-confidence categorizations
+- **`/rules`** - Management of auto-categorization keywords
+- **`/calendar`** - Recurring payment tracking and visualization
+- **`/settings`** - User preferences and system configuration
 
 ## Development Notes
 
 ### Environment Variables
-- `DATABASE_URL` - PostgreSQL connection string (required)
-- `OPENAI_API_KEY` - For AI categorization features
-- `NODE_ENV` - Set automatically by scripts
+- `DATABASE_URL` - Neon PostgreSQL connection string (required)
+- `AUTH_SECRET` - NextAuth secret (required for prod)
+- `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` - Google OAuth credentials
+- `OPENAI_API_KEY` - Optional, for AI-powered categorization
 
-### Authentication
-The app currently uses a simplified auth system that auto-creates a "demo" user. All data is scoped to `userId` in database queries.
-
-### Session Storage
-- Development: In-memory store (memorystore)
-- Production: Should use connect-pg-simple with PostgreSQL
-
-### Build Process
-`script/build.ts` performs a two-stage build:
-1. Vite builds client → `dist/`
-2. esbuild bundles server → `dist/index.cjs` (with select deps bundled to reduce cold start time)
-
-### AI Integration
-The app uses OpenAI API for:
-- **Keyword suggestion**: Analyzing transaction descriptions to suggest categorization keywords
-- **Bulk categorization**: Processing multiple similar transactions at once
-- Users must provide their own OpenAI API key in settings
-
-### Currency & Locale
-- Default currency: EUR
-- Locale: Portuguese (Brazil) - pt-BR
-- Date format: DD.MM.YYYY (Miles & More format)
+### Locale & Currency
+- Default currency: **EUR**
+- Primary Locale: **Portuguese (Brazil) - pt-BR**
+- Supports: EN (English), DE (German)
 
 ## Testing Approach
+- **E2E Testing**: Playwright configured in `playwright.config.ts`
+- **Manual QA**: Verification via the confirm queue and history logs
+- **Type Safety**: Full TypeScript integration across the stack
 
-When adding tests, note:
-- No test framework is currently configured
-- Manual testing via `/confirm` queue is primary validation
-- Database operations use Drizzle ORM typed queries
