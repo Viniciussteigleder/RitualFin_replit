@@ -48,7 +48,7 @@ export async function applyCategorization() {
             ruleIdApplied: result.ruleIdApplied || null,
             confidence: result.confidence || 0,
             needsReview: result.needsReview !== undefined ? result.needsReview : true,
-            classifiedBy: result.ruleIdApplied ? 'RULE' : 'MANUAL',
+            classifiedBy: result.ruleIdApplied ? 'AUTO_KEYWORDS' : 'MANUAL',
           })
           .where(eq(transactions.id, tx.id));
 
