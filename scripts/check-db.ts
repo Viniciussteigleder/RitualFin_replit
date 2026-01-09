@@ -1,7 +1,7 @@
 
 import { db } from "../src/lib/db";
 import { accounts, transactions, accountBalanceSnapshots, ingestionBatches, calendarEvents, ingestionItems, rules, transactionEvidenceLink } from "../src/lib/db/schema";
-import { count, eq, sql } from "drizzle-orm";
+import { count, eq, sql, and, like } from "drizzle-orm";
 
 async function main() {
   const accountCount = await db.select({ count: count() }).from(accounts);
@@ -18,15 +18,17 @@ async function main() {
     calendarEventCount: calendarEventCount[0].count,
   });
 
-  const totalBalanceRes = await db.select({ total: sql<number>`sum(cast(amount as double precision))` }).from(transactions);
-  console.log("Total Balance:", totalBalanceRes[0].total);
-
-  const amexSamples = await db.select().from(transactions).where(eq(transactions.source, "Amex")).limit(5);
-  console.log("Amex Samples (Sign check):", amexSamples.map(tx => ({
-    desc: tx.descNorm,
-    amount: tx.amount,
-    date: tx.paymentDate
-  })));
+  // Check M&M samples
+  const mmSamples = await db.select({
+      desc: transactions.descNorm,
+      amount: transactions.amount,
+      type: transactions.type
+    })
+    .from(transactions)
+    .where(eq(transactions.source, "M&M"))
+    .limit(10);
+  
+  console.log("M&M Samples:", mmSamples);
 
   process.exit(0);
 }
