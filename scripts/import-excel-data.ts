@@ -1,6 +1,11 @@
 import XLSX from 'xlsx';
+import { config } from 'dotenv';
 import { db } from '../src/lib/db/index.js';
 import { rules, taxonomyLevel1, taxonomyLevel2, taxonomyLeaf } from '../src/lib/db/schema.js';
+import { eq } from 'drizzle-orm';
+
+// Load environment variables
+config({ path: '.env.local' });
 
 /**
  * Import Categories, Keywords, and Aliases from Excel
@@ -120,20 +125,32 @@ async function importTaxonomy(data: ExcelRow[], stats: any) {
   console.log(`   Found ${level1Map.size} unique Level 1 categories`);
   console.log(`   Found ${level2Map.size} unique Level 2 categories`);
 
-  // Import Level 1
+  // Import Level 1 - use upsert pattern
   for (const nivel1 of Array.from(level1Map.keys())) {
     try {
-      const result = await db.insert(taxonomyLevel1).values({
-        userId: USER_ID,
-        nivel1Pt: nivel1,
-      }).onConflictDoNothing().returning({ id: taxonomyLevel1.level1Id });
-      
-      if (result.length > 0) {
-        level1Map.set(nivel1, result[0].id);
-        stats.level1++;
+      // First check if exists
+      const existing = await db.query.taxonomyLevel1.findFirst({
+        where: eq(taxonomyLevel1.nivel1Pt, nivel1),
+      });
+
+      if (existing) {
+        level1Map.set(nivel1, existing.level1Id);
+        console.log(`   ℹ️  Level 1 "${nivel1}" already exists, using ID: ${existing.level1Id}`);
+      } else {
+        // Insert new
+        const result = await db.insert(taxonomyLevel1).values({
+          userId: USER_ID,
+          nivel1Pt: nivel1,
+        }).returning({ id: taxonomyLevel1.level1Id });
+        
+        if (result.length > 0) {
+          level1Map.set(nivel1, result[0].id);
+          stats.level1++;
+          console.log(`   ✅ Created Level 1 "${nivel1}" with ID: ${result[0].id}`);
+        }
       }
     } catch (error: any) {
-      console.log(`   ⚠️  Error inserting Level 1 "${nivel1}": ${error.message}`);
+      console.log(`   ⚠️  Error with Level 1 "${nivel1}": ${error.message}`);
     }
   }
 
@@ -146,19 +163,29 @@ async function importTaxonomy(data: ExcelRow[], stats: any) {
     }
 
     try {
-      await db.insert(taxonomyLevel2).values({
-        userId: USER_ID,
-        level1Id: level1Id,
-        nivel2Pt: level2,
-      }).onConflictDoNothing();
-      
-      stats.level2++;
+      // Check if exists
+      const existing = await db.query.taxonomyLevel2.findFirst({
+        where: eq(taxonomyLevel2.nivel2Pt, level2),
+      });
+
+      if (existing) {
+        console.log(`   ℹ️  Level 2 "${level2}" already exists`);
+      } else {
+        await db.insert(taxonomyLevel2).values({
+          userId: USER_ID,
+          level1Id: level1Id,
+          nivel2Pt: level2,
+        });
+        
+        stats.level2++;
+        console.log(`   ✅ Created Level 2 "${level2}"`);
+      }
     } catch (error: any) {
       console.log(`   ⚠️  Error inserting Level 2 "${level2}": ${error.message}`);
     }
   }
 
-  console.log(`   ✅ Imported ${stats.level1} Level 1, ${stats.level2} Level 2 categories`);
+  console.log(`   ✅ Imported ${stats.level1} new Level 1, ${stats.level2} new Level 2 categories`);
 }
 
 async function importRules(data: ExcelRow[], stats: any) {
