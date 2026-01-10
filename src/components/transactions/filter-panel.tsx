@@ -38,6 +38,8 @@ export interface TransactionFilters {
   minAmount?: number;
   maxAmount?: number;
   searchQuery?: string;
+  fixVar?: string;
+  recurring?: boolean;
 }
 
 export function FilterPanel({ onFilterChange, categories = [], accounts = [] }: FilterPanelProps) {
@@ -234,6 +236,38 @@ export function FilterPanel({ onFilterChange, categories = [], accounts = [] }: 
                   }
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Type & Recurrence */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+                <Label className="text-xs font-bold uppercase tracking-widest text-slate-700">Type</Label>
+                <Select 
+                    value={filters.fixVar || "all"} 
+                    onValueChange={(val) => setFilters({ ...filters, fixVar: val === "all" ? undefined : val })}
+                >
+                    <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Fixo & Variável</SelectItem>
+                        <SelectItem value="Fixo">Fixo</SelectItem>
+                        <SelectItem value="Variável">Variável</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="space-y-2">
+                <Label className="text-xs font-bold uppercase tracking-widest text-slate-700">Recurrence</Label>
+                <Select 
+                    value={filters.recurring === undefined ? "all" : filters.recurring ? "true" : "false"} 
+                    onValueChange={(val) => setFilters({ ...filters, recurring: val === "all" ? undefined : val === "true" })}
+                >
+                    <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Todas</SelectItem>
+                        <SelectItem value="true">Recorrentes</SelectItem>
+                        <SelectItem value="false">Únicas</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
           </div>
 

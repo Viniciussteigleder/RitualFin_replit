@@ -1,6 +1,6 @@
 // Rules Engine for AI-powered transaction categorization with confidence levels
 
-import type { Rule, Transaction } from "@/lib/db/schema";
+import type { Rule, Transaction, AliasAssets } from "@/lib/db/schema";
 import { evaluateRuleMatch } from "./classification-utils";
 
 export interface RuleMatch {
@@ -237,6 +237,23 @@ export function classifyByKeyDesc(keyDesc: string, rules: Rule[]): KeyDescMatchR
   }
 
   return {};
+}
+
+export function matchAlias(descNorm: string, aliases: AliasAssets[]): AliasAssets | undefined {
+  const haystack = normalizeForMatch(descNorm);
+  
+  for (const alias of aliases) {
+    if (!alias.keyWordsAlias) continue;
+    
+    // Split keywords
+    const keywords = alias.keyWordsAlias.split(";").map(k => normalizeForMatch(k)).filter(k => k.length > 0);
+    
+    // Check match
+    if (keywords.some(k => haystack.includes(k))) {
+        return alias;
+    }
+  }
+  return undefined;
 }
 
 export const AI_SEED_RULES = [

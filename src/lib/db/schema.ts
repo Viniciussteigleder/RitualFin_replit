@@ -201,6 +201,10 @@ export const ingestionItems = pgTable("ingestion_items", {
   fingerprintIdx: index("ingestion_items_fingerprint_idx").on(table.itemFingerprint),
 }));
 
+export const ingestionItemsRelations = relations(ingestionItems, ({ one }) => ({
+  batch: one(ingestionBatches, { fields: [ingestionItems.batchId], references: [ingestionBatches.id] }),
+}));
+
 export const attachments = pgTable("attachments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),

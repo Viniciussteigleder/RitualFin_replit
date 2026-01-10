@@ -18,17 +18,12 @@ async function main() {
     calendarEventCount: calendarEventCount[0].count,
   });
 
-  // Check M&M samples
-  const mmSamples = await db.select({
-      desc: transactions.descNorm,
-      amount: transactions.amount,
-      type: transactions.type
-    })
+  // Check Recurring
+  const recurringCount = await db.select({ count: count() })
     .from(transactions)
-    .where(eq(transactions.source, "M&M"))
-    .limit(10);
-  
-  console.log("M&M Samples:", mmSamples);
+    .where(eq(transactions.recurringFlag, true));
+
+  console.log("Recurring Transactions:", recurringCount[0].count);
 
   process.exit(0);
 }

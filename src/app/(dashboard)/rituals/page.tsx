@@ -16,6 +16,12 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
 
 export default async function RitualsPage() {
   const session = await auth();
@@ -96,9 +102,18 @@ export default async function RitualsPage() {
                           <h3 className="text-2xl font-bold text-foreground font-display">{ritual.name}</h3>
                           <p className="text-muted-foreground font-medium text-sm leading-relaxed max-w-lg">{ritual.description}</p>
                         </div>
-                        <button className="p-2 hover:bg-secondary rounded-xl text-muted-foreground transition-all">
-                          <MoreHorizontal className="h-6 w-6" />
-                        </button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <button className="p-2 hover:bg-secondary rounded-xl text-muted-foreground transition-all">
+                                    <MoreHorizontal className="h-6 w-6" />
+                                </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="rounded-2xl">
+                                <DropdownMenuItem className="rounded-xl font-bold">Ver Histórico</DropdownMenuItem>
+                                <DropdownMenuItem className="rounded-xl font-bold">Configurar Lembrete</DropdownMenuItem>
+                                <DropdownMenuItem className="rounded-xl font-bold text-red-500">Pular Ocorrência</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                       
                       <div className="flex flex-wrap items-center gap-6">
@@ -120,10 +135,12 @@ export default async function RitualsPage() {
                     </div>
                     
                     <div className="flex items-center justify-center md:justify-end">
-                       <Button className="h-16 px-10 bg-primary text-white font-bold rounded-2xl shadow-xl shadow-primary/20 hover:scale-105 transition-all text-base gap-3">
-                          Iniciar
-                          <ChevronRight className="h-5 w-5" />
-                       </Button>
+                       <Link href={ritual.id === 'daily' ? '/transactions' : ritual.id === 'weekly' ? '/calendar' : '/goals'}>
+                           <Button className="h-16 px-10 bg-primary text-white font-bold rounded-2xl shadow-xl shadow-primary/20 hover:scale-105 transition-all text-base gap-3">
+                              Iniciar
+                              <ChevronRight className="h-5 w-5" />
+                           </Button>
+                       </Link>
                     </div>
                   </div>
                 </CardContent>

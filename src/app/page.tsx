@@ -22,30 +22,24 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import Link from "next/link";
 import { Progress } from "@/components/ui/progress";
 import { SyncStatus } from "@/components/dashboard/SyncStatus";
 import { ForecastCard } from "@/components/dashboard/ForecastCard";
+import { CategoryChart } from "@/components/dashboard/CategoryChart";
 
 export default async function DashboardPage() {
   const dashboardData = await getDashboardData();
   const transactionsData = await getTransactions(5);
   const pendingTransactions = await getPendingTransactions();
   const accounts = await getAccounts();
+  const { totalBalance, metrics, categoryData } = dashboardData || {};
   
-  if (!dashboardData) return null;
+  if (!dashboardData || !metrics) return null;
 
-  const { totalBalance, dailyForecast, lastSync } = dashboardData;
+  const { spentMonthToDate, projectedSpend, remainingBudget, monthlyGoal } = metrics;
   
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-PT", { 
-      style: "currency", 
-      currency: "EUR",
-      minimumFractionDigits: 2
-    }).format(value);
-  };
-
   return (
     <div className="max-w-7xl mx-auto flex flex-col gap-8 pb-32 font-sans overflow-hidden">
       {/* Header Section */}
@@ -71,77 +65,116 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* TopSummaryRow (3 cards) */}
+      {/* TopSummaryRow (User Request: MTD Spend, Projected Spend, Remaining) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Card: Saldo em caixa */}
-        <Card className="rounded-[2rem] border-border bg-card shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
-          <div className="absolute -right-8 -top-8 w-32 h-32 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors"></div>
-          <CardContent className="p-8">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Saldo em caixa</span>
-                <div className="p-2 bg-primary/10 rounded-xl text-primary">
-                  <Wallet className="h-5 w-5" />
+        
+        {/* Card 1: Gasto no Mês (MTD) */}
+        <Card className="rounded-[2.5rem] border-border bg-white dark:bg-card shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
+          <CardContent className="p-8 flex flex-col justify-between h-full gap-4">
+             <div className="flex items-center gap-3">
+                <div className="p-3 rounded-full bg-orange-100 text-orange-600">
+                    <TrendingUp className="h-5 w-5" />
                 </div>
-              </div>
-              <div className="flex flex-col">
-                <h3 className="text-3xl font-bold text-foreground font-display" suppressHydrationWarning>{formatCurrency(totalBalance)}</h3>
-                <p className="text-[10px] text-muted-foreground mt-1 font-medium italic">Baseado no último snapshot</p>
-              </div>
-            </div>
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Gasto Atual (MTD)</span>
+             </div>
+             <div>
+                <h3 className="text-4xl font-bold text-slate-900 dark:text-white font-display text-orange-600 tracking-tight" suppressHydrationWarning>
+                    {formatCurrency(spentMonthToDate)}
+                </h3>
+             </div>
+             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                Realizado até hoje
+             </p>
           </CardContent>
         </Card>
 
-        {/* Card: Saldo projetado */}
-        <Card className="rounded-[2rem] border-border bg-card shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
-          <div className="absolute -right-8 -top-8 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/10 transition-colors"></div>
-          <CardContent className="p-8">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Saldo projetado</span>
-                <div className="flex items-center gap-1 text-emerald-500 font-bold text-xs bg-emerald-500/10 px-2 py-1 rounded-lg">
-                  <ArrowUpRight className="h-3 w-3" />
-                  +4.2%
+        {/* Card 2: Projetado (Projected) */}
+        <Card className="rounded-[2.5rem] border-border bg-card shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
+           <div className="absolute right-0 top-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl"></div>
+          <CardContent className="p-8 flex flex-col justify-between h-full gap-4 relative z-10">
+             <div className="flex items-center gap-3">
+                <div className="p-3 rounded-full bg-blue-100 text-blue-600">
+                    <Activity className="h-5 w-5" />
                 </div>
-              </div>
-              <div className="flex flex-col">
-                <h3 className="text-3xl font-bold text-foreground font-display" suppressHydrationWarning>{formatCurrency(totalBalance)}</h3>
-                <p className="text-xs text-muted-foreground mt-1 font-medium">Próximos 30 dias (Simulação)</p>
-              </div>
-            </div>
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Projeção Final</span>
+             </div>
+             <div>
+                <h3 className="text-4xl font-bold text-foreground font-display tracking-tight" suppressHydrationWarning>
+                    {formatCurrency(projectedSpend)}
+                </h3>
+             </div>
+             <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 text-[10px] font-bold px-2">
+                    IA ESTIMATED
+                </Badge>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                    Baseado no perfil
+                </p>
+             </div>
           </CardContent>
         </Card>
 
-        {/* Card: Previsão */}
-        <ForecastCard dailyForecast={dailyForecast} />
+        {/* Card 3: Restante Disponível (Budget) */}
+        <Card className="rounded-[2.5rem] border-border bg-card shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
+           <div className={`absolute inset-0 opacity-5 ${remainingBudget > 0 ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
+          <CardContent className="p-8 flex flex-col justify-between h-full gap-4 relative z-10">
+             <div className="flex items-center gap-3">
+                <div className={`p-3 rounded-full ${remainingBudget > 0 ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
+                    <Wallet className="h-5 w-5" />
+                </div>
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Disponível</span>
+             </div>
+             <div>
+                <h3 className={`text-4xl font-bold font-display tracking-tight ${remainingBudget >= 0 ? 'text-emerald-600' : 'text-red-500'}`} suppressHydrationWarning>
+                    {formatCurrency(remainingBudget)}
+                </h3>
+             </div>
+             <div className="w-full bg-secondary h-1.5 rounded-full overflow-hidden mt-1">
+                <div className={`h-full ${remainingBudget > 0 ? 'bg-emerald-500' : 'bg-red-500'}`} style={{ width: `${Math.min((spentMonthToDate / monthlyGoal) * 100, 100)}%` }}></div>
+             </div>
+             <div className="flex justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                <span>Meta: {formatCurrency(monthlyGoal)}</span>
+                <span>{Math.round((spentMonthToDate / monthlyGoal) * 100)}% Gasto</span>
+             </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Sync Status Banner */}
-      <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between bg-card p-6 rounded-[2rem] border border-border shadow-sm group hover:shadow-md transition-shadow duration-500">
-        <div className="flex items-center gap-5">
-          <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary relative overflow-hidden">
-            <div className="absolute inset-0 bg-primary/10 animate-pulse"></div>
-            <RefreshCw className="h-6 w-6 relative z-10 animate-spin-slow" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Sincronização Ativa</span>
-            <div className="flex items-center gap-2">
-              <SyncStatus lastSync={lastSync} />
-              <Link href="/uploads" className="text-sm font-bold text-primary hover:opacity-80 transition-opacity flex items-center gap-1 ml-2">
-                Ver detalhes <ArrowRight className="h-3 w-3" />
-              </Link>
+      {/* Row 2: Category Chart & Sync Status */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Category Chart Section */}
+        <Card className="lg:col-span-2 rounded-[2.5rem] border-border bg-card shadow-sm p-2">
+            <CardContent className="p-8">
+                <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-xl font-bold text-foreground font-display">Gastos por Categoria</h3>
+                    <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">TOP 5</Badge>
+                </div>
+                <CategoryChart data={categoryData || []} total={spentMonthToDate} />
+            </CardContent>
+        </Card>
+
+        {/* Sync Status Side Card */}
+        <div className="flex flex-col gap-6">
+             <div className="flex flex-col gap-4 items-start justify-between bg-card p-8 rounded-[2.5rem] border border-border shadow-sm h-full">
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary relative overflow-hidden mb-2">
+                    <div className="absolute inset-0 bg-primary/10 animate-pulse"></div>
+                    <RefreshCw className="h-6 w-6 relative z-10 animate-spin-slow" />
+                </div>
+                <div className="flex flex-col gap-1">
+                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Última Sincronização</span>
+                    <SyncStatus lastSync={dashboardData.lastSync} />
+                </div>
+                
+                <div className="w-full h-px bg-border my-2"></div>
+
+                <Link href="/confirm" className="w-full">
+                    <Button className="w-full bg-foreground text-background hover:opacity-90 py-6 h-auto rounded-xl font-bold transition-all shadow-xl shadow-foreground/5 group gap-3 text-sm">
+                        <SearchCheck className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                        Revisar ({pendingTransactions.length})
+                    </Button>
+                </Link>
             </div>
-          </div>
         </div>
-        <Link href="/confirm">
-          <Button className="w-full md:w-auto bg-foreground text-background hover:opacity-90 px-8 py-6 h-auto rounded-2xl font-bold transition-all shadow-xl shadow-foreground/5 group gap-3 text-base">
-            <SearchCheck className="h-5 w-5 group-hover:scale-110 transition-transform" />
-            Revisar Transações
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-white text-[12px] font-black shadow-lg shadow-destructive/20 border-2 border-background">
-              {pendingTransactions.length}
-            </span>
-          </Button>
-        </Link>
       </div>
 
       {/* AccountCardsGrid */}
@@ -226,45 +259,10 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Bottom Grid: Insights + Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 flex flex-col gap-8">
-          {/* AI Insight Section */}
-          <div className="bg-white dark:bg-card rounded-[2.5rem] p-8 border border-border shadow-sm relative overflow-hidden group">
-            <div className="absolute right-0 top-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-[80px]"></div>
-            <div className="flex flex-col gap-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/20 text-orange-500 flex items-center justify-center">
-                    <Lightbulb className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-foreground font-display leading-none mb-1">Ritual Insight</h3>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Análise de IA</p>
-                  </div>
-                </div>
-                <Badge className="bg-secondary text-muted-foreground hover:bg-secondary border-none px-4 py-1.5 rounded-full text-[10px] font-bold">ECONOMIA</Badge>
-              </div>
-              
-              <div className="flex flex-col sm:flex-row items-center gap-8">
-                <div className="flex-1">
-                  <p className="text-2xl font-semibold text-foreground leading-tight tracking-tight">
-                    Você reduziu em <span className="text-primary font-bold underline decoration-4 decoration-primary/20 underline-offset-4">15% os gastos variáveis</span> na última semana. 
-                    <span className="block mt-2 text-muted-foreground text-sm font-medium">Isso representa uma economia projetada de 420,00 € no trimestre.</span>
-                  </p>
-                </div>
-                <div className="flex gap-4">
-                  <Button className="h-14 px-8 rounded-2xl bg-primary text-white font-bold text-sm shadow-xl shadow-primary/20 border-none">Conferir Estratégia</Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Review Queue */}
-        <div className="bg-card rounded-[2.5rem] p-8 border border-border shadow-sm flex flex-col group">
+      {/* Quick Review Queue (Moved bottom) */}
+      <div className="bg-card rounded-[2.5rem] p-8 border border-border shadow-sm flex flex-col group">
           <div className="flex items-center justify-between mb-8">
-            <h3 className="text-2xl font-bold text-foreground font-display tracking-tight">Revisar</h3>
+            <h3 className="text-2xl font-bold text-foreground font-display tracking-tight">Fila de Revisão</h3>
             <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center">
               <Sparkles className="h-5 w-5 text-primary" />
             </div>
@@ -279,7 +277,7 @@ export default async function DashboardPage() {
               transactionsData.map((tx: any) => (
                 <div key={tx.id} className="flex items-center justify-between group/item cursor-pointer hover:bg-secondary p-4 rounded-3xl transition-all duration-300">
                   <div className="flex flex-col">
-                    <span className="text-sm font-bold text-foreground truncate max-w-[140px] tracking-tight">{tx.descNorm || tx.descRaw}</span>
+                    <span className="text-sm font-bold text-foreground truncate max-w-[200px] tracking-tight">{tx.descNorm || tx.descRaw}</span>
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{formatCurrency(Math.abs(Number(tx.amount)))}</span>
                   </div>
                   <Button variant="ghost" size="sm" className="rounded-xl h-8 text-[10px] font-black uppercase tracking-widest text-primary border border-primary/20 hover:bg-primary/10">Validar</Button>
@@ -289,11 +287,10 @@ export default async function DashboardPage() {
           </div>
           <Link href="/transactions" className="mt-8">
             <Button variant="outline" className="w-full py-6 text-[10px] font-black text-foreground border-border hover:bg-secondary rounded-2xl transition-all uppercase tracking-widest">
-              Fila completa
+              Ver todas transações
             </Button>
           </Link>
         </div>
-      </div>
     </div>
   );
 }

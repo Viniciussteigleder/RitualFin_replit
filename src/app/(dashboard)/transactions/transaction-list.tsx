@@ -67,13 +67,14 @@ const CATEGORIES = [
     "Pets", "Telefone", "Trabalho", "Transferências", "Vendas"
 ];
 
-export function TransactionList({ transactions }: { transactions: any[] }) {
+export function TransactionList({ transactions, initialFilters = {}, aliasMap = {} }: { transactions: any[], initialFilters?: TransactionFilters, aliasMap?: Record<string, string> }) {
     const [selectedTx, setSelectedTx] = useState<any>(null);
     const [search, setSearch] = useState("");
-    const [filters, setFilters] = useState<TransactionFilters>({});
+    const [filters, setFilters] = useState<TransactionFilters>(initialFilters);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
     const filtered = transactions.filter(tx => {
+
         const descMatch = (tx.descNorm || tx.descRaw || "").toLowerCase();
         const catMatch = (tx.category1 || "").toLowerCase();
         const matchesSearch = descMatch.includes(search.toLowerCase()) ||
@@ -82,7 +83,7 @@ export function TransactionList({ transactions }: { transactions: any[] }) {
         if (!matchesSearch) return false;
 
         if (filters.categories?.length && !filters.categories.includes(tx.category1)) return false;
-        if (filters.accounts?.length && !filters.accounts.includes(tx.accountSource)) return false;
+        if (filters.accounts?.length && !filters.accounts.includes(tx.source)) return false;
         if (filters.minAmount !== undefined && Math.abs(tx.amount) < filters.minAmount) return false;
         if (filters.maxAmount !== undefined && Math.abs(tx.amount) > filters.maxAmount) return false;
         if (filters.dateFrom && new Date(tx.date) < filters.dateFrom) return false;
@@ -175,7 +176,7 @@ export function TransactionList({ transactions }: { transactions: any[] }) {
                 <div className="flex flex-wrap gap-3 w-full lg:w-auto">
                     <FilterPanelComp
                         categories={Array.from(new Set(transactions.map(t => t.category1).filter(Boolean)))}
-                        accounts={Array.from(new Set(transactions.map(t => t.accountSource).filter(Boolean)))}
+                        accounts={Array.from(new Set(transactions.map(t => t.source).filter(Boolean)))}
                         onFilterChange={setFilters}
                     />
                     <Button variant="outline" className="h-14 px-6 border-border hover:bg-secondary rounded-2xl text-foreground font-bold gap-2 text-sm">
@@ -237,13 +238,26 @@ export function TransactionList({ transactions }: { transactions: any[] }) {
                                     </div>
 
                                     {/* Column: Estabelecimento */}
-                                    <div className="md:py-4 flex flex-col gap-1 w-full md:w-auto">
-                                        <span className="text-base font-bold text-foreground truncate tracking-tight">
-                                            {tx.description}
-                                        </span>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{tx.accountSource}</span>
-                                            {tx.needsReview && <Badge className="h-2 w-2 p-0 rounded-full bg-orange-400 border-none animate-pulse"></Badge>}
+                                    <div className="md:py-4 flex flex-row items-center gap-3 w-full md:w-auto">
+                                        {tx.aliasDesc && aliasMap[tx.aliasDesc] ? (
+                                            <img 
+                                                src={aliasMap[tx.aliasDesc]} 
+                                                alt={tx.aliasDesc} 
+                                                className="w-10 h-10 rounded-full object-cover border border-border bg-white"
+                                            />
+                                        ) : (
+                                            <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-muted-foreground/50">
+                                                <ShoppingBag className="w-5 h-5" />
+                                            </div>
+                                        )}
+                                        <div className="flex flex-col gap-1 overflow-hidden">
+                                            <span className="text-base font-bold text-foreground truncate tracking-tight">
+                                                {tx.aliasDesc || tx.description}
+                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{tx.source}</span>
+                                                {tx.needsReview && <Badge className="h-2 w-2 p-0 rounded-full bg-orange-400 border-none animate-pulse"></Badge>}
+                                            </div>
                                         </div>
                                     </div>
 
@@ -314,7 +328,7 @@ export function TransactionList({ transactions }: { transactions: any[] }) {
                                 
                                 <h2 className="text-3xl font-bold text-foreground tracking-tight leading-tight mb-2 font-display">{selectedTx.description}</h2>
                                 <p className="text-muted-foreground text-sm font-bold uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
-                                    <span className="bg-secondary px-3 py-1 rounded-lg text-[10px]">{selectedTx.accountSource}</span>
+                                    <span className="bg-secondary px-3 py-1 rounded-lg text-[10px]">{selectedTx.source}</span>
                                     <span>•</span>
                                     <span>{new Date(selectedTx.date).toLocaleDateString()}</span>
                                 </p>
