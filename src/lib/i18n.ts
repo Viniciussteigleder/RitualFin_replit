@@ -1,24 +1,24 @@
-export type Locale = "pt-BR" | "de-DE" | "en-US";
+export type Locale = "pt-PT" | "de-DE" | "en-US";
 
 export type TranslationTriplet = {
-  "pt-BR": string;
+  "pt-PT": string;
   "de-DE": string;
   "en-US": string;
 };
 
 export type TranslationMap<T> = {
-  "pt-BR": T;
+  "pt-PT": T;
   "de-DE": T;
   "en-US": T;
 };
 
 export function t<T>(locale: Locale, map: TranslationMap<T>): T {
-  return map[locale] ?? map["pt-BR"];
+  return map[locale] ?? map["pt-PT"];
 }
 
 export const accountBadgeCopy = {
   noAccount: {
-    "pt-BR": "Sem conta",
+    "pt-PT": "Sem conta",
     "de-DE": "Kein Konto",
     "en-US": "No account"
   }
@@ -27,22 +27,22 @@ export const accountBadgeCopy = {
 export const statusPanelCopy = {
   labels: {
     info: {
-      "pt-BR": "Info",
+      "pt-PT": "Info",
       "de-DE": "Info",
       "en-US": "Info"
     },
     success: {
-      "pt-BR": "Sucesso",
+      "pt-PT": "Sucesso",
       "de-DE": "Erfolg",
       "en-US": "Success"
     },
     warning: {
-      "pt-BR": "Aviso",
+      "pt-PT": "Aviso",
       "de-DE": "Warnung",
       "en-US": "Warning"
     },
     error: {
-      "pt-BR": "Erro",
+      "pt-PT": "Erro",
       "de-DE": "Fehler",
       "en-US": "Error"
     }
@@ -51,7 +51,7 @@ export const statusPanelCopy = {
 
 export const aiAssistantButtonCopy = {
   title: {
-    "pt-BR": "Assistente IA",
+    "pt-PT": "Assistente IA",
     "de-DE": "KI-Assistent",
     "en-US": "AI Assistant"
   }
@@ -59,17 +59,17 @@ export const aiAssistantButtonCopy = {
 
 export const sidebarCopy = {
   toggleLabel: {
-    "pt-BR": "Alternar sidebar",
+    "pt-PT": "Alternar sidebar",
     "de-DE": "Seitenleiste umschalten",
     "en-US": "Toggle sidebar"
   },
   mobileTitle: {
-    "pt-BR": "Sidebar",
+    "pt-PT": "Sidebar",
     "de-DE": "Seitenleiste",
     "en-US": "Sidebar"
   },
   mobileDescription: {
-    "pt-BR": "Exibe a sidebar no modo mobile.",
+    "pt-PT": "Exibe a sidebar no modo mobile.",
     "de-DE": "Zeigt die mobile Seitenleiste an.",
     "en-US": "Displays the mobile sidebar."
   }
@@ -77,7 +77,7 @@ export const sidebarCopy = {
 
 export const spinnerCopy = {
   loading: {
-    "pt-BR": "Carregando",
+    "pt-PT": "Carregando",
     "de-DE": "Lädt",
     "en-US": "Loading"
   }
@@ -85,32 +85,32 @@ export const spinnerCopy = {
 
 export const paginationCopy = {
   label: {
-    "pt-BR": "Paginação",
+    "pt-PT": "Paginação",
     "de-DE": "Seitennavigation",
     "en-US": "Pagination"
   },
   morePages: {
-    "pt-BR": "Mais páginas",
+    "pt-PT": "Mais páginas",
     "de-DE": "Weitere Seiten",
     "en-US": "More pages"
   },
   previous: {
-    "pt-BR": "Anterior",
+    "pt-PT": "Anterior",
     "de-DE": "Zurück",
     "en-US": "Previous"
   },
   next: {
-    "pt-BR": "Próximo",
+    "pt-PT": "Próximo",
     "de-DE": "Weiter",
     "en-US": "Next"
   },
   previousAria: {
-    "pt-BR": "Ir para a página anterior",
+    "pt-PT": "Ir para a página anterior",
     "de-DE": "Zur vorherigen Seite",
     "en-US": "Go to previous page"
   },
   nextAria: {
-    "pt-BR": "Ir para a próxima página",
+    "pt-PT": "Ir para a próxima página",
     "de-DE": "Zur nächsten Seite",
     "en-US": "Go to next page"
   }
@@ -118,12 +118,12 @@ export const paginationCopy = {
 
 export const breadcrumbCopy = {
   label: {
-    "pt-BR": "Navegação estrutural",
+    "pt-PT": "Navegação estrutural",
     "de-DE": "Breadcrumb-Navigation",
     "en-US": "Breadcrumb navigation"
   },
   more: {
-    "pt-BR": "Mais",
+    "pt-PT": "Mais",
     "de-DE": "Mehr",
     "en-US": "More"
   }
@@ -131,12 +131,12 @@ export const breadcrumbCopy = {
 
 export const carouselCopy = {
   previousSlide: {
-    "pt-BR": "Slide anterior",
+    "pt-PT": "Slide anterior",
     "de-DE": "Vorherige Folie",
     "en-US": "Previous slide"
   },
   nextSlide: {
-    "pt-BR": "Próximo slide",
+    "pt-PT": "Próximo slide",
     "de-DE": "Nächste Folie",
     "en-US": "Next slide"
   }
@@ -144,7 +144,7 @@ export const carouselCopy = {
 
 export const dialogCopy = {
   close: {
-    "pt-BR": "Fechar",
+    "pt-PT": "Fechar",
     "de-DE": "Schließen",
     "en-US": "Close"
   }
@@ -152,7 +152,7 @@ export const dialogCopy = {
 
 export const sheetCopy = {
   close: {
-    "pt-BR": "Fechar",
+    "pt-PT": "Fechar",
     "de-DE": "Schließen",
     "en-US": "Close"
   }
@@ -160,65 +160,65 @@ export const sheetCopy = {
 
 export const iconCopy = {
   accountDefault: {
-    "pt-BR": "Conta",
+    "pt-PT": "Conta",
     "de-DE": "Konto",
     "en-US": "Account"
   },
   transaction: {
     income: {
-      "pt-BR": "Receita",
+      "pt-PT": "Receita",
       "de-DE": "Einnahme",
       "en-US": "Income"
     },
     expense: {
-      "pt-BR": "Despesa",
+      "pt-PT": "Despesa",
       "de-DE": "Ausgabe",
       "en-US": "Expense"
     },
     fixed: {
-      "pt-BR": "Fixo",
+      "pt-PT": "Fixo",
       "de-DE": "Fix",
       "en-US": "Fixed"
     },
     variable: {
-      "pt-BR": "Variável",
+      "pt-PT": "Variável",
       "de-DE": "Variabel",
       "en-US": "Variable"
     },
     recurring: {
-      "pt-BR": "Recorrente",
+      "pt-PT": "Recorrente",
       "de-DE": "Wiederkehrend",
       "en-US": "Recurring"
     },
     refund: {
-      "pt-BR": "Reembolso",
+      "pt-PT": "Reembolso",
       "de-DE": "Erstattung",
       "en-US": "Refund"
     },
     internal: {
-      "pt-BR": "Interna",
+      "pt-PT": "Interna",
       "de-DE": "Intern",
       "en-US": "Internal"
     }
   },
   status: {
     unclassified: {
-      "pt-BR": "Não classificado",
+      "pt-PT": "Não classificado",
       "de-DE": "Nicht klassifiziert",
       "en-US": "Unclassified"
     },
     lowConfidence: {
-      "pt-BR": "Baixa confiança",
+      "pt-PT": "Baixa confiança",
       "de-DE": "Niedrige Zuversicht",
       "en-US": "Low confidence"
     },
     confirmed: {
-      "pt-BR": "Confirmado",
+      "pt-PT": "Confirmado",
       "de-DE": "Bestätigt",
       "en-US": "Confirmed"
     },
     needsReview: {
-      "pt-BR": "Requer revisão",
+      "pt-PT": "Requer revisão",
       "de-DE": "Prüfung erforderlich",
       "en-US": "Needs review"
     }
@@ -226,9 +226,10 @@ export const iconCopy = {
 };
 
 export const categoryLabels: Record<Locale, Record<string, string>> = {
-  "pt-BR": {
+  "pt-PT": {
     "Moradia": "Moradia",
-    "Mercado": "Mercado",
+    "Mercados": "Mercados",
+    "Mercado": "Mercados",
     "Transporte": "Transporte",
     "Saúde": "Saúde",
     "Lazer": "Lazer",
@@ -257,7 +258,7 @@ export const categoryLabels: Record<Locale, Record<string, string>> = {
   },
   "de-DE": {
     "Moradia": "Wohnen",
-    "Mercado": "Lebensmittel",
+    "Mercados": "Lebensmittel",
     "Transporte": "Transport",
     "Saúde": "Gesundheit",
     "Lazer": "Freizeit",
@@ -286,7 +287,7 @@ export const categoryLabels: Record<Locale, Record<string, string>> = {
   },
   "en-US": {
     "Moradia": "Housing",
-    "Mercado": "Groceries",
+    "Mercados": "Groceries",
     "Transporte": "Transport",
     "Saúde": "Health",
     "Lazer": "Leisure",
@@ -317,523 +318,523 @@ export const categoryLabels: Record<Locale, Record<string, string>> = {
 
 export function translateCategory(locale: Locale, category?: string) {
   if (!category) return "";
-  const labels = categoryLabels[locale] || categoryLabels["pt-BR"];
+  const labels = categoryLabels[locale] || categoryLabels["pt-PT"];
   return labels[category] || category;
 }
 
 export const uploadsCopy = {
   title: {
-    "pt-BR": "Centro de Importação",
+    "pt-PT": "Centro de Importação",
     "de-DE": "Import-Center",
     "en-US": "Import Center"
   },
   subtitle: {
-    "pt-BR": "Importe seus extratos CSV para categorizar transações automaticamente.",
+    "pt-PT": "Importe os seus extratos CSV para categorizar transações automaticamente.",
     "de-DE": "Importieren Sie CSV-Auszüge, um Transaktionen automatisch zu kategorisieren.",
     "en-US": "Import CSV statements to categorize transactions automatically."
   },
   dropTitle: {
-    "pt-BR": "Arraste seu arquivo CSV",
+    "pt-PT": "Arraste o seu ficheiro CSV",
     "de-DE": "CSV-Datei hier ablegen",
     "en-US": "Drag your CSV file"
   },
   dropActive: {
-    "pt-BR": "Solte o arquivo aqui",
+    "pt-PT": "Solte o ficheiro aqui",
     "de-DE": "Datei hier ablegen",
     "en-US": "Drop the file here"
   },
   dropHint: {
-    "pt-BR": "Ou clique para selecionar do seu computador",
+    "pt-PT": "Ou clique para selecionar do seu computador",
     "de-DE": "Oder klicken, um vom Computer auszuwählen",
     "en-US": "Or click to select from your computer"
   },
   selectFile: {
-    "pt-BR": "Selecionar Arquivo",
+    "pt-PT": "Selecionar Ficheiro",
     "de-DE": "Datei auswählen",
     "en-US": "Select File"
   },
   formatsHint: {
-    "pt-BR": "Formatos aceitos: Miles & More, American Express, Sparkasse. Limite de 10MB.",
+    "pt-PT": "Formatos aceites: Miles & More, American Express, Sparkasse. Limite de 10MB.",
     "de-DE": "Akzeptierte Formate: Miles & More, American Express, Sparkasse. Limit 10 MB.",
     "en-US": "Accepted formats: Miles & More, American Express, Sparkasse. 10MB limit."
   },
   previewTitle: {
-    "pt-BR": "Pré-visualização & Importação",
+    "pt-PT": "Pré-visualização & Importação",
     "de-DE": "Vorschau & Import",
     "en-US": "Preview & Import"
   },
   importDate: {
-    "pt-BR": "Data de importação",
+    "pt-PT": "Data de importação",
     "de-DE": "Importdatum",
     "en-US": "Import date"
   },
   previewButton: {
-    "pt-BR": "Pré-visualizar",
+    "pt-PT": "Pré-visualizar",
     "de-DE": "Vorschau",
     "en-US": "Preview"
   },
   importButton: {
-    "pt-BR": "Importar",
+    "pt-PT": "Importar",
     "de-DE": "Importieren",
     "en-US": "Import"
   },
   previewConfirm: {
-    "pt-BR": "Confirmo que revisei a pré-visualização e desejo importar.",
+    "pt-PT": "Confirmo que revisei a pré-visualização e desejo importar.",
     "de-DE": "Ich habe die Vorschau geprüft und möchte importieren.",
     "en-US": "I reviewed the preview and want to import."
   },
   previewNote: {
-    "pt-BR": "A pré-visualização mostra exatamente o que será importado. Ajuste a data de importação se necessário.",
+    "pt-PT": "A pré-visualização mostra exatamente o que será importado. Ajuste a data de importação se necessário.",
     "de-DE": "Die Vorschau zeigt genau, was importiert wird. Passen Sie das Importdatum bei Bedarf an.",
     "en-US": "The preview shows exactly what will be imported. Adjust the import date if needed."
   },
   statusTitle: {
-    "pt-BR": "Status da importação",
+    "pt-PT": "Status da importação",
     "de-DE": "Importstatus",
     "en-US": "Import status"
   },
   parsingReport: {
-    "pt-BR": "Relatório de Parsing",
+    "pt-PT": "Relatório de Parsing",
     "de-DE": "Parsing-Bericht",
     "en-US": "Parsing Report"
   },
   encodingDetected: {
-    "pt-BR": "Codificação detectada",
+    "pt-PT": "Codificação detectada",
     "de-DE": "Erkannte Kodierung",
     "en-US": "Detected encoding"
   },
   encodingAuto: {
-    "pt-BR": "Codificação será detectada automaticamente.",
+    "pt-PT": "Codificação será detectada automaticamente.",
     "de-DE": "Die Kodierung wird automatisch erkannt.",
     "en-US": "Encoding will be detected automatically."
   },
   invalidFormatTitle: {
-    "pt-BR": "Formato inválido",
+    "pt-PT": "Formato inválido",
     "de-DE": "Ungültiges Format",
     "en-US": "Invalid format"
   },
   invalidFormatDesc: {
-    "pt-BR": "Por favor, selecione um arquivo CSV",
+    "pt-PT": "Por favor, selecione um arquivo CSV",
     "de-DE": "Bitte wählen Sie eine CSV-Datei aus.",
     "en-US": "Please select a CSV file."
   },
   previewFailed: {
-    "pt-BR": "Falha na leitura do arquivo. Verifique delimitador, colunas e codificação.",
+    "pt-PT": "Falha na leitura do arquivo. Verifique delimitador, colunas e codificação.",
     "de-DE": "Datei konnte nicht gelesen werden. Prüfen Sie Trennzeichen, Spalten und Kodierung.",
     "en-US": "Failed to read the file. Check delimiter, columns, and encoding."
   },
   previewTryAgain: {
-    "pt-BR": "Falha na pré-visualização. Verifique o arquivo e tente novamente.",
+    "pt-PT": "Falha na pré-visualização. Verifique o arquivo e tente novamente.",
     "de-DE": "Vorschau fehlgeschlagen. Datei prüfen und erneut versuchen.",
     "en-US": "Preview failed. Check the file and try again."
   },
   previewErrorTitle: {
-    "pt-BR": "Erro na pré-visualização",
+    "pt-PT": "Erro na pré-visualização",
     "de-DE": "Fehler bei der Vorschau",
     "en-US": "Preview error"
   },
   previewFailedTitle: {
-    "pt-BR": "Pré-visualização falhou",
+    "pt-PT": "Pré-visualização falhou",
     "de-DE": "Vorschau fehlgeschlagen",
     "en-US": "Preview failed"
   },
   importSummaryTitle: {
-    "pt-BR": "Resumo da importação",
+    "pt-PT": "Resumo da importação",
     "de-DE": "Importzusammenfassung",
     "en-US": "Import summary"
   },
   validatingTransactions: {
-    "pt-BR": "Validando e categorizando transações",
+    "pt-PT": "Validando e categorizando transações",
     "de-DE": "Transaktionen werden validiert und kategorisiert",
     "en-US": "Validating and categorizing transactions"
   },
   conflictResolved: {
-    "pt-BR": "Resolução aplicada: {action} ({count} duplicadas)",
+    "pt-PT": "Resolução aplicada: {action} ({count} duplicadas)",
     "de-DE": "Auflösung angewendet: {action} ({count} Duplikate)",
     "en-US": "Resolution applied: {action} ({count} duplicates)"
   },
   importDoneTitle: {
-    "pt-BR": "Importação concluída",
+    "pt-PT": "Importação concluída",
     "de-DE": "Import abgeschlossen",
     "en-US": "Import completed"
   },
   importDuplicateTitle: {
-    "pt-BR": "Arquivo já importado",
+    "pt-PT": "Arquivo já importado",
     "de-DE": "Datei bereits importiert",
     "en-US": "File already imported"
   },
   importDuplicatesSuffix: {
-    "pt-BR": "{count} duplicadas",
+    "pt-PT": "{count} duplicadas",
     "de-DE": "{count} Duplikate",
     "en-US": "{count} duplicates"
   },
   importDuplicatesExisting: {
-    "pt-BR": "{count} {label} já existem no sistema",
+    "pt-PT": "{count} {label} já existem no sistema",
     "de-DE": "{count} {label} sind bereits im System vorhanden",
     "en-US": "{count} {label} already exist in the system"
   },
   importErrorTitle: {
-    "pt-BR": "Erro na importação",
+    "pt-PT": "Erro na importação",
     "de-DE": "Importfehler",
     "en-US": "Import error"
   },
   importErrorDesc: {
-    "pt-BR": "Falha ao processar o arquivo",
+    "pt-PT": "Falha ao processar o arquivo",
     "de-DE": "Datei konnte nicht verarbeitet werden.",
     "en-US": "Failed to process the file."
   },
   needFileTitle: {
-    "pt-BR": "Selecione um arquivo primeiro",
+    "pt-PT": "Selecione um arquivo primeiro",
     "de-DE": "Bitte zuerst eine Datei auswählen",
     "en-US": "Select a file first"
   },
   needPreviewTitle: {
-    "pt-BR": "Faça a pré-visualização antes de importar",
+    "pt-PT": "Faça a pré-visualização antes de importar",
     "de-DE": "Vor dem Import eine Vorschau erstellen",
     "en-US": "Preview before importing"
   },
   needConfirmTitle: {
-    "pt-BR": "Confirme a pré-visualização antes de importar",
+    "pt-PT": "Confirme a pré-visualização antes de importar",
     "de-DE": "Vorschau vor dem Import bestätigen",
     "en-US": "Confirm the preview before importing"
   },
   statsTotalImported: {
-    "pt-BR": "Total Importado",
+    "pt-PT": "Total Importado",
     "de-DE": "Insgesamt importiert",
     "en-US": "Total Imported"
   },
   statsTransactions: {
-    "pt-BR": "transações",
+    "pt-PT": "transações",
     "de-DE": "Transaktionen",
     "en-US": "transactions"
   },
   statsSuccessful: {
-    "pt-BR": "Importações concluídas",
+    "pt-PT": "Importações concluídas",
     "de-DE": "Erfolgreiche Importe",
     "en-US": "Successful imports"
   },
   statsFiles: {
-    "pt-BR": "arquivos",
+    "pt-PT": "arquivos",
     "de-DE": "Dateien",
     "en-US": "files"
   },
   statsFilesLabel: {
-    "pt-BR": "Arquivos",
+    "pt-PT": "Arquivos",
     "de-DE": "Dateien",
     "en-US": "Files"
   },
   statsProcessed: {
-    "pt-BR": "processados",
+    "pt-PT": "processados",
     "de-DE": "verarbeitet",
     "en-US": "processed"
   },
   nextStep: {
-    "pt-BR": "Próximo Passo",
+    "pt-PT": "Próximo Passo",
     "de-DE": "Nächster Schritt",
     "en-US": "Next Step"
   },
   nextStepReview: {
-    "pt-BR": "Revisar",
+    "pt-PT": "Revisar",
     "de-DE": "Überprüfen",
     "en-US": "Review"
   },
   viewQueue: {
-    "pt-BR": "Ver fila",
+    "pt-PT": "Ver fila",
     "de-DE": "Zur Warteschlange",
     "en-US": "View queue"
   },
   previewFormat: {
-    "pt-BR": "Formato",
+    "pt-PT": "Formato",
     "de-DE": "Format",
     "en-US": "Format"
   },
   previewDelimiter: {
-    "pt-BR": "Delimiter",
+    "pt-PT": "Delimiter",
     "de-DE": "Trennzeichen",
     "en-US": "Delimiter"
   },
   previewDate: {
-    "pt-BR": "Data",
+    "pt-PT": "Data",
     "de-DE": "Datum",
     "en-US": "Date"
   },
   previewRows: {
-    "pt-BR": "Linhas",
+    "pt-PT": "Linhas",
     "de-DE": "Zeilen",
     "en-US": "Rows"
   },
   columnsDetected: {
-    "pt-BR": "Colunas detectadas",
+    "pt-PT": "Colunas detectadas",
     "de-DE": "Erkannte Spalten",
     "en-US": "Detected columns"
   },
   tableSource: {
-    "pt-BR": "Fonte",
+    "pt-PT": "Fonte",
     "de-DE": "Quelle",
     "en-US": "Source"
   },
   tableDate: {
-    "pt-BR": "Data",
+    "pt-PT": "Data",
     "de-DE": "Datum",
     "en-US": "Date"
   },
   tableAmount: {
-    "pt-BR": "Valor",
+    "pt-PT": "Valor",
     "de-DE": "Betrag",
     "en-US": "Amount"
   },
   tableCurrency: {
-    "pt-BR": "Moeda",
+    "pt-PT": "Moeda",
     "de-DE": "Währung",
     "en-US": "Currency"
   },
   tableDescription: {
-    "pt-BR": "Descrição",
+    "pt-PT": "Descrição",
     "de-DE": "Beschreibung",
     "en-US": "Description"
   },
   tableKeyDesc: {
-    "pt-BR": "Key Desc",
+    "pt-PT": "Key Desc",
     "de-DE": "Key Desc",
     "en-US": "Key Desc"
   },
   tableAccount: {
-    "pt-BR": "Conta",
+    "pt-PT": "Conta",
     "de-DE": "Konto",
     "en-US": "Account"
   },
   tableKey: {
-    "pt-BR": "Key",
+    "pt-PT": "Key",
     "de-DE": "Key",
     "en-US": "Key"
   },
   labelEncoding: {
-    "pt-BR": "Codificação",
+    "pt-PT": "Codificação",
     "de-DE": "Kodierung",
     "en-US": "Encoding"
   },
   labelWarnings: {
-    "pt-BR": "Avisos encontrados",
+    "pt-PT": "Avisos encontrados",
     "de-DE": "Warnungen",
     "en-US": "Warnings"
   },
   labelErrors: {
-    "pt-BR": "Erros detectados",
+    "pt-PT": "Erros detectados",
     "de-DE": "Fehler erkannt",
     "en-US": "Errors detected"
   },
   processingFile: {
-    "pt-BR": "Processando arquivo...",
+    "pt-PT": "Processando arquivo...",
     "de-DE": "Datei wird verarbeitet...",
     "en-US": "Processing file..."
   },
   labelMissingColumns: {
-    "pt-BR": "Colunas obrigatórias faltando",
+    "pt-PT": "Colunas obrigatórias faltando",
     "de-DE": "Pflichtspalten fehlen",
     "en-US": "Missing required columns"
   },
   labelRowErrors: {
-    "pt-BR": "Erros por linha (amostra)",
+    "pt-PT": "Erros por linha (amostra)",
     "de-DE": "Zeilenfehler (Beispiel)",
     "en-US": "Row errors (sample)"
   },
   statusNoUpload: {
-    "pt-BR": "Sem upload recente",
+    "pt-PT": "Sem upload recente",
     "de-DE": "Kein aktueller Upload",
     "en-US": "No recent upload"
   },
   diagnosticsTitle: {
-    "pt-BR": "Diagnóstico da importação",
+    "pt-PT": "Diagnóstico da importação",
     "de-DE": "Importdiagnose",
     "en-US": "Import diagnostics"
   },
   diagnosticsFailed: {
-    "pt-BR": "Falhou",
+    "pt-PT": "Falhou",
     "de-DE": "Fehlgeschlagen",
     "en-US": "Failed"
   },
   diagnosticsOk: {
-    "pt-BR": "OK",
+    "pt-PT": "OK",
     "de-DE": "OK",
     "en-US": "OK"
   },
   labelLines: {
-    "pt-BR": "Linhas",
+    "pt-PT": "Linhas",
     "de-DE": "Zeilen",
     "en-US": "Lines"
   },
   summaryTitle: {
-    "pt-BR": "Resumo da importação",
+    "pt-PT": "Resumo da importação",
     "de-DE": "Importzusammenfassung",
     "en-US": "Import summary"
   },
   summaryInserted: {
-    "pt-BR": "Inseridas",
+    "pt-PT": "Inseridas",
     "de-DE": "Eingefügt",
     "en-US": "Inserted"
   },
   summaryDuplicates: {
-    "pt-BR": "Duplicadas",
+    "pt-PT": "Duplicadas",
     "de-DE": "Duplikate",
     "en-US": "Duplicates"
   },
   detailsTitle: {
-    "pt-BR": "Ver detalhes",
+    "pt-PT": "Ver detalhes",
     "de-DE": "Details anzeigen",
     "en-US": "View details"
   },
   detailsMissingColumns: {
-    "pt-BR": "Colunas obrigatórias faltando",
+    "pt-PT": "Colunas obrigatórias faltando",
     "de-DE": "Pflichtspalten fehlen",
     "en-US": "Missing required columns"
   },
   detailsRowErrors: {
-    "pt-BR": "Erros por linha (primeiras 3)",
+    "pt-PT": "Erros por linha (primeiras 3)",
     "de-DE": "Zeilenfehler (erste 3)",
     "en-US": "Row errors (first 3)"
   },
   detailsPreview: {
-    "pt-BR": "Prévia (primeiras 20)",
+    "pt-PT": "Prévia (primeiras 20)",
     "de-DE": "Vorschau (erste 20)",
     "en-US": "Preview (first 20)"
   },
   filterStatus: {
-    "pt-BR": "Status",
+    "pt-PT": "Status",
     "de-DE": "Status",
     "en-US": "Status"
   },
   filterAll: {
-    "pt-BR": "Todos",
+    "pt-PT": "Todos",
     "de-DE": "Alle",
     "en-US": "All"
   },
   filterSuccess: {
-    "pt-BR": "Sucesso",
+    "pt-PT": "Sucesso",
     "de-DE": "Erfolg",
     "en-US": "Success"
   },
   filterProcessing: {
-    "pt-BR": "Processando",
+    "pt-PT": "Processando",
     "de-DE": "In Bearbeitung",
     "en-US": "Processing"
   },
   filterDuplicate: {
-    "pt-BR": "Duplicado",
+    "pt-PT": "Duplicado",
     "de-DE": "Duplikat",
     "en-US": "Duplicate"
   },
   filterError: {
-    "pt-BR": "Erro",
+    "pt-PT": "Erro",
     "de-DE": "Fehler",
     "en-US": "Error"
   },
   conflictTitle: {
-    "pt-BR": "Resolução de Conflitos",
+    "pt-PT": "Resolução de Conflitos",
     "de-DE": "Konfliktlösung",
     "en-US": "Conflict Resolution"
   },
   conflictDescription: {
-    "pt-BR": "Foram detectadas duplicatas. Revise antes de aplicar substituições.",
+    "pt-PT": "Foram detectadas duplicatas. Revise antes de aplicar substituições.",
     "de-DE": "Duplikate erkannt. Bitte vor dem Ersetzen prüfen.",
     "en-US": "Duplicates detected. Review before replacing."
   },
   conflictAction: {
-    "pt-BR": "Resolver duplicatas",
+    "pt-PT": "Resolver duplicatas",
     "de-DE": "Duplikate lösen",
     "en-US": "Resolve duplicates"
   },
   conflictKeep: {
-    "pt-BR": "Manter existentes",
+    "pt-PT": "Manter existentes",
     "de-DE": "Vorhandene behalten",
     "en-US": "Keep existing"
   },
   conflictReplace: {
-    "pt-BR": "Substituir por novas",
+    "pt-PT": "Substituir por novas",
     "de-DE": "Durch neue ersetzen",
     "en-US": "Replace with new"
   },
   conflictApply: {
-    "pt-BR": "Aplicar resolução",
+    "pt-PT": "Aplicar resolução",
     "de-DE": "Lösung anwenden",
     "en-US": "Apply resolution"
   },
   conflictCancel: {
-    "pt-BR": "Cancelar",
+    "pt-PT": "Cancelar",
     "de-DE": "Abbrechen",
     "en-US": "Cancel"
   },
   statusProcessed: {
-    "pt-BR": "Processado",
+    "pt-PT": "Processado",
     "de-DE": "Verarbeitet",
     "en-US": "Processed"
   },
   statusError: {
-    "pt-BR": "Erro",
+    "pt-PT": "Erro",
     "de-DE": "Fehler",
     "en-US": "Error"
   },
   labelRef: {
-    "pt-BR": "Ref",
+    "pt-PT": "Ref",
     "de-DE": "Ref",
     "en-US": "Ref"
   },
   viewErrors: {
-    "pt-BR": "Ver erros",
+    "pt-PT": "Ver erros",
     "de-DE": "Fehler anzeigen",
     "en-US": "View errors"
   },
   errorsLoading: {
-    "pt-BR": "Carregando erros...",
+    "pt-PT": "Carregando erros...",
     "de-DE": "Fehler werden geladen...",
     "en-US": "Loading errors..."
   },
   errorsFound: {
-    "pt-BR": "erro(s) encontrados.",
+    "pt-PT": "erro(s) encontrados.",
     "de-DE": "Fehler gefunden.",
     "en-US": "errors found."
   },
   errorsNone: {
-    "pt-BR": "Nenhum erro disponível.",
+    "pt-PT": "Nenhum erro disponível.",
     "de-DE": "Keine Fehler verfügbar.",
     "en-US": "No errors available."
   },
   diagnosticsLoading: {
-    "pt-BR": "Carregando diagnóstico...",
+    "pt-PT": "Carregando diagnóstico...",
     "de-DE": "Diagnose wird geladen...",
     "en-US": "Loading diagnostics..."
   },
   diagnosticsNone: {
-    "pt-BR": "Nenhum diagnóstico disponível.",
+    "pt-PT": "Nenhum diagnóstico disponível.",
     "de-DE": "Keine Diagnose verfügbar.",
     "en-US": "No diagnostics available."
   },
   rowLabel: {
-    "pt-BR": "Linha",
+    "pt-PT": "Linha",
     "de-DE": "Zeile",
     "en-US": "Row"
   },
   labelFailure: {
-    "pt-BR": "Falha",
+    "pt-PT": "Falha",
     "de-DE": "Fehler",
     "en-US": "Failure"
   },
   labelSuccess: {
-    "pt-BR": "Sucesso",
+    "pt-PT": "Sucesso",
     "de-DE": "Erfolg",
     "en-US": "Success"
   },
   importHistory: {
-    "pt-BR": "Histórico de Importações",
+    "pt-PT": "Histórico de Importações",
     "de-DE": "Importverlauf",
     "en-US": "Import History"
   },
   emptyHistoryTitle: {
-    "pt-BR": "Nenhum arquivo importado",
+    "pt-PT": "Nenhum arquivo importado",
     "de-DE": "Keine Dateien importiert",
     "en-US": "No files imported"
   },
   emptyHistoryDescription: {
-    "pt-BR": "Arraste um arquivo CSV acima para começar a organizar suas finanças.",
+    "pt-PT": "Arraste um arquivo CSV acima para começar a organizar suas finanças.",
     "de-DE": "Ziehen Sie oben eine CSV-Datei, um zu starten.",
     "en-US": "Drop a CSV file above to start organizing your finances."
   }
@@ -841,232 +842,232 @@ export const uploadsCopy = {
 
 export const dashboardCopy = {
   title: {
-    "pt-BR": "Seu Mês em Foco",
+    "pt-PT": "Seu Mês em Foco",
     "de-DE": "Ihr Monat im Fokus",
     "en-US": "Your Month in Focus"
   },
   subtitle: {
-    "pt-BR": "Uma visão clara do seu orçamento. Sempre atualizada.",
+    "pt-PT": "Uma visão clara do seu orçamento. Sempre atualizada.",
     "de-DE": "Ein klarer Blick auf Ihr Budget. Immer aktuell.",
     "en-US": "A clear view of your budget. Always up to date."
   },
   accountFilterPlaceholder: {
-    "pt-BR": "Todas as contas",
+    "pt-PT": "Todas as contas",
     "de-DE": "Alle Konten",
     "en-US": "All accounts"
   },
   lastUpdateTitle: {
-    "pt-BR": "Última Atualização",
+    "pt-PT": "Última Atualização",
     "de-DE": "Letzte Aktualisierung",
     "en-US": "Last update"
   },
   viewAllUploads: {
-    "pt-BR": "Ver todos uploads",
+    "pt-PT": "Ver todos uploads",
     "de-DE": "Alle Uploads ansehen",
     "en-US": "View all uploads"
   },
   noUpload: {
-    "pt-BR": "Sem upload",
+    "pt-PT": "Sem upload",
     "de-DE": "Kein Upload",
     "en-US": "No upload"
   },
   importedThrough: {
-    "pt-BR": "Até {date}",
+    "pt-PT": "Até {date}",
     "de-DE": "Bis {date}",
     "en-US": "Through {date}"
   },
   monthlyProjection: {
-    "pt-BR": "Projeção do Mês",
+    "pt-PT": "Projeção do Mês",
     "de-DE": "Monatsprognose",
     "en-US": "Monthly projection"
   },
   remainingMonth: {
-    "pt-BR": "Restante do Mês",
+    "pt-PT": "Restante do Mês",
     "de-DE": "Rest des Monats",
     "en-US": "Remaining this month"
   },
   alreadyCommitted: {
-    "pt-BR": "Já Comprometido",
+    "pt-PT": "Já Comprometido",
     "de-DE": "Bereits gebunden",
     "en-US": "Already committed"
   },
   remainingCommitments: {
-    "pt-BR": "Compromissos Restantes",
+    "pt-PT": "Compromissos Restantes",
     "de-DE": "Verbleibende Verpflichtungen",
     "en-US": "Remaining commitments"
   },
   viewAll: {
-    "pt-BR": "Ver todos",
+    "pt-PT": "Ver todos",
     "de-DE": "Alle anzeigen",
     "en-US": "View all"
   },
   eventsThisMonth: {
-    "pt-BR": "{count} evento(s) este mês",
+    "pt-PT": "{count} evento(s) este mês",
     "de-DE": "{count} Ereignisse in diesem Monat",
     "en-US": "{count} event(s) this month"
   },
   noCommitments: {
-    "pt-BR": "Nenhum compromisso cadastrado.",
+    "pt-PT": "Nenhum compromisso cadastrado.",
     "de-DE": "Keine Verpflichtungen erfasst.",
     "en-US": "No commitments recorded."
   },
   addAction: {
-    "pt-BR": "Adicionar",
+    "pt-PT": "Adicionar",
     "de-DE": "Hinzufügen",
     "en-US": "Add"
   },
   weeklyInsight: {
-    "pt-BR": "Insight Semanal",
+    "pt-PT": "Insight Semanal",
     "de-DE": "Wöchentlicher Einblick",
     "en-US": "Weekly insight"
   },
   viewDetails: {
-    "pt-BR": "Ver detalhes",
+    "pt-PT": "Ver detalhes",
     "de-DE": "Details ansehen",
     "en-US": "View details"
   },
   spendByCategory: {
-    "pt-BR": "Gastos por Categoria",
+    "pt-PT": "Gastos por Categoria",
     "de-DE": "Ausgaben nach Kategorie",
     "en-US": "Spend by Category"
   },
   totalSpent: {
-    "pt-BR": "Total Gasto",
+    "pt-PT": "Total Gasto",
     "de-DE": "Gesamtausgaben",
     "en-US": "Total spent"
   },
   recentActivity: {
-    "pt-BR": "Atividade Recente",
+    "pt-PT": "Atividade Recente",
     "de-DE": "Letzte Aktivität",
     "en-US": "Recent activity"
   },
   moreOptions: {
-    "pt-BR": "Mais opções",
+    "pt-PT": "Mais opções",
     "de-DE": "Weitere Optionen",
     "en-US": "More options"
   },
   viewAllTransactions: {
-    "pt-BR": "Ver todas as transações",
+    "pt-PT": "Ver todas as transações",
     "de-DE": "Alle Transaktionen ansehen",
     "en-US": "View all transactions"
   },
   showAllAccounts: {
-    "pt-BR": "Mostrar todas as contas",
+    "pt-PT": "Mostrar todas as contas",
     "de-DE": "Alle Konten anzeigen",
     "en-US": "Show all accounts"
   },
   manageUploads: {
-    "pt-BR": "Gerenciar uploads",
+    "pt-PT": "Gerenciar uploads",
     "de-DE": "Uploads verwalten",
     "en-US": "Manage uploads"
   },
   noTransactions: {
-    "pt-BR": "Nenhuma transação neste mês",
+    "pt-PT": "Nenhuma transação neste mês",
     "de-DE": "Keine Transaktionen in diesem Monat",
     "en-US": "No transactions this month"
   },
   smartCategorizationTitle: {
-    "pt-BR": "Categorização Inteligente",
+    "pt-PT": "Categorização Inteligente",
     "de-DE": "Intelligente Kategorisierung",
     "en-US": "Smart categorization"
   },
   smartCategorizationBody: {
-    "pt-BR": "{count} transação(ões) aguardando sua confirmação. A IA já pré-analisou cada uma.",
+    "pt-PT": "{count} transação(ões) aguardando sua confirmação. A IA já pré-analisou cada uma.",
     "de-DE": "{count} Transaktion(en) warten auf Ihre Bestätigung. Die KI hat jede bereits voranalysiert.",
     "en-US": "{count} transaction(s) awaiting your confirmation. AI has pre-analyzed each one."
   },
   reviewNow: {
-    "pt-BR": "Revisar agora",
+    "pt-PT": "Revisar agora",
     "de-DE": "Jetzt prüfen",
     "en-US": "Review now"
   },
   disponivelReal: {
-    "pt-BR": "Disponível Real",
+    "pt-PT": "Disponível Real",
     "de-DE": "Tatsächlich verfügbar",
     "en-US": "Real Available"
   },
   disponivelRealDescription: {
-    "pt-BR": "O que você pode gastar agora, depois de compromissos",
+    "pt-PT": "O que você pode gastar agora, depois de compromissos",
     "de-DE": "Was Sie jetzt ausgeben können, nach Verpflichtungen",
     "en-US": "What you can spend now, after commitments"
   },
   disponivelRealBreakdown: {
-    "pt-BR": "Renda estimada: {income}\nJá gasto: {spent}\nCompromissos futuros: {commitments}\n= Disponível: {available}",
+    "pt-PT": "Renda estimada: {income}\nJá gasto: {spent}\nCompromissos futuros: {commitments}\n= Disponível: {available}",
     "de-DE": "Geschätztes Einkommen: {income}\nBereits ausgegeben: {spent}\nZukünftige Verpflichtungen: {commitments}\n= Verfügbar: {available}",
     "en-US": "Estimated income: {income}\nAlready spent: {spent}\nFuture commitments: {commitments}\n= Available: {available}"
   },
   estimatedIncome: {
-    "pt-BR": "Renda Estimada",
+    "pt-PT": "Renda Estimada",
     "de-DE": "Geschätztes Einkommen",
     "en-US": "Estimated Income"
   },
   futureCommitments: {
-    "pt-BR": "Compromissos Futuros",
+    "pt-PT": "Compromissos Futuros",
     "de-DE": "Zukünftige Verpflichtungen",
     "en-US": "Future Commitments"
   },
   defineIncomeGoals: {
-    "pt-BR": "Definir em Metas",
+    "pt-PT": "Definir em Metas",
     "de-DE": "In Zielen definieren",
     "en-US": "Define in Goals"
   },
   emptyDashboard: {
-    "pt-BR": "Nenhum dado encontrado para este mês",
+    "pt-PT": "Nenhum dado encontrado para este mês",
     "de-DE": "Keine Daten für diesen Monat gefunden",
     "en-US": "No data found for this month"
   },
   startByUploadingData: {
-    "pt-BR": "Comece fazendo upload dos seus extratos",
+    "pt-PT": "Comece fazendo upload dos seus extratos",
     "de-DE": "Beginnen Sie mit dem Hochladen Ihrer Kontoauszüge",
     "en-US": "Start by uploading your bank statements"
   },
   uploadNow: {
-    "pt-BR": "Fazer Upload",
+    "pt-PT": "Fazer Upload",
     "de-DE": "Hochladen",
     "en-US": "Upload Now"
   },
   criticalCommitments: {
-    "pt-BR": "Compromissos Críticos",
+    "pt-PT": "Compromissos Críticos",
     "de-DE": "Kritische Verpflichtungen",
     "en-US": "Critical Commitments"
   },
   insightSaveTitle: {
-    "pt-BR": "Economia em {category}",
+    "pt-PT": "Economia em {category}",
     "de-DE": "Ersparnis bei {category}",
     "en-US": "Savings in {category}"
   },
   insightSaveDescription: {
-    "pt-BR": "Você economizou {percent}% em {category} comparado ao mês anterior.",
+    "pt-PT": "Você economizou {percent}% em {category} comparado ao mês anterior.",
     "de-DE": "Sie haben {percent}% bei {category} im Vergleich zum Vormonat gespart.",
     "en-US": "You saved {percent}% on {category} compared to last month."
   },
   insightWarnTitle: {
-    "pt-BR": "Atenção com {category}",
+    "pt-PT": "Atenção com {category}",
     "de-DE": "Achtung bei {category}",
     "en-US": "Watch {category}"
   },
   insightWarnDescription: {
-    "pt-BR": "Seus gastos em {category} aumentaram {percent}% este mês.",
+    "pt-PT": "Seus gastos em {category} aumentaram {percent}% este mês.",
     "de-DE": "Ihre Ausgaben für {category} stiegen diesen Monat um {percent}%.",
     "en-US": "Your spending on {category} increased {percent}% this month."
   },
   projectionWarningTitle: {
-    "pt-BR": "Projeção acima do orçamento",
+    "pt-PT": "Projeção acima do orçamento",
     "de-DE": "Prognose über dem Budget",
     "en-US": "Projection above budget"
   },
   projectionWarningDescription: {
-    "pt-BR": "Com base no ritmo atual, você pode gastar {amount} a mais que o planejado.",
+    "pt-PT": "Com base no ritmo atual, você pode gastar {amount} a mais que o planejado.",
     "de-DE": "Basierend auf dem aktuellen Tempo könnten Sie {amount} mehr als geplant ausgeben.",
     "en-US": "At the current pace, you may spend {amount} more than planned."
   },
   defaultInsightTitle: {
-    "pt-BR": "Seus gastos estão estáveis",
+    "pt-PT": "Seus gastos estão estáveis",
     "de-DE": "Ihre Ausgaben sind stabil",
     "en-US": "Your spending is steady"
   },
   defaultInsightDescription: {
-    "pt-BR": "Continue acompanhando suas despesas para manter o controle financeiro.",
+    "pt-PT": "Continue acompanhando suas despesas para manter o controle financeiro.",
     "de-DE": "Behalten Sie Ihre Ausgaben im Blick, um die Kontrolle zu behalten.",
     "en-US": "Keep tracking your expenses to stay in control."
   }
@@ -1074,297 +1075,297 @@ export const dashboardCopy = {
 
 export const transactionsCopy = {
   title: {
-    "pt-BR": "Transações",
+    "pt-PT": "Transações",
     "de-DE": "Transaktionen",
     "en-US": "Transactions"
   },
   subtitle: {
-    "pt-BR": "Visualize e edite todas as suas transações",
+    "pt-PT": "Visualize e edite todas as suas transações",
     "de-DE": "Alle Transaktionen anzeigen und bearbeiten",
     "en-US": "View and edit all your transactions"
   },
   exportCsv: {
-    "pt-BR": "Exportar CSV",
+    "pt-PT": "Exportar CSV",
     "de-DE": "CSV exportieren",
     "en-US": "Export CSV"
   },
   toastUpdated: {
-    "pt-BR": "Transação atualizada",
+    "pt-PT": "Transação atualizada",
     "de-DE": "Transaktion aktualisiert",
     "en-US": "Transaction updated"
   },
   toastUpdateError: {
-    "pt-BR": "Erro ao atualizar transação",
+    "pt-PT": "Erro ao atualizar transação",
     "de-DE": "Fehler beim Aktualisieren der Transaktion",
     "en-US": "Failed to update transaction"
   },
   exportSuccess: {
-    "pt-BR": "CSV exportado com sucesso",
+    "pt-PT": "CSV exportado com sucesso",
     "de-DE": "CSV erfolgreich exportiert",
     "en-US": "CSV exported successfully"
   },
   statsTotal: {
-    "pt-BR": "Total de Transações",
+    "pt-PT": "Total de Transações",
     "de-DE": "Transaktionen gesamt",
     "en-US": "Total transactions"
   },
   statsIncome: {
-    "pt-BR": "Receitas",
+    "pt-PT": "Receitas",
     "de-DE": "Einnahmen",
     "en-US": "Income"
   },
   statsExpense: {
-    "pt-BR": "Despesas",
+    "pt-PT": "Despesas",
     "de-DE": "Ausgaben",
     "en-US": "Expenses"
   },
   statsBalance: {
-    "pt-BR": "Saldo",
+    "pt-PT": "Saldo",
     "de-DE": "Saldo",
     "en-US": "Balance"
   },
   searchPlaceholder: {
-    "pt-BR": "Buscar por descrição...",
+    "pt-PT": "Buscar por descrição...",
     "de-DE": "Nach Beschreibung suchen...",
     "en-US": "Search by description..."
   },
   filters: {
-    "pt-BR": "Filtros",
+    "pt-PT": "Filtros",
     "de-DE": "Filter",
     "en-US": "Filters"
   },
   clearFilters: {
-    "pt-BR": "Limpar",
+    "pt-PT": "Limpar",
     "de-DE": "Zurücksetzen",
     "en-US": "Clear"
   },
   filterAccountLabel: {
-    "pt-BR": "Conta",
+    "pt-PT": "Conta",
     "de-DE": "Konto",
     "en-US": "Account"
   },
   filterAccountAll: {
-    "pt-BR": "Todas as contas",
+    "pt-PT": "Todas as contas",
     "de-DE": "Alle Konten",
     "en-US": "All accounts"
   },
   filterCategoryLabel: {
-    "pt-BR": "Categoria",
+    "pt-PT": "Categoria",
     "de-DE": "Kategorie",
     "en-US": "Category"
   },
   filterCategoryAll: {
-    "pt-BR": "Todas as categorias",
+    "pt-PT": "Todas as categorias",
     "de-DE": "Alle Kategorien",
     "en-US": "All categories"
   },
   filterTypeLabel: {
-    "pt-BR": "Tipo",
+    "pt-PT": "Tipo",
     "de-DE": "Typ",
     "en-US": "Type"
   },
   filterTypeAll: {
-    "pt-BR": "Todos os tipos",
+    "pt-PT": "Todos os tipos",
     "de-DE": "Alle Typen",
     "en-US": "All types"
   },
   typeExpense: {
-    "pt-BR": "Despesa",
+    "pt-PT": "Despesa",
     "de-DE": "Ausgabe",
     "en-US": "Expense"
   },
   typeExpensePlural: {
-    "pt-BR": "Despesas",
+    "pt-PT": "Despesas",
     "de-DE": "Ausgaben",
     "en-US": "Expenses"
   },
   typeIncome: {
-    "pt-BR": "Receita",
+    "pt-PT": "Receita",
     "de-DE": "Einnahme",
     "en-US": "Income"
   },
   typeIncomePlural: {
-    "pt-BR": "Receitas",
+    "pt-PT": "Receitas",
     "de-DE": "Einnahmen",
     "en-US": "Income"
   },
   emptyWithFilters: {
-    "pt-BR": "Nenhuma transação encontrada com os filtros aplicados",
+    "pt-PT": "Nenhuma transação encontrada com os filtros aplicados",
     "de-DE": "Keine Transaktionen mit diesen Filtern gefunden",
     "en-US": "No transactions found with current filters"
   },
   emptyPeriod: {
-    "pt-BR": "Nenhuma transação neste período",
+    "pt-PT": "Nenhuma transação neste período",
     "de-DE": "Keine Transaktionen in diesem Zeitraum",
     "en-US": "No transactions in this period"
   },
   tableDate: {
-    "pt-BR": "Data",
+    "pt-PT": "Data",
     "de-DE": "Datum",
     "en-US": "Date"
   },
   tableAccount: {
-    "pt-BR": "Conta",
+    "pt-PT": "Conta",
     "de-DE": "Konto",
     "en-US": "Account"
   },
   tableDescription: {
-    "pt-BR": "Descrição",
+    "pt-PT": "Descrição",
     "de-DE": "Beschreibung",
     "en-US": "Description"
   },
   tableSignals: {
-    "pt-BR": "Sinais",
+    "pt-PT": "Sinais",
     "de-DE": "Signale",
     "en-US": "Signals"
   },
   tableAmount: {
-    "pt-BR": "Valor",
+    "pt-PT": "Valor",
     "de-DE": "Betrag",
     "en-US": "Amount"
   },
   tableCategory: {
-    "pt-BR": "Categoria",
+    "pt-PT": "Categoria",
     "de-DE": "Kategorie",
     "en-US": "Category"
   },
   tableStatus: {
-    "pt-BR": "Status",
+    "pt-PT": "Status",
     "de-DE": "Status",
     "en-US": "Status"
   },
   tableActions: {
-    "pt-BR": "Ações",
+    "pt-PT": "Ações",
     "de-DE": "Aktionen",
     "en-US": "Actions"
   },
   viewDetails: {
-    "pt-BR": "Ver detalhes",
+    "pt-PT": "Ver detalhes",
     "de-DE": "Details ansehen",
     "en-US": "View details"
   },
   editAction: {
-    "pt-BR": "Editar",
+    "pt-PT": "Editar",
     "de-DE": "Bearbeiten",
     "en-US": "Edit"
   },
   editTitle: {
-    "pt-BR": "Editar Transação",
+    "pt-PT": "Editar Transação",
     "de-DE": "Transaktion bearbeiten",
     "en-US": "Edit transaction"
   },
   typeLabel: {
-    "pt-BR": "Tipo",
+    "pt-PT": "Tipo",
     "de-DE": "Typ",
     "en-US": "Type"
   },
   fixVarLabel: {
-    "pt-BR": "Fixo/Variável",
+    "pt-PT": "Fixo/Variável",
     "de-DE": "Fix/Variabel",
     "en-US": "Fixed/Variable"
   },
   fixedOption: {
-    "pt-BR": "Fixo",
+    "pt-PT": "Fixo",
     "de-DE": "Fix",
     "en-US": "Fixed"
   },
   variableOption: {
-    "pt-BR": "Variável",
+    "pt-PT": "Variável",
     "de-DE": "Variabel",
     "en-US": "Variable"
   },
   categoryMainLabel: {
-    "pt-BR": "Categoria Principal",
+    "pt-PT": "Categoria Principal",
     "de-DE": "Hauptkategorie",
     "en-US": "Primary category"
   },
   subcategoryLabel: {
-    "pt-BR": "Subcategoria (opcional)",
+    "pt-PT": "Subcategoria (opcional)",
     "de-DE": "Unterkategorie (optional)",
     "en-US": "Subcategory (optional)"
   },
   subcategoryPlaceholder: {
-    "pt-BR": "Ex: Supermercado, Gasolina...",
+    "pt-PT": "Ex: Supermercado, Gasolina...",
     "de-DE": "z. B. Supermarkt, Benzin...",
     "en-US": "e.g., Supermarket, Fuel..."
   },
   detailLabel: {
-    "pt-BR": "Detalhamento (opcional)",
+    "pt-PT": "Detalhamento (opcional)",
     "de-DE": "Detail (optional)",
     "en-US": "Detail (optional)"
   },
   detailPlaceholder: {
-    "pt-BR": "Ex: Pão de Açúcar, Shell...",
+    "pt-PT": "Ex: Pão de Açúcar, Shell...",
     "de-DE": "z. B. Shell, Aldi...",
     "en-US": "e.g., Shell, Aldi..."
   },
   excludeBudget: {
-    "pt-BR": "Excluir do orçamento",
+    "pt-PT": "Excluir do orçamento",
     "de-DE": "Vom Budget ausschließen",
     "en-US": "Exclude from budget"
   },
   internalTransfer: {
-    "pt-BR": "Transferência interna",
+    "pt-PT": "Transferência interna",
     "de-DE": "Interne Überweisung",
     "en-US": "Internal transfer"
   },
   cancel: {
-    "pt-BR": "Cancelar",
+    "pt-PT": "Cancelar",
     "de-DE": "Abbrechen",
     "en-US": "Cancel"
   },
   save: {
-    "pt-BR": "Salvar",
+    "pt-PT": "Salvar",
     "de-DE": "Speichern",
     "en-US": "Save"
   },
   saving: {
-    "pt-BR": "Salvando...",
+    "pt-PT": "Salvando...",
     "de-DE": "Speichern...",
     "en-US": "Saving..."
   },
   excludeBadge: {
-    "pt-BR": "Exc",
+    "pt-PT": "Exc",
     "de-DE": "Exkl.",
     "en-US": "Excl."
   },
   csvHeaderDate: {
-    "pt-BR": "Data",
+    "pt-PT": "Data",
     "de-DE": "Datum",
     "en-US": "Date"
   },
   csvHeaderAccount: {
-    "pt-BR": "Conta",
+    "pt-PT": "Conta",
     "de-DE": "Konto",
     "en-US": "Account"
   },
   csvHeaderDescription: {
-    "pt-BR": "Descrição",
+    "pt-PT": "Descrição",
     "de-DE": "Beschreibung",
     "en-US": "Description"
   },
   csvHeaderAmount: {
-    "pt-BR": "Valor",
+    "pt-PT": "Valor",
     "de-DE": "Betrag",
     "en-US": "Amount"
   },
   csvHeaderCategory: {
-    "pt-BR": "Categoria",
+    "pt-PT": "Categoria",
     "de-DE": "Kategorie",
     "en-US": "Category"
   },
   csvHeaderType: {
-    "pt-BR": "Tipo",
+    "pt-PT": "Tipo",
     "de-DE": "Typ",
     "en-US": "Type"
   },
   csvHeaderFixVar: {
-    "pt-BR": "Fix/Var",
+    "pt-PT": "Fix/Var",
     "de-DE": "Fix/Var",
     "en-US": "Fixed/Var"
   },
   csvFilename: {
-    "pt-BR": "transacoes_{month}.csv",
+    "pt-PT": "transacoes_{month}.csv",
     "de-DE": "transaktionen_{month}.csv",
     "en-US": "transactions_{month}.csv"
   }
@@ -1372,77 +1373,77 @@ export const transactionsCopy = {
 
 export const transactionDetailCopy = {
   title: {
-    "pt-BR": "Detalhes da Transação",
+    "pt-PT": "Detalhes da Transação",
     "de-DE": "Transaktionsdetails",
     "en-US": "Transaction details"
   },
   manualOverride: {
-    "pt-BR": "Ajuste manual",
+    "pt-PT": "Ajuste manual",
     "de-DE": "Manuelle Anpassung",
     "en-US": "Manual override"
   },
   internalTransfer: {
-    "pt-BR": "Transferência Interna",
+    "pt-PT": "Transferência Interna",
     "de-DE": "Interne Überweisung",
     "en-US": "Internal transfer"
   },
   excludedBudget: {
-    "pt-BR": "Excluído do Orçamento",
+    "pt-PT": "Excluído do Orçamento",
     "de-DE": "Vom Budget ausgeschlossen",
     "en-US": "Excluded from budget"
   },
   amountLabel: {
-    "pt-BR": "Valor",
+    "pt-PT": "Valor",
     "de-DE": "Betrag",
     "en-US": "Amount"
   },
   dateLabel: {
-    "pt-BR": "Data",
+    "pt-PT": "Data",
     "de-DE": "Datum",
     "en-US": "Date"
   },
   accountLabel: {
-    "pt-BR": "Conta",
+    "pt-PT": "Conta",
     "de-DE": "Konto",
     "en-US": "Account"
   },
   typeLabel: {
-    "pt-BR": "Tipo",
+    "pt-PT": "Tipo",
     "de-DE": "Typ",
     "en-US": "Type"
   },
   paymentTypeLabel: {
-    "pt-BR": "Forma de Pagamento",
+    "pt-PT": "Forma de Pagamento",
     "de-DE": "Zahlungsart",
     "en-US": "Payment type"
   },
   categoryLabel: {
-    "pt-BR": "Categorização",
+    "pt-PT": "Categorização",
     "de-DE": "Kategorisierung",
     "en-US": "Categorization"
   },
   autoCategorized: {
-    "pt-BR": "Categorizado automaticamente por regra",
+    "pt-PT": "Categorizado automaticamente por regra",
     "de-DE": "Automatisch durch Regel kategorisiert",
     "en-US": "Auto-categorized by rule"
   },
   confidenceLabel: {
-    "pt-BR": "{percent}% confiança",
+    "pt-PT": "{percent}% confiança",
     "de-DE": "{percent}% Zuversicht",
     "en-US": "{percent}% confidence"
   },
   editAction: {
-    "pt-BR": "Editar",
+    "pt-PT": "Editar",
     "de-DE": "Bearbeiten",
     "en-US": "Edit"
   },
   duplicateAction: {
-    "pt-BR": "Duplicar",
+    "pt-PT": "Duplicar",
     "de-DE": "Duplizieren",
     "en-US": "Duplicate"
   },
   deleteAction: {
-    "pt-BR": "Excluir",
+    "pt-PT": "Excluir",
     "de-DE": "Löschen",
     "en-US": "Delete"
   }
@@ -1450,172 +1451,172 @@ export const transactionDetailCopy = {
 
 export const notificationsCopy = {
   title: {
-    "pt-BR": "Notificações",
+    "pt-PT": "Notificações",
     "de-DE": "Benachrichtigungen",
     "en-US": "Notifications"
   },
   subtitle: {
-    "pt-BR": "Central de mensagens e alertas do sistema",
+    "pt-PT": "Central de mensagens e alertas do sistema",
     "de-DE": "Zentrale für Systemmeldungen und -warnungen",
     "en-US": "System messages and alerts center"
   },
   newSingle: {
-    "pt-BR": "nova",
+    "pt-PT": "nova",
     "de-DE": "neu",
     "en-US": "new"
   },
   newPlural: {
-    "pt-BR": "novas",
+    "pt-PT": "novas",
     "de-DE": "neu",
     "en-US": "new"
   },
   markAllRead: {
-    "pt-BR": "Marcar todas como lidas",
+    "pt-PT": "Marcar todas como lidas",
     "de-DE": "Alle als gelesen markieren",
     "en-US": "Mark all as read"
   },
   statsTotal: {
-    "pt-BR": "Total",
+    "pt-PT": "Total",
     "de-DE": "Gesamt",
     "en-US": "Total"
   },
   statsNotifications: {
-    "pt-BR": "notificações",
+    "pt-PT": "notificações",
     "de-DE": "Benachrichtigungen",
     "en-US": "notifications"
   },
   statsUnread: {
-    "pt-BR": "Não lidas",
+    "pt-PT": "Não lidas",
     "de-DE": "Ungelesen",
     "en-US": "Unread"
   },
   statsPending: {
-    "pt-BR": "pendentes",
+    "pt-PT": "pendentes",
     "de-DE": "ausstehend",
     "en-US": "pending"
   },
   statsImportant: {
-    "pt-BR": "Importantes",
+    "pt-PT": "Importantes",
     "de-DE": "Wichtig",
     "en-US": "Important"
   },
   statsAlerts: {
-    "pt-BR": "alertas",
+    "pt-PT": "alertas",
     "de-DE": "Warnungen",
     "en-US": "alerts"
   },
   tabAll: {
-    "pt-BR": "Todas",
+    "pt-PT": "Todas",
     "de-DE": "Alle",
     "en-US": "All"
   },
   tabUnread: {
-    "pt-BR": "Não lidas",
+    "pt-PT": "Não lidas",
     "de-DE": "Ungelesen",
     "en-US": "Unread"
   },
   tabImportant: {
-    "pt-BR": "Importantes",
+    "pt-PT": "Importantes",
     "de-DE": "Wichtig",
     "en-US": "Important"
   },
   emptyTitle: {
-    "pt-BR": "Nenhuma notificação",
+    "pt-PT": "Nenhuma notificação",
     "de-DE": "Keine Benachrichtigungen",
     "en-US": "No notifications"
   },
   emptyUnread: {
-    "pt-BR": "Você está em dia! Não há notificações não lidas.",
+    "pt-PT": "Você está em dia! Não há notificações não lidas.",
     "de-DE": "Alles erledigt! Keine ungelesenen Benachrichtigungen.",
     "en-US": "You're all caught up! No unread notifications."
   },
   emptyAll: {
-    "pt-BR": "Não há notificações para exibir neste momento.",
+    "pt-PT": "Não há notificações para exibir neste momento.",
     "de-DE": "Derzeit gibt es keine Benachrichtigungen.",
     "en-US": "There are no notifications to show right now."
   },
   viewDetails: {
-    "pt-BR": "Ver detalhes",
+    "pt-PT": "Ver detalhes",
     "de-DE": "Details ansehen",
     "en-US": "View details"
   },
   devTitle: {
-    "pt-BR": "Página em desenvolvimento",
+    "pt-PT": "Página em desenvolvimento",
     "de-DE": "Seite in Entwicklung",
     "en-US": "Page in development"
   },
   devBody: {
-    "pt-BR": "Esta é uma interface de demonstração. A integração com o backend para notificações reais está pendente e será implementada na próxima fase.",
+    "pt-PT": "Esta é uma interface de demonstração. A integração com o backend para notificações reais está pendente e será implementada na próxima fase.",
     "de-DE": "Dies ist eine Demo-Oberfläche. Die Backend-Integration für echte Benachrichtigungen ist noch ausstehend und wird in der nächsten Phase umgesetzt.",
     "en-US": "This is a demo interface. Backend integration for real notifications is pending and will be implemented in the next phase."
   },
   mockUploadTitle: {
-    "pt-BR": "Upload concluído",
+    "pt-PT": "Upload concluído",
     "de-DE": "Upload abgeschlossen",
     "en-US": "Upload complete"
   },
   mockUploadMessage: {
-    "pt-BR": "{count} transações importadas de {source}",
+    "pt-PT": "{count} transações importadas de {source}",
     "de-DE": "{count} Transaktionen aus {source} importiert",
     "en-US": "{count} transactions imported from {source}"
   },
   mockBudgetTitle: {
-    "pt-BR": "Orçamento excedido",
+    "pt-PT": "Orçamento excedido",
     "de-DE": "Budget überschritten",
     "en-US": "Budget exceeded"
   },
   mockBudgetMessage: {
-    "pt-BR": "Você gastou {spent}/{budget} em {category} este mês",
+    "pt-PT": "Você gastou {spent}/{budget} em {category} este mês",
     "de-DE": "Sie haben diesen Monat {spent}/{budget} für {category} ausgegeben",
     "en-US": "You spent {spent}/{budget} on {category} this month"
   },
   mockWeeklyTitle: {
-    "pt-BR": "Ritual semanal disponível",
+    "pt-PT": "Ritual semanal disponível",
     "de-DE": "Wöchentliches Ritual verfügbar",
     "en-US": "Weekly ritual available"
   },
   mockWeeklyMessage: {
-    "pt-BR": "Está na hora de revisar suas finanças da semana",
+    "pt-PT": "Está na hora de revisar suas finanças da semana",
     "de-DE": "Zeit, Ihre Finanzen der Woche zu prüfen",
     "en-US": "Time to review your finances for the week"
   },
   mockConfirmTitle: {
-    "pt-BR": "Novas transações para confirmar",
+    "pt-PT": "Novas transações para confirmar",
     "de-DE": "Neue Transaktionen zur Bestätigung",
     "en-US": "New transactions to confirm"
   },
   mockConfirmMessage: {
-    "pt-BR": "{count} transações aguardam revisão na fila de confirmação",
+    "pt-PT": "{count} transações aguardam revisão na fila de confirmação",
     "de-DE": "{count} Transaktionen warten in der Bestätigungswarteschlange",
     "en-US": "{count} transactions await review in the confirmation queue"
   },
   mockGoalTitle: {
-    "pt-BR": "Meta atingida",
+    "pt-PT": "Meta atingida",
     "de-DE": "Ziel erreicht",
     "en-US": "Goal reached"
   },
   mockGoalMessage: {
-    "pt-BR": "Parabéns! Você economizou {amount} este mês",
+    "pt-PT": "Parabéns! Você economizou {amount} este mês",
     "de-DE": "Glückwunsch! Sie haben diesen Monat {amount} gespart",
     "en-US": "Congrats! You saved {amount} this month"
   },
   mockCardTitle: {
-    "pt-BR": "Fatura do cartão próxima",
+    "pt-PT": "Fatura do cartão próxima",
     "de-DE": "Kartenabrechnung bald fällig",
     "en-US": "Card bill due soon"
   },
   mockCardMessage: {
-    "pt-BR": "{card} vence em {days} dias ({amount})",
+    "pt-PT": "{card} vence em {days} dias ({amount})",
     "de-DE": "{card} fällig in {days} Tagen ({amount})",
     "en-US": "{card} due in {days} days ({amount})"
   },
   mockAiTitle: {
-    "pt-BR": "Análise de IA disponível",
+    "pt-PT": "Análise de IA disponível",
     "de-DE": "KI-Analyse verfügbar",
     "en-US": "AI analysis available"
   },
   mockAiMessage: {
-    "pt-BR": "Identificamos {count} novas palavras-chave para categorização",
+    "pt-PT": "Identificamos {count} novas palavras-chave para categorização",
     "de-DE": "Wir haben {count} neue Schlüsselwörter für die Kategorisierung gefunden",
     "en-US": "We found {count} new keywords for categorization"
   }
@@ -1623,252 +1624,252 @@ export const notificationsCopy = {
 
 export const ritualsCopy = {
   title: {
-    "pt-BR": "Rituais Financeiros",
+    "pt-PT": "Rituais Financeiros",
     "de-DE": "Finanzrituale",
     "en-US": "Financial rituals"
   },
   subtitle: {
-    "pt-BR": "Revisões guiadas para manter suas finanças sob controle",
+    "pt-PT": "Revisões guiadas para manter suas finanças sob controle",
     "de-DE": "Geführte Reviews, um Ihre Finanzen im Griff zu behalten",
     "en-US": "Guided reviews to keep your finances on track"
   },
   tabWeekly: {
-    "pt-BR": "Semanal",
+    "pt-PT": "Semanal",
     "de-DE": "Wöchentlich",
     "en-US": "Weekly"
   },
   tabMonthly: {
-    "pt-BR": "Mensal",
+    "pt-PT": "Mensal",
     "de-DE": "Monatlich",
     "en-US": "Monthly"
   },
   weeklyDone: {
-    "pt-BR": "Revisão Semanal Concluída",
+    "pt-PT": "Revisão Semanal Concluída",
     "de-DE": "Wöchentliche Review abgeschlossen",
     "en-US": "Weekly review completed"
   },
   weeklyTitle: {
-    "pt-BR": "Revisão Semanal",
+    "pt-PT": "Revisão Semanal",
     "de-DE": "Wöchentliche Review",
     "en-US": "Weekly review"
   },
   weekRange: {
-    "pt-BR": "Semana de {start} a {end}",
+    "pt-PT": "Semana de {start} a {end}",
     "de-DE": "Woche von {start} bis {end}",
     "en-US": "Week of {start} to {end}"
   },
   startReview: {
-    "pt-BR": "Iniciar Revisão",
+    "pt-PT": "Iniciar Revisão",
     "de-DE": "Review starten",
     "en-US": "Start review"
   },
   weeklySpend: {
-    "pt-BR": "Gasto esta Semana",
+    "pt-PT": "Gasto esta Semana",
     "de-DE": "Ausgaben diese Woche",
     "en-US": "Spend this week"
   },
   dailyAverage: {
-    "pt-BR": "Média diária: {amount}",
+    "pt-PT": "Média diária: {amount}",
     "de-DE": "Tagesdurchschnitt: {amount}",
     "en-US": "Daily average: {amount}"
   },
   weeklyTransactions: {
-    "pt-BR": "Transações",
+    "pt-PT": "Transações",
     "de-DE": "Transaktionen",
     "en-US": "Transactions"
   },
   weeklyAutoCategorized: {
-    "pt-BR": "{count} categorizadas automaticamente",
+    "pt-PT": "{count} categorizadas automaticamente",
     "de-DE": "{count} automatisch kategorisiert",
     "en-US": "{count} auto-categorized"
   },
   weeklyGoal: {
-    "pt-BR": "Objetivo",
+    "pt-PT": "Objetivo",
     "de-DE": "Ziel",
     "en-US": "Goal"
   },
   weeklyBudget: {
-    "pt-BR": "do orçamento semanal",
+    "pt-PT": "do orçamento semanal",
     "de-DE": "des Wochenbudgets",
     "en-US": "of weekly budget"
   },
   reflectionsTitle: {
-    "pt-BR": "Reflexões da Semana",
+    "pt-PT": "Reflexões da Semana",
     "de-DE": "Wochenreflexionen",
     "en-US": "Weekly reflections"
   },
   reflectionPrompt: {
-    "pt-BR": "O que funcionou bem esta semana?",
+    "pt-PT": "O que funcionou bem esta semana?",
     "de-DE": "Was lief diese Woche gut?",
     "en-US": "What went well this week?"
   },
   reflectionPlaceholder: {
-    "pt-BR": "Ex: Consegui evitar compras por impulso...",
+    "pt-PT": "Ex: Consegui evitar compras por impulso...",
     "de-DE": "z. B. Ich habe Impulskäufe vermieden...",
     "en-US": "e.g., I avoided impulse purchases..."
   },
   completedAt: {
-    "pt-BR": "Concluído em {date}",
+    "pt-PT": "Concluído em {date}",
     "de-DE": "Abgeschlossen am {date}",
     "en-US": "Completed on {date}"
   },
   saving: {
-    "pt-BR": "Salvando...",
+    "pt-PT": "Salvando...",
     "de-DE": "Speichern...",
     "en-US": "Saving..."
   },
   completeReview: {
-    "pt-BR": "Concluir Revisão",
+    "pt-PT": "Concluir Revisão",
     "de-DE": "Review abschließen",
     "en-US": "Complete review"
   },
   stepLabel: {
-    "pt-BR": "Passo {step} de {total}: {label}",
+    "pt-PT": "Passo {step} de {total}: {label}",
     "de-DE": "Schritt {step} von {total}: {label}",
     "en-US": "Step {step} of {total}: {label}"
   },
   stepReview: {
-    "pt-BR": "Revisão",
+    "pt-PT": "Revisão",
     "de-DE": "Review",
     "en-US": "Review"
   },
   stepAnalysis: {
-    "pt-BR": "Análise",
+    "pt-PT": "Análise",
     "de-DE": "Analyse",
     "en-US": "Analysis"
   },
   stepPlanning: {
-    "pt-BR": "Planejamento",
+    "pt-PT": "Planejamento",
     "de-DE": "Planung",
     "en-US": "Planning"
   },
   stepConfirm: {
-    "pt-BR": "Confirmação",
+    "pt-PT": "Confirmação",
     "de-DE": "Bestätigung",
     "en-US": "Confirmation"
   },
   percentComplete: {
-    "pt-BR": "{percent}% Concluído",
+    "pt-PT": "{percent}% Concluído",
     "de-DE": "{percent}% abgeschlossen",
     "en-US": "{percent}% complete"
   },
   keepRhythmTitle: {
-    "pt-BR": "Quer manter o ritmo?",
+    "pt-PT": "Quer manter o ritmo?",
     "de-DE": "Den Rhythmus beibehalten?",
     "en-US": "Keep the momentum?"
   },
   keepRhythmBody: {
-    "pt-BR": "Copie as metas de {month} e ajuste apenas o necessário.",
+    "pt-PT": "Copie as metas de {month} e ajuste apenas o necessário.",
     "de-DE": "Kopieren Sie die Ziele von {month} und passen Sie nur das Nötige an.",
     "en-US": "Copy goals from {month} and adjust only what you need."
   },
   copyGoals: {
-    "pt-BR": "Copiar Metas de {month}",
+    "pt-PT": "Copiar Metas de {month}",
     "de-DE": "Ziele von {month} kopieren",
     "en-US": "Copy goals from {month}"
   },
   filterAll: {
-    "pt-BR": "Todas",
+    "pt-PT": "Todas",
     "de-DE": "Alle",
     "en-US": "All"
   },
   filterEssentials: {
-    "pt-BR": "Essenciais",
+    "pt-PT": "Essenciais",
     "de-DE": "Essenziell",
     "en-US": "Essentials"
   },
   filterLifestyle: {
-    "pt-BR": "Estilo de Vida",
+    "pt-PT": "Estilo de Vida",
     "de-DE": "Lebensstil",
     "en-US": "Lifestyle"
   },
   filterInvestments: {
-    "pt-BR": "Investimentos",
+    "pt-PT": "Investimentos",
     "de-DE": "Investitionen",
     "en-US": "Investments"
   },
   actualLabel: {
-    "pt-BR": "{month} (Realizado)",
+    "pt-PT": "{month} (Realizado)",
     "de-DE": "{month} (Ist)",
     "en-US": "{month} (Actual)"
   },
   plannedLabel: {
-    "pt-BR": "{month} (Planejado)",
+    "pt-PT": "{month} (Planejado)",
     "de-DE": "{month} (Geplant)",
     "en-US": "{month} (Planned)"
   },
   plannedForCategory: {
-    "pt-BR": "Meta para {category}",
+    "pt-PT": "Meta para {category}",
     "de-DE": "Ziel für {category}",
     "en-US": "Goal for {category}"
   },
   suggestionIncrease: {
-    "pt-BR": "Sugestão: Aumentar?",
+    "pt-PT": "Sugestão: Aumentar?",
     "de-DE": "Vorschlag: Erhöhen?",
     "en-US": "Suggestion: Increase?"
   },
   plannedTotal: {
-    "pt-BR": "Total Planejado para {month}",
+    "pt-PT": "Total Planejado para {month}",
     "de-DE": "Geplantes Gesamt für {month}",
     "en-US": "Planned total for {month}"
   },
   changeVs: {
-    "pt-BR": "{value}% vs {month}",
+    "pt-PT": "{value}% vs {month}",
     "de-DE": "{value}% vs {month}",
     "en-US": "{value}% vs {month}"
   },
   back: {
-    "pt-BR": "Voltar",
+    "pt-PT": "Voltar",
     "de-DE": "Zurück",
     "en-US": "Back"
   },
   next: {
-    "pt-BR": "Próximo",
+    "pt-PT": "Próximo",
     "de-DE": "Weiter",
     "en-US": "Next"
   },
   confirm: {
-    "pt-BR": "Confirmar",
+    "pt-PT": "Confirmar",
     "de-DE": "Bestätigen",
     "en-US": "Confirm"
   },
   toastWeeklyStarted: {
-    "pt-BR": "Revisão Semanal iniciada",
+    "pt-PT": "Revisão Semanal iniciada",
     "de-DE": "Wöchentliche Review gestartet",
     "en-US": "Weekly review started"
   },
   toastMonthlyStarted: {
-    "pt-BR": "Revisão Mensal iniciada",
+    "pt-PT": "Revisão Mensal iniciada",
     "de-DE": "Monatliche Review gestartet",
     "en-US": "Monthly review started"
   },
   toastCompletedTitle: {
-    "pt-BR": "Ritual concluído!",
+    "pt-PT": "Ritual concluído!",
     "de-DE": "Ritual abgeschlossen!",
     "en-US": "Ritual completed!"
   },
   toastCompletedBody: {
-    "pt-BR": "Suas reflexões foram salvas.",
+    "pt-PT": "Suas reflexões foram salvas.",
     "de-DE": "Ihre Reflexionen wurden gespeichert.",
     "en-US": "Your reflections were saved."
   },
   toastCopyGoals: {
-    "pt-BR": "Metas de {prev} copiadas para {next}",
+    "pt-PT": "Metas de {prev} copiadas para {next}",
     "de-DE": "Ziele von {prev} nach {next} kopiert",
     "en-US": "Goals copied from {prev} to {next}"
   },
   statusExceeded: {
-    "pt-BR": "Ultrapassou {amount}",
+    "pt-PT": "Ultrapassou {amount}",
     "de-DE": "Überschritten um {amount}",
     "en-US": "Exceeded by {amount}"
   },
   statusWithin: {
-    "pt-BR": "Dentro da meta!",
+    "pt-PT": "Dentro da meta!",
     "de-DE": "Im Zielbereich!",
     "en-US": "Within target!"
   },
   statusWarning: {
-    "pt-BR": "Atenção",
+    "pt-PT": "Atenção",
     "de-DE": "Achtung",
     "en-US": "Warning"
   }
@@ -1876,27 +1877,27 @@ export const ritualsCopy = {
 
 export const calendarCopy = {
   title: {
-    "pt-BR": "Calendário",
+    "pt-PT": "Calendário",
     "de-DE": "Kalender",
     "en-US": "Calendar"
   },
   subtitle: {
-    "pt-BR": "Visualize suas transações por dia ou semana",
+    "pt-PT": "Visualize suas transações por dia ou semana",
     "de-DE": "Transaktionen nach Tag oder Woche anzeigen",
     "en-US": "View your transactions by day or week"
   },
   viewMonth: {
-    "pt-BR": "Mês",
+    "pt-PT": "Mês",
     "de-DE": "Monat",
     "en-US": "Month"
   },
   viewWeek: {
-    "pt-BR": "4 Semanas",
+    "pt-PT": "4 Semanas",
     "de-DE": "4 Wochen",
     "en-US": "4 weeks"
   },
   loading: {
-    "pt-BR": "Carregando...",
+    "pt-PT": "Carregando...",
     "de-DE": "Laden...",
     "en-US": "Loading..."
   }
@@ -1904,12 +1905,12 @@ export const calendarCopy = {
 
 export const calendarMonthCopy = {
   weekDays: {
-    "pt-BR": ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"],
+    "pt-PT": ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"],
     "de-DE": ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
     "en-US": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
   },
   projected: {
-    "pt-BR": "Proj",
+    "pt-PT": "Proj",
     "de-DE": "Proj",
     "en-US": "Proj"
   }
@@ -1917,32 +1918,32 @@ export const calendarMonthCopy = {
 
 export const calendarWeekCopy = {
   weekLabel: {
-    "pt-BR": "Semana {index}",
+    "pt-PT": "Semana {index}",
     "de-DE": "Woche {index}",
     "en-US": "Week {index}"
   },
   projected: {
-    "pt-BR": "Projetado",
+    "pt-PT": "Projetado",
     "de-DE": "Prognostiziert",
     "en-US": "Projected"
   },
   income: {
-    "pt-BR": "Receitas",
+    "pt-PT": "Receitas",
     "de-DE": "Einnahmen",
     "en-US": "Income"
   },
   expense: {
-    "pt-BR": "Despesas",
+    "pt-PT": "Despesas",
     "de-DE": "Ausgaben",
     "en-US": "Expenses"
   },
   balance: {
-    "pt-BR": "Saldo",
+    "pt-PT": "Saldo",
     "de-DE": "Saldo",
     "en-US": "Balance"
   },
   capacityNote: {
-    "pt-BR": "Capacidade de gasto disponível",
+    "pt-PT": "Capacidade de gasto disponível",
     "de-DE": "Verfügbare Ausgabenkapazität",
     "en-US": "Available spending capacity"
   }
@@ -1950,32 +1951,32 @@ export const calendarWeekCopy = {
 
 export const calendarDetailCopy = {
   emptyPrompt: {
-    "pt-BR": "Selecione um dia ou semana para ver detalhes",
+    "pt-PT": "Selecione um dia ou semana para ver detalhes",
     "de-DE": "Wählen Sie einen Tag oder eine Woche, um Details zu sehen",
     "en-US": "Select a day or week to see details"
   },
   titleDay: {
-    "pt-BR": "Detalhes do Dia",
+    "pt-PT": "Detalhes do Dia",
     "de-DE": "Tagesdetails",
     "en-US": "Day details"
   },
   titleWeek: {
-    "pt-BR": "Resumo da Semana",
+    "pt-PT": "Resumo da Semana",
     "de-DE": "Wochenübersicht",
     "en-US": "Week summary"
   },
   income: {
-    "pt-BR": "Receitas",
+    "pt-PT": "Receitas",
     "de-DE": "Einnahmen",
     "en-US": "Income"
   },
   expense: {
-    "pt-BR": "Despesas",
+    "pt-PT": "Despesas",
     "de-DE": "Ausgaben",
     "en-US": "Expenses"
   },
   emptyList: {
-    "pt-BR": "Nenhuma transação neste período",
+    "pt-PT": "Nenhuma transação neste período",
     "de-DE": "Keine Transaktionen in diesem Zeitraum",
     "en-US": "No transactions in this period"
   }
@@ -1983,202 +1984,202 @@ export const calendarDetailCopy = {
 
 export const eventDetailCopy = {
   breadcrumbCalendar: {
-    "pt-BR": "Calendário",
+    "pt-PT": "Calendário",
     "de-DE": "Kalender",
     "en-US": "Calendar"
   },
   breadcrumbEvents: {
-    "pt-BR": "Eventos",
+    "pt-PT": "Eventos",
     "de-DE": "Ereignisse",
     "en-US": "Events"
   },
   title: {
-    "pt-BR": "Detalhes do Evento",
+    "pt-PT": "Detalhes do Evento",
     "de-DE": "Ereignisdetails",
     "en-US": "Event details"
   },
   back: {
-    "pt-BR": "Voltar",
+    "pt-PT": "Voltar",
     "de-DE": "Zurück",
     "en-US": "Back"
   },
   active: {
-    "pt-BR": "Ativo",
+    "pt-PT": "Ativo",
     "de-DE": "Aktiv",
     "en-US": "Active"
   },
   inactive: {
-    "pt-BR": "Inativo",
+    "pt-PT": "Inativo",
     "de-DE": "Inaktiv",
     "en-US": "Inactive"
   },
   nextDue: {
-    "pt-BR": "Próximo vencimento: {date}",
+    "pt-PT": "Próximo vencimento: {date}",
     "de-DE": "Nächste Fälligkeit: {date}",
     "en-US": "Next due: {date}"
   },
   recurrencePer: {
-    "pt-BR": "/ {label}",
+    "pt-PT": "/ {label}",
     "de-DE": "/ {label}",
     "en-US": "/ {label}"
   },
   editEvent: {
-    "pt-BR": "Editar Evento",
+    "pt-PT": "Editar Evento",
     "de-DE": "Ereignis bearbeiten",
     "en-US": "Edit event"
   },
   delete: {
-    "pt-BR": "Excluir",
+    "pt-PT": "Excluir",
     "de-DE": "Löschen",
     "en-US": "Delete"
   },
   deleteTitle: {
-    "pt-BR": "Confirmar Exclusão",
+    "pt-PT": "Confirmar Exclusão",
     "de-DE": "Löschung bestätigen",
     "en-US": "Confirm deletion"
   },
   deleteBody: {
-    "pt-BR": "Tem certeza que deseja excluir o evento \"{name}\"? Esta ação não pode ser desfeita.",
+    "pt-PT": "Tem certeza que deseja excluir o evento \"{name}\"? Esta ação não pode ser desfeita.",
     "de-DE": "Möchten Sie das Ereignis \"{name}\" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
     "en-US": "Are you sure you want to delete \"{name}\"? This action cannot be undone."
   },
   cancel: {
-    "pt-BR": "Cancelar",
+    "pt-PT": "Cancelar",
     "de-DE": "Abbrechen",
     "en-US": "Cancel"
   },
   detailsTitle: {
-    "pt-BR": "Informações Detalhadas",
+    "pt-PT": "Informações Detalhadas",
     "de-DE": "Detailinformationen",
     "en-US": "Detailed information"
   },
   category: {
-    "pt-BR": "Categoria",
+    "pt-PT": "Categoria",
     "de-DE": "Kategorie",
     "en-US": "Category"
   },
   recurrence: {
-    "pt-BR": "Recorrência",
+    "pt-PT": "Recorrência",
     "de-DE": "Wiederholung",
     "en-US": "Recurrence"
   },
   paymentMethod: {
-    "pt-BR": "Método de Pagamento",
+    "pt-PT": "Método de Pagamento",
     "de-DE": "Zahlungsmethode",
     "en-US": "Payment method"
   },
   historyTitle: {
-    "pt-BR": "Histórico de Ocorrências",
+    "pt-PT": "Histórico de Ocorrências",
     "de-DE": "Vorkommnisse",
     "en-US": "Occurrence history"
   },
   viewAll: {
-    "pt-BR": "Ver tudo",
+    "pt-PT": "Ver tudo",
     "de-DE": "Alle anzeigen",
     "en-US": "View all"
   },
   historyEmptyTitle: {
-    "pt-BR": "Nenhum histórico de pagamentos",
+    "pt-PT": "Nenhum histórico de pagamentos",
     "de-DE": "Kein Zahlungshistorie",
     "en-US": "No payment history"
   },
   historyEmptyBody: {
-    "pt-BR": "O histórico será criado conforme os pagamentos forem registrados",
+    "pt-PT": "O histórico será criado conforme os pagamentos forem registrados",
     "de-DE": "Der Verlauf wird erstellt, sobald Zahlungen erfasst werden",
     "en-US": "History will be created as payments are recorded"
   },
   tableDate: {
-    "pt-BR": "Data",
+    "pt-PT": "Data",
     "de-DE": "Datum",
     "en-US": "Date"
   },
   tableAmount: {
-    "pt-BR": "Valor",
+    "pt-PT": "Valor",
     "de-DE": "Betrag",
     "en-US": "Amount"
   },
   tableStatus: {
-    "pt-BR": "Status",
+    "pt-PT": "Status",
     "de-DE": "Status",
     "en-US": "Status"
   },
   tableAction: {
-    "pt-BR": "Ação",
+    "pt-PT": "Ação",
     "de-DE": "Aktion",
     "en-US": "Action"
   },
   statusPaid: {
-    "pt-BR": "Pago",
+    "pt-PT": "Pago",
     "de-DE": "Bezahlt",
     "en-US": "Paid"
   },
   statusPending: {
-    "pt-BR": "Pendente",
+    "pt-PT": "Pendente",
     "de-DE": "Ausstehend",
     "en-US": "Pending"
   },
   markPending: {
-    "pt-BR": "Marcar pendente",
+    "pt-PT": "Marcar pendente",
     "de-DE": "Als ausstehend markieren",
     "en-US": "Mark pending"
   },
   markPaid: {
-    "pt-BR": "Marcar pago",
+    "pt-PT": "Marcar pago",
     "de-DE": "Als bezahlt markieren",
     "en-US": "Mark paid"
   },
   insightsTitle: {
-    "pt-BR": "Insights Relacionados",
+    "pt-PT": "Insights Relacionados",
     "de-DE": "Zugehörige Insights",
     "en-US": "Related insights"
   },
   insightAboveAvgTitle: {
-    "pt-BR": "Gasto acima da média",
+    "pt-PT": "Gasto acima da média",
     "de-DE": "Ausgaben über dem Durchschnitt",
     "en-US": "Spending above average"
   },
   insightAboveAvgBody: {
-    "pt-BR": "Este evento representou {percent}% dos gastos totais do último mês. Considere revisar.",
+    "pt-PT": "Este evento representou {percent}% dos gastos totais do último mês. Considere revisar.",
     "de-DE": "Dieses Ereignis machte {percent}% der Gesamtausgaben des letzten Monats aus. Bitte prüfen.",
     "en-US": "This event accounted for {percent}% of last month's total spend. Consider reviewing."
   },
   trendTitle: {
-    "pt-BR": "Tendência de Gastos",
+    "pt-PT": "Tendência de Gastos",
     "de-DE": "Ausgabentrend",
     "en-US": "Spending trend"
   },
   average: {
-    "pt-BR": "Média",
+    "pt-PT": "Média",
     "de-DE": "Durchschnitt",
     "en-US": "Average"
   },
   noData: {
-    "pt-BR": "Sem dados suficientes",
+    "pt-PT": "Sem dados suficientes",
     "de-DE": "Nicht genügend Daten",
     "en-US": "Not enough data"
   },
   errorNotFound: {
-    "pt-BR": "Evento não encontrado",
+    "pt-PT": "Evento não encontrado",
     "de-DE": "Ereignis nicht gefunden",
     "en-US": "Event not found"
   },
   errorDelete: {
-    "pt-BR": "Erro ao excluir evento",
+    "pt-PT": "Erro ao excluir evento",
     "de-DE": "Fehler beim Löschen des Ereignisses",
     "en-US": "Failed to delete event"
   },
   toastDeleted: {
-    "pt-BR": "Evento excluído com sucesso",
+    "pt-PT": "Evento excluído com sucesso",
     "de-DE": "Ereignis erfolgreich gelöscht",
     "en-US": "Event deleted successfully"
   },
   toastStatusUpdated: {
-    "pt-BR": "Status atualizado",
+    "pt-PT": "Status atualizado",
     "de-DE": "Status aktualisiert",
     "en-US": "Status updated"
   },
   recurrenceLabels: {
-    "pt-BR": {
+    "pt-PT": {
       none: "Único",
       weekly: "Toda semana",
       biweekly: "Quinzenal",
@@ -2204,197 +2205,197 @@ export const eventDetailCopy = {
 
 export const accountsCopy = {
   title: {
-    "pt-BR": "Contas",
+    "pt-PT": "Contas",
     "de-DE": "Konten",
     "en-US": "Accounts"
   },
   subtitle: {
-    "pt-BR": "Gerencie seus cartões e contas bancárias",
+    "pt-PT": "Gerencie seus cartões e contas bancárias",
     "de-DE": "Verwalten Sie Ihre Karten und Bankkonten",
     "en-US": "Manage your cards and bank accounts"
   },
   newAccount: {
-    "pt-BR": "Nova Conta",
+    "pt-PT": "Nova Conta",
     "de-DE": "Neues Konto",
     "en-US": "New account"
   },
   searchPlaceholder: {
-    "pt-BR": "Buscar conta...",
+    "pt-PT": "Buscar conta...",
     "de-DE": "Konto suchen...",
     "en-US": "Search account..."
   },
   netPositionTitle: {
-    "pt-BR": "Posição Líquida Simulada",
+    "pt-PT": "Posição Líquida Simulada",
     "de-DE": "Simulierte Nettoposition",
     "en-US": "Simulated net position"
   },
   netPositionHint: {
-    "pt-BR": "Saldo bancário menos saldos dos cartões",
+    "pt-PT": "Saldo bancário menos saldos dos cartões",
     "de-DE": "Bankguthaben minus Kartensalden",
     "en-US": "Bank balance minus card balances"
   },
   staleBalances: {
-    "pt-BR": "Saldos desatualizados",
+    "pt-PT": "Saldos desatualizados",
     "de-DE": "Veraltete Salden",
     "en-US": "Stale balances"
   },
   emptySearch: {
-    "pt-BR": "Nenhuma conta encontrada",
+    "pt-PT": "Nenhuma conta encontrada",
     "de-DE": "Kein Konto gefunden",
     "en-US": "No accounts found"
   },
   emptyAll: {
-    "pt-BR": "Nenhuma conta cadastrada",
+    "pt-PT": "Nenhuma conta cadastrada",
     "de-DE": "Keine Konten registriert",
     "en-US": "No accounts yet"
   },
   createFirst: {
-    "pt-BR": "Criar primeira conta",
+    "pt-PT": "Criar primeira conta",
     "de-DE": "Erstes Konto erstellen",
     "en-US": "Create first account"
   },
   lastUpload: {
-    "pt-BR": "Último upload: {date}",
+    "pt-PT": "Último upload: {date}",
     "de-DE": "Letzter Upload: {date}",
     "en-US": "Last upload: {date}"
   },
   balance: {
-    "pt-BR": "Saldo",
+    "pt-PT": "Saldo",
     "de-DE": "Saldo",
     "en-US": "Balance"
   },
   updatedAt: {
-    "pt-BR": "Atualizado em {date}",
+    "pt-PT": "Atualizado em {date}",
     "de-DE": "Aktualisiert am {date}",
     "en-US": "Updated on {date}"
   },
   limit: {
-    "pt-BR": "Limite",
+    "pt-PT": "Limite",
     "de-DE": "Limit",
     "en-US": "Limit"
   },
   used: {
-    "pt-BR": "{amount} usado",
+    "pt-PT": "{amount} usado",
     "de-DE": "{amount} genutzt",
     "en-US": "{amount} used"
   },
   available: {
-    "pt-BR": "{amount} disponível",
+    "pt-PT": "{amount} disponível",
     "de-DE": "{amount} verfügbar",
     "en-US": "{amount} available"
   },
   active: {
-    "pt-BR": "Ativa",
+    "pt-PT": "Ativa",
     "de-DE": "Aktiv",
     "en-US": "Active"
   },
   editAccount: {
-    "pt-BR": "Editar Conta",
+    "pt-PT": "Editar Conta",
     "de-DE": "Konto bearbeiten",
     "en-US": "Edit account"
   },
   createAccountTitle: {
-    "pt-BR": "Nova Conta",
+    "pt-PT": "Nova Conta",
     "de-DE": "Neues Konto",
     "en-US": "New account"
   },
   nameLabel: {
-    "pt-BR": "Nome da Conta",
+    "pt-PT": "Nome da Conta",
     "de-DE": "Kontoname",
     "en-US": "Account name"
   },
   namePlaceholder: {
-    "pt-BR": "Ex: Nubank, Itaú, Amex...",
+    "pt-PT": "Ex: Nubank, Itaú, Amex...",
     "de-DE": "z. B. N26, Sparkasse, Amex...",
     "en-US": "e.g., N26, Sparkasse, Amex..."
   },
   typeLabel: {
-    "pt-BR": "Tipo",
+    "pt-PT": "Tipo",
     "de-DE": "Typ",
     "en-US": "Type"
   },
   lastDigitsLabel: {
-    "pt-BR": "Últimos 4 dígitos (opcional)",
+    "pt-PT": "Últimos 4 dígitos (opcional)",
     "de-DE": "Letzte 4 Ziffern (optional)",
     "en-US": "Last 4 digits (optional)"
   },
   iconLabel: {
-    "pt-BR": "Ícone",
+    "pt-PT": "Ícone",
     "de-DE": "Icon",
     "en-US": "Icon"
   },
   colorLabel: {
-    "pt-BR": "Cor",
+    "pt-PT": "Cor",
     "de-DE": "Farbe",
     "en-US": "Color"
   },
   previewLabel: {
-    "pt-BR": "Preview",
+    "pt-PT": "Preview",
     "de-DE": "Vorschau",
     "en-US": "Preview"
   },
   previewFallback: {
-    "pt-BR": "Nome da conta",
+    "pt-PT": "Nome da conta",
     "de-DE": "Kontoname",
     "en-US": "Account name"
   },
   cancel: {
-    "pt-BR": "Cancelar",
+    "pt-PT": "Cancelar",
     "de-DE": "Abbrechen",
     "en-US": "Cancel"
   },
   saving: {
-    "pt-BR": "Salvando...",
+    "pt-PT": "Salvando...",
     "de-DE": "Speichern...",
     "en-US": "Saving..."
   },
   update: {
-    "pt-BR": "Atualizar",
+    "pt-PT": "Atualizar",
     "de-DE": "Aktualisieren",
     "en-US": "Update"
   },
   create: {
-    "pt-BR": "Criar Conta",
+    "pt-PT": "Criar Conta",
     "de-DE": "Konto erstellen",
     "en-US": "Create account"
   },
   toastCreated: {
-    "pt-BR": "Conta criada com sucesso",
+    "pt-PT": "Conta criada com sucesso",
     "de-DE": "Konto erfolgreich erstellt",
     "en-US": "Account created successfully"
   },
   toastCreateError: {
-    "pt-BR": "Erro ao criar conta",
+    "pt-PT": "Erro ao criar conta",
     "de-DE": "Fehler beim Erstellen des Kontos",
     "en-US": "Failed to create account"
   },
   toastUpdated: {
-    "pt-BR": "Conta atualizada",
+    "pt-PT": "Conta atualizada",
     "de-DE": "Konto aktualisiert",
     "en-US": "Account updated"
   },
   toastUpdateError: {
-    "pt-BR": "Erro ao atualizar conta",
+    "pt-PT": "Erro ao atualizar conta",
     "de-DE": "Fehler beim Aktualisieren des Kontos",
     "en-US": "Failed to update account"
   },
   toastArchived: {
-    "pt-BR": "Conta arquivada",
+    "pt-PT": "Conta arquivada",
     "de-DE": "Konto archiviert",
     "en-US": "Account archived"
   },
   toastArchiveError: {
-    "pt-BR": "Erro ao arquivar conta",
+    "pt-PT": "Erro ao arquivar conta",
     "de-DE": "Fehler beim Archivieren des Kontos",
     "en-US": "Failed to archive account"
   },
   confirmArchive: {
-    "pt-BR": "Arquivar esta conta? As transações existentes não serão afetadas.",
+    "pt-PT": "Arquivar esta conta? As transações existentes não serão afetadas.",
     "de-DE": "Dieses Konto archivieren? Bestehende Transaktionen bleiben unverändert.",
     "en-US": "Archive this account? Existing transactions will not be affected."
   },
   typeLabels: {
-    "pt-BR": {
+    "pt-PT": {
       credit_card: "Cartão de Crédito",
       debit_card: "Cartão de Débito",
       bank_account: "Conta Bancária",
@@ -2414,7 +2415,7 @@ export const accountsCopy = {
     }
   },
   colorLabels: {
-    "pt-BR": {
+    "pt-PT": {
       blue: "Azul",
       red: "Vermelho",
       purple: "Roxo",
@@ -2446,7 +2447,7 @@ export const accountsCopy = {
     }
   },
   iconLabels: {
-    "pt-BR": {
+    "pt-PT": {
       "credit-card": "Cartão",
       landmark: "Banco",
       wallet: "Carteira",
@@ -2469,160 +2470,160 @@ export const accountsCopy = {
 
 export const goalsCopy = {
   title: {
-    "pt-BR": "Metas Financeiras",
+    "pt-PT": "Metas Financeiras",
     "de-DE": "Finanzziele",
     "en-US": "Financial goals"
   },
   subtitle: {
-    "pt-BR": "Planeje e acompanhe seus limites de gastos para {month}",
+    "pt-PT": "Planeje e acompanhe seus limites de gastos para {month}",
     "de-DE": "Planen und verfolgen Sie Ihre Ausgabenlimits für {month}",
     "en-US": "Plan and track your spending limits for {month}"
   },
   copyPrevious: {
-    "pt-BR": "Copiar anterior",
+    "pt-PT": "Copiar anterior",
     "de-DE": "Vorherigen kopieren",
     "en-US": "Copy previous"
   },
   saving: {
-    "pt-BR": "Salvando...",
+    "pt-PT": "Salvando...",
     "de-DE": "Speichern...",
     "en-US": "Saving..."
   },
   saveGoals: {
-    "pt-BR": "Salvar Metas",
+    "pt-PT": "Salvar Metas",
     "de-DE": "Ziele speichern",
     "en-US": "Save goals"
   },
   aiSuggestionTitle: {
-    "pt-BR": "Sugestão Inteligente da IA",
+    "pt-PT": "Sugestão Inteligente da IA",
     "de-DE": "Intelligente KI-Empfehlung",
     "en-US": "AI smart suggestion"
   },
   aiSuggestionBody: {
-    "pt-BR": "Analisamos o histórico dos últimos 3 meses. Notamos um aumento de {percent}% em '{category}', mas uma economia em '{savingCategory}'. Sugerimos reequilibrar as metas para evitar estouros.",
+    "pt-PT": "Analisamos o histórico dos últimos 3 meses. Notamos um aumento de {percent}% em '{category}', mas uma economia em '{savingCategory}'. Sugerimos reequilibrar as metas para evitar estouros.",
     "de-DE": "Wir haben die letzten 3 Monate analysiert. Es gab einen Anstieg von {percent}% bei '{category}', aber Einsparungen bei '{savingCategory}'. Wir empfehlen eine Anpassung der Ziele.",
     "en-US": "We analyzed the last 3 months. We saw a {percent}% increase in '{category}', but savings in '{savingCategory}'. We suggest rebalancing goals."
   },
   applySuggestions: {
-    "pt-BR": "Aplicar Sugestões",
+    "pt-PT": "Aplicar Sugestões",
     "de-DE": "Vorschläge anwenden",
     "en-US": "Apply suggestions"
   },
   incomeLabel: {
-    "pt-BR": "Receita Estimada",
+    "pt-PT": "Receita Estimada",
     "de-DE": "Geschätztes Einkommen",
     "en-US": "Estimated income"
   },
   incomeConfirmed: {
-    "pt-BR": "Confirmado",
+    "pt-PT": "Confirmado",
     "de-DE": "Bestätigt",
     "en-US": "Confirmed"
   },
   plannedTotalLabel: {
-    "pt-BR": "Total Planejado",
+    "pt-PT": "Total Planejado",
     "de-DE": "Geplant gesamt",
     "en-US": "Planned total"
   },
   plannedPercent: {
-    "pt-BR": "/ {percent}% da receita",
+    "pt-PT": "/ {percent}% da receita",
     "de-DE": "/ {percent}% des Einkommens",
     "en-US": "/ {percent}% of income"
   },
   projectedBalanceLabel: {
-    "pt-BR": "Saldo Previsto",
+    "pt-PT": "Saldo Previsto",
     "de-DE": "Prognostizierter Saldo",
     "en-US": "Projected balance"
   },
   projectedHint: {
-    "pt-BR": "para investimentos",
+    "pt-PT": "para investimentos",
     "de-DE": "für Investitionen",
     "en-US": "for investments"
   },
   categoryBreakdown: {
-    "pt-BR": "Detalhamento por Categoria",
+    "pt-PT": "Detalhamento por Categoria",
     "de-DE": "Aufschlüsselung nach Kategorie",
     "en-US": "Category breakdown"
   },
   categoryHints: {
-    "pt-BR": {
+    "pt-PT": {
       Moradia: "Aluguel, Condomínio, Energia",
-      Mercado: "Compras do mês, Feira",
+      Mercados: "Compras do mês, Feira",
       Transporte: "Combustível, Estacionamento",
       Lazer: "Streaming, Cinema, Passeios",
       "Saúde": "Farmácia, Consultas"
     },
     "de-DE": {
       Moradia: "Miete, Nebenkosten, Energie",
-      Mercado: "Einkäufe, Markt",
+      Mercados: "Einkäufe, Markt",
       Transporte: "Kraftstoff, Parken",
       Lazer: "Streaming, Kino, Ausflüge",
       "Saúde": "Apotheke, Termine"
     },
     "en-US": {
       Moradia: "Rent, utilities, energy",
-      Mercado: "Groceries, market",
+      Mercados: "Groceries, market",
       Transporte: "Fuel, parking",
       Lazer: "Streaming, cinema, outings",
       "Saúde": "Pharmacy, appointments"
     }
   },
   previousMonthLabel: {
-    "pt-BR": "Gasto Mês Anterior",
+    "pt-PT": "Gasto Mês Anterior",
     "de-DE": "Ausgaben im Vormonat",
     "en-US": "Previous month spend"
   },
   highLabel: {
-    "pt-BR": "(Alto)",
+    "pt-PT": "(Alto)",
     "de-DE": "(Hoch)",
     "en-US": "(High)"
   },
   averageLabel: {
-    "pt-BR": "Média 3 Meses",
+    "pt-PT": "Média 3 Meses",
     "de-DE": "3-Monats-Schnitt",
     "en-US": "3-month average"
   },
   budgetPlaceholder: {
-    "pt-BR": "0,00",
+    "pt-PT": "0,00",
     "de-DE": "0,00",
     "en-US": "0.00"
   },
   currentProgress: {
-    "pt-BR": "Progresso atual",
+    "pt-PT": "Progresso atual",
     "de-DE": "Aktueller Fortschritt",
     "en-US": "Current progress"
   },
   progressAmount: {
-    "pt-BR": "{current} de {target}",
+    "pt-PT": "{current} de {target}",
     "de-DE": "{current} von {target}",
     "en-US": "{current} of {target}"
   },
   addCategory: {
-    "pt-BR": "Adicionar nova categoria de meta",
+    "pt-PT": "Adicionar nova categoria de meta",
     "de-DE": "Neue Zielkategorie hinzufügen",
     "en-US": "Add new goal category"
   },
   toastSavedTitle: {
-    "pt-BR": "Metas salvas com sucesso!",
+    "pt-PT": "Metas salvas com sucesso!",
     "de-DE": "Ziele erfolgreich gespeichert!",
     "en-US": "Goals saved successfully!"
   },
   toastSavedBody: {
-    "pt-BR": "Suas metas financeiras foram atualizadas.",
+    "pt-PT": "Suas metas financeiras foram atualizadas.",
     "de-DE": "Ihre Finanzziele wurden aktualisiert.",
     "en-US": "Your financial goals were updated."
   },
   toastSaveError: {
-    "pt-BR": "Erro ao salvar metas",
+    "pt-PT": "Erro ao salvar metas",
     "de-DE": "Fehler beim Speichern der Ziele",
     "en-US": "Failed to save goals"
   },
   toastCopy: {
-    "pt-BR": "Metas copiadas do mês anterior",
+    "pt-PT": "Metas copiadas do mês anterior",
     "de-DE": "Ziele aus dem Vormonat kopiert",
     "en-US": "Goals copied from previous month"
   },
   toastSuggestions: {
-    "pt-BR": "Sugestões aplicadas (5% de redução)",
+    "pt-PT": "Sugestões aplicadas (5% de redução)",
     "de-DE": "Vorschläge angewendet (5% Reduktion)",
     "en-US": "Suggestions applied (5% reduction)"
   }
@@ -2630,232 +2631,232 @@ export const goalsCopy = {
 
 export const aiKeywordsCopy = {
   title: {
-    "pt-BR": "Análise Inteligente de Keywords",
+    "pt-PT": "Análise Inteligente de Keywords",
     "de-DE": "Intelligente Keyword-Analyse",
     "en-US": "Smart keyword analysis"
   },
   subtitle: {
-    "pt-BR": "A IA analisa suas transações pendentes e sugere categorias em lote",
+    "pt-PT": "A IA analisa suas transações pendentes e sugere categorias em lote",
     "de-DE": "Die KI analysiert offene Transaktionen und schlägt Kategorien vor",
     "en-US": "AI analyzes pending transactions and suggests categories in bulk"
   },
   analyzeAction: {
-    "pt-BR": "Analisar Transações",
+    "pt-PT": "Analisar Transações",
     "de-DE": "Transaktionen analysieren",
     "en-US": "Analyze transactions"
   },
   analyzing: {
-    "pt-BR": "Analisando...",
+    "pt-PT": "Analisando...",
     "de-DE": "Analysiere...",
     "en-US": "Analyzing..."
   },
   emptyTitle: {
-    "pt-BR": "Pronto para Categorizar em Lote?",
+    "pt-PT": "Pronto para Categorizar em Lote?",
     "de-DE": "Bereit für die Stapel-Kategorisierung?",
     "en-US": "Ready to categorize in bulk?"
   },
   emptyBody: {
-    "pt-BR": "Clique em \"Analisar Transações\" para que a IA identifique padrões nas suas transações pendentes e sugira categorias para cada palavra-chave encontrada.",
+    "pt-PT": "Clique em \"Analisar Transações\" para que a IA identifique padrões nas suas transações pendentes e sugira categorias para cada palavra-chave encontrada.",
     "de-DE": "Klicken Sie auf \"Transaktionen analysieren\", damit die KI Muster in offenen Transaktionen erkennt und Kategorien vorschlägt.",
     "en-US": "Click \"Analyze transactions\" so AI can find patterns and suggest categories for each keyword."
   },
   startAnalysis: {
-    "pt-BR": "Começar Análise",
+    "pt-PT": "Começar Análise",
     "de-DE": "Analyse starten",
     "en-US": "Start analysis"
   },
   analyzingTitle: {
-    "pt-BR": "Analisando suas transações...",
+    "pt-PT": "Analisando suas transações...",
     "de-DE": "Transaktionen werden analysiert...",
     "en-US": "Analyzing your transactions..."
   },
   analyzingBody: {
-    "pt-BR": "A IA está identificando padrões e sugerindo categorias",
+    "pt-PT": "A IA está identificando padrões e sugerindo categorias",
     "de-DE": "Die KI identifiziert Muster und schlägt Kategorien vor",
     "en-US": "AI is identifying patterns and suggesting categories"
   },
   totalAnalyzed: {
-    "pt-BR": "Total Analisado",
+    "pt-PT": "Total Analisado",
     "de-DE": "Insgesamt analysiert",
     "en-US": "Total analyzed"
   },
   transactionsLabel: {
-    "pt-BR": "transações",
+    "pt-PT": "transações",
     "de-DE": "Transaktionen",
     "en-US": "transactions"
   },
   confidenceHigh: {
-    "pt-BR": "Alta Confiança",
+    "pt-PT": "Alta Confiança",
     "de-DE": "Hohe Zuversicht",
     "en-US": "High confidence"
   },
   confidenceMedium: {
-    "pt-BR": "Média Confiança",
+    "pt-PT": "Média Confiança",
     "de-DE": "Mittlere Zuversicht",
     "en-US": "Medium confidence"
   },
   confidenceLow: {
-    "pt-BR": "Baixa Confiança",
+    "pt-PT": "Baixa Confiança",
     "de-DE": "Niedrige Zuversicht",
     "en-US": "Low confidence"
   },
   selectedLabel: {
-    "pt-BR": "Selecionadas",
+    "pt-PT": "Selecionadas",
     "de-DE": "Ausgewählt",
     "en-US": "Selected"
   },
   selectedOf: {
-    "pt-BR": "de {total} keywords",
+    "pt-PT": "de {total} keywords",
     "de-DE": "von {total} Keywords",
     "en-US": "of {total} keywords"
   },
   selectAll: {
-    "pt-BR": "Selecionar tudo",
+    "pt-PT": "Selecionar tudo",
     "de-DE": "Alle auswählen",
     "en-US": "Select all"
   },
   selectNone: {
-    "pt-BR": "Limpar seleção",
+    "pt-PT": "Limpar seleção",
     "de-DE": "Auswahl entfernen",
     "en-US": "Clear selection"
   },
   suggestionsTitle: {
-    "pt-BR": "Sugestões da IA",
+    "pt-PT": "Sugestões da IA",
     "de-DE": "KI-Vorschläge",
     "en-US": "AI suggestions"
   },
   typeExpense: {
-    "pt-BR": "Despesa",
+    "pt-PT": "Despesa",
     "de-DE": "Ausgabe",
     "en-US": "Expense"
   },
   typeIncome: {
-    "pt-BR": "Receita",
+    "pt-PT": "Receita",
     "de-DE": "Einnahme",
     "en-US": "Income"
   },
   confidenceHighRange: {
-    "pt-BR": "≥80% confiança",
+    "pt-PT": "≥80% confiança",
     "de-DE": "≥80% Zuversicht",
     "en-US": "≥80% confidence"
   },
   confidenceMediumRange: {
-    "pt-BR": "50-79% confiança",
+    "pt-PT": "50-79% confiança",
     "de-DE": "50–79% Zuversicht",
     "en-US": "50–79% confidence"
   },
   confidenceBadge: {
-    "pt-BR": "{percent}% confiança",
+    "pt-PT": "{percent}% confiança",
     "de-DE": "{percent}% Zuversicht",
     "en-US": "{percent}% confidence"
   },
   transactionsCount: {
-    "pt-BR": "{count} transações",
+    "pt-PT": "{count} transações",
     "de-DE": "{count} Transaktionen",
     "en-US": "{count} transactions"
   },
   samplesPrefix: {
-    "pt-BR": "Exemplos",
+    "pt-PT": "Exemplos",
     "de-DE": "Beispiele",
     "en-US": "Samples"
   },
   applySelectedTitle: {
-    "pt-BR": "Aplicar Sugestões Selecionadas",
+    "pt-PT": "Aplicar Sugestões Selecionadas",
     "de-DE": "Ausgewählte Vorschläge anwenden",
     "en-US": "Apply selected suggestions"
   },
   applySelectedBody: {
-    "pt-BR": "Serão criadas {count} regras e atualizadas as transações correspondentes",
+    "pt-PT": "Serão criadas {count} regras e atualizadas as transações correspondentes",
     "de-DE": "Es werden {count} Regeln erstellt und entsprechende Transaktionen aktualisiert",
     "en-US": "{count} rules will be created and related transactions updated"
   },
   viewRules: {
-    "pt-BR": "Ver Regras Existentes",
+    "pt-PT": "Ver Regras Existentes",
     "de-DE": "Bestehende Regeln ansehen",
     "en-US": "View existing rules"
   },
   applyCount: {
-    "pt-BR": "Aplicar {count} Sugestões",
+    "pt-PT": "Aplicar {count} Sugestões",
     "de-DE": "{count} Vorschläge anwenden",
     "en-US": "Apply {count} suggestions"
   },
   allCategorizedTitle: {
-    "pt-BR": "Tudo Categorizado!",
+    "pt-PT": "Tudo Categorizado!",
     "de-DE": "Alles kategorisiert!",
     "en-US": "All categorized!"
   },
   allCategorizedBody: {
-    "pt-BR": "Não há transações pendentes de categorização. Todas as suas transações já possuem uma categoria definida.",
+    "pt-PT": "Não há transações pendentes de categorização. Todas as suas transações já possuem uma categoria definida.",
     "de-DE": "Keine Transaktionen warten auf Kategorisierung. Alle Transaktionen sind kategorisiert.",
     "en-US": "No transactions pending categorization. All transactions already have a category."
   },
   applySelected: {
-    "pt-BR": "Aplicar regras",
+    "pt-PT": "Aplicar regras",
     "de-DE": "Regeln anwenden",
     "en-US": "Apply rules"
   },
   toastAnalyzeError: {
-    "pt-BR": "Erro ao analisar transações",
+    "pt-PT": "Erro ao analisar transações",
     "de-DE": "Fehler bei der Transaktionsanalyse",
     "en-US": "Failed to analyze transactions"
   },
   toastAppliedTitle: {
-    "pt-BR": "Regras criadas com sucesso!",
+    "pt-PT": "Regras criadas com sucesso!",
     "de-DE": "Regeln erfolgreich erstellt!",
     "en-US": "Rules created successfully!"
   },
   toastAppliedBody: {
-    "pt-BR": "{rules} regras criadas, {transactions} transações atualizadas",
+    "pt-PT": "{rules} regras criadas, {transactions} transações atualizadas",
     "de-DE": "{rules} Regeln erstellt, {transactions} Transaktionen aktualisiert",
     "en-US": "{rules} rules created, {transactions} transactions updated"
   },
   toastApplyError: {
-    "pt-BR": "Erro ao criar regras",
+    "pt-PT": "Erro ao criar regras",
     "de-DE": "Fehler beim Erstellen der Regeln",
     "en-US": "Failed to create rules"
   },
   toastAnalyzed: {
-    "pt-BR": "{count} palavras-chave analisadas",
+    "pt-PT": "{count} palavras-chave analisadas",
     "de-DE": "{count} Schlüsselwörter analysiert",
     "en-US": "{count} keywords analyzed"
   },
   categoryLabel: {
-    "pt-BR": "Categoria",
+    "pt-PT": "Categoria",
     "de-DE": "Kategorie",
     "en-US": "Category"
   },
   typeLabel: {
-    "pt-BR": "Tipo",
+    "pt-PT": "Tipo",
     "de-DE": "Typ",
     "en-US": "Type"
   },
   fixVarLabel: {
-    "pt-BR": "Fixo/Variável",
+    "pt-PT": "Fixo/Variável",
     "de-DE": "Fix/Variabel",
     "en-US": "Fixed/Variable"
   },
   confidenceLabel: {
-    "pt-BR": "Confiança",
+    "pt-PT": "Confiança",
     "de-DE": "Zuversicht",
     "en-US": "Confidence"
   },
   reasonLabel: {
-    "pt-BR": "Motivo",
+    "pt-PT": "Motivo",
     "de-DE": "Grund",
     "en-US": "Reason"
   },
   samplesLabel: {
-    "pt-BR": "Exemplos",
+    "pt-PT": "Exemplos",
     "de-DE": "Beispiele",
     "en-US": "Samples"
   },
   pendingEmpty: {
-    "pt-BR": "Nenhuma sugestão disponível",
+    "pt-PT": "Nenhuma sugestão disponível",
     "de-DE": "Keine Vorschläge verfügbar",
     "en-US": "No suggestions available"
   },
   backDashboard: {
-    "pt-BR": "Voltar ao Dashboard",
+    "pt-PT": "Voltar ao Dashboard",
     "de-DE": "Zurück zum Dashboard",
     "en-US": "Back to dashboard"
   }
@@ -2863,102 +2864,102 @@ export const aiKeywordsCopy = {
 
 export const budgetsCopy = {
   title: {
-    "pt-BR": "Orçamentos Mensais",
+    "pt-PT": "Orçamentos Mensais",
     "de-DE": "Monatliche Budgets",
     "en-US": "Monthly budgets"
   },
   subtitle: {
-    "pt-BR": "Defina limites de gasto por categoria para {month}",
+    "pt-PT": "Defina limites de gasto por categoria para {month}",
     "de-DE": "Legen Sie Ausgabenlimits pro Kategorie für {month} fest",
     "en-US": "Set spending limits per category for {month}"
   },
   toastCreated: {
-    "pt-BR": "Orçamento criado",
+    "pt-PT": "Orçamento criado",
     "de-DE": "Budget erstellt",
     "en-US": "Budget created"
   },
   toastUpdated: {
-    "pt-BR": "Orçamento atualizado",
+    "pt-PT": "Orçamento atualizado",
     "de-DE": "Budget aktualisiert",
     "en-US": "Budget updated"
   },
   toastRemoved: {
-    "pt-BR": "Orçamento removido",
+    "pt-PT": "Orçamento removido",
     "de-DE": "Budget entfernt",
     "en-US": "Budget removed"
   },
   toastFillAll: {
-    "pt-BR": "Preencha todos os campos",
+    "pt-PT": "Preencha todos os campos",
     "de-DE": "Bitte alle Felder ausfüllen",
     "en-US": "Fill in all fields"
   },
   suggestionsTitle: {
-    "pt-BR": "Sugestões Inteligentes de Orçamento",
+    "pt-PT": "Sugestões Inteligentes de Orçamento",
     "de-DE": "Intelligente Budgetvorschläge",
     "en-US": "Smart budget suggestions"
   },
   suggestionsApply: {
-    "pt-BR": "Aplicar Sugestões",
+    "pt-PT": "Aplicar Sugestões",
     "de-DE": "Vorschläge anwenden",
     "en-US": "Apply suggestions"
   },
   suggestionsBasedOn: {
-    "pt-BR": "Baseado nos últimos 3 meses de gastos",
+    "pt-PT": "Baseado nos últimos 3 meses de gastos",
     "de-DE": "Basierend auf den letzten 3 Monaten",
     "en-US": "Based on the last 3 months"
   },
   avg3Months: {
-    "pt-BR": "Média 3 meses:",
+    "pt-PT": "Média 3 meses:",
     "de-DE": "3-Monats-Schnitt:",
     "en-US": "3-month avg:"
   },
   lastMonth: {
-    "pt-BR": "Mês anterior:",
+    "pt-PT": "Mês anterior:",
     "de-DE": "Vormonat:",
     "en-US": "Last month:"
   },
   addBudgetTitle: {
-    "pt-BR": "Adicionar Orçamento",
+    "pt-PT": "Adicionar Orçamento",
     "de-DE": "Budget hinzufügen",
     "en-US": "Add budget"
   },
   selectCategory: {
-    "pt-BR": "Selecione uma categoria",
+    "pt-PT": "Selecione uma categoria",
     "de-DE": "Kategorie auswählen",
     "en-US": "Select a category"
   },
   amountPlaceholder: {
-    "pt-BR": "Valor (€)",
+    "pt-PT": "Valor (€)",
     "de-DE": "Betrag (€)",
     "en-US": "Amount (€)"
   },
   addAction: {
-    "pt-BR": "Adicionar",
+    "pt-PT": "Adicionar",
     "de-DE": "Hinzufügen",
     "en-US": "Add"
   },
   spentOf: {
-    "pt-BR": "{spent} de {total}",
+    "pt-PT": "{spent} de {total}",
     "de-DE": "{spent} von {total}",
     "en-US": "{spent} of {total}"
   },
   updateBudget: {
-    "pt-BR": "Atualizar orçamento",
+    "pt-PT": "Atualizar orçamento",
     "de-DE": "Budget aktualisieren",
     "en-US": "Update budget"
   },
   emptyTitle: {
-    "pt-BR": "Nenhum orçamento definido para {month}",
+    "pt-PT": "Nenhum orçamento definido para {month}",
     "de-DE": "Kein Budget für {month} definiert",
     "en-US": "No budget set for {month}"
   },
   emptyBody: {
-    "pt-BR": "Adicione um orçamento acima para começar a controlar seus gastos",
+    "pt-PT": "Adicione um orçamento acima para começar a controlar seus gastos",
     "de-DE": "Fügen Sie oben ein Budget hinzu, um Ihre Ausgaben zu kontrollieren",
     "en-US": "Add a budget above to start controlling your spending"
   },
   toastSuggestionsApplied: {
-    "pt-BR": "Sugestões aplicadas com sucesso",
+    "pt-PT": "Sugestões aplicadas com sucesso",
     "de-DE": "Vorschläge erfolgreich angewendet",
     "en-US": "Suggestions applied successfully"
   }
@@ -2966,267 +2967,267 @@ export const budgetsCopy = {
 
 export const merchantDictionaryCopy = {
   title: {
-    "pt-BR": "Dicionário de Comerciantes",
+    "pt-PT": "Dicionário de Comerciantes",
     "de-DE": "Händlerverzeichnis",
     "en-US": "Merchant dictionary"
   },
   subtitle: {
-    "pt-BR": "Edite aliases para melhorar a legibilidade das transações",
+    "pt-PT": "Edite aliases para melhorar a legibilidade das transações",
     "de-DE": "Bearbeiten Sie Aliase, um Transaktionen besser lesbar zu machen",
     "en-US": "Edit aliases to improve transaction readability"
   },
   searchPlaceholder: {
-    "pt-BR": "Buscar descrição...",
+    "pt-PT": "Buscar descrição...",
     "de-DE": "Beschreibung suchen...",
     "en-US": "Search description..."
   },
   filterSource: {
-    "pt-BR": "Fonte",
+    "pt-PT": "Fonte",
     "de-DE": "Quelle",
     "en-US": "Source"
   },
   filterManual: {
-    "pt-BR": "Manual",
+    "pt-PT": "Manual",
     "de-DE": "Manuell",
     "en-US": "Manual"
   },
   filterAll: {
-    "pt-BR": "Todos",
+    "pt-PT": "Todos",
     "de-DE": "Alle",
     "en-US": "All"
   },
   filterManualOnly: {
-    "pt-BR": "Somente manual",
+    "pt-PT": "Somente manual",
     "de-DE": "Nur manuell",
     "en-US": "Manual only"
   },
   filterAutoOnly: {
-    "pt-BR": "Somente automático",
+    "pt-PT": "Somente automático",
     "de-DE": "Nur automatisch",
     "en-US": "Auto only"
   },
   editTitle: {
-    "pt-BR": "Editar alias",
+    "pt-PT": "Editar alias",
     "de-DE": "Alias bearbeiten",
     "en-US": "Edit alias"
   },
   aliasLabel: {
-    "pt-BR": "Alias",
+    "pt-PT": "Alias",
     "de-DE": "Alias",
     "en-US": "Alias"
   },
   save: {
-    "pt-BR": "Salvar",
+    "pt-PT": "Salvar",
     "de-DE": "Speichern",
     "en-US": "Save"
   },
   cancel: {
-    "pt-BR": "Cancelar",
+    "pt-PT": "Cancelar",
     "de-DE": "Abbrechen",
     "en-US": "Cancel"
   },
   confirmDelete: {
-    "pt-BR": "Remover este mapeamento?",
+    "pt-PT": "Remover este mapeamento?",
     "de-DE": "Diese Zuordnung entfernen?",
     "en-US": "Remove this mapping?"
   },
   toastAliasUpdated: {
-    "pt-BR": "Alias atualizado com sucesso",
+    "pt-PT": "Alias atualizado com sucesso",
     "de-DE": "Alias erfolgreich aktualisiert",
     "en-US": "Alias updated successfully"
   },
   toastUpdateError: {
-    "pt-BR": "Erro ao atualizar",
+    "pt-PT": "Erro ao atualizar",
     "de-DE": "Fehler beim Aktualisieren",
     "en-US": "Failed to update"
   },
   toastRemoved: {
-    "pt-BR": "Mapeamento removido",
+    "pt-PT": "Mapeamento removido",
     "de-DE": "Zuordnung entfernt",
     "en-US": "Mapping removed"
   },
   toastSuggestError: {
-    "pt-BR": "Erro ao sugerir alias",
+    "pt-PT": "Erro ao sugerir alias",
     "de-DE": "Fehler beim Vorschlagen eines Alias",
     "en-US": "Failed to suggest alias"
   },
   toastSuggestionReady: {
-    "pt-BR": "Sugestão recebida!",
+    "pt-PT": "Sugestão recebida!",
     "de-DE": "Vorschlag erhalten!",
     "en-US": "Suggestion received!"
   },
   toastSuggestionBody: {
-    "pt-BR": "Revise e salve se aprovar",
+    "pt-PT": "Revise e salve se aprovar",
     "de-DE": "Bitte prüfen und speichern, wenn passend",
     "en-US": "Review and save if approved"
   },
   toastAiError: {
-    "pt-BR": "Erro na sugestão AI",
+    "pt-PT": "Erro na sugestão AI",
     "de-DE": "Fehler bei der KI-Empfehlung",
     "en-US": "AI suggestion error"
   },
   exportEmpty: {
-    "pt-BR": "Nenhum dado para exportar",
+    "pt-PT": "Nenhum dado para exportar",
     "de-DE": "Keine Daten zum Exportieren",
     "en-US": "No data to export"
   },
   exportCount: {
-    "pt-BR": "{count} registros exportados",
+    "pt-PT": "{count} registros exportados",
     "de-DE": "{count} Einträge exportiert",
     "en-US": "{count} records exported"
   },
   importEmpty: {
-    "pt-BR": "Arquivo vazio",
+    "pt-PT": "Arquivo vazio",
     "de-DE": "Leere Datei",
     "en-US": "Empty file"
   },
   importErrors: {
-    "pt-BR": "Erros encontrados no arquivo",
+    "pt-PT": "Erros encontrados no arquivo",
     "de-DE": "Fehler in der Datei gefunden",
     "en-US": "Errors found in file"
   },
   importNoneValid: {
-    "pt-BR": "Nenhum registro válido para importar",
+    "pt-PT": "Nenhum registro válido para importar",
     "de-DE": "Keine gültigen Datensätze zum Importieren",
     "en-US": "No valid records to import"
   },
   importSuccess: {
-    "pt-BR": "{count} registros importados com sucesso",
+    "pt-PT": "{count} registros importados com sucesso",
     "de-DE": "{count} Einträge erfolgreich importiert",
     "en-US": "{count} records imported successfully"
   },
   importPartialTitle: {
-    "pt-BR": "Importação concluída com erros",
+    "pt-PT": "Importação concluída com erros",
     "de-DE": "Import mit Fehlern abgeschlossen",
     "en-US": "Import completed with errors"
   },
   importPartialBody: {
-    "pt-BR": "{success} importados, {fail} falharam",
+    "pt-PT": "{success} importados, {fail} falharam",
     "de-DE": "{success} importiert, {fail} fehlgeschlagen",
     "en-US": "{success} imported, {fail} failed"
   },
   importProcessError: {
-    "pt-BR": "Erro ao processar arquivo",
+    "pt-PT": "Erro ao processar arquivo",
     "de-DE": "Fehler beim Verarbeiten der Datei",
     "en-US": "Error processing file"
   },
   sourceLabel: {
-    "pt-BR": "Fonte",
+    "pt-PT": "Fonte",
     "de-DE": "Quelle",
     "en-US": "Source"
   },
   keyDescLabel: {
-    "pt-BR": "Descrição Chave",
+    "pt-PT": "Descrição Chave",
     "de-DE": "Schlüsselbeschreibung",
     "en-US": "Key description"
   },
   manualLabel: {
-    "pt-BR": "Manual",
+    "pt-PT": "Manual",
     "de-DE": "Manuell",
     "en-US": "Manual"
   },
   yes: {
-    "pt-BR": "Sim",
+    "pt-PT": "Sim",
     "de-DE": "Ja",
     "en-US": "Yes"
   },
   no: {
-    "pt-BR": "Não",
+    "pt-PT": "Não",
     "de-DE": "Nein",
     "en-US": "No"
   },
   createdAt: {
-    "pt-BR": "Criado em",
+    "pt-PT": "Criado em",
     "de-DE": "Erstellt am",
     "en-US": "Created at"
   },
   updatedAt: {
-    "pt-BR": "Atualizado em",
+    "pt-PT": "Atualizado em",
     "de-DE": "Aktualisiert am",
     "en-US": "Updated at"
   },
   headerTitle: {
-    "pt-BR": "Dicionário de Comerciantes",
+    "pt-PT": "Dicionário de Comerciantes",
     "de-DE": "Händlerverzeichnis",
     "en-US": "Merchant dictionary"
   },
   headerSubtitle: {
-    "pt-BR": "Gerencie aliases padronizados para descrições de transações",
+    "pt-PT": "Gerencie aliases padronizados para descrições de transações",
     "de-DE": "Verwalten Sie standardisierte Aliase für Transaktionsbeschreibungen",
     "en-US": "Manage standardized aliases for transaction descriptions"
   },
   exportLabel: {
-    "pt-BR": "Exportar",
+    "pt-PT": "Exportar",
     "de-DE": "Exportieren",
     "en-US": "Export"
   },
   importLabel: {
-    "pt-BR": "Importar",
+    "pt-PT": "Importar",
     "de-DE": "Importieren",
     "en-US": "Import"
   },
   statTotal: {
-    "pt-BR": "Total",
+    "pt-PT": "Total",
     "de-DE": "Gesamt",
     "en-US": "Total"
   },
   statManual: {
-    "pt-BR": "Manual",
+    "pt-PT": "Manual",
     "de-DE": "Manuell",
     "en-US": "Manual"
   },
   statAuto: {
-    "pt-BR": "Auto",
+    "pt-PT": "Auto",
     "de-DE": "Auto",
     "en-US": "Auto"
   },
   statSources: {
-    "pt-BR": "Fontes",
+    "pt-PT": "Fontes",
     "de-DE": "Quellen",
     "en-US": "Sources"
   },
   filterType: {
-    "pt-BR": "Tipo",
+    "pt-PT": "Tipo",
     "de-DE": "Typ",
     "en-US": "Type"
   },
   filterAllSources: {
-    "pt-BR": "Todas as Fontes",
+    "pt-PT": "Todas as Fontes",
     "de-DE": "Alle Quellen",
     "en-US": "All sources"
   },
   emptyTitle: {
-    "pt-BR": "Nenhum alias encontrado",
+    "pt-PT": "Nenhum alias encontrado",
     "de-DE": "Kein Alias gefunden",
     "en-US": "No aliases found"
   },
   emptyBody: {
-    "pt-BR": "Os aliases serão criados automaticamente ao importar transações.",
+    "pt-PT": "Os aliases serão criados automaticamente ao importar transações.",
     "de-DE": "Aliase werden beim Import von Transaktionen automatisch erstellt.",
     "en-US": "Aliases will be created automatically when importing transactions."
   },
   manualBadge: {
-    "pt-BR": "Manual",
+    "pt-PT": "Manual",
     "de-DE": "Manuell",
     "en-US": "Manual"
   },
   suggestAi: {
-    "pt-BR": "Sugerir com IA",
+    "pt-PT": "Sugerir com IA",
     "de-DE": "Mit KI vorschlagen",
     "en-US": "Suggest with AI"
   },
   importSourceError: {
-    "pt-BR": "Linha {row}: Fonte deve ser \"Sparkasse\", \"Amex\" ou \"M&M\"",
+    "pt-PT": "Linha {row}: Fonte deve ser \"Sparkasse\", \"Amex\" ou \"M&M\"",
     "de-DE": "Zeile {row}: Quelle muss \"Sparkasse\", \"Amex\" oder \"M&M\" sein",
     "en-US": "Row {row}: Source must be \"Sparkasse\", \"Amex\", or \"M&M\""
   },
   importKeyError: {
-    "pt-BR": "Linha {row}: Descrição Chave é obrigatória",
+    "pt-PT": "Linha {row}: Descrição Chave é obrigatória",
     "de-DE": "Zeile {row}: Schlüsselbeschreibung ist erforderlich",
     "en-US": "Row {row}: Key description is required"
   },
   importAliasError: {
-    "pt-BR": "Linha {row}: Alias é obrigatório",
+    "pt-PT": "Linha {row}: Alias é obrigatório",
     "de-DE": "Zeile {row}: Alias ist erforderlich",
     "en-US": "Row {row}: Alias is required"
   }
@@ -3234,52 +3235,52 @@ export const merchantDictionaryCopy = {
 
 export const notFoundCopy = {
   title: {
-    "pt-BR": "Página não encontrada",
+    "pt-PT": "Página não encontrada",
     "de-DE": "Seite nicht gefunden",
     "en-US": "Page not found"
   },
   subtitle: {
-    "pt-BR": "Parece que você se perdeu. A página que você está procurando não existe ou foi movida.",
+    "pt-PT": "Parece que você se perdeu. A página que você está procurando não existe ou foi movida.",
     "de-DE": "Es sieht so aus, als hätten Sie sich verirrt. Die Seite existiert nicht oder wurde verschoben.",
     "en-US": "It looks like you got lost. The page you're looking for doesn't exist or was moved."
   },
   backDashboard: {
-    "pt-BR": "Voltar ao Dashboard",
+    "pt-PT": "Voltar ao Dashboard",
     "de-DE": "Zurück zum Dashboard",
     "en-US": "Back to dashboard"
   },
   back: {
-    "pt-BR": "Voltar",
+    "pt-PT": "Voltar",
     "de-DE": "Zurück",
     "en-US": "Go back"
   },
   popularPages: {
-    "pt-BR": "Páginas populares:",
+    "pt-PT": "Páginas populares:",
     "de-DE": "Beliebte Seiten:",
     "en-US": "Popular pages:"
   },
   helpTitle: {
-    "pt-BR": "Precisa de ajuda?",
+    "pt-PT": "Precisa de ajuda?",
     "de-DE": "Brauchen Sie Hilfe?",
     "en-US": "Need help?"
   },
   helpBody: {
-    "pt-BR": "Se você acha que isso é um erro, entre em contato com o suporte.",
+    "pt-PT": "Se você acha que isso é um erro, entre em contato com o suporte.",
     "de-DE": "Wenn Sie glauben, dass dies ein Fehler ist, kontaktieren Sie den Support.",
     "en-US": "If you think this is an error, contact support."
   },
   pageDashboard: {
-    "pt-BR": "Dashboard",
+    "pt-PT": "Dashboard",
     "de-DE": "Dashboard",
     "en-US": "Dashboard"
   },
   pageUploads: {
-    "pt-BR": "Uploads",
+    "pt-PT": "Uploads",
     "de-DE": "Uploads",
     "en-US": "Uploads"
   },
   pageTransactions: {
-    "pt-BR": "Transações",
+    "pt-PT": "Transações",
     "de-DE": "Transaktionen",
     "en-US": "Transactions"
   }
@@ -3287,82 +3288,82 @@ export const notFoundCopy = {
 
 export const keyboardShortcutsCopy = {
   title: {
-    "pt-BR": "Atalhos de Teclado",
+    "pt-PT": "Atalhos de Teclado",
     "de-DE": "Tastenkürzel",
     "en-US": "Keyboard shortcuts"
   },
   tipLabel: {
-    "pt-BR": "Dica:",
+    "pt-PT": "Dica:",
     "de-DE": "Tipp:",
     "en-US": "Tip:"
   },
   tipPrefix: {
-    "pt-BR": "Pressione",
+    "pt-PT": "Pressione",
     "de-DE": "Drücken Sie",
     "en-US": "Press"
   },
   tipSuffix: {
-    "pt-BR": "a qualquer momento para ver estes atalhos.",
+    "pt-PT": "a qualquer momento para ver estes atalhos.",
     "de-DE": "jederzeit, um diese Tastenkürzel zu sehen.",
     "en-US": "at any time to view these shortcuts."
   },
   categoryGeneral: {
-    "pt-BR": "Geral",
+    "pt-PT": "Geral",
     "de-DE": "Allgemein",
     "en-US": "General"
   },
   categoryConfirmation: {
-    "pt-BR": "Confirmação",
+    "pt-PT": "Confirmação",
     "de-DE": "Bestätigung",
     "en-US": "Confirmation"
   },
   categoryTransactions: {
-    "pt-BR": "Transações",
+    "pt-PT": "Transações",
     "de-DE": "Transaktionen",
     "en-US": "Transactions"
   },
   categoryOther: {
-    "pt-BR": "Outros",
+    "pt-PT": "Outros",
     "de-DE": "Sonstiges",
     "en-US": "Other"
   },
   toggleShortcuts: {
-    "pt-BR": "Mostrar/ocultar atalhos",
+    "pt-PT": "Mostrar/ocultar atalhos",
     "de-DE": "Tastenkürzel anzeigen/ausblenden",
     "en-US": "Show/hide shortcuts"
   },
   closeDialog: {
-    "pt-BR": "Fechar modal ou diálogo",
+    "pt-PT": "Fechar modal ou diálogo",
     "de-DE": "Modal/Dialog schließen",
     "en-US": "Close modal or dialog"
   },
   confirmTransaction: {
-    "pt-BR": "Confirmar transação selecionada",
+    "pt-PT": "Confirmar transação selecionada",
     "de-DE": "Ausgewählte Transaktion bestätigen",
     "en-US": "Confirm selected transaction"
   },
   navigateTransactions: {
-    "pt-BR": "Navegar entre transações",
+    "pt-PT": "Navegar entre transações",
     "de-DE": "Zwischen Transaktionen navigieren",
     "en-US": "Navigate between transactions"
   },
   toggleSelection: {
-    "pt-BR": "Selecionar/desselecionar transação",
+    "pt-PT": "Selecionar/desselecionar transação",
     "de-DE": "Transaktion auswählen/abwählen",
     "en-US": "Select/deselect transaction"
   },
   selectAll: {
-    "pt-BR": "Selecionar todas as transações",
+    "pt-PT": "Selecionar todas as transações",
     "de-DE": "Alle Transaktionen auswählen",
     "en-US": "Select all transactions"
   },
   focusSearch: {
-    "pt-BR": "Focar na busca",
+    "pt-PT": "Focar na busca",
     "de-DE": "Suche fokussieren",
     "en-US": "Focus search"
   },
   quickSearch: {
-    "pt-BR": "Busca rápida (em breve)",
+    "pt-PT": "Busca rápida (em breve)",
     "de-DE": "Schnellsuche (bald verfügbar)",
     "en-US": "Quick search (coming soon)"
   }
@@ -3370,152 +3371,152 @@ export const keyboardShortcutsCopy = {
 
 export const onboardingCopy = {
   step1Title: {
-    "pt-BR": "Bem-vindo ao RitualFin",
+    "pt-PT": "Bem-vindo ao RitualFin",
     "de-DE": "Willkommen bei RitualFin",
     "en-US": "Welcome to RitualFin"
   },
   step1Description: {
-    "pt-BR": "Sua vida financeira organizada em minutos, não horas.",
+    "pt-PT": "Sua vida financeira organizada em minutos, não horas.",
     "de-DE": "Ihre Finanzen in Minuten organisiert, nicht in Stunden.",
     "en-US": "Your financial life organized in minutes, not hours."
   },
   step1Body: {
-    "pt-BR": "RitualFin usa inteligência artificial para categorizar suas transações automaticamente. Você só precisa revisar e confirmar.",
+    "pt-PT": "RitualFin usa inteligência artificial para categorizar suas transações automaticamente. Você só precisa revisar e confirmar.",
     "de-DE": "RitualFin nutzt KI, um Ihre Transaktionen automatisch zu kategorisieren. Sie müssen nur prüfen und bestätigen.",
     "en-US": "RitualFin uses AI to automatically categorize your transactions. You only need to review and confirm."
   },
   step1CardImport: {
-    "pt-BR": "Importe CSV",
+    "pt-PT": "Importe CSV",
     "de-DE": "CSV importieren",
     "en-US": "Import CSV"
   },
   step1CardAi: {
-    "pt-BR": "IA Categoriza",
+    "pt-PT": "IA Categoriza",
     "de-DE": "KI kategorisiert",
     "en-US": "AI categorizes"
   },
   step1CardConfirm: {
-    "pt-BR": "Você Confirma",
+    "pt-PT": "Você Confirma",
     "de-DE": "Sie bestätigen",
     "en-US": "You confirm"
   },
   step1BadgeTitle: {
-    "pt-BR": "Modo Lazy Ativado",
+    "pt-PT": "Modo Lazy Ativado",
     "de-DE": "Lazy-Modus aktiviert",
     "en-US": "Lazy mode enabled"
   },
   step1BadgeBody: {
-    "pt-BR": "O sistema aprende com suas confirmações e melhora a cada mês.",
+    "pt-PT": "O sistema aprende com suas confirmações e melhora a cada mês.",
     "de-DE": "Das System lernt aus Ihren Bestätigungen und verbessert sich monatlich.",
     "en-US": "The system learns from your confirmations and improves each month."
   },
   step2Title: {
-    "pt-BR": "Bancos Suportados",
+    "pt-PT": "Bancos Suportados",
     "de-DE": "Unterstützte Banken",
     "en-US": "Supported banks"
   },
   step2Description: {
-    "pt-BR": "Importe extratos de múltiplos bancos e cartões.",
+    "pt-PT": "Importe extratos de múltiplos bancos e cartões.",
     "de-DE": "Importieren Sie Auszüge von mehreren Banken und Karten.",
     "en-US": "Import statements from multiple banks and cards."
   },
   step2Body: {
-    "pt-BR": "RitualFin detecta automaticamente o formato do seu CSV e extrai todas as informações.",
+    "pt-PT": "RitualFin detecta automaticamente o formato do seu CSV e extrai todas as informações.",
     "de-DE": "RitualFin erkennt das CSV-Format automatisch und extrahiert alle Informationen.",
     "en-US": "RitualFin automatically detects your CSV format and extracts all information."
   },
   step2MilesDesc: {
-    "pt-BR": "Cartão de crédito Lufthansa",
+    "pt-PT": "Cartão de crédito Lufthansa",
     "de-DE": "Lufthansa-Kreditkarte",
     "en-US": "Lufthansa credit card"
   },
   step2AmexDesc: {
-    "pt-BR": "Multi-cartões suportado",
+    "pt-PT": "Multi-cartões suportado",
     "de-DE": "Mehrere Karten unterstützt",
     "en-US": "Multi-card supported"
   },
   step2SparkasseDesc: {
-    "pt-BR": "Conta bancária IBAN",
+    "pt-PT": "Conta bancária IBAN",
     "de-DE": "IBAN-Bankkonto",
     "en-US": "IBAN bank account"
   },
   statusActive: {
-    "pt-BR": "Ativo",
+    "pt-PT": "Ativo",
     "de-DE": "Aktiv",
     "en-US": "Active"
   },
   step2ComingSoon: {
-    "pt-BR": "Em breve: Nubank, Revolut, N26, Wise",
+    "pt-PT": "Em breve: Nubank, Revolut, N26, Wise",
     "de-DE": "Demnächst: Nubank, Revolut, N26, Wise",
     "en-US": "Coming soon: Nubank, Revolut, N26, Wise"
   },
   step3Title: {
-    "pt-BR": "Pronto para começar!",
+    "pt-PT": "Pronto para começar!",
     "de-DE": "Bereit loszulegen!",
     "en-US": "Ready to start!"
   },
   step3Description: {
-    "pt-BR": "Vamos importar seu primeiro arquivo CSV.",
+    "pt-PT": "Vamos importar seu primeiro arquivo CSV.",
     "de-DE": "Lassen Sie uns Ihre erste CSV importieren.",
     "en-US": "Let's import your first CSV file."
   },
   step3Body: {
-    "pt-BR": "Depois de importar, você poderá:",
+    "pt-PT": "Depois de importar, você poderá:",
     "de-DE": "Nach dem Import können Sie:",
     "en-US": "After importing, you'll be able to:"
   },
   step3BulletReviewTitle: {
-    "pt-BR": "Revisar transações pendentes",
+    "pt-PT": "Revisar transações pendentes",
     "de-DE": "Offene Transaktionen prüfen",
     "en-US": "Review pending transactions"
   },
   step3BulletReviewBody: {
-    "pt-BR": "Confirme as categorizações sugeridas pela IA",
+    "pt-PT": "Confirme as categorizações sugeridas pela IA",
     "de-DE": "Bestätigen Sie die von der KI vorgeschlagenen Kategorien",
     "en-US": "Confirm the categories suggested by AI"
   },
   step3BulletRulesTitle: {
-    "pt-BR": "Criar regras de categorização",
+    "pt-PT": "Criar regras de categorização",
     "de-DE": "Kategorisierungsregeln erstellen",
     "en-US": "Create categorization rules"
   },
   step3BulletRulesBody: {
-    "pt-BR": "Ensine o sistema a reconhecer suas despesas recorrentes",
+    "pt-PT": "Ensine o sistema a reconhecer suas despesas recorrentes",
     "de-DE": "Bringen Sie dem System wiederkehrende Ausgaben bei",
     "en-US": "Teach the system to recognize recurring expenses"
   },
   step3BulletInsightsTitle: {
-    "pt-BR": "Visualizar insights financeiros",
+    "pt-PT": "Visualizar insights financeiros",
     "de-DE": "Finanzielle Insights ansehen",
     "en-US": "View financial insights"
   },
   step3BulletInsightsBody: {
-    "pt-BR": "Dashboard com gastos por categoria e projeções",
+    "pt-PT": "Dashboard com gastos por categoria e projeções",
     "de-DE": "Dashboard mit Ausgaben nach Kategorie und Prognosen",
     "en-US": "Dashboard with category spend and forecasts"
   },
   step3Tip: {
-    "pt-BR": "Dica: Comece importando o último mês para ver o RitualFin em ação!",
+    "pt-PT": "Dica: Comece importando o último mês para ver o RitualFin em ação!",
     "de-DE": "Tipp: Importieren Sie den letzten Monat, um RitualFin in Aktion zu sehen!",
     "en-US": "Tip: Start by importing the last month to see RitualFin in action!"
   },
   back: {
-    "pt-BR": "Voltar",
+    "pt-PT": "Voltar",
     "de-DE": "Zurück",
     "en-US": "Back"
   },
   skipIntro: {
-    "pt-BR": "Pular introdução",
+    "pt-PT": "Pular introdução",
     "de-DE": "Einführung überspringen",
     "en-US": "Skip intro"
   },
   next: {
-    "pt-BR": "Próximo",
+    "pt-PT": "Próximo",
     "de-DE": "Weiter",
     "en-US": "Next"
   },
   start: {
-    "pt-BR": "Começar",
+    "pt-PT": "Começar",
     "de-DE": "Starten",
     "en-US": "Start"
   }
@@ -3523,7 +3524,7 @@ export const onboardingCopy = {
 
 export const layoutCopy = {
   nav: {
-    "pt-BR": {
+    "pt-PT": {
       dashboard: "Painel",
       transactions: "Transações",
       settings: "Configurações",
@@ -3543,7 +3544,7 @@ export const layoutCopy = {
     }
   },
   sidebar: {
-    "pt-BR": {
+    "pt-PT": {
       period: "Período",
       system: "Sistema",
       toggleGroup: "Alternar grupo {group}",
@@ -3698,97 +3699,97 @@ export const layoutCopy = {
 
 export const loginCopy = {
   tagline: {
-    "pt-BR": "Gestão Financeira Inteligente",
+    "pt-PT": "Gestão Financeira Inteligente",
     "de-DE": "Intelligentes Finanzmanagement",
     "en-US": "Smart financial management"
   },
   welcomeTitle: {
-    "pt-BR": "Bem-vindo de volta",
+    "pt-PT": "Bem-vindo de volta",
     "de-DE": "Willkommen zurück",
     "en-US": "Welcome back"
   },
   welcomeSubtitle: {
-    "pt-BR": "Gerencie suas finanças com clareza e simplicidade",
+    "pt-PT": "Gerencie suas finanças com clareza e simplicidade",
     "de-DE": "Verwalten Sie Ihre Finanzen klar und einfach",
     "en-US": "Manage your finances with clarity and simplicity"
   },
   demoTitle: {
-    "pt-BR": "Modo Demo Ativo",
+    "pt-PT": "Modo Demo Ativo",
     "de-DE": "Demo-Modus aktiv",
     "en-US": "Demo mode active"
   },
   demoBody: {
-    "pt-BR": "Clique em qualquer botão para entrar. Sem necessidade de credenciais.",
+    "pt-PT": "Clique em qualquer botão para entrar. Sem necessidade de credenciais.",
     "de-DE": "Klicken Sie auf eine Schaltfläche, um sich anzumelden. Keine Zugangsdaten erforderlich.",
     "en-US": "Click any button to sign in. No credentials needed."
   },
   googleContinue: {
-    "pt-BR": "Continuar com Google",
+    "pt-PT": "Continuar com Google",
     "de-DE": "Mit Google fortfahren",
     "en-US": "Continue with Google"
   },
   googleSuccess: {
-    "pt-BR": "Conectado! Redirecionando...",
+    "pt-PT": "Conectado! Redirecionando...",
     "de-DE": "Verbunden! Weiterleitung...",
     "en-US": "Connected! Redirecting..."
   },
   divider: {
-    "pt-BR": "ou continue com email",
+    "pt-PT": "ou continue com email",
     "de-DE": "oder weiter mit E-Mail",
     "en-US": "or continue with email"
   },
   emailLabel: {
-    "pt-BR": "Email",
+    "pt-PT": "Email",
     "de-DE": "E-Mail",
     "en-US": "Email"
   },
   emailPlaceholder: {
-    "pt-BR": "seu@email.com",
+    "pt-PT": "seu@email.com",
     "de-DE": "dein@email.com",
     "en-US": "you@email.com"
   },
   passwordLabel: {
-    "pt-BR": "Senha",
+    "pt-PT": "Senha",
     "de-DE": "Passwort",
     "en-US": "Password"
   },
   passwordPlaceholder: {
-    "pt-BR": "Digite sua senha",
+    "pt-PT": "Digite sua senha",
     "de-DE": "Passwort eingeben",
     "en-US": "Enter your password"
   },
   forgot: {
-    "pt-BR": "Esqueceu?",
+    "pt-PT": "Esqueceu?",
     "de-DE": "Vergessen?",
     "en-US": "Forgot?"
   },
   loginAction: {
-    "pt-BR": "Entrar",
+    "pt-PT": "Entrar",
     "de-DE": "Anmelden",
     "en-US": "Sign in"
   },
   loginLoading: {
-    "pt-BR": "Entrando...",
+    "pt-PT": "Entrando...",
     "de-DE": "Anmeldung...",
     "en-US": "Signing in..."
   },
   loginSuccess: {
-    "pt-BR": "Sucesso!",
+    "pt-PT": "Sucesso!",
     "de-DE": "Erfolg!",
     "en-US": "Success!"
   },
   signupPrompt: {
-    "pt-BR": "Não tem uma conta?",
+    "pt-PT": "Não tem uma conta?",
     "de-DE": "Sie haben noch kein Konto?",
     "en-US": "Don't have an account?"
   },
   signupCta: {
-    "pt-BR": "Cadastre-se gratuitamente",
+    "pt-PT": "Cadastre-se gratuitamente",
     "de-DE": "Kostenlos registrieren",
     "en-US": "Sign up for free"
   },
   footer: {
-    "pt-BR": "Feito com ❤️ para simplificar suas finanças.",
+    "pt-PT": "Feito com ❤️ para simplificar suas finanças.",
     "de-DE": "Mit ❤️ gebaut, um Ihre Finanzen zu vereinfachen.",
     "en-US": "Made with ❤️ to simplify your finances."
   }
@@ -3796,42 +3797,42 @@ export const loginCopy = {
 
 export const insightsCopy = {
   title: {
-    "pt-BR": "Insights",
+    "pt-PT": "Insights",
     "de-DE": "Insights",
     "en-US": "Insights"
   },
   subtitle: {
-    "pt-BR": "Leituras automáticas para {month}.",
+    "pt-PT": "Leituras automáticas para {month}.",
     "de-DE": "Automatische Einblicke für {month}.",
     "en-US": "Automated insights for {month}."
   },
   savedTitle: {
-    "pt-BR": "Economia em {category}",
+    "pt-PT": "Economia em {category}",
     "de-DE": "Ersparnis bei {category}",
     "en-US": "Savings in {category}"
   },
   savedDescription: {
-    "pt-BR": "Você economizou {percent}% em {category} comparado ao mês anterior.",
+    "pt-PT": "Você economizou {percent}% em {category} comparado ao mês anterior.",
     "de-DE": "Sie haben {percent}% bei {category} gegenüber dem Vormonat gespart.",
     "en-US": "You saved {percent}% on {category} compared to last month."
   },
   warningTitle: {
-    "pt-BR": "Atenção com {category}",
+    "pt-PT": "Atenção com {category}",
     "de-DE": "Achtung bei {category}",
     "en-US": "Watch out for {category}"
   },
   warningDescription: {
-    "pt-BR": "Seus gastos em {category} aumentaram {percent}% este mês.",
+    "pt-PT": "Seus gastos em {category} aumentaram {percent}% este mês.",
     "de-DE": "Ihre Ausgaben für {category} sind diesen Monat um {percent}% gestiegen.",
     "en-US": "Your spending on {category} increased {percent}% this month."
   },
   neutralTitle: {
-    "pt-BR": "Gastos estáveis no período",
+    "pt-PT": "Gastos estáveis no período",
     "de-DE": "Ausgaben im Zeitraum stabil",
     "en-US": "Spending steady for the period"
   },
   neutralDescription: {
-    "pt-BR": "Continue acompanhando para manter o controle financeiro.",
+    "pt-PT": "Continue acompanhando para manter o controle financeiro.",
     "de-DE": "Behalten Sie den Überblick, um die Finanzen im Griff zu behalten.",
     "en-US": "Keep tracking to maintain financial control."
   }
@@ -3839,192 +3840,192 @@ export const insightsCopy = {
 
 export const confirmCopy = {
   title: {
-    "pt-BR": "Fila de Confirmação",
+    "pt-PT": "Fila de Confirmação",
     "de-DE": "Bestätigungswarteschlange",
     "en-US": "Confirmation Queue"
   },
   subtitle: {
-    "pt-BR": "A IA pré-analisou cada transação. Revise as sugestões e confirme.",
+    "pt-PT": "A IA pré-analisou cada transação. Revise as sugestões e confirme.",
     "de-DE": "Die KI hat Transaktionen voranalysiert. Bitte prüfen und bestätigen.",
     "en-US": "AI pre-analyzed each transaction. Review and confirm."
   },
   toastConfirmed: {
-    "pt-BR": "{count} transação(ões) confirmada(s)",
+    "pt-PT": "{count} transação(ões) confirmada(s)",
     "de-DE": "{count} Transaktion(en) bestätigt",
     "en-US": "{count} transaction(s) confirmed"
   },
   statusSuccessTitle: {
-    "pt-BR": "Confirmação concluída",
+    "pt-PT": "Confirmação concluída",
     "de-DE": "Bestätigung abgeschlossen",
     "en-US": "Confirmation completed"
   },
   statusSuccessBody: {
-    "pt-BR": "{count} transação(ões) confirmada(s).",
+    "pt-PT": "{count} transação(ões) confirmada(s).",
     "de-DE": "{count} Transaktion(en) bestätigt.",
     "en-US": "{count} transaction(s) confirmed."
   },
   statusErrorTitle: {
-    "pt-BR": "Falha ao confirmar transações",
+    "pt-PT": "Falha ao confirmar transações",
     "de-DE": "Bestätigung fehlgeschlagen",
     "en-US": "Failed to confirm transactions"
   },
   statusErrorBody: {
-    "pt-BR": "Não foi possível concluir a confirmação.",
+    "pt-PT": "Não foi possível concluir a confirmação.",
     "de-DE": "Bestätigung konnte nicht abgeschlossen werden.",
     "en-US": "Confirmation could not be completed."
   },
   acceptHigh: {
-    "pt-BR": "Aceitar alta confiança",
+    "pt-PT": "Aceitar alta confiança",
     "de-DE": "Hohe Zuversicht akzeptieren",
     "en-US": "Accept high confidence"
   },
   autoBadge: {
-    "pt-BR": "Auto",
+    "pt-PT": "Auto",
     "de-DE": "Auto",
     "en-US": "Auto"
   },
   aiBadge: {
-    "pt-BR": "IA",
+    "pt-PT": "IA",
     "de-DE": "KI",
     "en-US": "AI"
   },
   totalPending: {
-    "pt-BR": "Total Pendente",
+    "pt-PT": "Total Pendente",
     "de-DE": "Offen insgesamt",
     "en-US": "Total Pending"
   },
   highConfidence: {
-    "pt-BR": "Alta Confiança",
+    "pt-PT": "Alta Confiança",
     "de-DE": "Hohe Zuversicht",
     "en-US": "High Confidence"
   },
   mediumConfidence: {
-    "pt-BR": "Média Confiança",
+    "pt-PT": "Média Confiança",
     "de-DE": "Mittlere Zuversicht",
     "en-US": "Medium Confidence"
   },
   lowConfidence: {
-    "pt-BR": "Baixa Confiança",
+    "pt-PT": "Baixa Confiança",
     "de-DE": "Niedrige Zuversicht",
     "en-US": "Low Confidence"
   },
   noCategory: {
-    "pt-BR": "Sem Categoria",
+    "pt-PT": "Sem Categoria",
     "de-DE": "Ohne Kategorie",
     "en-US": "No Category"
   },
   confirmSelected: {
-    "pt-BR": "Confirmar Selecionados",
+    "pt-PT": "Confirmar Selecionados",
     "de-DE": "Ausgewählte bestätigen",
     "en-US": "Confirm Selected"
   },
   accept: {
-    "pt-BR": "Aceitar",
+    "pt-PT": "Aceitar",
     "de-DE": "Akzeptieren",
     "en-US": "Accept"
   },
   confirm: {
-    "pt-BR": "Confirmar",
+    "pt-PT": "Confirmar",
     "de-DE": "Bestätigen",
     "en-US": "Confirm"
   },
   tabAll: {
-    "pt-BR": "Todas",
+    "pt-PT": "Todas",
     "de-DE": "Alle",
     "en-US": "All"
   },
   tabHigh: {
-    "pt-BR": "Alta",
+    "pt-PT": "Alta",
     "de-DE": "Hoch",
     "en-US": "High"
   },
   tabMedium: {
-    "pt-BR": "Média",
+    "pt-PT": "Média",
     "de-DE": "Mittel",
     "en-US": "Medium"
   },
   tabLow: {
-    "pt-BR": "Baixa",
+    "pt-PT": "Baixa",
     "de-DE": "Niedrig",
     "en-US": "Low"
   },
   tableConfidence: {
-    "pt-BR": "Confiança",
+    "pt-PT": "Confiança",
     "de-DE": "Zuversicht",
     "en-US": "Confidence"
   },
   tableDate: {
-    "pt-BR": "Data",
+    "pt-PT": "Data",
     "de-DE": "Datum",
     "en-US": "Date"
   },
   tableAccount: {
-    "pt-BR": "Conta",
+    "pt-PT": "Conta",
     "de-DE": "Konto",
     "en-US": "Account"
   },
   tableDescription: {
-    "pt-BR": "Descrição",
+    "pt-PT": "Descrição",
     "de-DE": "Beschreibung",
     "en-US": "Description"
   },
   tableAmount: {
-    "pt-BR": "Valor",
+    "pt-PT": "Valor",
     "de-DE": "Betrag",
     "en-US": "Amount"
   },
   tableCategory: {
-    "pt-BR": "Categoria",
+    "pt-PT": "Categoria",
     "de-DE": "Kategorie",
     "en-US": "Category"
   },
   tableAction: {
-    "pt-BR": "Ação",
+    "pt-PT": "Ação",
     "de-DE": "Aktion",
     "en-US": "Action"
   },
   emptyAll: {
-    "pt-BR": "Nenhuma transação pendente de revisão.",
+    "pt-PT": "Nenhuma transação pendente de revisão.",
     "de-DE": "Keine Transaktionen zur Überprüfung.",
     "en-US": "No transactions pending review."
   },
   emptyByConfidence: {
-    "pt-BR": "Nenhuma transação com {level} confiança.",
+    "pt-PT": "Nenhuma transação com {level} confiança.",
     "de-DE": "Keine Transaktionen mit {level} Zuversicht.",
     "en-US": "No transactions with {level} confidence."
   },
   confidenceHighLabel: {
-    "pt-BR": "alta",
+    "pt-PT": "alta",
     "de-DE": "hoher",
     "en-US": "high"
   },
   confidenceMediumLabel: {
-    "pt-BR": "média",
+    "pt-PT": "média",
     "de-DE": "mittlerer",
     "en-US": "medium"
   },
   confidenceLowLabel: {
-    "pt-BR": "baixa",
+    "pt-PT": "baixa",
     "de-DE": "niedriger",
     "en-US": "low"
   },
   emptyTitle: {
-    "pt-BR": "Tudo limpo!",
+    "pt-PT": "Tudo limpo!",
     "de-DE": "Alles erledigt!",
     "en-US": "All clear!"
   },
   showingCount: {
-    "pt-BR": "Mostrando {shown} de {total} itens",
+    "pt-PT": "Mostrando {shown} de {total} itens",
     "de-DE": "{shown} von {total} Einträgen angezeigt",
     "en-US": "Showing {shown} of {total} items"
   },
   selectedCount: {
-    "pt-BR": "{count} selecionado(s)",
+    "pt-PT": "{count} selecionado(s)",
     "de-DE": "{count} ausgewählt",
     "en-US": "{count} selected"
   },
   selectedLabel: {
-    "pt-BR": "selecionado(s)",
+    "pt-PT": "selecionado(s)",
     "de-DE": "ausgewählt",
     "en-US": "selected"
   }
@@ -4032,497 +4033,497 @@ export const confirmCopy = {
 
 export const rulesCopy = {
   title: {
-    "pt-BR": "Motor de Regras",
+    "pt-PT": "Motor de Regras",
     "de-DE": "Regel-Engine",
     "en-US": "Rules Engine"
   },
   subtitle: {
-    "pt-BR": "Categorize transações automaticamente com regras baseadas em palavras-chave.",
+    "pt-PT": "Categorize transações automaticamente com regras baseadas em palavras-chave.",
     "de-DE": "Transaktionen automatisch mit keywordbasierten Regeln kategorisieren.",
     "en-US": "Automatically categorize transactions with keyword-based rules."
   },
   newRule: {
-    "pt-BR": "Nova Regra",
+    "pt-PT": "Nova Regra",
     "de-DE": "Neue Regel",
     "en-US": "New Rule"
   },
   reapply: {
-    "pt-BR": "Reaplicar Regras",
+    "pt-PT": "Reaplicar Regras",
     "de-DE": "Regeln erneut anwenden",
     "en-US": "Reapply Rules"
   },
   importLabel: {
-    "pt-BR": "Importar",
+    "pt-PT": "Importar",
     "de-DE": "Importieren",
     "en-US": "Import"
   },
   totalRules: {
-    "pt-BR": "Total Regras",
+    "pt-PT": "Total Regras",
     "de-DE": "Regeln gesamt",
     "en-US": "Total Rules"
   },
   aiRules: {
-    "pt-BR": "Regras IA",
+    "pt-PT": "Regras IA",
     "de-DE": "KI-Regeln",
     "en-US": "AI Rules"
   },
   userRules: {
-    "pt-BR": "Suas Regras",
+    "pt-PT": "Suas Regras",
     "de-DE": "Ihre Regeln",
     "en-US": "Your Rules"
   },
   createDefault: {
-    "pt-BR": "Criar Regras Padrao",
+    "pt-PT": "Criar Regras Padrao",
     "de-DE": "Standardregeln erstellen",
     "en-US": "Create Default Rules"
   },
   generating: {
-    "pt-BR": "Gerando...",
+    "pt-PT": "Gerando...",
     "de-DE": "Wird erzeugt...",
     "en-US": "Generating..."
   },
   emptyTitle: {
-    "pt-BR": "Nenhuma regra configurada",
+    "pt-PT": "Nenhuma regra configurada",
     "de-DE": "Keine Regeln konfiguriert",
     "en-US": "No rules configured"
   },
   emptyBody: {
-    "pt-BR": "Crie regras para categorizar suas transações automaticamente durante a importação.",
+    "pt-PT": "Crie regras para categorizar suas transações automaticamente durante a importação.",
     "de-DE": "Erstellen Sie Regeln, um Transaktionen beim Import automatisch zu kategorisieren.",
     "en-US": "Create rules to automatically categorize transactions on import."
   },
   toastRuleCreated: {
-    "pt-BR": "Regra criada com sucesso",
+    "pt-PT": "Regra criada com sucesso",
     "de-DE": "Regel erfolgreich erstellt",
     "en-US": "Rule created successfully"
   },
   toastRuleUpdated: {
-    "pt-BR": "Regra atualizada",
+    "pt-PT": "Regra atualizada",
     "de-DE": "Regel aktualisiert",
     "en-US": "Rule updated"
   },
   toastRuleRemoved: {
-    "pt-BR": "Regra removida",
+    "pt-PT": "Regra removida",
     "de-DE": "Regel entfernt",
     "en-US": "Rule removed"
   },
   toastCreateError: {
-    "pt-BR": "Erro ao criar regra",
+    "pt-PT": "Erro ao criar regra",
     "de-DE": "Fehler beim Erstellen der Regel",
     "en-US": "Failed to create rule"
   },
   toastExportEmpty: {
-    "pt-BR": "Nenhuma regra para exportar",
+    "pt-PT": "Nenhuma regra para exportar",
     "de-DE": "Keine Regeln zum Export",
     "en-US": "No rules to export"
   },
   toastFileEmpty: {
-    "pt-BR": "Arquivo vazio",
+    "pt-PT": "Arquivo vazio",
     "de-DE": "Datei ist leer",
     "en-US": "File is empty"
   },
   toastNoValidRules: {
-    "pt-BR": "Nenhuma regra válida para importar",
+    "pt-PT": "Nenhuma regra válida para importar",
     "de-DE": "Keine gültigen Regeln zum Import",
     "en-US": "No valid rules to import"
   },
   toastImportSuccess: {
-    "pt-BR": "regras importadas com sucesso",
+    "pt-PT": "regras importadas com sucesso",
     "de-DE": "Regeln erfolgreich importiert",
     "en-US": "rules imported successfully"
   },
   toastFillRequired: {
-    "pt-BR": "Preencha nome e palavras-chave",
+    "pt-PT": "Preencha nome e palavras-chave",
     "de-DE": "Name und Schlüsselwörter ausfüllen",
     "en-US": "Fill name and keywords"
   },
   statusRuleCreated: {
-    "pt-BR": "Regra criada",
+    "pt-PT": "Regra criada",
     "de-DE": "Regel erstellt",
     "en-US": "Rule created"
   },
   statusRuleCreateFailed: {
-    "pt-BR": "Falha ao criar regra",
+    "pt-PT": "Falha ao criar regra",
     "de-DE": "Regel konnte nicht erstellt werden",
     "en-US": "Failed to create rule"
   },
   statusRuleUpdated: {
-    "pt-BR": "Regra atualizada",
+    "pt-PT": "Regra atualizada",
     "de-DE": "Regel aktualisiert",
     "en-US": "Rule updated"
   },
   statusRuleUpdateFailed: {
-    "pt-BR": "Falha ao atualizar regra",
+    "pt-PT": "Falha ao atualizar regra",
     "de-DE": "Regel konnte nicht aktualisiert werden",
     "en-US": "Failed to update rule"
   },
   statusRuleRemoved: {
-    "pt-BR": "Regra removida",
+    "pt-PT": "Regra removida",
     "de-DE": "Regel entfernt",
     "en-US": "Rule removed"
   },
   statusRuleRemoveFailed: {
-    "pt-BR": "Falha ao remover regra",
+    "pt-PT": "Falha ao remover regra",
     "de-DE": "Regel konnte nicht entfernt werden",
     "en-US": "Failed to remove rule"
   },
   statusReapplyDone: {
-    "pt-BR": "Regras reaplicadas",
+    "pt-PT": "Regras reaplicadas",
     "de-DE": "Regeln erneut angewendet",
     "en-US": "Rules reapplied"
   },
   statusReapplyFailed: {
-    "pt-BR": "Falha ao reaplicar regras",
+    "pt-PT": "Falha ao reaplicar regras",
     "de-DE": "Regeln konnten nicht erneut angewendet werden",
     "en-US": "Failed to reapply rules"
   },
   statusReapplyFailedBody: {
-    "pt-BR": "Não foi possível reaplicar as regras.",
+    "pt-PT": "Não foi possível reaplicar as regras.",
     "de-DE": "Die Regeln konnten nicht erneut angewendet werden.",
     "en-US": "Could not reapply rules."
   },
   statusAiAdded: {
-    "pt-BR": "Regras IA adicionadas",
+    "pt-PT": "Regras IA adicionadas",
     "de-DE": "KI-Regeln hinzugefügt",
     "en-US": "AI rules added"
   },
   statusAiFailed: {
-    "pt-BR": "Falha ao gerar regras IA",
+    "pt-PT": "Falha ao gerar regras IA",
     "de-DE": "KI-Regeln konnten nicht erstellt werden",
     "en-US": "Failed to generate AI rules"
   },
   statusImportFailed: {
-    "pt-BR": "Importação falhou",
+    "pt-PT": "Importação falhou",
     "de-DE": "Import fehlgeschlagen",
     "en-US": "Import failed"
   },
   statusImportErrorsFound: {
-    "pt-BR": "Erros encontrados no arquivo",
+    "pt-PT": "Erros encontrados no arquivo",
     "de-DE": "Fehler in der Datei gefunden",
     "en-US": "Errors found in file"
   },
   statusImportIgnored: {
-    "pt-BR": "Importação ignorada",
+    "pt-PT": "Importação ignorada",
     "de-DE": "Import ignoriert",
     "en-US": "Import ignored"
   },
   statusImportDone: {
-    "pt-BR": "Importação concluída",
+    "pt-PT": "Importação concluída",
     "de-DE": "Import abgeschlossen",
     "en-US": "Import completed"
   },
   statusImportDoneErrors: {
-    "pt-BR": "Importação concluída com erros",
+    "pt-PT": "Importação concluída com erros",
     "de-DE": "Import abgeschlossen mit Fehlern",
     "en-US": "Import completed with errors"
   },
   statusFileProcessError: {
-    "pt-BR": "Erro ao processar arquivo",
+    "pt-PT": "Erro ao processar arquivo",
     "de-DE": "Fehler beim Verarbeiten der Datei",
     "en-US": "Error processing file"
   },
   aiBadge: {
-    "pt-BR": "IA",
+    "pt-PT": "IA",
     "de-DE": "KI",
     "en-US": "AI"
   },
   categoriesLabel: {
-    "pt-BR": "Categorias",
+    "pt-PT": "Categorias",
     "de-DE": "Kategorien",
     "en-US": "Categories"
   },
   searchPlaceholder: {
-    "pt-BR": "Buscar regras por palavra-chave...",
+    "pt-PT": "Buscar regras por palavra-chave...",
     "de-DE": "Regeln nach Stichwort suchen...",
     "en-US": "Search rules by keyword..."
   },
   filterCategoryPlaceholder: {
-    "pt-BR": "Categoria",
+    "pt-PT": "Categoria",
     "de-DE": "Kategorie",
     "en-US": "Category"
   },
   filterAllCategories: {
-    "pt-BR": "Todas Categorias",
+    "pt-PT": "Todas Categorias",
     "de-DE": "Alle Kategorien",
     "en-US": "All categories"
   },
   createManual: {
-    "pt-BR": "Criar Manualmente",
+    "pt-PT": "Criar Manualmente",
     "de-DE": "Manuell erstellen",
     "en-US": "Create manually"
   },
   strictBadge: {
-    "pt-BR": "Estrita",
+    "pt-PT": "Estrita",
     "de-DE": "Strikt",
     "en-US": "Strict"
   },
   dialogEditTitle: {
-    "pt-BR": "Editar Regra",
+    "pt-PT": "Editar Regra",
     "de-DE": "Regel bearbeiten",
     "en-US": "Edit rule"
   },
   dialogNewTitle: {
-    "pt-BR": "Nova Regra",
+    "pt-PT": "Nova Regra",
     "de-DE": "Neue Regel",
     "en-US": "New rule"
   },
   fieldNameLabel: {
-    "pt-BR": "Nome",
+    "pt-PT": "Nome",
     "de-DE": "Name",
     "en-US": "Name"
   },
   fieldNamePlaceholder: {
-    "pt-BR": "Ex: Supermercado LIDL",
+    "pt-PT": "Ex: Supermercado LIDL",
     "de-DE": "z. B. Supermarkt LIDL",
     "en-US": "e.g. Supermarket LIDL"
   },
   fieldCategory1Label: {
-    "pt-BR": "Categoria (Nível 1)",
+    "pt-PT": "Categoria (Nível 1)",
     "de-DE": "Kategorie (Ebene 1)",
     "en-US": "Category (Level 1)"
   },
   fieldCategory2Label: {
-    "pt-BR": "Subcategoria (Nível 2)",
+    "pt-PT": "Subcategoria (Nível 2)",
     "de-DE": "Unterkategorie (Ebene 2)",
     "en-US": "Subcategory (Level 2)"
   },
   fieldCategory3Label: {
-    "pt-BR": "Especificação (Nível 3)",
+    "pt-PT": "Especificação (Nível 3)",
     "de-DE": "Spezifizierung (Ebene 3)",
     "en-US": "Specification (Level 3)"
   },
   fieldCategory2Placeholder: {
-    "pt-BR": "Ex: Supermercado",
+    "pt-PT": "Ex: Supermercado",
     "de-DE": "z. B. Supermarkt",
     "en-US": "e.g. Supermarket"
   },
   fieldCategory3Placeholder: {
-    "pt-BR": "Ex: LIDL",
+    "pt-PT": "Ex: LIDL",
     "de-DE": "z. B. LIDL",
     "en-US": "e.g. LIDL"
   },
   fieldKeywordsLabel: {
-    "pt-BR": "Palavras-chave",
+    "pt-PT": "Palavras-chave",
     "de-DE": "Schlüsselwörter",
     "en-US": "Keywords"
   },
   fieldKeywordsPlaceholder: {
-    "pt-BR": "REWE;EDEKA;ALDI (separar com ;)",
+    "pt-PT": "REWE;EDEKA;ALDI (separar com ;)",
     "de-DE": "REWE;EDEKA;ALDI (mit ; trennen)",
     "en-US": "REWE;EDEKA;ALDI (separate with ;)"
   },
   fieldKeywordsHelper: {
-    "pt-BR": "Separe múltiplas palavras com ponto e vírgula (;)",
+    "pt-PT": "Separe múltiplas palavras com ponto e vírgula (;)",
     "de-DE": "Mehrere Wörter mit Semikolon (;) trennen",
     "en-US": "Separate multiple words with semicolons (;)"
   },
   fieldTypeLabel: {
-    "pt-BR": "Tipo",
+    "pt-PT": "Tipo",
     "de-DE": "Typ",
     "en-US": "Type"
   },
   fieldTypeExpense: {
-    "pt-BR": "Despesa",
+    "pt-PT": "Despesa",
     "de-DE": "Ausgabe",
     "en-US": "Expense"
   },
   fieldTypeIncome: {
-    "pt-BR": "Receita",
+    "pt-PT": "Receita",
     "de-DE": "Einnahme",
     "en-US": "Income"
   },
   fieldVariationLabel: {
-    "pt-BR": "Variação",
+    "pt-PT": "Variação",
     "de-DE": "Variation",
     "en-US": "Variation"
   },
   fieldVariationFixed: {
-    "pt-BR": "Fixo",
+    "pt-PT": "Fixo",
     "de-DE": "Fix",
     "en-US": "Fixed"
   },
   fieldVariationVariable: {
-    "pt-BR": "Variável",
+    "pt-PT": "Variável",
     "de-DE": "Variabel",
     "en-US": "Variable"
   },
   strictTitle: {
-    "pt-BR": "Regra Estrita",
+    "pt-PT": "Regra Estrita",
     "de-DE": "Strikte Regel",
     "en-US": "Strict rule"
   },
   strictDescription: {
-    "pt-BR": "Aplicar automaticamente com 100% confiança",
+    "pt-PT": "Aplicar automaticamente com 100% confiança",
     "de-DE": "Automatisch mit 100 % Vertrauen anwenden",
     "en-US": "Apply automatically with 100% confidence"
   },
   cancel: {
-    "pt-BR": "Cancelar",
+    "pt-PT": "Cancelar",
     "de-DE": "Abbrechen",
     "en-US": "Cancel"
   },
   save: {
-    "pt-BR": "Salvar",
+    "pt-PT": "Salvar",
     "de-DE": "Speichern",
     "en-US": "Save"
   },
   create: {
-    "pt-BR": "Criar",
+    "pt-PT": "Criar",
     "de-DE": "Erstellen",
     "en-US": "Create"
   },
   exportLabel: {
-    "pt-BR": "Exportar",
+    "pt-PT": "Exportar",
     "de-DE": "Exportieren",
     "en-US": "Export"
   },
   exportSuccessTitle: {
-    "pt-BR": "{count} regras exportadas com sucesso",
+    "pt-PT": "{count} regras exportadas com sucesso",
     "de-DE": "{count} Regeln erfolgreich exportiert",
     "en-US": "{count} rules exported successfully"
   },
   exportSuccessBody: {
-    "pt-BR": "Inclui categorias disponíveis e instruções",
+    "pt-PT": "Inclui categorias disponíveis e instruções",
     "de-DE": "Enthält verfügbare Kategorien und Anweisungen",
     "en-US": "Includes available categories and instructions"
   },
   statusRuleCreatedBody: {
-    "pt-BR": "A nova regra foi adicionada com sucesso.",
+    "pt-PT": "A nova regra foi adicionada com sucesso.",
     "de-DE": "Die neue Regel wurde erfolgreich hinzugefügt.",
     "en-US": "The new rule was added successfully."
   },
   statusRuleUpdatedBody: {
-    "pt-BR": "As alterações foram salvas.",
+    "pt-PT": "As alterações foram salvas.",
     "de-DE": "Die Änderungen wurden gespeichert.",
     "en-US": "Changes have been saved."
   },
   statusRuleRemovedBody: {
-    "pt-BR": "A regra foi excluída com sucesso.",
+    "pt-PT": "A regra foi excluída com sucesso.",
     "de-DE": "Die Regel wurde erfolgreich gelöscht.",
     "en-US": "The rule was deleted successfully."
   },
   statusRuleCreateFailedBody: {
-    "pt-BR": "Não foi possível criar a regra.",
+    "pt-PT": "Não foi possível criar a regra.",
     "de-DE": "Die Regel konnte nicht erstellt werden.",
     "en-US": "Could not create the rule."
   },
   statusRuleUpdateFailedBody: {
-    "pt-BR": "Não foi possível atualizar a regra.",
+    "pt-PT": "Não foi possível atualizar a regra.",
     "de-DE": "Die Regel konnte nicht aktualisiert werden.",
     "en-US": "Could not update the rule."
   },
   statusRuleRemoveFailedBody: {
-    "pt-BR": "Não foi possível remover a regra.",
+    "pt-PT": "Não foi possível remover a regra.",
     "de-DE": "Die Regel konnte nicht entfernt werden.",
     "en-US": "Could not remove the rule."
   },
   reapplyToastTitle: {
-    "pt-BR": "Regras reaplicadas",
+    "pt-PT": "Regras reaplicadas",
     "de-DE": "Regeln erneut angewendet",
     "en-US": "Rules reapplied"
   },
   reapplyToastBody: {
-    "pt-BR": "{categorized} categorizadas automaticamente, {pending} pendentes",
+    "pt-PT": "{categorized} categorizadas automaticamente, {pending} pendentes",
     "de-DE": "{categorized} automatisch kategorisiert, {pending} ausstehend",
     "en-US": "{categorized} auto-categorized, {pending} pending"
   },
   aiAddedToastTitle: {
-    "pt-BR": "{count} regras IA adicionadas",
+    "pt-PT": "{count} regras IA adicionadas",
     "de-DE": "{count} KI-Regeln hinzugefügt",
     "en-US": "{count} AI rules added"
   },
   aiAddedToastBody: {
-    "pt-BR": "{count} regras importadas pela IA.",
+    "pt-PT": "{count} regras importadas pela IA.",
     "de-DE": "{count} Regeln wurden von der KI importiert.",
     "en-US": "{count} rules imported by AI."
   },
   importEmptyBody: {
-    "pt-BR": "O arquivo está vazio.",
+    "pt-PT": "O arquivo está vazio.",
     "de-DE": "Die Datei ist leer.",
     "en-US": "The file is empty."
   },
   importErrorsTitle: {
-    "pt-BR": "Erros encontrados no arquivo",
+    "pt-PT": "Erros encontrados no arquivo",
     "de-DE": "Fehler in der Datei gefunden",
     "en-US": "Errors found in file"
   },
   importNoValidBody: {
-    "pt-BR": "Nenhuma regra válida encontrada no arquivo.",
+    "pt-PT": "Nenhuma regra válida encontrada no arquivo.",
     "de-DE": "Keine gültigen Regeln in der Datei gefunden.",
     "en-US": "No valid rules found in the file."
   },
   importSuccessBody: {
-    "pt-BR": "{count} regras importadas com sucesso.",
+    "pt-PT": "{count} regras importadas com sucesso.",
     "de-DE": "{count} Regeln erfolgreich importiert.",
     "en-US": "{count} rules imported successfully."
   },
   importPartialTitle: {
-    "pt-BR": "Importação concluída com erros",
+    "pt-PT": "Importação concluída com erros",
     "de-DE": "Import abgeschlossen mit Fehlern",
     "en-US": "Import completed with errors"
   },
   importPartialBody: {
-    "pt-BR": "{success} importadas, {fail} falharam",
+    "pt-PT": "{success} importadas, {fail} falharam",
     "de-DE": "{success} importiert, {fail} fehlgeschlagen",
     "en-US": "{success} imported, {fail} failed"
   },
   importProcessErrorTitle: {
-    "pt-BR": "Erro ao processar arquivo",
+    "pt-PT": "Erro ao processar arquivo",
     "de-DE": "Fehler beim Verarbeiten der Datei",
     "en-US": "Error processing file"
   },
   importProcessErrorBody: {
-    "pt-BR": "Não foi possível processar o arquivo.",
+    "pt-PT": "Não foi possível processar o arquivo.",
     "de-DE": "Die Datei konnte nicht verarbeitet werden.",
     "en-US": "Could not process the file."
   },
   importRowNameError: {
-    "pt-BR": "Linha {row}: Nome é obrigatório",
+    "pt-PT": "Linha {row}: Nome é obrigatório",
     "de-DE": "Zeile {row}: Name ist erforderlich",
     "en-US": "Row {row}: Name is required"
   },
   importRowKeywordsError: {
-    "pt-BR": "Linha {row}: Palavras-chave é obrigatório",
+    "pt-PT": "Linha {row}: Palavras-chave é obrigatório",
     "de-DE": "Zeile {row}: Schlüsselwörter sind erforderlich",
     "en-US": "Row {row}: Keywords are required"
   },
   importRowTypeError: {
-    "pt-BR": "Linha {row}: Tipo deve ser \"Despesa\" ou \"Receita\"",
+    "pt-PT": "Linha {row}: Tipo deve ser \"Despesa\" ou \"Receita\"",
     "de-DE": "Zeile {row}: Typ muss \"Ausgabe\" oder \"Einnahme\" sein",
     "en-US": "Row {row}: Type must be \"Expense\" or \"Income\""
   },
   importRowFixVarError: {
-    "pt-BR": "Linha {row}: Deve ser \"Fixo\" ou \"Variável\"",
+    "pt-PT": "Linha {row}: Deve ser \"Fixo\" ou \"Variável\"",
     "de-DE": "Zeile {row}: Muss \"Fix\" oder \"Variabel\" sein",
     "en-US": "Row {row}: Must be \"Fixed\" or \"Variable\""
   },
   importRowCategoryError: {
-    "pt-BR": "Linha {row}: Categoria 1 é obrigatória",
+    "pt-PT": "Linha {row}: Categoria 1 é obrigatória",
     "de-DE": "Zeile {row}: Kategorie 1 ist erforderlich",
     "en-US": "Row {row}: Category 1 is required"
   },
   exportSheetRules: {
-    "pt-BR": "Regras",
+    "pt-PT": "Regras",
     "de-DE": "Regeln",
     "en-US": "Rules"
   },
   exportSheetCategories: {
-    "pt-BR": "Categorias Disponíveis",
+    "pt-PT": "Categorias Disponíveis",
     "de-DE": "Verfügbare Kategorien",
     "en-US": "Available Categories"
   },
   exportSheetInstructions: {
-    "pt-BR": "Instruções",
+    "pt-PT": "Instruções",
     "de-DE": "Anweisungen",
     "en-US": "Instructions"
   },
   exportInstructionHeader: {
-    "pt-BR": "INSTRUÇÕES",
+    "pt-PT": "INSTRUÇÕES",
     "de-DE": "ANWEISUNGEN",
     "en-US": "INSTRUCTIONS"
   },
   exportColumns: {
-    "pt-BR": {
+    "pt-PT": {
       name: "Nome",
       type: "Tipo (Despesa/Receita)",
       fixVar: "Fixo/Variável",
@@ -4560,7 +4561,7 @@ export const rulesCopy = {
     }
   },
   exportCategoryHeaders: {
-    "pt-BR": {
+    "pt-PT": {
       level1: "Categoria Nível 1",
       level2: "Exemplos Nível 2",
       level3: "Exemplos Nível 3"
@@ -4577,7 +4578,7 @@ export const rulesCopy = {
     }
   },
   exportInstructions: {
-    "pt-BR": [
+    "pt-PT": [
       "Como usar este arquivo de regras",
       "",
       "1. Aba \"Regras\": Suas regras de categorização atuais",
@@ -4630,12 +4631,12 @@ export const rulesCopy = {
     ]
   },
   yes: {
-    "pt-BR": "Sim",
+    "pt-PT": "Sim",
     "de-DE": "Ja",
     "en-US": "Yes"
   },
   no: {
-    "pt-BR": "Não",
+    "pt-PT": "Não",
     "de-DE": "Nein",
     "en-US": "No"
   }
@@ -4643,1252 +4644,1252 @@ export const rulesCopy = {
 
 export const settingsCopy = {
   title: {
-    "pt-BR": "Configurações",
+    "pt-PT": "Configurações",
     "de-DE": "Einstellungen",
     "en-US": "Settings"
   },
   subtitle: {
-    "pt-BR": "Gerencie seu perfil, dados e preferências",
+    "pt-PT": "Gerencie seu perfil, dados e preferências",
     "de-DE": "Verwalten Sie Ihr Profil, Daten und Präferenzen",
     "en-US": "Manage your profile, data, and preferences"
   },
   tabAccount: {
-    "pt-BR": "Conta",
+    "pt-PT": "Conta",
     "de-DE": "Konto",
     "en-US": "Account"
   },
   tabAccountDesc: {
-    "pt-BR": "Perfil e informações pessoais",
+    "pt-PT": "Perfil e informações pessoais",
     "de-DE": "Profil und persönliche Informationen",
     "en-US": "Profile and personal info"
   },
   tabRegional: {
-    "pt-BR": "Preferências Regionais",
+    "pt-PT": "Preferências Regionais",
     "de-DE": "Regionale Einstellungen",
     "en-US": "Regional preferences"
   },
   tabRegionalDesc: {
-    "pt-BR": "Idioma, moeda e região fiscal",
+    "pt-PT": "Idioma, moeda e região fiscal",
     "de-DE": "Sprache, Währung und Steuerregion",
     "en-US": "Language, currency, and fiscal region"
   },
   tabNotifications: {
-    "pt-BR": "Notificações",
+    "pt-PT": "Notificações",
     "de-DE": "Benachrichtigungen",
     "en-US": "Notifications"
   },
   tabNotificationsDesc: {
-    "pt-BR": "Alertas e comunicações",
+    "pt-PT": "Alertas e comunicações",
     "de-DE": "Warnungen und Mitteilungen",
     "en-US": "Alerts and communications"
   },
   tabIntegrations: {
-    "pt-BR": "Integrações",
+    "pt-PT": "Integrações",
     "de-DE": "Integrationen",
     "en-US": "Integrations"
   },
   tabIntegrationsDesc: {
-    "pt-BR": "Fontes de dados via CSV",
+    "pt-PT": "Fontes de dados via CSV",
     "de-DE": "CSV-Datenquellen",
     "en-US": "CSV data sources"
   },
   tabClassification: {
-    "pt-BR": "Classificação & Dados",
+    "pt-PT": "Classificação & Dados",
     "de-DE": "Klassifikation & Daten",
     "en-US": "Classification & Data"
   },
   tabClassificationDesc: {
-    "pt-BR": "Categorias, regras e fila de revisão",
+    "pt-PT": "Categorias, regras e fila de revisão",
     "de-DE": "Kategorien, Regeln und Review-Queue",
     "en-US": "Categories, rules, and review queue"
   },
   tabDictionary: {
-    "pt-BR": "Dicionário de Comerciantes",
+    "pt-PT": "Dicionário de Comerciantes",
     "de-DE": "Händlerverzeichnis",
     "en-US": "Merchant dictionary"
   },
   tabDictionaryDesc: {
-    "pt-BR": "Aliases e logos de comerciantes",
+    "pt-PT": "Aliases e logos de comerciantes",
     "de-DE": "Händler-Aliase und Logos",
     "en-US": "Merchant aliases and logos"
   },
   tabAudit: {
-    "pt-BR": "Log de Auditoria",
+    "pt-PT": "Log de Auditoria",
     "de-DE": "Audit-Log",
     "en-US": "Audit log"
   },
   tabAuditDesc: {
-    "pt-BR": "Registros críticos do sistema",
+    "pt-PT": "Registros críticos do sistema",
     "de-DE": "Kritische Systemprotokolle",
     "en-US": "Critical system records"
   },
   tabDanger: {
-    "pt-BR": "Zona de Perigo",
+    "pt-PT": "Zona de Perigo",
     "de-DE": "Gefahrenzone",
     "en-US": "Danger zone"
   },
   tabDangerDesc: {
-    "pt-BR": "Exclusões com confirmação reforçada",
+    "pt-PT": "Exclusões com confirmação reforçada",
     "de-DE": "Löschungen mit zusätzlicher Bestätigung",
     "en-US": "Deletions with reinforced confirmation"
   },
   profileTitle: {
-    "pt-BR": "Usuário RitualFin",
+    "pt-PT": "Usuário RitualFin",
     "de-DE": "RitualFin Nutzer",
     "en-US": "RitualFin user"
   },
   profileSince: {
-    "pt-BR": "Membro desde 2024",
+    "pt-PT": "Membro desde 2024",
     "de-DE": "Mitglied seit 2024",
     "en-US": "Member since 2024"
   },
   profilePlan: {
-    "pt-BR": "Plano Starter",
+    "pt-PT": "Plano Starter",
     "de-DE": "Starter-Plan",
     "en-US": "Starter plan"
   },
   editPhoto: {
-    "pt-BR": "Editar Foto",
+    "pt-PT": "Editar Foto",
     "de-DE": "Foto bearbeiten",
     "en-US": "Edit photo"
   },
   labelName: {
-    "pt-BR": "Nome",
+    "pt-PT": "Nome",
     "de-DE": "Name",
     "en-US": "Name"
   },
   labelEmail: {
-    "pt-BR": "Email",
+    "pt-PT": "Email",
     "de-DE": "E-Mail",
     "en-US": "Email"
   },
   saveChanges: {
-    "pt-BR": "Salvar Alterações",
+    "pt-PT": "Salvar Alterações",
     "de-DE": "Änderungen speichern",
     "en-US": "Save changes"
   },
   regionalTitle: {
-    "pt-BR": "Preferências Regionais",
+    "pt-PT": "Preferências Regionais",
     "de-DE": "Regionale Einstellungen",
     "en-US": "Regional preferences"
   },
   labelLanguage: {
-    "pt-BR": "Idioma",
+    "pt-PT": "Idioma",
     "de-DE": "Sprache",
     "en-US": "Language"
   },
   labelCurrency: {
-    "pt-BR": "Moeda",
+    "pt-PT": "Moeda",
     "de-DE": "Währung",
     "en-US": "Currency"
   },
   labelFiscalRegion: {
-    "pt-BR": "Região Fiscal",
+    "pt-PT": "Região Fiscal",
     "de-DE": "Steuerregion",
     "en-US": "Fiscal region"
   },
   langPtBr: {
-    "pt-BR": "Português (Brasil)",
+    "pt-PT": "Português (Brasil)",
     "de-DE": "Portugiesisch (Brasilien)",
     "en-US": "Portuguese (Brazil)"
   },
   langPtPt: {
-    "pt-BR": "Português (Portugal)",
+    "pt-PT": "Português (Portugal)",
     "de-DE": "Portugiesisch (Portugal)",
     "en-US": "Portuguese (Portugal)"
   },
   langEn: {
-    "pt-BR": "Inglês",
+    "pt-PT": "Inglês",
     "de-DE": "Englisch",
     "en-US": "English"
   },
   currencyEur: {
-    "pt-BR": "Euro (EUR)",
+    "pt-PT": "Euro (EUR)",
     "de-DE": "Euro (EUR)",
     "en-US": "Euro (EUR)"
   },
   currencyBrl: {
-    "pt-BR": "Real (BRL)",
+    "pt-PT": "Real (BRL)",
     "de-DE": "Real (BRL)",
     "en-US": "Real (BRL)"
   },
   currencyUsd: {
-    "pt-BR": "Dólar (USD)",
+    "pt-PT": "Dólar (USD)",
     "de-DE": "US-Dollar (USD)",
     "en-US": "US Dollar (USD)"
   },
   fiscalPortugal: {
-    "pt-BR": "Portugal (PT)",
+    "pt-PT": "Portugal (PT)",
     "de-DE": "Portugal (PT)",
     "en-US": "Portugal (PT)"
   },
   fiscalEu: {
-    "pt-BR": "União Europeia",
+    "pt-PT": "União Europeia",
     "de-DE": "Europäische Union",
     "en-US": "European Union"
   },
   fiscalOther: {
-    "pt-BR": "Outros",
+    "pt-PT": "Outros",
     "de-DE": "Andere",
     "en-US": "Other"
   },
   exportDataTitle: {
-    "pt-BR": "Exportar Dados",
+    "pt-PT": "Exportar Dados",
     "de-DE": "Daten exportieren",
     "en-US": "Export data"
   },
   exportDataDesc: {
-    "pt-BR": "Baixe todas as suas transações e configurações.",
+    "pt-PT": "Baixe todas as suas transações e configurações.",
     "de-DE": "Laden Sie alle Transaktionen und Einstellungen herunter.",
     "en-US": "Download all your transactions and settings."
   },
   exportCsv: {
-    "pt-BR": "Exportar CSV",
+    "pt-PT": "Exportar CSV",
     "de-DE": "CSV exportieren",
     "en-US": "Export CSV"
   },
   exportJson: {
-    "pt-BR": "Exportar JSON",
+    "pt-PT": "Exportar JSON",
     "de-DE": "JSON exportieren",
     "en-US": "Export JSON"
   },
   regionalDesc: {
-    "pt-BR": "Defina idioma, moeda e região fiscal padrão.",
+    "pt-PT": "Defina idioma, moeda e região fiscal padrão.",
     "de-DE": "Standard-Sprache, Währung und Steuerregion festlegen.",
     "en-US": "Set default language, currency, and fiscal region."
   },
   notificationsTitle: {
-    "pt-BR": "Notificações",
+    "pt-PT": "Notificações",
     "de-DE": "Benachrichtigungen",
     "en-US": "Notifications"
   },
   notificationsDesc: {
-    "pt-BR": "Defina quando deseja receber alertas do RitualFin.",
+    "pt-PT": "Defina quando deseja receber alertas do RitualFin.",
     "de-DE": "Legen Sie fest, wann Sie RitualFin-Warnungen erhalten möchten.",
     "en-US": "Set when you want to receive RitualFin alerts."
   },
   notifyImportTitle: {
-    "pt-BR": "Importações concluídas",
+    "pt-PT": "Importações concluídas",
     "de-DE": "Importe abgeschlossen",
     "en-US": "Imports completed"
   },
   notifyImportDesc: {
-    "pt-BR": "Resumo após cada upload",
+    "pt-PT": "Resumo após cada upload",
     "de-DE": "Zusammenfassung nach jedem Upload",
     "en-US": "Summary after each upload"
   },
   notifyReviewTitle: {
-    "pt-BR": "Fila de revisão",
+    "pt-PT": "Fila de revisão",
     "de-DE": "Review-Warteschlange",
     "en-US": "Review queue"
   },
   notifyReviewDesc: {
-    "pt-BR": "Lembretes para classificar pendências",
+    "pt-PT": "Lembretes para classificar pendências",
     "de-DE": "Erinnerungen zur Klassifizierung offener Punkte",
     "en-US": "Reminders to classify pending items"
   },
   notifyMonthlyTitle: {
-    "pt-BR": "Resumo mensal",
+    "pt-PT": "Resumo mensal",
     "de-DE": "Monatsübersicht",
     "en-US": "Monthly summary"
   },
   notifyMonthlyDesc: {
-    "pt-BR": "Fechamento e insights do mês",
+    "pt-PT": "Fechamento e insights do mês",
     "de-DE": "Monatsabschluss und Insights",
     "en-US": "Month close and insights"
   },
   auditTitle: {
-    "pt-BR": "Log de Auditoria",
+    "pt-PT": "Log de Auditoria",
     "de-DE": "Audit-Protokoll",
     "en-US": "Audit Log"
   },
   auditExport: {
-    "pt-BR": "Exportar CSV (UTF-8 com BOM)",
+    "pt-PT": "Exportar CSV (UTF-8 com BOM)",
     "de-DE": "CSV exportieren (UTF-8 mit BOM)",
     "en-US": "Export CSV (UTF-8 with BOM)"
   },
   auditFilterStatus: {
-    "pt-BR": "Status",
+    "pt-PT": "Status",
     "de-DE": "Status",
     "en-US": "Status"
   },
   auditFilterAll: {
-    "pt-BR": "Todos",
+    "pt-PT": "Todos",
     "de-DE": "Alle",
     "en-US": "All"
   },
   auditFilterSuccess: {
-    "pt-BR": "Sucesso",
+    "pt-PT": "Sucesso",
     "de-DE": "Erfolg",
     "en-US": "Success"
   },
   auditFilterWarning: {
-    "pt-BR": "Atenção",
+    "pt-PT": "Atenção",
     "de-DE": "Warnung",
     "en-US": "Warning"
   },
   auditFilterError: {
-    "pt-BR": "Falha",
+    "pt-PT": "Falha",
     "de-DE": "Fehler",
     "en-US": "Failure"
   },
   dangerTitle: {
-    "pt-BR": "Zona de Perigo",
+    "pt-PT": "Zona de Perigo",
     "de-DE": "Gefahrenzone",
     "en-US": "Danger Zone"
   },
   auditLoading: {
-    "pt-BR": "Carregando registros...",
+    "pt-PT": "Carregando registros...",
     "de-DE": "Einträge werden geladen...",
     "en-US": "Loading records..."
   },
   auditEmpty: {
-    "pt-BR": "Nenhum evento registrado.",
+    "pt-PT": "Nenhum evento registrado.",
     "de-DE": "Keine Ereignisse gefunden.",
     "en-US": "No events recorded."
   },
   auditHeaderDate: {
-    "pt-BR": "Data",
+    "pt-PT": "Data",
     "de-DE": "Datum",
     "en-US": "Date"
   },
   auditHeaderAction: {
-    "pt-BR": "Ação",
+    "pt-PT": "Ação",
     "de-DE": "Aktion",
     "en-US": "Action"
   },
   auditHeaderStatus: {
-    "pt-BR": "Status",
+    "pt-PT": "Status",
     "de-DE": "Status",
     "en-US": "Status"
   },
   auditHeaderSummary: {
-    "pt-BR": "Resumo",
+    "pt-PT": "Resumo",
     "de-DE": "Zusammenfassung",
     "en-US": "Summary"
   },
   previewUpload: {
-    "pt-BR": "Pré-visualizar upload",
+    "pt-PT": "Pré-visualizar upload",
     "de-DE": "Upload-Vorschau",
     "en-US": "Preview upload"
   },
   confirmImport: {
-    "pt-BR": "Confirmar importação",
+    "pt-PT": "Confirmar importação",
     "de-DE": "Import bestätigen",
     "en-US": "Confirm import"
   },
   transactionsImports: {
-    "pt-BR": "Importações de transações",
+    "pt-PT": "Importações de transações",
     "de-DE": "Transaktionsimporte",
     "en-US": "Transaction imports"
   },
   noOpenTransactions: {
-    "pt-BR": "Nenhuma transação em aberto.",
+    "pt-PT": "Nenhuma transação em aberto.",
     "de-DE": "Keine offenen Transaktionen.",
     "en-US": "No open transactions."
   },
   deleteData: {
-    "pt-BR": "Apagar dados",
+    "pt-PT": "Apagar dados",
     "de-DE": "Daten löschen",
     "en-US": "Delete data"
   },
   confirmAction: {
-    "pt-BR": "Confirmar",
+    "pt-PT": "Confirmar",
     "de-DE": "Bestätigen",
     "en-US": "Confirm"
   },
   toastPreviewError: {
-    "pt-BR": "Erro na pré-visualização",
+    "pt-PT": "Erro na pré-visualização",
     "de-DE": "Fehler bei der Vorschau",
     "en-US": "Preview error"
   },
   toastCategoriesUpdated: {
-    "pt-BR": "Categorias atualizadas",
+    "pt-PT": "Categorias atualizadas",
     "de-DE": "Kategorien aktualisiert",
     "en-US": "Categories updated"
   },
   toastApplyCategoriesError: {
-    "pt-BR": "Erro ao aplicar categorias",
+    "pt-PT": "Erro ao aplicar categorias",
     "de-DE": "Fehler beim Anwenden der Kategorien",
     "en-US": "Failed to apply categories"
   },
   toastAliasesUpdated: {
-    "pt-BR": "Aliases atualizados",
+    "pt-PT": "Aliases atualizados",
     "de-DE": "Aliases aktualisiert",
     "en-US": "Aliases updated"
   },
   toastApplyAliasesError: {
-    "pt-BR": "Erro ao aplicar aliases",
+    "pt-PT": "Erro ao aplicar aliases",
     "de-DE": "Fehler beim Anwenden der Aliases",
     "en-US": "Failed to apply aliases"
   },
   toastLogosImported: {
-    "pt-BR": "Logos importados",
+    "pt-PT": "Logos importados",
     "de-DE": "Logos importiert",
     "en-US": "Logos imported"
   },
   toastLogosError: {
-    "pt-BR": "Erro ao importar logos",
+    "pt-PT": "Erro ao importar logos",
     "de-DE": "Fehler beim Import der Logos",
     "en-US": "Failed to import logos"
   },
   toastLogosUpdated: {
-    "pt-BR": "Logos atualizados",
+    "pt-PT": "Logos atualizados",
     "de-DE": "Logos aktualisiert",
     "en-US": "Logos updated"
   },
   toastSettingsSaved: {
-    "pt-BR": "Configurações salvas",
+    "pt-PT": "Configurações salvas",
     "de-DE": "Einstellungen gespeichert",
     "en-US": "Settings saved"
   },
   toastSettingsSavedBody: {
-    "pt-BR": "Suas preferências foram atualizadas com sucesso.",
+    "pt-PT": "Suas preferências foram atualizadas com sucesso.",
     "de-DE": "Ihre Einstellungen wurden erfolgreich aktualisiert.",
     "en-US": "Your preferences were updated successfully."
   },
   toastSettingsErrorTitle: {
-    "pt-BR": "Erro ao salvar",
+    "pt-PT": "Erro ao salvar",
     "de-DE": "Fehler beim Speichern",
     "en-US": "Save error"
   },
   toastSettingsErrorBody: {
-    "pt-BR": "Não foi possível salvar as configurações.",
+    "pt-PT": "Não foi possível salvar as configurações.",
     "de-DE": "Die Einstellungen konnten nicht gespeichert werden.",
     "en-US": "Could not save settings."
   },
   previewValidationFailed: {
-    "pt-BR": "Falha na validação do arquivo.",
+    "pt-PT": "Falha na validação do arquivo.",
     "de-DE": "Dateivalidierung fehlgeschlagen.",
     "en-US": "File validation failed."
   },
   previewFailedTitle: {
-    "pt-BR": "Pré-visualização falhou",
+    "pt-PT": "Pré-visualização falhou",
     "de-DE": "Vorschau fehlgeschlagen",
     "en-US": "Preview failed"
   },
   previewDoneTitle: {
-    "pt-BR": "Pré-visualização concluída",
+    "pt-PT": "Pré-visualização concluída",
     "de-DE": "Vorschau abgeschlossen",
     "en-US": "Preview completed"
   },
   previewDoneBody: {
-    "pt-BR": "Revisão pronta para confirmação.",
+    "pt-PT": "Revisão pronta para confirmação.",
     "de-DE": "Überprüfung bereit zur Bestätigung.",
     "en-US": "Review ready for confirmation."
   },
   previewErrorTitle: {
-    "pt-BR": "Erro na pré-visualização",
+    "pt-PT": "Erro na pré-visualização",
     "de-DE": "Fehler bei der Vorschau",
     "en-US": "Preview error"
   },
   importAppliedTitle: {
-    "pt-BR": "Importação aplicada",
+    "pt-PT": "Importação aplicada",
     "de-DE": "Import angewendet",
     "en-US": "Import applied"
   },
   importAppliedBody: {
-    "pt-BR": "Importação concluída: {count} linhas aplicadas.",
+    "pt-PT": "Importação concluída: {count} linhas aplicadas.",
     "de-DE": "Import abgeschlossen: {count} Zeilen angewendet.",
     "en-US": "Import completed: {count} rows applied."
   },
   importAppliedRows: {
-    "pt-BR": "Linhas aplicadas: {count}",
+    "pt-PT": "Linhas aplicadas: {count}",
     "de-DE": "Angewendete Zeilen: {count}",
     "en-US": "Rows applied: {count}"
   },
   applyFailedMessage: {
-    "pt-BR": "Falha ao aplicar: {error}",
+    "pt-PT": "Falha ao aplicar: {error}",
     "de-DE": "Anwenden fehlgeschlagen: {error}",
     "en-US": "Failed to apply: {error}"
   },
   aliasesAppliedTitle: {
-    "pt-BR": "Aliases aplicados",
+    "pt-PT": "Aliases aplicados",
     "de-DE": "Aliases angewendet",
     "en-US": "Aliases applied"
   },
   importApplyFailedTitle: {
-    "pt-BR": "Falha ao aplicar importação",
+    "pt-PT": "Falha ao aplicar importação",
     "de-DE": "Import konnte nicht angewendet werden",
     "en-US": "Failed to apply import"
   },
   importApplyFailedBody: {
-    "pt-BR": "Não foi possível aplicar a importação.",
+    "pt-PT": "Não foi possível aplicar a importação.",
     "de-DE": "Import konnte nicht angewendet werden.",
     "en-US": "Could not apply the import."
   },
   aliasesApplyFailedBody: {
-    "pt-BR": "Não foi possível aplicar os aliases.",
+    "pt-PT": "Não foi possível aplicar os aliases.",
     "de-DE": "Die Aliase konnten nicht angewendet werden.",
     "en-US": "Could not apply aliases."
   },
   logosApplyFailedBody: {
-    "pt-BR": "Não foi possível aplicar os logos.",
+    "pt-PT": "Não foi possível aplicar os logos.",
     "de-DE": "Die Logos konnten nicht angewendet werden.",
     "en-US": "Could not apply logos."
   },
   exportAuditTitle: {
-    "pt-BR": "Exportação concluída",
+    "pt-PT": "Exportação concluída",
     "de-DE": "Export abgeschlossen",
     "en-US": "Export completed"
   },
   exportAuditBody: {
-    "pt-BR": "O arquivo CSV do log foi gerado com sucesso.",
+    "pt-PT": "O arquivo CSV do log foi gerado com sucesso.",
     "de-DE": "Die CSV-Datei des Logs wurde erfolgreich erstellt.",
     "en-US": "The audit log CSV was generated successfully."
   },
   exportAuditErrorTitle: {
-    "pt-BR": "Falha ao exportar log",
+    "pt-PT": "Falha ao exportar log",
     "de-DE": "Log-Export fehlgeschlagen",
     "en-US": "Failed to export log"
   },
   exportAuditErrorBody: {
-    "pt-BR": "Não foi possível exportar o log de auditoria.",
+    "pt-PT": "Não foi possível exportar o log de auditoria.",
     "de-DE": "Audit-Log konnte nicht exportiert werden.",
     "en-US": "Could not export audit log."
   },
   logosProcessedLabel: {
-    "pt-BR": "Processados: {count}",
+    "pt-PT": "Processados: {count}",
     "de-DE": "Verarbeitet: {count}",
     "en-US": "Processed: {count}"
   },
   refreshLogosTotal: {
-    "pt-BR": "Total: {count}",
+    "pt-PT": "Total: {count}",
     "de-DE": "Gesamt: {count}",
     "en-US": "Total: {count}"
   },
   dangerSummaryTransactions: {
-    "pt-BR": "Transações",
+    "pt-PT": "Transações",
     "de-DE": "Transaktionen",
     "en-US": "Transactions"
   },
   dangerSummaryCategories: {
-    "pt-BR": "Categorias e Regras",
+    "pt-PT": "Categorias e Regras",
     "de-DE": "Kategorien und Regeln",
     "en-US": "Categories and Rules"
   },
   dangerSummaryAliases: {
-    "pt-BR": "Aliases e Logos",
+    "pt-PT": "Aliases e Logos",
     "de-DE": "Aliases und Logos",
     "en-US": "Aliases and Logos"
   },
   dangerSummaryAll: {
-    "pt-BR": "Tudo",
+    "pt-PT": "Tudo",
     "de-DE": "Alles",
     "en-US": "Everything"
   },
   profileNameDefault: {
-    "pt-BR": "Usuário",
+    "pt-PT": "Usuário",
     "de-DE": "Benutzer",
     "en-US": "User"
   },
   csvExportAccents: {
-    "pt-BR": "Exportações CSV usam UTF-8 com BOM para preservar acentos.",
+    "pt-PT": "Exportações CSV usam UTF-8 com BOM para preservar acentos.",
     "de-DE": "CSV-Exporte verwenden UTF-8 mit BOM, um Akzente zu erhalten.",
     "en-US": "CSV exports use UTF-8 with BOM to preserve accents."
   },
   csvDownloadsAccents: {
-    "pt-BR": "Downloads em CSV são gerados em UTF-8 com BOM para preservar acentos.",
+    "pt-PT": "Downloads em CSV são gerados em UTF-8 com BOM para preservar acentos.",
     "de-DE": "CSV-Downloads werden in UTF-8 mit BOM erzeugt, um Akzente zu erhalten.",
     "en-US": "CSV downloads are generated in UTF-8 with BOM to preserve accents."
   },
   classificationSectionTitle: {
-    "pt-BR": "Classificação & Dados",
+    "pt-PT": "Classificação & Dados",
     "de-DE": "Klassifikation & Daten",
     "en-US": "Classification & Data"
   },
   classificationSectionBody: {
-    "pt-BR": "Importações, categorias, aliases e revisão de pendências.",
+    "pt-PT": "Importações, categorias, aliases e revisão de pendências.",
     "de-DE": "Importe, Kategorien, Aliase und Review offener Punkte.",
     "en-US": "Imports, categories, aliases, and pending reviews."
   },
   classificationTabCategories: {
-    "pt-BR": "Categorias",
+    "pt-PT": "Categorias",
     "de-DE": "Kategorien",
     "en-US": "Categories"
   },
   classificationTabRules: {
-    "pt-BR": "Regras KeyWords",
+    "pt-PT": "Regras KeyWords",
     "de-DE": "Keyword-Regeln",
     "en-US": "Keyword rules"
   },
   classificationTabReview: {
-    "pt-BR": "Fila de Revisão",
+    "pt-PT": "Fila de Revisão",
     "de-DE": "Review-Queue",
     "en-US": "Review queue"
   },
   downloadTemplateCsv: {
-    "pt-BR": "Baixar template CSV",
+    "pt-PT": "Baixar template CSV",
     "de-DE": "CSV-Template herunterladen",
     "en-US": "Download CSV template"
   },
   downloadDataCsv: {
-    "pt-BR": "Baixar dados CSV",
+    "pt-PT": "Baixar dados CSV",
     "de-DE": "CSV-Daten herunterladen",
     "en-US": "Download CSV data"
   },
   downloadExcel: {
-    "pt-BR": "Baixar Excel",
+    "pt-PT": "Baixar Excel",
     "de-DE": "Excel herunterladen",
     "en-US": "Download Excel"
   },
   reviewQueueTab: {
-    "pt-BR": "Fila de Revisão",
+    "pt-PT": "Fila de Revisão",
     "de-DE": "Review-Queue",
     "en-US": "Review queue"
   },
   reviewQueueFilesHint: {
-    "pt-BR": "Os arquivos de extrato ficam em Operações → Upload.",
+    "pt-PT": "Os arquivos de extrato ficam em Operações → Upload.",
     "de-DE": "Auszugsdateien finden Sie unter Operationen → Upload.",
     "en-US": "Statement files are under Operations → Upload."
   },
   reviewQueueFilesHintPrefix: {
-    "pt-BR": "Os arquivos de extrato ficam em",
+    "pt-PT": "Os arquivos de extrato ficam em",
     "de-DE": "Auszugsdateien finden Sie unter",
     "en-US": "Statement files are under"
   },
   reviewQueueFilesHintLink: {
-    "pt-BR": "Operações → Upload",
+    "pt-PT": "Operações → Upload",
     "de-DE": "Operationen → Upload",
     "en-US": "Operations → Upload"
   },
   lastImportTitle: {
-    "pt-BR": "Última importação",
+    "pt-PT": "Última importação",
     "de-DE": "Letzter Import",
     "en-US": "Last import"
   },
   lastImportRows: {
-    "pt-BR": "{valid}/{total} linhas válidas",
+    "pt-PT": "{valid}/{total} linhas válidas",
     "de-DE": "{valid}/{total} gültige Zeilen",
     "en-US": "{valid}/{total} valid rows"
   },
   lastImportEmpty: {
-    "pt-BR": "Sem importações anteriores.",
+    "pt-PT": "Sem importações anteriores.",
     "de-DE": "Keine vorherigen Importe.",
     "en-US": "No previous imports."
   },
   previewReasonCodeLabel: {
-    "pt-BR": "Código: {codes}",
+    "pt-PT": "Código: {codes}",
     "de-DE": "Code: {codes}",
     "en-US": "Code: {codes}"
   },
   changePreviewTitle: {
-    "pt-BR": "Prévia de alterações",
+    "pt-PT": "Prévia de alterações",
     "de-DE": "Vorschau der Änderungen",
     "en-US": "Change preview"
   },
   previewEncodingLabel: {
-    "pt-BR": "Codificação",
+    "pt-PT": "Codificação",
     "de-DE": "Kodierung",
     "en-US": "Encoding"
   },
   previewDelimiterLabel: {
-    "pt-BR": "Delimitador",
+    "pt-PT": "Delimitador",
     "de-DE": "Trennzeichen",
     "en-US": "Delimiter"
   },
   previewRowsLabel: {
-    "pt-BR": "Linhas",
+    "pt-PT": "Linhas",
     "de-DE": "Zeilen",
     "en-US": "Rows"
   },
   previewColumnsLabel: {
-    "pt-BR": "Colunas",
+    "pt-PT": "Colunas",
     "de-DE": "Spalten",
     "en-US": "Columns"
   },
   previewColumnsDetectedTitle: {
-    "pt-BR": "Colunas detectadas",
+    "pt-PT": "Colunas detectadas",
     "de-DE": "Erkannte Spalten",
     "en-US": "Detected columns"
   },
   previewNewCategories: {
-    "pt-BR": "Novas categorias",
+    "pt-PT": "Novas categorias",
     "de-DE": "Neue Kategorien",
     "en-US": "New categories"
   },
   previewRemoved: {
-    "pt-BR": "Removidas",
+    "pt-PT": "Removidas",
     "de-DE": "Entfernt",
     "en-US": "Removed"
   },
   previewUpdatedRules: {
-    "pt-BR": "Regras atualizadas",
+    "pt-PT": "Regras atualizadas",
     "de-DE": "Regeln aktualisiert",
     "en-US": "Rules updated"
   },
   previewSamplePrefix: {
-    "pt-BR": "Ex.:",
+    "pt-PT": "Ex.:",
     "de-DE": "Bsp.:",
     "en-US": "E.g.:"
   },
   confirmRemapLabel: {
-    "pt-BR": "Confirmo o remapeamento de categorias da UI",
+    "pt-PT": "Confirmo o remapeamento de categorias da UI",
     "de-DE": "Ich bestätige die UI-Kategorien-Zuordnung",
     "en-US": "I confirm the UI category remapping"
   },
   dialogCancel: {
-    "pt-BR": "Cancelar",
+    "pt-PT": "Cancelar",
     "de-DE": "Abbrechen",
     "en-US": "Cancel"
   },
   rulesEditorTitle: {
-    "pt-BR": "Editor de Regras",
+    "pt-PT": "Editor de Regras",
     "de-DE": "Regel-Editor",
     "en-US": "Rules editor"
   },
   rulesEditorBody: {
-    "pt-BR": "Gerencie regras de classificação baseadas em KeyWords.",
+    "pt-PT": "Gerencie regras de classificação baseadas em KeyWords.",
     "de-DE": "Verwalten Sie Klassifizierungsregeln auf Keyword-Basis.",
     "en-US": "Manage classification rules based on keywords."
   },
   rulesEditorAction: {
-    "pt-BR": "Abrir Regras",
+    "pt-PT": "Abrir Regras",
     "de-DE": "Regeln öffnen",
     "en-US": "Open rules"
   },
   aiKeywordsTitle: {
-    "pt-BR": "AI Keywords",
+    "pt-PT": "AI Keywords",
     "de-DE": "KI-Keywords",
     "en-US": "AI Keywords"
   },
   aiKeywordsBody: {
-    "pt-BR": "Revisão de sugestões automáticas de palavras-chave.",
+    "pt-PT": "Revisão de sugestões automáticas de palavras-chave.",
     "de-DE": "Überprüfung automatischer Keyword-Vorschläge.",
     "en-US": "Review automatic keyword suggestions."
   },
   aiKeywordsAction: {
-    "pt-BR": "Ver sugestões",
+    "pt-PT": "Ver sugestões",
     "de-DE": "Vorschläge ansehen",
     "en-US": "View suggestions"
   },
   aliasTestTitle: {
-    "pt-BR": "Teste de alias (key_desc)",
+    "pt-PT": "Teste de alias (key_desc)",
     "de-DE": "Alias-Test (key_desc)",
     "en-US": "Alias test (key_desc)"
   },
   aliasTestAction: {
-    "pt-BR": "Testar",
+    "pt-PT": "Testar",
     "de-DE": "Testen",
     "en-US": "Test"
   },
   aliasTestResult: {
-    "pt-BR": "Alias: {alias}",
+    "pt-PT": "Alias: {alias}",
     "de-DE": "Alias: {alias}",
     "en-US": "Alias: {alias}"
   },
   aliasTestNone: {
-    "pt-BR": "nenhum",
+    "pt-PT": "nenhum",
     "de-DE": "keiner",
     "en-US": "none"
   },
   refreshLogosAction: {
-    "pt-BR": "Atualizar logos",
+    "pt-PT": "Atualizar logos",
     "de-DE": "Logos aktualisieren",
     "en-US": "Refresh logos"
   },
   confirmChangesTitle: {
-    "pt-BR": "Deseja aplicar as alterações?",
+    "pt-PT": "Deseja aplicar as alterações?",
     "de-DE": "Änderungen anwenden?",
     "en-US": "Apply changes?"
   },
   confirmChangesBody: {
-    "pt-BR": "Isso atualizará regras existentes. Revise a pré-visualização antes de continuar.",
+    "pt-PT": "Isso atualizará regras existentes. Revise a pré-visualização antes de continuar.",
     "de-DE": "Dies aktualisiert bestehende Regeln. Bitte Vorschau prüfen.",
     "en-US": "This will update existing rules. Review the preview before continuing."
   },
   classificationRulesTitle: {
-    "pt-BR": "Gerencie regras de classificação baseadas em KeyWords.",
+    "pt-PT": "Gerencie regras de classificação baseadas em KeyWords.",
     "de-DE": "Verwalten Sie klassifizierende Regeln basierend auf Keywords.",
     "en-US": "Manage classification rules based on keywords."
   },
   classificationSuggestionsTitle: {
-    "pt-BR": "Revisão de sugestões automáticas de palavras-chave.",
+    "pt-PT": "Revisão de sugestões automáticas de palavras-chave.",
     "de-DE": "Überprüfung automatischer Keyword-Vorschläge.",
     "en-US": "Review automatic keyword suggestions."
   },
   classificationSuggestionsAction: {
-    "pt-BR": "Ver sugestões",
+    "pt-PT": "Ver sugestões",
     "de-DE": "Vorschläge ansehen",
     "en-US": "View suggestions"
   },
   classificationAssistTitle: {
-    "pt-BR": "Assistência de Classificação",
+    "pt-PT": "Assistência de Classificação",
     "de-DE": "Klassifizierungsassistenz",
     "en-US": "Classification assistance"
   },
   classificationAssistBody: {
-    "pt-BR": "Ajuste o nível de confiança para auto-confirmação.",
+    "pt-PT": "Ajuste o nível de confiança para auto-confirmação.",
     "de-DE": "Passen Sie die Vertrauensschwelle für Auto-Bestätigung an.",
     "en-US": "Adjust confidence threshold for auto-confirmation."
   },
   autoConfirmTitle: {
-    "pt-BR": "Auto-confirmar Alta Confiança",
+    "pt-PT": "Auto-confirmar Alta Confiança",
     "de-DE": "Hohe Zuversicht automatisch bestätigen",
     "en-US": "Auto-confirm high confidence"
   },
   autoConfirmBody: {
-    "pt-BR": "Aceitar automaticamente sugestões acima do limite.",
+    "pt-PT": "Aceitar automaticamente sugestões acima do limite.",
     "de-DE": "Vorschläge oberhalb des Grenzwerts automatisch akzeptieren.",
     "en-US": "Automatically accept suggestions above the threshold."
   },
   confidenceLimitLabel: {
-    "pt-BR": "Limite de Confiança",
+    "pt-PT": "Limite de Confiança",
     "de-DE": "Vertrauensschwelle",
     "en-US": "Confidence threshold"
   },
   confidenceLimitHint: {
-    "pt-BR": "Transações acima desse limite serão confirmadas automaticamente.",
+    "pt-PT": "Transações acima desse limite serão confirmadas automaticamente.",
     "de-DE": "Transaktionen über diesem Wert werden automatisch bestätigt.",
     "en-US": "Transactions above this threshold will be auto-confirmed."
   },
   rulesValidationTitle: {
-    "pt-BR": "Valide o comportamento de regras e expressões.",
+    "pt-PT": "Valide o comportamento de regras e expressões.",
     "de-DE": "Validieren Sie das Verhalten von Regeln und Ausdrücken.",
     "en-US": "Validate rule and expression behavior."
   },
   ruleTestTitle: {
-    "pt-BR": "Teste de Regra (key_desc)",
+    "pt-PT": "Teste de Regra (key_desc)",
     "de-DE": "Regeltest (key_desc)",
     "en-US": "Rule test (key_desc)"
   },
   ruleTestAction: {
-    "pt-BR": "Testar",
+    "pt-PT": "Testar",
     "de-DE": "Testen",
     "en-US": "Test"
   },
   ruleTestResult: {
-    "pt-BR": "Leaf: {leaf} | Regra: {rule}",
+    "pt-PT": "Leaf: {leaf} | Regra: {rule}",
     "de-DE": "Leaf: {leaf} | Regel: {rule}",
     "en-US": "Leaf: {leaf} | Rule: {rule}"
   },
   ruleTestNone: {
-    "pt-BR": "nenhuma",
+    "pt-PT": "nenhuma",
     "de-DE": "keine",
     "en-US": "none"
   },
   expressionsHint: {
-    "pt-BR": "Expressões são separadas apenas por “;”. Espaços dentro da expressão não são divididos.",
+    "pt-PT": "Expressões são separadas apenas por “;”. Espaços dentro da expressão não são divididos.",
     "de-DE": "Ausdrücke werden nur durch “;” getrennt. Leerzeichen innerhalb des Ausdrucks bleiben erhalten.",
     "en-US": "Expressions are separated only by “;”. Spaces inside an expression are not split."
   },
   levelPlaceholder1: {
-    "pt-BR": "Nível 1",
+    "pt-PT": "Nível 1",
     "de-DE": "Ebene 1",
     "en-US": "Level 1"
   },
   levelPlaceholder2: {
-    "pt-BR": "Nível 2",
+    "pt-PT": "Nível 2",
     "de-DE": "Ebene 2",
     "en-US": "Level 2"
   },
   levelPlaceholder3: {
-    "pt-BR": "Nível 3 (folha)",
+    "pt-PT": "Nível 3 (folha)",
     "de-DE": "Ebene 3 (Blatt)",
     "en-US": "Level 3 (leaf)"
   },
   newExpressionPlaceholder: {
-    "pt-BR": "Nova expressão (opcional, uma por vez)",
+    "pt-PT": "Nova expressão (opcional, uma por vez)",
     "de-DE": "Neuer Ausdruck (optional, einzeln)",
     "en-US": "New expression (optional, one at a time)"
   },
   reviewApplyAction: {
-    "pt-BR": "Aplicar",
+    "pt-PT": "Aplicar",
     "de-DE": "Anwenden",
     "en-US": "Apply"
   },
   reviewKeywordsCurrent: {
-    "pt-BR": "Key words atuais",
+    "pt-PT": "Key words atuais",
     "de-DE": "Aktuelle Keywords",
     "en-US": "Current keywords"
   },
   reviewKeywordsEmpty: {
-    "pt-BR": "Nenhuma palavra-chave cadastrada.",
+    "pt-PT": "Nenhuma palavra-chave cadastrada.",
     "de-DE": "Keine Keywords vorhanden.",
     "en-US": "No keywords saved."
   },
   reviewKeywordsNegative: {
-    "pt-BR": "Key words negativos",
+    "pt-PT": "Key words negativos",
     "de-DE": "Negative Keywords",
     "en-US": "Negative keywords"
   },
   reviewKeywordsNegativeEmpty: {
-    "pt-BR": "Nenhuma negativa cadastrada.",
+    "pt-PT": "Nenhuma negativa cadastrada.",
     "de-DE": "Keine negativen Keywords vorhanden.",
     "en-US": "No negative keywords saved."
   },
   addExpressionsTitle: {
-    "pt-BR": "Adicionar novas expressões",
+    "pt-PT": "Adicionar novas expressões",
     "de-DE": "Neue Ausdrücke hinzufügen",
     "en-US": "Add new expressions"
   },
   keywordsPlaceholder: {
-    "pt-BR": "Palavras-chave (use ';' entre expressões)",
+    "pt-PT": "Palavras-chave (use ';' entre expressões)",
     "de-DE": "Schlüsselwörter (mit ';' trennen)",
     "en-US": "Keywords (use ';' between expressions)"
   },
   keywordsNegativePlaceholder: {
-    "pt-BR": "Palavras-chave negativas (use ';')",
+    "pt-PT": "Palavras-chave negativas (use ';')",
     "de-DE": "Negative Schlüsselwörter (mit ';')",
     "en-US": "Negative keywords (use ';')"
   },
   saveKeywordsAdd: {
-    "pt-BR": "Salvar +",
+    "pt-PT": "Salvar +",
     "de-DE": "Speichern +",
     "en-US": "Save +"
   },
   saveKeywordsRemove: {
-    "pt-BR": "Salvar -",
+    "pt-PT": "Salvar -",
     "de-DE": "Speichern -",
     "en-US": "Save -"
   },
   expressionsHelp: {
-    "pt-BR": "Cada expressão deve ser separada por ponto e vírgula (;). Ex: 'Farmácia Müller; Apotheke'.",
+    "pt-PT": "Cada expressão deve ser separada por ponto e vírgula (;). Ex: 'Farmácia Müller; Apotheke'.",
     "de-DE": "Jeder Ausdruck muss durch Semikolon (;) getrennt sein. Z. B. 'Farmácia Müller; Apotheke'.",
     "en-US": "Each expression must be separated by a semicolon (;). E.g. 'Farmácia Müller; Apotheke'."
   },
   dictionaryTitle: {
-    "pt-BR": "Dicionário de Comerciantes",
+    "pt-PT": "Dicionário de Comerciantes",
     "de-DE": "Händlerverzeichnis",
     "en-US": "Merchant dictionary"
   },
   dictionarySubtitle: {
-    "pt-BR": "Gerencie aliases padronizados para descrições de transações",
+    "pt-PT": "Gerencie aliases padronizados para descrições de transações",
     "de-DE": "Standardisierte Aliase für Transaktionsbeschreibungen verwalten",
     "en-US": "Manage standardized aliases for transaction descriptions"
   },
   dictionaryCardTitle: {
-    "pt-BR": "Centralize suas descrições",
+    "pt-PT": "Centralize suas descrições",
     "de-DE": "Beschreibungen zentralisieren",
     "en-US": "Centralize your descriptions"
   },
   dictionaryCardBody: {
-    "pt-BR": "Crie aliases personalizados para comerciantes e transações recorrentes.",
+    "pt-PT": "Crie aliases personalizados para comerciantes e transações recorrentes.",
     "de-DE": "Erstellen Sie Aliase für Händler und wiederkehrende Transaktionen.",
     "en-US": "Create custom aliases for merchants and recurring transactions."
   },
   dictionaryCardBody2: {
-    "pt-BR": "Mantenha suas finanças organizadas com descrições consistentes e fáceis de entender.",
+    "pt-PT": "Mantenha suas finanças organizadas com descrições consistentes e fáceis de entender.",
     "de-DE": "Halten Sie Ihre Finanzen mit konsistenten, leicht verständlichen Beschreibungen organisiert.",
     "en-US": "Keep your finances organized with consistent, easy-to-understand descriptions."
   },
   dictionaryAction: {
-    "pt-BR": "Acessar Dicionário Completo",
+    "pt-PT": "Acessar Dicionário Completo",
     "de-DE": "Vollständiges Verzeichnis öffnen",
     "en-US": "Open full dictionary"
   },
   aliasesSectionTitle: {
-    "pt-BR": "Aliases (CSV UTF-8 com BOM)",
+    "pt-PT": "Aliases (CSV UTF-8 com BOM)",
     "de-DE": "Aliases (CSV UTF-8 mit BOM)",
     "en-US": "Aliases (CSV UTF-8 with BOM)"
   },
   aliasesSectionDesc: {
-    "pt-BR": "Importe e exporte aliases com acentos preservados.",
+    "pt-PT": "Importe e exporte aliases com acentos preservados.",
     "de-DE": "Aliases importieren/exportieren mit erhaltenen Akzenten.",
     "en-US": "Import and export aliases with accents preserved."
   },
   logosSectionTitle: {
-    "pt-BR": "Logos (CSV UTF-8 com BOM)",
+    "pt-PT": "Logos (CSV UTF-8 com BOM)",
     "de-DE": "Logos (CSV UTF-8 mit BOM)",
     "en-US": "Logos (CSV UTF-8 with BOM)"
   },
   logosSectionDesc: {
-    "pt-BR": "Importe logos e refresque imagens armazenadas.",
+    "pt-PT": "Importe logos e refresque imagens armazenadas.",
     "de-DE": "Logos importieren und gespeicherte Bilder aktualisieren.",
     "en-US": "Import logos and refresh stored images."
   },
   requiredColumnsLabel: {
-    "pt-BR": "Colunas obrigatórias: Alias_Desc · Key_words_alias · URL_icon_internet",
+    "pt-PT": "Colunas obrigatórias: Alias_Desc · Key_words_alias · URL_icon_internet",
     "de-DE": "Pflichtspalten: Alias_Desc · Key_words_alias · URL_icon_internet",
     "en-US": "Required columns: Alias_Desc · Key_words_alias · URL_icon_internet"
   },
   previewHeader: {
-    "pt-BR": "Pré-visualizar",
+    "pt-PT": "Pré-visualizar",
     "de-DE": "Vorschau",
     "en-US": "Preview"
   },
   logosTableAlias: {
-    "pt-BR": "Alias",
+    "pt-PT": "Alias",
     "de-DE": "Alias",
     "en-US": "Alias"
   },
   logosTableStatus: {
-    "pt-BR": "Status",
+    "pt-PT": "Status",
     "de-DE": "Status",
     "en-US": "Status"
   },
   logosStatusOk: {
-    "pt-BR": "OK",
+    "pt-PT": "OK",
     "de-DE": "OK",
     "en-US": "OK"
   },
   logosStatusFailed: {
-    "pt-BR": "Falha",
+    "pt-PT": "Falha",
     "de-DE": "Fehler",
     "en-US": "Failed"
   },
   logosStatusSaved: {
-    "pt-BR": "Logo salva",
+    "pt-PT": "Logo salva",
     "de-DE": "Logo gespeichert",
     "en-US": "Logo saved"
   },
   integrationsIntro: {
-    "pt-BR": "Conecte suas contas bancárias e cartões via importação CSV.",
+    "pt-PT": "Conecte suas contas bancárias e cartões via importação CSV.",
     "de-DE": "Verbinden Sie Ihre Bankkonten und Karten per CSV-Import.",
     "en-US": "Connect your bank accounts and cards via CSV import."
   },
   integrationsTitle: {
-    "pt-BR": "Fontes de Dados",
+    "pt-PT": "Fontes de Dados",
     "de-DE": "Datenquellen",
     "en-US": "Data sources"
   },
   integrationsCsvLabel: {
-    "pt-BR": "Integração via CSV",
+    "pt-PT": "Integração via CSV",
     "de-DE": "CSV-Integration",
     "en-US": "CSV integration"
   },
   integrationsMappingAction: {
-    "pt-BR": "Ver mapeamento CSV",
+    "pt-PT": "Ver mapeamento CSV",
     "de-DE": "CSV-Mapping ansehen",
     "en-US": "View CSV mapping"
   },
   integrationsMappingTitle: {
-    "pt-BR": "Mapeamento CSV · {name}",
+    "pt-PT": "Mapeamento CSV · {name}",
     "de-DE": "CSV-Mapping · {name}",
     "en-US": "CSV mapping · {name}"
   },
   integrationsSoon: {
-    "pt-BR": "Em breve: importação de capturas/fotos de extrato (documentado, não implementado).",
+    "pt-PT": "Em breve: importação de capturas/fotos de extrato (documentado, não implementado).",
     "de-DE": "Demnächst: Import von Kontoauszug-Fotos (dokumentiert, nicht implementiert).",
     "en-US": "Coming soon: import statement captures/photos (documented, not implemented)."
   },
   integrationsNext: {
-    "pt-BR": "Próximas integrações: Nubank, Revolut, N26, Wise",
+    "pt-PT": "Próximas integrações: Nubank, Revolut, N26, Wise",
     "de-DE": "Nächste Integrationen: Nubank, Revolut, N26, Wise",
     "en-US": "Next integrations: Nubank, Revolut, N26, Wise"
   },
   integrationsRulesTitle: {
-    "pt-BR": "Regras de importação e contratos esperados.",
+    "pt-PT": "Regras de importação e contratos esperados.",
     "de-DE": "Importregeln und erwartete Verträge.",
     "en-US": "Import rules and expected contracts."
   },
   integrationsEncodingLabel: {
-    "pt-BR": "Codificação",
+    "pt-PT": "Codificação",
     "de-DE": "Kodierung",
     "en-US": "Encoding"
   },
   integrationsDateFormatLabel: {
-    "pt-BR": "Formato de Data",
+    "pt-PT": "Formato de Data",
     "de-DE": "Datumsformat",
     "en-US": "Date format"
   },
   integrationsHeadersLabel: {
-    "pt-BR": "Cabeçalhos obrigatórios",
+    "pt-PT": "Cabeçalhos obrigatórios",
     "de-DE": "Pflicht-Header",
     "en-US": "Required headers"
   },
   integrationsPreviewColumnsLabel: {
-    "pt-BR": "Colunas do preview",
+    "pt-PT": "Colunas do preview",
     "de-DE": "Vorschau-Spalten",
     "en-US": "Preview columns"
   },
   integrationsKeyFieldsLabel: {
-    "pt-BR": "Campos-chave usados pelo pipeline",
+    "pt-PT": "Campos-chave usados pelo pipeline",
     "de-DE": "Schlüsselfelder im Pipeline",
     "en-US": "Key fields used by the pipeline"
   },
   integrationsFailuresLabel: {
-    "pt-BR": "Falhas comuns (com ações)",
+    "pt-PT": "Falhas comuns (com ações)",
     "de-DE": "Häufige Fehler (mit Aktionen)",
     "en-US": "Common failures (with actions)"
   },
   integrationsPhotosSoon: {
-    "pt-BR": "Em breve: importação de fotos/prints de extrato diretamente pelo app.",
+    "pt-PT": "Em breve: importação de fotos/prints de extrato diretamente pelo app.",
     "de-DE": "Demnächst: Import von Auszugsfotos direkt in der App.",
     "en-US": "Coming soon: import statement photos directly in the app."
   },
   auditSectionIntro: {
-    "pt-BR": "Registro de importações, alterações e exclusões críticas.",
+    "pt-PT": "Registro de importações, alterações e exclusões críticas.",
     "de-DE": "Protokoll von Importen, Änderungen und kritischen Löschungen.",
     "en-US": "Log of imports, changes, and critical deletions."
   },
   dangerCompletedAt: {
-    "pt-BR": "Concluída em {date}.",
+    "pt-PT": "Concluída em {date}.",
     "de-DE": "Abgeschlossen am {date}.",
     "en-US": "Completed on {date}."
   },
   dangerCompletedAtShort: {
-    "pt-BR": "Concluído em {date}.",
+    "pt-PT": "Concluído em {date}.",
     "de-DE": "Abgeschlossen am {date}.",
     "en-US": "Completed on {date}."
   },
   toastDataReset: {
-    "pt-BR": "Dados resetados",
+    "pt-PT": "Dados resetados",
     "de-DE": "Daten zurückgesetzt",
     "en-US": "Data reset"
   },
   toastDataResetDesc: {
-    "pt-BR": "Seu ambiente foi reinicializado.",
+    "pt-PT": "Seu ambiente foi reinicializado.",
     "de-DE": "Ihre Umgebung wurde zurückgesetzt.",
     "en-US": "Your environment was reset."
   },
   toastSelectCategory: {
-    "pt-BR": "Selecione uma categoria",
+    "pt-PT": "Selecione uma categoria",
     "de-DE": "Kategorie auswählen",
     "en-US": "Select a category"
   },
   toastClassificationUpdated: {
-    "pt-BR": "Classificação atualizada",
+    "pt-PT": "Classificação atualizada",
     "de-DE": "Klassifikation aktualisiert",
     "en-US": "Classification updated"
   },
   toastEnterExpression: {
-    "pt-BR": "Informe ao menos uma expressão",
+    "pt-PT": "Informe ao menos uma expressão",
     "de-DE": "Mindestens einen Ausdruck eingeben",
     "en-US": "Enter at least one expression"
   },
   toastKeywordsUpdated: {
-    "pt-BR": "Palavras-chave atualizadas",
+    "pt-PT": "Palavras-chave atualizadas",
     "de-DE": "Schlüsselwörter aktualisiert",
     "en-US": "Keywords updated"
   },
   toastKeywordsError: {
-    "pt-BR": "Erro ao salvar palavras-chave",
+    "pt-PT": "Erro ao salvar palavras-chave",
     "de-DE": "Fehler beim Speichern der Schlüsselwörter",
     "en-US": "Failed to save keywords"
   },
   toastNegativeRequired: {
-    "pt-BR": "Informe ao menos uma expressão negativa",
+    "pt-PT": "Informe ao menos uma expressão negativa",
     "de-DE": "Mindestens einen negativen Ausdruck eingeben",
     "en-US": "Enter at least one negative expression"
   },
   toastNegativeUpdated: {
-    "pt-BR": "Palavras-chave negativas atualizadas",
+    "pt-PT": "Palavras-chave negativas atualizadas",
     "de-DE": "Negative Schlüsselwörter aktualisiert",
     "en-US": "Negative keywords updated"
   },
   toastNegativeError: {
-    "pt-BR": "Erro ao salvar negativas",
+    "pt-PT": "Erro ao salvar negativas",
     "de-DE": "Fehler beim Speichern der negativen Schlüsselwörter",
     "en-US": "Failed to save negative keywords"
   },
   toastDangerSuccess: {
-    "pt-BR": "Os dados selecionados foram apagados com sucesso.",
+    "pt-PT": "Os dados selecionados foram apagados com sucesso.",
     "de-DE": "Ausgewählte Daten wurden gelöscht.",
     "en-US": "Selected data deleted successfully."
   },
   toastDangerError: {
-    "pt-BR": "Erro ao apagar dados",
+    "pt-PT": "Erro ao apagar dados",
     "de-DE": "Fehler beim Löschen der Daten",
     "en-US": "Failed to delete data"
   },
   statusSuccess: {
-    "pt-BR": "Sucesso",
+    "pt-PT": "Sucesso",
     "de-DE": "Erfolg",
     "en-US": "Success"
   },
   statusPreview: {
-    "pt-BR": "Prévia",
+    "pt-PT": "Prévia",
     "de-DE": "Vorschau",
     "en-US": "Preview"
   },
   statusFailure: {
-    "pt-BR": "Falha",
+    "pt-PT": "Falha",
     "de-DE": "Fehler",
     "en-US": "Failure"
   },
   dangerDescription: {
-    "pt-BR": "Remova transações, categorias, regras, aliases e logos com confirmação em etapas.",
+    "pt-PT": "Remova transações, categorias, regras, aliases e logos com confirmação em etapas.",
     "de-DE": "Entfernen Sie Transaktionen, Kategorien, Regeln, Aliases und Logos mit Bestätigung.",
     "en-US": "Remove transactions, categories, rules, aliases, and logos with step confirmation."
   },
   dangerLastDeleted: {
-    "pt-BR": "Última exclusão",
+    "pt-PT": "Última exclusão",
     "de-DE": "Letzte Löschung",
     "en-US": "Last deletion"
   },
   dangerLastTitle: {
-    "pt-BR": "Última exclusão registrada",
+    "pt-PT": "Última exclusão registrada",
     "de-DE": "Letzte Löschung erfasst",
     "en-US": "Last deletion recorded"
   },
   dangerSelectTitle: {
-    "pt-BR": "Tem certeza que deseja apagar dados?",
+    "pt-PT": "Tem certeza que deseja apagar dados?",
     "de-DE": "Sind Sie sicher, dass Sie Daten löschen möchten?",
     "en-US": "Are you sure you want to delete data?"
   },
   dangerSelectDesc: {
-    "pt-BR": "Selecione quais dados deseja remover:",
+    "pt-PT": "Selecione quais dados deseja remover:",
     "de-DE": "Wählen Sie aus, welche Daten entfernt werden sollen:",
     "en-US": "Select which data to remove:"
   },
   dangerOptionTransactions: {
-    "pt-BR": "Transações",
+    "pt-PT": "Transações",
     "de-DE": "Transaktionen",
     "en-US": "Transactions"
   },
   dangerOptionCategories: {
-    "pt-BR": "Categorias e Regras",
+    "pt-PT": "Categorias e Regras",
     "de-DE": "Kategorien und Regeln",
     "en-US": "Categories and Rules"
   },
   dangerOptionAliases: {
-    "pt-BR": "Aliases e Logos",
+    "pt-PT": "Aliases e Logos",
     "de-DE": "Aliases und Logos",
     "en-US": "Aliases and Logos"
   },
   dangerOptionAll: {
-    "pt-BR": "Tudo (Reset total)",
+    "pt-PT": "Tudo (Reset total)",
     "de-DE": "Alles (Vollständiger Reset)",
     "en-US": "Everything (Full reset)"
   },
   dangerNext: {
-    "pt-BR": "Avançar",
+    "pt-PT": "Avançar",
     "de-DE": "Weiter",
     "en-US": "Next"
   },
   dangerConfirmTitle: {
-    "pt-BR": "Confirma exclusão permanente?",
+    "pt-PT": "Confirma exclusão permanente?",
     "de-DE": "Löschung endgültig bestätigen?",
     "en-US": "Confirm permanent deletion?"
   },
   dangerConfirmDesc: {
-    "pt-BR": "Essa ação não pode ser desfeita. Confirme digitando \"APAGAR\".",
+    "pt-PT": "Essa ação não pode ser desfeita. Confirme digitando \"APAGAR\".",
     "de-DE": "Diese Aktion kann nicht rückgängig gemacht werden. Bitte \"LÖSCHEN\" eingeben.",
     "en-US": "This action cannot be undone. Type \"DELETE\" to confirm."
   },
   dangerConfirmPlaceholder: {
-    "pt-BR": "Digite APAGAR",
+    "pt-PT": "Digite APAGAR",
     "de-DE": "LÖSCHEN eingeben",
     "en-US": "Type DELETE"
   },
   dangerBack: {
-    "pt-BR": "Voltar",
+    "pt-PT": "Voltar",
     "de-DE": "Zurück",
     "en-US": "Back"
   },
   dangerDoneTitle: {
-    "pt-BR": "Exclusão concluída",
+    "pt-PT": "Exclusão concluída",
     "de-DE": "Löschung abgeschlossen",
     "en-US": "Deletion complete"
   },
   dangerDoneFallback: {
-    "pt-BR": "Os dados selecionados foram apagados com sucesso.",
+    "pt-PT": "Os dados selecionados foram apagados com sucesso.",
     "de-DE": "Ausgewählte Daten wurden gelöscht.",
     "en-US": "Selected data deleted successfully."
   },
   dangerDeletedItems: {
-    "pt-BR": "Itens apagados",
+    "pt-PT": "Itens apagados",
     "de-DE": "Gelöschte Elemente",
     "en-US": "Deleted items"
   },
   dangerClose: {
-    "pt-BR": "Fechar",
+    "pt-PT": "Fechar",
     "de-DE": "Schließen",
     "en-US": "Close"
   },
   auditActionLabels: {
-    "pt-BR": {
+    "pt-PT": {
       importacao_csv: "Importação CSV",
       importacao_classificacao: "Importação de categorias",
       importacao_aliases: "Importação de aliases",
@@ -5947,7 +5948,7 @@ export const settingsCopy = {
     }
   },
   integrationProviders: {
-    "pt-BR": [
+    "pt-PT": [
       {
         id: "miles_and_more",
         name: "Miles & More",
@@ -6210,72 +6211,72 @@ export const settingsCopy = {
 
 export const aiChatCopy = {
   title: {
-    "pt-BR": "Assistente IA",
+    "pt-PT": "Assistente IA",
     "de-DE": "KI-Assistent",
     "en-US": "AI Assistant"
   },
   poweredBy: {
-    "pt-BR": "Powered by GPT-4",
+    "pt-PT": "Powered by GPT-4",
     "de-DE": "Powered by GPT-4",
     "en-US": "Powered by GPT-4"
   },
   beta: {
-    "pt-BR": "Beta",
+    "pt-PT": "Beta",
     "de-DE": "Beta",
     "en-US": "Beta"
   },
   quickActions: {
-    "pt-BR": "Ações Rápidas",
+    "pt-PT": "Ações Rápidas",
     "de-DE": "Schnellaktionen",
     "en-US": "Quick actions"
   },
   inputPlaceholder: {
-    "pt-BR": "Digite sua pergunta...",
+    "pt-PT": "Digite sua pergunta...",
     "de-DE": "Stellen Sie Ihre Frage...",
     "en-US": "Type your question..."
   },
   userInitial: {
-    "pt-BR": "V",
+    "pt-PT": "V",
     "de-DE": "V",
     "en-US": "U"
   },
   welcomeMessage: {
-    "pt-BR": "Olá! 👋 Sou seu assistente financeiro inteligente. Posso ajudar a analisar seus gastos, encontrar padrões e dar sugestões personalizadas. Como posso ajudar?",
+    "pt-PT": "Olá! 👋 Sou seu assistente financeiro inteligente. Posso ajudar a analisar seus gastos, encontrar padrões e dar sugestões personalizadas. Como posso ajudar?",
     "de-DE": "Hallo! 👋 Ich bin Ihr intelligenter Finanzassistent. Ich kann Ausgaben analysieren, Muster finden und personalisierte Vorschläge geben. Wie kann ich helfen?",
     "en-US": "Hi! 👋 I'm your smart finance assistant. I can analyze spending, find patterns, and give personalized suggestions. How can I help?"
   },
   quickActionMonthLabel: {
-    "pt-BR": "Análise deste mês",
+    "pt-PT": "Análise deste mês",
     "de-DE": "Analyse dieses Monats",
     "en-US": "This month analysis"
   },
   quickActionMonthPrompt: {
-    "pt-BR": "Analise meus gastos este mês e dê sugestões.",
+    "pt-PT": "Analise meus gastos este mês e dê sugestões.",
     "de-DE": "Analysiere meine Ausgaben in diesem Monat und gib mir Vorschläge.",
     "en-US": "Analyze my spending this month and give suggestions."
   },
   quickActionSaveLabel: {
-    "pt-BR": "Sugerir economia",
+    "pt-PT": "Sugerir economia",
     "de-DE": "Sparmöglichkeiten",
     "en-US": "Suggest savings"
   },
   quickActionSavePrompt: {
-    "pt-BR": "Onde posso economizar mais?",
+    "pt-PT": "Onde posso economizar mais?",
     "de-DE": "Wo kann ich am meisten sparen?",
     "en-US": "Where can I save the most?"
   },
   quickActionDupesLabel: {
-    "pt-BR": "Encontrar duplicatas",
+    "pt-PT": "Encontrar duplicatas",
     "de-DE": "Duplikate finden",
     "en-US": "Find duplicates"
   },
   quickActionDupesPrompt: {
-    "pt-BR": "Há transações duplicadas?",
+    "pt-PT": "Há transações duplicadas?",
     "de-DE": "Gibt es doppelte Transaktionen?",
     "en-US": "Are there duplicate transactions?"
   },
   backendStub: {
-    "pt-BR": "🚧 **Backend em desenvolvimento**\n\nEste é um protótipo da interface do assistente IA. A integração com OpenAI será implementada pelo Codex.\n\nFuncionalidades planejadas:\n- Análise de gastos com insights personalizados\n- Detecção de padrões e anomalias\n- Sugestões de economia baseadas em histórico\n- Busca natural por transações\n- Previsões de gastos futuros",
+    "pt-PT": "🚧 **Backend em desenvolvimento**\n\nEste é um protótipo da interface do assistente IA. A integração com OpenAI será implementada pelo Codex.\n\nFuncionalidades planejadas:\n- Análise de gastos com insights personalizados\n- Detecção de padrões e anomalias\n- Sugestões de economia baseadas em histórico\n- Busca natural por transações\n- Previsões de gastos futuros",
     "de-DE": "🚧 **Backend in Entwicklung**\n\nDies ist ein Prototyp der KI-Assistenten-Oberfläche. Die OpenAI-Integration wird von Codex implementiert.\n\nGeplante Funktionen:\n- Ausgabenanalyse mit personalisierten Insights\n- Muster- und Anomalieerkennung\n- Spartipps basierend auf Historie\n- Natürliche Suche nach Transaktionen\n- Prognosen für zukünftige Ausgaben",
     "en-US": "🚧 **Backend in development**\n\nThis is a prototype of the AI assistant UI. OpenAI integration will be implemented by Codex.\n\nPlanned features:\n- Spending analysis with personalized insights\n- Pattern and anomaly detection\n- Savings suggestions based on history\n- Natural language transaction search\n- Forecasts for future spending"
   }
@@ -6283,22 +6284,22 @@ export const aiChatCopy = {
 
 export const forecastCopy = {
   title: {
-    "pt-BR": "Previsão & Recorrência",
+    "pt-PT": "Previsão & Recorrência",
     "de-DE": "Prognose & Wiederkehrend",
     "en-US": "Forecast & Recurrence"
   },
   subtitle: {
-    "pt-BR": "Veja pagamentos recorrentes previstos, confiança e variações esperadas.",
+    "pt-PT": "Veja pagamentos recorrentes previstos, confiança e variações esperadas.",
     "de-DE": "Sehen Sie wiederkehrende Zahlungen mit Zuversicht und Abweichung.",
     "en-US": "See predicted recurring payments with confidence and variance."
   },
   preparing: {
-    "pt-BR": "Em preparação",
+    "pt-PT": "Em preparação",
     "de-DE": "In Vorbereitung",
     "en-US": "In preparation"
   },
   preparingBody: {
-    "pt-BR": "Esta tela exibirá o calendário de previsões com razões e níveis de confiança.",
+    "pt-PT": "Esta tela exibirá o calendário de previsões com razões e níveis de confiança.",
     "de-DE": "Diese Ansicht zeigt den Prognosekalender mit Begründungen und Zuversicht.",
     "en-US": "This view will show the forecast calendar with rationale and confidence."
   }

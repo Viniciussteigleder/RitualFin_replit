@@ -4,34 +4,49 @@ import { Info, CheckCircle2, SearchCheck, Sparkles, Brain, Zap, Target } from "l
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { BulkConfirmButton } from "@/components/transactions/bulk-confirm-button";
 
 export default async function ConfirmPage() {
   const transactions = await getPendingTransactions();
+  const highConfidenceCount = transactions.filter(tx => (tx.confidence || 0) >= 80).length;
 
   return (
     <div className="max-w-7xl mx-auto flex flex-col gap-10 pb-32 font-sans px-1">
        {/* Header Section */}
-       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
-        <div>
-          <h1 className="text-4xl font-bold text-foreground tracking-tight font-display mb-2">Sugestões de IA</h1>
-          <p className="text-muted-foreground font-medium max-w-2xl leading-relaxed">
-            Otimize sua gestão financeira com classificações inteligentes extraídas das suas faturas.
+       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8 bg-card p-10 rounded-[3rem] border border-border shadow-sm">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-xl">
+              <Sparkles className="h-6 w-6 text-primary" />
+            </div>
+            <h1 className="text-4xl font-bold text-foreground tracking-tight font-display">Sugestões de IA</h1>
+          </div>
+          <p className="text-muted-foreground font-medium max-w-xl leading-relaxed">
+            Sua IA classificou <span className="text-foreground font-bold">{transactions.length} lançamentos</span> automaticamente. 
+            Valide as sugestões para manter sua análise precisa.
           </p>
         </div>
         
-        <div className="flex items-center gap-4 bg-secondary/50 p-4 rounded-3xl border border-border backdrop-blur-sm shadow-sm px-6">
-           <div className="flex flex-col items-end mr-2">
-             <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">IA Automação</span>
-             <span className="text-xs font-bold text-foreground">Ativado</span>
-           </div>
-           <Switch checked className="data-[state=checked]:bg-primary" />
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 bg-secondary/30 p-4 rounded-3xl border border-border shadow-inner px-6">
+            <div className="flex flex-col items-end mr-2">
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">IA Automação</span>
+              <span className="text-xs font-bold text-foreground text-emerald-500">Ativo</span>
+            </div>
+            <Switch checked className="data-[state=checked]:bg-emerald-500" />
+          </div>
+
+          <BulkConfirmButton count={highConfidenceCount} />
         </div>
       </div>
 
       {/* Stats Grid - Matching Mockup */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-card p-8 rounded-[2rem] border border-border shadow-sm flex flex-col gap-2 group hover:shadow-md transition-shadow">
-          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Sugestões Pendentes</span>
+        <div className="bg-card p-8 rounded-[2rem] border border-border shadow-sm flex flex-col gap-2 group hover:shadow-md transition-shadow relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform">
+             <Zap className="h-16 w-16" />
+          </div>
+          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Pendentes de Revisão</span>
           <div className="flex items-end gap-2">
             <span className="text-5xl font-bold text-foreground tracking-tighter font-display">{transactions.length}</span>
             <span className="text-xs font-bold text-muted-foreground mb-1.5 uppercase tracking-wider">Lançamentos</span>
@@ -39,23 +54,23 @@ export default async function ConfirmPage() {
         </div>
         
         <div className="bg-card p-8 rounded-[2rem] border border-border shadow-sm flex flex-col gap-2 group hover:shadow-md transition-shadow">
-          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Confiança Média</span>
+          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Alta Confiança</span>
           <div className="flex items-end gap-2">
-            <span className="text-5xl font-bold text-foreground tracking-tighter font-display">88%</span>
+            <span className="text-5xl font-bold text-emerald-500 tracking-tighter font-display">{highConfidenceCount}</span>
             <div className="flex flex-col mb-1.5">
-               <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Alta Precisão</span>
-               <div className="w-16 h-1 bg-primary/20 rounded-full mt-1 overflow-hidden">
-                 <div className="w-[88%] h-full bg-primary"></div>
+               <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Prontos p/ Aprovar</span>
+               <div className="w-16 h-1 bg-emerald-100 rounded-full mt-1 overflow-hidden">
+                 <div className="w-full h-full bg-emerald-500"></div>
                </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-card p-8 rounded-[2rem] border border-border shadow-sm flex flex-col gap-2 group hover:shadow-md transition-shadow">
-          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Regras Ativas</span>
+        <div className="bg-card p-8 rounded-[2rem] border border-border shadow-sm flex flex-col gap-2 group hover:shadow-md transition-shadow bg-gradient-to-br from-white to-secondary/20">
+          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Precisão Global</span>
           <div className="flex items-end gap-2">
-            <span className="text-5xl font-bold text-foreground tracking-tighter font-display">142</span>
-            <span className="text-xs font-bold text-muted-foreground mb-1.5 uppercase tracking-wider">Automações</span>
+            <span className="text-5xl font-bold text-foreground tracking-tighter font-display">88%</span>
+            <span className="text-xs font-bold text-muted-foreground mb-1.5 uppercase tracking-wider">Média Mensal</span>
           </div>
         </div>
       </div>

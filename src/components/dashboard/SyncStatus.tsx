@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { pt } from "date-fns/locale";
 
 export function SyncStatus({ lastSync }: { lastSync: Date | null }) {
   const [mounted, setMounted] = useState(false);
@@ -17,7 +17,7 @@ export function SyncStatus({ lastSync }: { lastSync: Date | null }) {
 
   return (
     <span className="text-base font-semibold text-foreground" suppressHydrationWarning>
-      {lastSync ? `Atualizado ${formatDistanceToNow(new Date(lastSync), { addSuffix: true, locale: ptBR })}` : "Nenhum arquivo importado"}
+      {lastSync ? `Atualizado ${formatDistanceToNow(new Date(lastSync), { addSuffix: true, locale: pt })}` : "Nenhum arquivo importado"}
     </span>
   );
 }

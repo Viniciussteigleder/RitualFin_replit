@@ -3,7 +3,7 @@
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { format, addMonths, subMonths, parse } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { pt } from "date-fns/locale";
 
 export function DashboardHeader() {
   const router = useRouter();
@@ -41,7 +41,7 @@ export function DashboardHeader() {
             <div className="flex items-center justify-center gap-2 px-6 min-w-[140px]">
               <Calendar className="h-4 w-4 text-primary" />
               <span className="text-sm font-bold text-foreground whitespace-nowrap capitalize">
-                {format(currentDate, "MMMM yyyy", { locale: ptBR })}
+                {format(currentDate, "MMMM yyyy", { locale: pt })}
               </span>
             </div>
             <button 

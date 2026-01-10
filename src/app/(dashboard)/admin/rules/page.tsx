@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Play, Plus, Search, Sparkles, ArrowRight, CheckCircle2 } from "lucide-react";
-import { getRuleSuggestions, simulateRule, createRule, getRules, type RuleProposal, type SimulationResult } from "@/lib/actions/rules";
+import { Loader2, Play, Plus, Search, Sparkles, ArrowRight, CheckCircle2, RefreshCw } from "lucide-react";
+import { getRuleSuggestions, simulateRule, createRule, getRules, reApplyAllRules, type RuleProposal, type SimulationResult } from "@/lib/actions/rules";
 import { CATEGORY_CONFIGS } from "@/lib/constants/categories";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -111,10 +111,25 @@ export default function RulesStudioPage() {
   return (
     <div className="container max-w-7xl mx-auto p-8 font-sans">
       <div className="mb-8">
-        <h1 className="text-3xl font-display font-bold text-foreground mb-2 flex items-center gap-3">
-          <Sparkles className="h-8 w-8 text-emerald-500" />
-          Estúdio de Regras IA
-        </h1>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
+          <h1 className="text-3xl font-display font-bold text-foreground flex items-center gap-3">
+            <Sparkles className="h-8 w-8 text-emerald-500" />
+            Estúdio de Regras IA
+          </h1>
+          <Button 
+            variant="outline" 
+            className="rounded-xl font-bold gap-2 border-primary/20 text-primary hover:bg-primary/5"
+            onClick={async () => {
+              if (confirm("Deseja reaplicar todas as regras às transações existentes? Isto não afetará edições manuais.")) {
+                const res = await reApplyAllRules();
+                if (res.success) alert(`${res.updatedCount} transações atualizadas!`);
+              }
+            }}
+          >
+            <RefreshCw className="h-4 w-4" />
+            Reaplicar Regras em Massa
+          </Button>
+        </div>
         <p className="text-muted-foreground text-lg">
           Analise transações não categorizadas e crie regras inteligentes.
         </p>
@@ -330,7 +345,7 @@ export default function RulesStudioPage() {
                         </div>
 
                         <div className="text-right font-mono font-medium pr-2">
-                          {parseFloat(tx.amount).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}
+                          {formatCurrency(parseFloat(tx.amount))}
                         </div>
                       </div>
                     ))}

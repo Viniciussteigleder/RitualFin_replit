@@ -26,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={`${manrope.variable} ${notoTabs.variable}`} suppressHydrationWarning>
+    <html lang="pt-PT" className={`${manrope.variable} ${notoTabs.variable}`} suppressHydrationWarning>
       <body className="antialiased bg-background text-foreground flex min-h-screen font-sans" suppressHydrationWarning>
         <MonthProvider>
           <Sidebar />

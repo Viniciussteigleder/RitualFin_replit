@@ -6,11 +6,11 @@ import { LayoutDashboard, Receipt, Plus, Target, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/dashboard", label: "Painel", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/transactions", label: "Transações", icon: Receipt },
   { href: "/add", label: "Adicionar", icon: Plus, isCenter: true },
   { href: "/goals", label: "Metas", icon: Target },
-  { href: "/settings", label: "Ajustes", icon: Settings },
+  { href: "/settings", label: "Definições", icon: Settings },
 ];
 
 export function MobileNav() {

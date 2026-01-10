@@ -200,8 +200,27 @@ export async function confirmTransaction(transactionId: string) {
         .set({ needsReview: false })
         .where(eq(transactions.id, transactionId));
 
+    revalidatePath("/confirm");
     revalidatePath("/transactions");
     return { success: true };
+}
+
+export async function confirmHighConfidenceTransactions(threshold = 80) {
+  const session = await auth();
+  if (!session?.user?.id) return { error: "Unauthorized" };
+
+  await db.update(transactions)
+    .set({ needsReview: false })
+    .where(and(
+      eq(transactions.userId, session.user.id),
+      eq(transactions.needsReview, true),
+      sql`${transactions.confidence} >= ${threshold}`
+    ));
+
+  revalidatePath("/confirm");
+  revalidatePath("/transactions");
+  revalidatePath("/");
+  return { success: true };
 }
 
 export async function deleteTransaction(transactionId: string) {

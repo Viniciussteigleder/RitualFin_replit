@@ -14,7 +14,7 @@ import {
   MoreVertical,
   ArrowRight
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import Link from "next/link";
 import { CalendarClient } from "./calendar-client";
 
@@ -93,12 +93,7 @@ export default async function CalendarPage({
     weeks.push(currentWeek);
   }
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-PT", {
-      style: "currency",
-      currency: "EUR",
-    }).format(value);
-  };
+
 
   const monthName = new Intl.DateTimeFormat("pt-PT", { month: "long", year: "numeric" }).format(currentDate);
   const prevMonth = new Date(year, month - 1, 1);

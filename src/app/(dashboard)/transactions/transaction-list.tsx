@@ -44,7 +44,7 @@ import { TransactionDetailContent } from "@/components/transactions/transaction-
 
 // Using categories from schema (simplified list for UI)
 const CATEGORIES = [
-    "Receitas", "Moradia", "Mercado", "Compras Online",
+    "Receitas", "Moradia", "Mercados", "Compras Online",
     "Transporte", "Saúde", "Lazer", "Viagem", "Roupas",
     "Tecnologia", "Alimentação", "Energia", "Internet",
     "Educação", "Presentes", "Streaming", "Academia",
@@ -58,6 +58,7 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
     const [search, setSearch] = useState("");
     const [filters, setFilters] = useState<TransactionFilters>(initialFilters);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [isCompact, setIsCompact] = useState(false);
 
     const filtered = transactions.filter(tx => {
 
@@ -165,6 +166,17 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
                         accounts={Array.from(new Set(transactions.map(t => t.source).filter(Boolean)))}
                         onFilterChange={setFilters}
                     />
+                    <Button 
+                        variant="outline" 
+                        className={cn(
+                            "h-14 px-6 border-border rounded-2xl text-foreground font-bold gap-2 text-sm transition-all",
+                            isCompact && "bg-primary text-white border-transparent"
+                        )}
+                        onClick={() => setIsCompact(!isCompact)}
+                    >
+                        {isCompact ? <Activity className="h-4 w-4" /> : <ShoppingBag className="h-4 w-4" />}
+                        {isCompact ? "Vista Normal" : "Vista Compacta"}
+                    </Button>
                     <Button variant="outline" className="h-14 px-6 border-border hover:bg-secondary rounded-2xl text-foreground font-bold gap-2 text-sm">
                         <FileText className="h-4 w-4" />
                         Exportar
@@ -219,8 +231,9 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
                                 <div
                                     key={tx.id}
                                     className={cn(
-                                        "group flex flex-col md:grid md:grid-cols-[60px_1fr_2.5fr_1.5fr_1.5fr_1.2fr_120px] gap-2 md:gap-6 items-center p-6 md:p-0 md:h-[90px] hover:bg-secondary/40 transition-all cursor-pointer",
-                                        selectedIds.has(tx.id) && "bg-primary/5"
+                                        "group flex flex-col md:grid md:grid-cols-[60px_1fr_2.5fr_1.5fr_1.5fr_1.2fr_120px] gap-2 md:gap-6 items-center hover:bg-secondary/40 transition-all cursor-pointer",
+                                        isCompact ? "p-4 md:p-0 md:h-[60px]" : "p-6 md:p-0 md:h-[80px]",
+                                        selectedIds.has(tx.id) && "bg-primary/5 border-l-4 border-l-primary"
                                     )}
                                     onClick={() => setSelectedTx(tx)}
                                 >
@@ -235,30 +248,32 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
                                     </div>
 
                                     {/* Column: Estabelecimento */}
-                                    <div className="md:py-4 flex flex-row items-center gap-3 w-full md:w-auto">
+                                    <div className={cn("md:py-4 flex flex-row items-center gap-3 w-full md:w-auto", isCompact && "md:py-2")}>
                                         {tx.aliasDesc && aliasMap[tx.aliasDesc] ? (
                                             <img 
                                                 src={aliasMap[tx.aliasDesc]} 
                                                 alt={tx.aliasDesc} 
-                                                className="w-10 h-10 rounded-full object-cover border border-border bg-white"
+                                                className={cn("rounded-full object-cover border border-border bg-white", isCompact ? "w-8 h-8" : "w-10 h-10")}
                                             />
                                         ) : (
-                                            <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-muted-foreground/50">
-                                                <ShoppingBag className="w-5 h-5" />
+                                            <div className={cn("rounded-full bg-secondary flex items-center justify-center text-muted-foreground/50", isCompact ? "w-8 h-8" : "w-10 h-10")}>
+                                                <ShoppingBag className={cn(isCompact ? "w-4 h-4" : "w-5 h-5")} />
                                             </div>
                                         )}
-                                        <div className="flex flex-col gap-1 overflow-hidden">
-                                            <span className="text-base font-bold text-foreground truncate tracking-tight">
+                                        <div className="flex flex-col gap-0.5 overflow-hidden">
+                                            <span className={cn("font-bold text-foreground truncate tracking-tight", isCompact ? "text-sm" : "text-base")}>
                                                 {tx.aliasDesc || tx.description}
                                             </span>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{tx.source}</span>
-                                                {tx.needsReview && (
-                                                    <Badge className="h-5 px-2 rounded-full bg-amber-100 text-amber-700 hover:bg-amber-200 border-none text-[9px] font-bold uppercase tracking-wide">
-                                                        Revisar
-                                                    </Badge>
-                                                )}
-                                            </div>
+                                            {!isCompact && (
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{tx.source}</span>
+                                                    {tx.needsReview && (
+                                                        <Badge className="h-5 px-2 rounded-full bg-amber-100 text-amber-700 hover:bg-amber-200 border-none text-[9px] font-bold uppercase tracking-wide">
+                                                            Revisar
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 

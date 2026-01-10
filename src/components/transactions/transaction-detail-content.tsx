@@ -29,7 +29,7 @@ import { updateTransactionCategory, confirmTransaction, createRuleAndApply } fro
 
 // Simplified categories list matching the one in TransactionList
 const CATEGORIES = [
-  "Receitas", "Moradia", "Mercado", "Compras Online",
+  "Receitas", "Moradia", "Mercados", "Compras Online",
   "Transporte", "Saúde", "Lazer", "Viagem", "Roupas",
   "Tecnologia", "Alimentação", "Energia", "Internet",
   "Educação", "Presentes", "Streaming", "Academia",

@@ -233,3 +233,62 @@ export async function upsertRules(rulesData: any[]) {
         return { success: false, error: error.message };
     }
 }
+import { categorizeTransaction, AI_SEED_RULES } from "@/lib/rules/engine";
+
+export async function reApplyAllRules() {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  const userId = session.user.id;
+
+  // 1. Fetch all rules (Active and for this user)
+  const userRules = await db.query.rules.findMany({ 
+    where: and(eq(rules.userId, userId), eq(rules.active, true)) 
+  });
+  
+  // Map seeds to expected format
+  const seedRules = AI_SEED_RULES.map((r, i) => ({
+    ...r,
+    id: `seed-${i}`,
+    userId: userId,
+    ruleKey: `SEED-${r.name}`,
+    active: true,
+    createdAt: new Date(),
+    keywords: r.keywords,
+    category2: r.category2 || null,
+    category3: null
+  } as any));
+
+  const effectiveRules = [...userRules, ...seedRules];
+
+  // 2. Fetch all transactions that don't have manualOverride
+  const txs = await db.query.transactions.findMany({
+    where: and(eq(transactions.userId, userId), eq(transactions.manualOverride, false))
+  });
+
+  // 3. Re-categorize each transaction
+  let updatedCount = 0;
+  for (const tx of txs) {
+    const categorization = categorizeTransaction(tx.descNorm || tx.descRaw || "", effectiveRules);
+    
+    if (categorization.category1) {
+      await db.update(transactions)
+        .set({
+           category1: categorization.category1,
+           category2: categorization.category2 || null,
+           category3: categorization.category3 || null,
+           type: categorization.type as any,
+           fixVar: categorization.fixVar as any,
+           ruleIdApplied: categorization.ruleIdApplied && !categorization.ruleIdApplied.startsWith("seed-") ? categorization.ruleIdApplied : null,
+           needsReview: categorization.needsReview,
+           confidence: categorization.confidence
+        })
+        .where(eq(transactions.id, tx.id));
+      updatedCount++;
+    }
+  }
+
+  revalidatePath("/");
+  revalidatePath("/transactions");
+  revalidatePath("/admin/rules");
+  return { success: true, updatedCount };
+}

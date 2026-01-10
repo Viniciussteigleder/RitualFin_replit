@@ -6,10 +6,15 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const formatCurrency = (value: number, options?: { hideDecimals?: boolean }) => {
-  return new Intl.NumberFormat("pt-PT", { 
+  const formatter = new Intl.NumberFormat("pt-PT", { 
     style: "currency", 
     currency: "EUR",
     minimumFractionDigits: options?.hideDecimals ? 0 : 2,
     maximumFractionDigits: options?.hideDecimals ? 0 : 2,
-  }).format(value);
+  });
+  
+  return formatter.formatToParts(value).map(part => {
+    if (part.type === 'group') return '.';
+    return part.value;
+  }).join('');
 };

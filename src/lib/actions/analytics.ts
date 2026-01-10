@@ -64,6 +64,9 @@ export async function getAnalyticsData(
     conditions.push(eq(transactions.recurringFlag, filters.recurring));
   }
 
+  // Exclude Internal transfers from analytics as per spec
+  conditions.push(sql`${transactions.category1} NOT IN ('Interno', 'Transferências')`);
+
 
   // Determine current drill-down level and apply cumulative filters
   let currentLevel: DrillDownData["currentLevel"] = "category";

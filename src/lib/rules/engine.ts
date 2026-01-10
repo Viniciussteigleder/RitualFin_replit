@@ -269,12 +269,13 @@ export const AI_SEED_RULES = [
     isSystem: true
   },
   {
-    name: "Mercado",
+    name: "Mercados",
     keywords: "REWE;EDEKA;ALDI;LIDL;NETTO;NORMA;DM;DM-DROGERIE;ROSSMANN;MUELLER;MÜLLER;ASIA MARKT;BACKSTUBE;BAECKEREI;IHLE;WUENSCHE;FRUCHTWERK",
     type: "Despesa" as const,
     fixVar: "Variável" as const,
-    category1: "Mercado" as const,
-    category2: "Supermercado",
+    category1: "Mercados" as const,
+    category2: "Alimentação",
+    category3: "Supermercado",
     priority: 900,
     strict: true,
     isSystem: true

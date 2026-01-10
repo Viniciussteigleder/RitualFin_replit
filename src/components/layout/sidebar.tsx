@@ -37,7 +37,7 @@ export function Sidebar() {
     { id: "dashboard", icon: LayoutDashboard, href: "/", label: "Dashboard" },
     { id: "analytics", icon: BarChart3, href: "/analytics", label: "Análise" },
     { id: "transactions", icon: Receipt, href: "/transactions", label: "Transações" },
-    { id: "confirm", icon: Sparkles, href: "/confirm", label: "Sugestões" },
+    { id: "confirm", icon: Sparkles, href: "/confirm", label: "Revisar" },
     { id: "calendar", icon: CalendarDays, href: "/calendar", label: "Calendário" },
     { id: "rituals", icon: RefreshCw, href: "/rituals", label: "Rituais" },
     { id: "goals", icon: Target, href: "/goals", label: "Metas" },
@@ -87,29 +87,108 @@ export function Sidebar() {
           </div>
 
           {/* Navigation */}
-          <nav className="flex flex-col gap-1">
-            {navItems.map((item) => {
-              const isActive = pathname === item.href || (item.id === 'dashboard' && pathname === '/');
-              return (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  onClick={() => setIsOpen(false)}
-                  className={cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-xl transition-all group",
-                    isActive
-                      ? "bg-primary/10 text-primary font-bold shadow-sm shadow-primary/5"
-                      : "text-muted-foreground hover:bg-secondary hover:text-foreground font-medium"
-                  )}
-                >
-                  <item.icon className={cn(
-                    "h-5 w-5 transition-transform group-hover:scale-105",
-                    isActive ? "text-primary" : "text-muted-foreground/60 group-hover:text-foreground"
-                  )} />
-                  <span className="text-sm">{item.label}</span>
-                </Link>
-              );
-            })}
+          <nav className="flex flex-col gap-8 overflow-y-auto pr-2 custom-scrollbar">
+            {/* CORE SECTION */}
+            <div className="flex flex-col gap-1">
+              <p className="px-4 text-[10px] font-extrabold text-muted-foreground/50 uppercase tracking-[0.2em] mb-2">Monitoramento</p>
+              {[
+                { id: "dashboard", icon: LayoutDashboard, href: "/", label: "Dashboard" },
+                { id: "analytics", icon: BarChart3, href: "/analytics", label: "Análise Total" },
+                { id: "transactions", icon: Receipt, href: "/transactions", label: "Extrato" },
+                { id: "confirm", icon: Sparkles, href: "/confirm", label: "Sugestões IA", badge: "Ação" },
+              ].map((item) => {
+                const isActive = pathname === item.href || (item.id === 'dashboard' && pathname === '/');
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    onClick={() => setIsOpen(false)}
+                    className={cn(
+                      "flex items-center justify-between px-4 py-3 rounded-xl transition-all group",
+                      isActive
+                        ? "bg-primary/10 text-primary font-bold shadow-sm shadow-primary/5 border border-primary/20"
+                        : "text-muted-foreground hover:bg-secondary hover:text-foreground font-medium"
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <item.icon className={cn(
+                        "h-5 w-5 transition-transform group-hover:scale-110",
+                        isActive ? "text-primary" : "text-muted-foreground/60 group-hover:text-foreground"
+                      )} />
+                      <span className="text-sm">{item.label}</span>
+                    </div>
+                    {item.badge && (
+                      <span className="text-[9px] bg-primary text-white px-1.5 py-0.5 rounded-md font-black uppercase tracking-tighter">
+                        {item.badge}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* STRATEGY SECTION */}
+            <div className="flex flex-col gap-1">
+              <p className="px-4 text-[10px] font-extrabold text-muted-foreground/50 uppercase tracking-[0.2em] mb-2">Planejamento</p>
+              {[
+                { id: "calendar", icon: CalendarDays, href: "/calendar", label: "Calendário" },
+                { id: "rituals", icon: RefreshCw, href: "/rituals", label: "Meus Rituais" },
+                { id: "goals", icon: Target, href: "/goals", label: "Metas" },
+                { id: "budgets", icon: PieChart, href: "/budgets", label: "Orçamentos" },
+                { id: "accounts", icon: Wallet, href: "/accounts", label: "Contas" },
+              ].map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    onClick={() => setIsOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-3 rounded-xl transition-all group",
+                      isActive
+                        ? "bg-secondary text-foreground font-bold border border-border"
+                        : "text-muted-foreground hover:bg-secondary hover:text-foreground font-medium"
+                    )}
+                  >
+                    <item.icon className={cn(
+                      "h-4 w-4 transition-transform group-hover:scale-110",
+                      isActive ? "text-foreground" : "text-muted-foreground/60 group-hover:text-foreground"
+                    )} />
+                    <span className="text-sm">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* ADMIN SECTION (TUCKED AWAY) */}
+            <div className="flex flex-col gap-1">
+              <p className="px-4 text-[10px] font-extrabold text-muted-foreground/50 uppercase tracking-[0.2em] mb-2">Configurações</p>
+              {[
+                { id: "uploads", icon: Receipt, href: "/admin/import", label: "Importar Arquivos" },
+                { id: "ai-rules", icon: Bot, href: "/admin/rules", label: "Regras de IA" },
+              ].map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    onClick={() => setIsOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-3 rounded-xl transition-all group opacity-70 hover:opacity-100",
+                      isActive
+                        ? "bg-secondary text-foreground font-bold"
+                        : "text-muted-foreground hover:bg-secondary hover:text-foreground font-medium"
+                    )}
+                  >
+                    <item.icon className={cn(
+                      "h-4 w-4",
+                      isActive ? "text-foreground" : "text-muted-foreground/60 group-hover:text-foreground"
+                    )} />
+                    <span className="text-xs">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
           </nav>
         </div>
 

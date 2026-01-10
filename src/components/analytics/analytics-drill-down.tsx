@@ -4,7 +4,7 @@ import { useTransition } from "react";
 import { CategoryAggregate, DrillDownData, AnalyticsFilters } from "@/lib/actions/analytics";
 import { ChevronDown, Download, TrendingDown, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { pt } from "date-fns/locale";
 import * as XLSX from "xlsx";
 
 interface AnalyticsDrillDownProps {
@@ -139,7 +139,7 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
                   {tx.aliasDesc || tx.descNorm}
                 </div>
                 <div className="text-sm text-gray-500 mt-0.5 font-medium">
-                  {format(new Date(tx.paymentDate), "dd MMM yyyy", { locale: ptBR })}
+                  {format(new Date(tx.paymentDate), "dd MMM yyyy", { locale: pt })}
                 </div>
               </div>
               <div className="flex items-center gap-4">

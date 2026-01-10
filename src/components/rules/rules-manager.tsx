@@ -43,7 +43,7 @@ import { cn } from "@/lib/utils";
 
 // Categories matching app (should be imported ideally, but hardcoding for speed/consistency with other files)
 const CATEGORIES = [
-  "Receitas", "Moradia", "Mercado", "Compras Online",
+  "Receitas", "Moradia", "Mercados", "Compras Online",
   "Transporte", "Saúde", "Lazer", "Viagem", "Roupas",
   "Tecnologia", "Alimentação", "Energia", "Internet",
   "Educação", "Presentes", "Streaming", "Academia",

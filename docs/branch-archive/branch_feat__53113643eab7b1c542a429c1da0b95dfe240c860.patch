@@ -970,7 +970,7 @@ index d2419f1..821f9bb 100644
 +++ b/client/src/components/transaction-detail-modal.tsx
 @@ -17,7 +17,11 @@ import { cn } from "@/lib/utils";
  import { format } from "date-fns";
- import { ptBR } from "date-fns/locale";
+ import { pt } from "date-fns/locale";
  import { getMerchantIcon, getCategoryIcon } from "@/lib/merchant-icons";
 +import { useQuery } from "@tanstack/react-query";
 +import { merchantMetadataApi } from "@/lib/api";
@@ -3069,7 +3069,7 @@ index 8927735..174d142 100644
 +++ b/client/src/pages/dashboard.tsx
 @@ -43,8 +43,9 @@ import {
  import { format, subMonths, startOfMonth, endOfMonth, differenceInDays } from "date-fns";
- import { ptBR } from "date-fns/locale";
+ import { pt } from "date-fns/locale";
  import { useQuery } from "@tanstack/react-query";
 -import { dashboardApi, transactionsApi, accountsApi } from "@/lib/api";
 +import { dashboardApi, transactionsApi, accountsApi, uploadsApi, calendarEventsApi, goalsApi, merchantMetadataApi } from "@/lib/api";
@@ -4162,7 +4162,7 @@ index 1bb247c..33d87ac 100644
  } from "lucide-react";
  import { cn } from "@/lib/utils";
  import { format } from "date-fns";
- import { ptBR } from "date-fns/locale";
+ import { pt } from "date-fns/locale";
 -import { useState } from "react";
 +import { useMemo, useState } from "react";
 +import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -4450,7 +4450,7 @@ index 1bb247c..33d87ac 100644
 -                                  {notification.title}
 -                                </h3>
 -                                <time className="text-xs text-muted-foreground flex-shrink-0">
--                                  {format(notification.createdAt, "HH:mm", { locale: ptBR })}
+-                                  {format(notification.createdAt, "HH:mm", { locale: pt })}
 -                                </time>
 -                              </div>
 -                              <p className="text-sm text-muted-foreground mb-2">
@@ -4458,7 +4458,7 @@ index 1bb247c..33d87ac 100644
 -                              </p>
 -                              <div className="flex items-center gap-3">
 -                                <time className="text-xs text-muted-foreground">
--                                  {format(notification.createdAt, "dd 'de' MMMM", { locale: ptBR })}
+-                                  {format(notification.createdAt, "dd 'de' MMMM", { locale: pt })}
 -                                </time>
 -                                {notification.actionUrl && (
 -                                  <>
@@ -4474,7 +4474,7 @@ index 1bb247c..33d87ac 100644
 +                                {notification.title}
 +                              </h3>
 +                              <span className="text-xs text-muted-foreground">
-+                                {format(new Date(notification.createdAt), "HH:mm", { locale: ptBR })}
++                                {format(new Date(notification.createdAt), "HH:mm", { locale: pt })}
 +                              </span>
 +                            </div>
 +                            <p className="text-sm text-muted-foreground mb-2">
@@ -4482,7 +4482,7 @@ index 1bb247c..33d87ac 100644
 +                            </p>
 +                            <div className="flex items-center justify-between">
 +                              <span className="text-xs text-muted-foreground">
-+                                {format(new Date(notification.createdAt), "dd 'de' MMMM", { locale: ptBR })}
++                                {format(new Date(notification.createdAt), "dd 'de' MMMM", { locale: pt })}
 +                              </span>
 +                              <div className="flex items-center gap-2">
 +                                {action && (
@@ -5359,7 +5359,7 @@ index 0a29507..3075256 100644
 +import { useState, useMemo, useEffect } from "react";
  import { cn } from "@/lib/utils";
  import { format } from "date-fns";
- import { ptBR } from "date-fns/locale";
+ import { pt } from "date-fns/locale";
 @@ -20,7 +20,10 @@ import { useMonth } from "@/lib/month-context";
  import { Checkbox } from "@/components/ui/checkbox";
  import { TransactionDetailModal } from "@/components/transaction-detail-modal";
