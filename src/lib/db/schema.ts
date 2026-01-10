@@ -8,13 +8,18 @@ import { z } from "zod";
 export const transactionTypeEnum = pgEnum("transaction_type", ["Despesa", "Receita"]);
 export const fixVarEnum = pgEnum("fix_var", ["Fixo", "Variável"]);
 export const category1Enum = pgEnum("category_1", [
-  "Receitas", "Moradia", "Mercado", "Compras Online",
-  "Transporte", "Saúde", "Lazer", "Viagem", "Roupas",
-  "Tecnologia", "Alimentação", "Energia", "Internet",
-  "Educação", "Presentes", "Streaming", "Academia",
-  "Investimentos", "Outros", "Interno", "Assinaturas", "Compras",
-  "Doações", "Esportes", "Finanças", "Férias", "Mobilidade",
-  "Pets", "Telefone", "Trabalho", "Transferências", "Vendas"
+  "Alimentação",
+  "Mercados", 
+  "Renda Extra",
+  "Outros",
+  "Lazer / Esporte",
+  "Compras",
+  "Financiamento",
+  "Interno",
+  "Transporte",
+  "Moradia",
+  "Saúde",
+  "Trabalho"
 ]);
 export const uploadStatusEnum = pgEnum("upload_status", ["processing", "ready", "duplicate", "error"]);
 export const accountTypeEnum = pgEnum("account_type", ["credit_card", "debit_card", "bank_account", "cash"]);
@@ -457,10 +462,13 @@ export const sourceCsvSparkasse = pgTable("source_csv_sparkasse", {
   waehrung: text("waehrung"),
   info: text("info"),
   rowFingerprint: text("row_fingerprint").notNull(),
+  key: text("key"),
+  keyDesc: text("key_desc"),
   importedAt: timestamp("imported_at").notNull().defaultNow(),
 }, (table) => ({
   accBookingIdx: index("sparkasse_acc_booking_idx").on(table.accountId, table.buchungstag),
   accAmtIdx: index("sparkasse_acc_amt_idx").on(table.accountId, table.betrag),
+  uniqueKey: uniqueIndex("sparkasse_user_key_idx").on(table.userId, table.key),
 }));
 
 export const sourceCsvMm = pgTable("source_csv_mm", {
@@ -478,10 +486,13 @@ export const sourceCsvMm = pgTable("source_csv_mm", {
   currency: text("currency"),
   description: text("description"),
   rowFingerprint: text("row_fingerprint").notNull(),
+  key: text("key"),
+  keyDesc: text("key_desc"),
   importedAt: timestamp("imported_at").notNull().defaultNow(),
 }, (table) => ({
   accProcessedIdx: index("mm_acc_processed_idx").on(table.accountId, table.processedOn),
   accAmtIdx: index("mm_acc_amt_idx").on(table.accountId, table.amount),
+  uniqueKey: uniqueIndex("mm_user_key_idx").on(table.userId, table.key),
 }));
 
 export const sourceCsvAmex = pgTable("source_csv_amex", {
@@ -500,10 +511,13 @@ export const sourceCsvAmex = pgTable("source_csv_amex", {
   ort: text("ort"),
   staat: text("staat"),
   rowFingerprint: text("row_fingerprint").notNull(),
+  key: text("key"),
+  keyDesc: text("key_desc"),
   importedAt: timestamp("imported_at").notNull().defaultNow(),
 }, (table) => ({
   accDatumIdx: index("amex_acc_datum_idx").on(table.accountId, table.datum),
   accAmtIdx: index("amex_acc_amt_idx").on(table.accountId, table.betrag),
+  uniqueKey: uniqueIndex("amex_user_key_idx").on(table.userId, table.key),
 }));
 
 // Reconciliation Logging Tables

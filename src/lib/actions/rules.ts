@@ -161,3 +161,75 @@ export async function getRules() {
     orderBy: [desc(rules.priority)]
   });
 }
+
+export async function updateRule(id: string, data: Partial<typeof rules.$inferInsert>) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  try {
+     const toUpdate: any = { ...data };
+     delete toUpdate.id; // Prevent ID update
+     delete toUpdate.userId; // Prevent owner update
+
+     await db.update(rules)
+       .set(toUpdate)
+       .where(and(eq(rules.id, id), eq(rules.userId, session.user.id)));
+
+     revalidatePath("/rules");
+     return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function deleteRule(id: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  try {
+    await db.delete(rules)
+      .where(and(eq(rules.id, id), eq(rules.userId, session.user.id)));
+    
+    revalidatePath("/rules");
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function upsertRules(rulesData: any[]) {
+    const session = await auth();
+    if (!session?.user?.id) throw new Error("Unauthorized");
+    
+    let count = 0;
+    try {
+        for (const r of rulesData) {
+            // Clean data
+            const payload = {
+                userId: session.user.id,
+                name: r.name || r.Name || "Regra Importada",
+                keywords: r.keywords || r.Keywords || r.keyWords || "",
+                category1: r.category1 || r.Category1 || "Outros",
+                category2: r.category2 || r.Category2 || null,
+                priority: parseInt(r.priority || r.Priority || "500"),
+                active: r.active === true || r.active === "true" || r.Active === true,
+                ruleKey: r.ruleKey || r.RuleKey || `IMPORT_${Date.now()}_${Math.random()}`
+            };
+
+            // If ID exists and is valid UUID, try update, else insert
+            if (r.id && r.id.length > 10) {
+                 await db.update(rules)
+                    .set(payload as any)
+                    .where(and(eq(rules.id, r.id), eq(rules.userId, session.user.id)));
+            } else {
+                 await db.insert(rules).values(payload as any);
+            }
+            count++;
+        }
+        revalidatePath("/rules");
+        return { success: true, count };
+    } catch (error: any) {
+        console.error(error);
+        return { success: false, error: error.message };
+    }
+}

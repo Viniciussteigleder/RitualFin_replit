@@ -5,12 +5,7 @@ import { taxonomyLevel1, taxonomyLevel2, taxonomyLeaf } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { auth } from "@/auth";
 
-export async function getTaxonomyTree() {
-  const session = await auth();
-  if (!session?.user?.id) return [];
-
-  const userId = session.user.id;
-
+export async function getTaxonomyTreeCore(userId: string) {
   const level1 = await db.query.taxonomyLevel1.findMany({
     where: eq(taxonomyLevel1.userId, userId),
     with: {
@@ -23,6 +18,13 @@ export async function getTaxonomyTree() {
   });
 
   return level1;
+}
+
+export async function getTaxonomyTree() {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+
+  return await getTaxonomyTreeCore(session.user.id);
 }
 
 export async function createLevel1(name: string) {

@@ -19,6 +19,7 @@ import {
   TrendingUp,
   RefreshCw,
   Bot,
+  BarChart3,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useState, useMemo } from "react";
@@ -34,6 +35,7 @@ export function Sidebar() {
 
   const navItems = [
     { id: "dashboard", icon: LayoutDashboard, href: "/", label: "Dashboard" },
+    { id: "analytics", icon: BarChart3, href: "/analytics", label: "Análise" },
     { id: "transactions", icon: Receipt, href: "/transactions", label: "Transações" },
     { id: "confirm", icon: Sparkles, href: "/confirm", label: "Sugestões" },
     { id: "calendar", icon: CalendarDays, href: "/calendar", label: "Calendário" },

@@ -9,19 +9,11 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { categorizeTransaction, AI_SEED_RULES } from "@/lib/rules/engine";
 
-export async function uploadIngestionFile(formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "Unauthorized" };
-
-  const file = formData.get("file") as File;
-  if (!file) return { error: "No file provided" };
-
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const filename = file.name;
-
+// Core function for scripting/internal use
+export async function uploadIngestionFileCore(userId: string, buffer: Buffer, filename: string) {
   // 1. Create Ingestion Batch
   const [batch] = await db.insert(ingestionBatches).values({
-    userId: session.user.id,
+    userId,
     filename,
     status: "processing",
     sourceType: "csv", 
@@ -29,7 +21,7 @@ export async function uploadIngestionFile(formData: FormData) {
 
   try {
     // 2. Parse File
-    const result = await parseIngestionFile(buffer, filename, session.user.id);
+    const result = await parseIngestionFile(buffer, filename, userId);
 
     if (!result.success) {
       await db.update(ingestionBatches)
@@ -79,7 +71,6 @@ export async function uploadIngestionFile(formData: FormData) {
       })
       .where(eq(ingestionBatches.id, batch.id));
 
-    revalidatePath("/uploads");
     return { success: true, batchId: batch.id, newItems: newCount, duplicates: dupCount };
 
   } catch (error: any) {
@@ -89,6 +80,24 @@ export async function uploadIngestionFile(formData: FormData) {
       .where(eq(ingestionBatches.id, batch.id));
     return { error: "Internal server error during processing" };
   }
+}
+
+export async function uploadIngestionFile(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) return { error: "Unauthorized" };
+
+  const file = formData.get("file") as File;
+  if (!file) return { error: "No file provided" };
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const filename = file.name;
+
+  const result = await uploadIngestionFileCore(session.user.id, buffer, filename);
+  
+  if (result.success) {
+      revalidatePath("/uploads");
+  }
+  return result;
 }
 
 export async function getIngestionBatches() {
@@ -105,14 +114,11 @@ export async function getIngestionBatches() {
 }
 
 import { getAICategorization } from "@/lib/ai/openai";
-import { getTaxonomyTree } from "./taxonomy";
+import { getTaxonomyTree, getTaxonomyTreeCore } from "./taxonomy";
 import { matchAlias } from "@/lib/rules/engine";
 
-export async function commitBatch(batchId: string) {
-    const session = await auth();
-    if (!session?.user?.id) return { error: "Unauthorized" };
-    const userId = session.user.id;
-
+// Core function for scripting/internal use
+export async function commitBatchCore(userId: string, batchId: string) {
     const batch = await db.query.ingestionBatches.findFirst({
         where: eq(ingestionBatches.id, batchId),
         with: { items: true }
@@ -152,7 +158,7 @@ export async function commitBatch(batchId: string) {
 
     const effectiveRules = [...userRules, ...seedRules];
     
-    const taxonomy = await getTaxonomyTree();
+    const taxonomy = await getTaxonomyTreeCore(userId);
     const taxonomyContext = JSON.stringify(taxonomy);
 
     let importedCount = 0;
@@ -208,7 +214,7 @@ export async function commitBatch(batchId: string) {
 
         // Prepare Transaction
         const newTx = {
-            userId: session.user.id,
+            userId: userId,
             accountId: accountId, 
             accountSource: data.accountSource || batch.sourceType || "Unknown",
             paymentDate: new Date(data.paymentDate || data.date),
@@ -226,8 +232,8 @@ export async function commitBatch(batchId: string) {
             manualOverride: false,
             type: (categorization.type || (data.amount < 0 ? "Despesa" : "Receita")) as any,
             fixVar: (categorization.fixVar || "Variável") as any,
-            ruleIdApplied: categorization.ruleIdApplied,
-            source: (batch.sourceType || "upload") as any,
+            ruleIdApplied: categorization.ruleIdApplied && !categorization.ruleIdApplied.startsWith("seed-") ? categorization.ruleIdApplied : null,
+            source: (["Sparkasse", "Amex", "M&M"].includes(data.source) ? data.source : null) as any,
             key: data.key || item.itemFingerprint, // Use Readable Key if available
             leafId: categorization.leafId,
             confidence: categorization.confidence,
@@ -250,11 +256,21 @@ export async function commitBatch(batchId: string) {
         .set({ status: "committed" })
         .where(eq(ingestionBatches.id, batch.id));
 
-    revalidatePath("/uploads");
-    revalidatePath("/transactions");
-    revalidatePath("/");
-    
     return { success: true, importedCount };
+}
+
+export async function commitBatch(batchId: string) {
+    const session = await auth();
+    if (!session?.user?.id) return { error: "Unauthorized" };
+
+    const result = await commitBatchCore(session.user.id, batchId);
+
+    if (result.success) {
+        revalidatePath("/uploads");
+        revalidatePath("/transactions");
+        revalidatePath("/");
+    }
+    return result;
 }
 
 import { transactionEvidenceLink } from "@/lib/db/schema";
