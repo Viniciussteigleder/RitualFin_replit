@@ -67,10 +67,30 @@ export default async function RitualsPage() {
   ];
 
   return (
-    <div className="flex flex-col gap-8 pb-32 max-w-5xl mx-auto">
-      <div className="flex flex-col gap-2 px-1">
-        <h2 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight font-display">Rituais Financeiros</h2>
-        <p className="text-muted-foreground font-medium">Sua consistência operacional é o segredo do controle total.</p>
+    <div className="flex flex-col gap-10 pb-32 max-w-5xl mx-auto">
+      {/* Page Header Area */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 bg-card p-10 rounded-[3rem] border border-border shadow-sm">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-3">
+              <div className="p-3 bg-amber-500/10 rounded-2xl">
+                 <Zap className="h-8 w-8 text-amber-600 dark:text-amber-400" />
+              </div>
+              <h1 className="text-4xl font-bold text-foreground tracking-tight font-display">Fluxo Operacional</h1>
+           </div>
+           <p className="text-muted-foreground font-medium max-w-xl leading-relaxed">
+             A consistência é a chave. Execute seus rituais para manter o sistema sempre atualizado.
+           </p>
+        </div>
+        
+        <div className="flex items-center gap-6">
+           <div className="flex flex-col items-end mr-2 bg-secondary/30 p-4 rounded-3xl border border-border px-6">
+                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Sequência Atual</span>
+                <div className="flex items-center gap-2">
+                   <span className="text-2xl font-bold text-amber-500 tracking-tighter">5 Dias</span>
+                   <span className="text-xs">🔥</span>
+                </div>
+           </div>
+        </div>
       </div>
 
       <Tabs defaultValue="daily" className="w-full">
@@ -80,10 +100,6 @@ export default async function RitualsPage() {
             <TabsTrigger value="weekly" className="rounded-xl px-6 py-2 h-9 text-xs font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Semanal</TabsTrigger>
             <TabsTrigger value="monthly" className="rounded-xl px-6 py-2 h-9 text-xs font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Mensal</TabsTrigger>
           </TabsList>
-          
-          <div className="flex items-center gap-2">
-             <Badge className="bg-primary/10 text-primary border-none text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl">Streak: 5 Dias 🔥</Badge>
-          </div>
         </div>
 
         {["daily", "weekly", "monthly"].map((period) => (

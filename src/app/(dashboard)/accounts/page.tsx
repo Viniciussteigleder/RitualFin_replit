@@ -48,17 +48,33 @@ export default async function AccountsPage() {
   return (
     <div className="flex flex-col gap-10 pb-32 max-w-7xl mx-auto px-1">
       {/* Page Header Area */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight font-display">Contas e Cartões</h1>
-          <p className="text-muted-foreground font-medium">Gerencie suas conexões bancárias e cartões em um só lugar.</p>
+      {/* Page Header Area */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 bg-card p-10 rounded-[3rem] border border-border shadow-sm">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-3">
+              <div className="p-3 bg-orange-500/10 rounded-2xl">
+                 <Wallet className="h-8 w-8 text-orange-600 dark:text-orange-400" />
+              </div>
+              <h1 className="text-4xl font-bold text-foreground tracking-tight font-display">Carteira Digital</h1>
+           </div>
+           <p className="text-muted-foreground font-medium max-w-xl leading-relaxed">
+             Gerencie suas conexões bancárias e cartões. Sua liquidez total em tempo real.
+           </p>
         </div>
-        <Link href="/admin/import">
-          <Button className="h-14 px-8 bg-primary text-white hover:scale-105 transition-all rounded-2xl font-bold shadow-xl shadow-primary/20 gap-2">
-            <PlusCircle className="h-5 w-5" />
-            Conectar Conta
-          </Button>
-        </Link>
+        
+        <div className="flex items-center gap-6">
+           <div className="hidden lg:flex flex-col items-end mr-2 bg-secondary/30 p-4 rounded-3xl border border-border px-6">
+                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Total em Contas</span>
+                <span className="text-lg font-bold text-foreground">{formatCurrency(accounts.reduce((acc, curr) => acc + (curr.type !== 'credit_card' ? curr.balance : 0), 0))}</span>
+           </div>
+
+           <Link href="/admin/import">
+             <Button className="h-14 px-8 bg-foreground text-background hover:scale-105 transition-all rounded-2xl font-bold shadow-xl shadow-foreground/5 gap-2">
+               <PlusCircle className="h-5 w-5" />
+               Conectar Conta
+             </Button>
+           </Link>
+        </div>
       </div>
 
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">

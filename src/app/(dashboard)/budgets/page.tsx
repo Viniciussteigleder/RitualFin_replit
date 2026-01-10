@@ -58,15 +58,34 @@ export default async function BudgetsPage() {
   return (
     <div className="flex flex-col gap-10 pb-32 max-w-7xl mx-auto px-1">
       {/* Page Header Area */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight font-display">Orçamentos</h1>
-          <p className="text-muted-foreground font-medium">Defina limites de gastos e mantenha sua saúde financeira sob controle.</p>
+      {/* Page Header Area */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 bg-card p-10 rounded-[3rem] border border-border shadow-sm">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-3">
+              <div className="p-3 bg-emerald-500/10 rounded-2xl">
+                 <Target className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <h1 className="text-4xl font-bold text-foreground tracking-tight font-display">Planejamento Orçamentário</h1>
+           </div>
+           <p className="text-muted-foreground font-medium max-w-xl leading-relaxed">
+             Defina limites para cada categoria. O segredo da liberdade financeira é a intencionalidade.
+           </p>
         </div>
-        <Button className="h-14 px-8 bg-primary text-white hover:scale-105 transition-all rounded-2xl font-bold shadow-xl shadow-primary/20 gap-2">
-          <PlusCircle className="h-5 w-5" />
-          Novo Orçamento
-        </Button>
+        
+        <div className="flex items-center gap-6">
+           <div className="hidden lg:flex flex-col items-end mr-2 bg-secondary/30 p-4 rounded-3xl border border-border px-6">
+                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Saúde do Mês</span>
+                <div className="flex items-center gap-2">
+                   <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                   <span className="text-xs font-bold text-emerald-500 uppercase tracking-wider">Estável</span>
+                </div>
+           </div>
+
+           <Button className="h-14 px-8 bg-foreground text-background hover:scale-105 transition-all rounded-2xl font-bold shadow-xl shadow-foreground/5 gap-2">
+             <PlusCircle className="h-5 w-5" />
+             Novo Orçamento
+           </Button>
+        </div>
       </div>
 
       {budgetsWithSpent.length === 0 ? (

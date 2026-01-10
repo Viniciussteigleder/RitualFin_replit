@@ -164,8 +164,8 @@ export function Sidebar() {
             <div className="flex flex-col gap-1">
               <p className="px-4 text-[10px] font-extrabold text-muted-foreground/50 uppercase tracking-[0.2em] mb-2">Configurações</p>
               {[
-                { id: "uploads", icon: Receipt, href: "/admin/import", label: "Importar Arquivos" },
-                { id: "ai-rules", icon: Bot, href: "/admin/rules", label: "Regras de IA" },
+                { id: "uploads", icon: Receipt, href: "/uploads", label: "Importar Arquivos" },
+                { id: "ai-rules", icon: Bot, href: "/settings/rules", label: "Regras de IA" },
               ].map((item) => {
                 const isActive = pathname === item.href;
                 return (
