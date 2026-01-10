@@ -64,38 +64,38 @@ export async function getAnalyticsData(
     conditions.push(eq(transactions.recurringFlag, filters.recurring));
   }
 
-  // Determine current drill-down level
+
+  // Determine current drill-down level and apply cumulative filters
   let currentLevel: DrillDownData["currentLevel"] = "category";
   const breadcrumb: DrillDownData["breadcrumb"] = [];
 
-  if (filters.level3) {
-    currentLevel = "transactions";
-    breadcrumb.push(
-      { label: "Categoria", value: filters.category || null },
-      { label: "Nível 1", value: filters.level1 || null },
-      { label: "Nível 2", value: filters.level2 || null },
-      { label: "Nível 3", value: filters.level3 }
-    );
-  } else if (filters.level2) {
-    currentLevel = "level3";
-    breadcrumb.push(
-      { label: "Categoria", value: filters.category || null },
-      { label: "Nível 1", value: filters.level1 || null },
-      { label: "Nível 2", value: filters.level2 }
-    );
-    conditions.push(eq(transactions.category2, filters.level2));
-  } else if (filters.level1) {
-    currentLevel = "level2";
-    breadcrumb.push(
-      { label: "Categoria", value: filters.category || null },
-      { label: "Nível 1", value: filters.level1 }
-    );
-    conditions.push(eq(transactions.category2, filters.level1));
-  } else if (filters.category) {
-    currentLevel = "level1";
-    breadcrumb.push({ label: "Categoria", value: filters.category });
+  // Apply filters cumulatively based on hierarchy
+  if (filters.category) {
     conditions.push(sql`${transactions.category1} = ${filters.category}`);
+    breadcrumb.push({ label: "Categoria", value: filters.category });
+    currentLevel = "level1";
   }
+
+  if (filters.level1) {
+    conditions.push(eq(transactions.category2, filters.level1));
+    breadcrumb.push({ label: "Nível 1", value: filters.level1 });
+    currentLevel = "level2";
+  }
+
+  if (filters.level2) {
+    conditions.push(eq(transactions.category3, filters.level2));
+    breadcrumb.push({ label: "Nível 2", value: filters.level2 });
+    currentLevel = "level3";
+  }
+
+  if (filters.level3) {
+    conditions.push(
+      sql`COALESCE(${transactions.aliasDesc}, ${transactions.descNorm}) = ${filters.level3}`
+    );
+    breadcrumb.push({ label: "Nível 3", value: filters.level3 });
+    currentLevel = "transactions";
+  }
+
 
   // Get total for percentage calculation
   const totalResult = await db
@@ -190,12 +190,6 @@ export async function getAnalyticsData(
   // If at transaction level, fetch actual transactions
   let transactionsList;
   if (currentLevel === "transactions") {
-    if (filters.level3) {
-      conditions.push(
-        sql`COALESCE(${transactions.aliasDesc}, ${transactions.descNorm}) = ${filters.level3}`
-      );
-    }
-    
     transactionsList = await db
       .select()
       .from(transactions)
