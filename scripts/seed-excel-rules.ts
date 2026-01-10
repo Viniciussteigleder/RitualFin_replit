@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
-// dotenv.config({ path: ".env.production.local" });
-// dotenv.config({ path: ".env.local" });
+dotenv.config({ path: ".env.production.local" });
+dotenv.config({ path: ".env.local" });
 dotenv.config();
 
 console.log("DB URL set?", !!process.env.DATABASE_URL);
