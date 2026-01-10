@@ -1,15 +1,28 @@
+
 import { ParseResult, ParsedTransaction } from "../types";
 import { parse } from "csv-parse/sync";
 
+// Helper for joining with --
+const joinComponents = (components: (string | number | undefined | null)[]): string => {
+    return components
+        .map(c => c?.toString().trim())
+        .filter(c => c && c.length > 0)
+        .join(" -- ");
+};
+
+const formatDateIso = (date: Date): string => {
+    try {
+        return date.toISOString().split("T")[0];
+    } catch (e) {
+        return "";
+    }
+};
+
 export async function parseMilesMoreCSV(content: string): Promise<ParseResult> {
   try {
-    // Miles & More: "Miles & More Gold Credit Card;..." on line 1
-    // Headers on line 3: "Authorised on;Processed on;..."
-    
-    // Find header line
-    const lines = content.split("\n");
-    const headerIndex = lines.findIndex(l => l.startsWith("Authorised on") || l.includes("Processed on"));
-    if (headerIndex === -1) throw new Error("Unknown M&M format");
+    const lines = content.split(/\r?\n/);
+    const headerIndex = lines.findIndex(l => l.includes("Authorised on") || l.includes("Processed on"));
+    if (headerIndex === -1) throw new Error("Unknown M&M headers");
 
     const csvContent = lines.slice(headerIndex).join("\n");
 
@@ -22,26 +35,65 @@ export async function parseMilesMoreCSV(content: string): Promise<ParseResult> {
     });
 
     const transactions: ParsedTransaction[] = records.map((record: any) => {
-        const dateStr = record["Processed on"] || record["Authorised on"];
+        const authorisedOn = record["Authorised on"];
+        const processedOn = record["Processed on"];
         const amountStr = record["Amount"];
-        let desc = record["Description"] || "";
+        const descRaw = record["Description"] || "";
         const currency = record["Currency"] || "EUR";
+        const paymentType = record["Payment type"] || "";
+        const status = record["Status"] || "";
+        const amountForeign = record["Amount foreign"];
+        const currencyForeign = record["Currency foreign"];
 
         const amount = parseGermanAmount(amountStr);
-        
-        // Rename generic Lastschrift to avoid confusion with Expenses
-        if (desc === "Lastschrift" && amount > 0) {
-            desc = "Credit Card Payment Received";
+        const date = parseGermanDate(authorisedOn || processedOn);
+
+        // 1. Build Key_desc
+        // Components: Description, Payment type, Status, "M&M - " + Description
+        let keyDesc = joinComponents([
+            descRaw,
+            paymentType,
+            status,
+            `M&M - ${descRaw}`
+        ]);
+
+        // Optional foreign purchase note
+        if (amountForeign && amountForeign.trim().length > 0) {
+            keyDesc += ` -- compra internacional em ${currencyForeign || 'Moeda Estrangeira'}`;
         }
 
+        // Tagging Rules
+        if (descRaw.toLowerCase().includes("lastschrift")) {
+            keyDesc += " -- pagamento M&M";
+        }
+
+        if (amount > 0) {
+            keyDesc += " -- reembolso";
+        }
+
+        // 2. Build Key
+        // Key = join( Key_desc, Amount, Authorised on(ISO) )
+        // Using amount.toFixed(2) for stability
+        const key = joinComponents([
+            keyDesc,
+            amount.toFixed(2),
+            formatDateIso(date)
+        ]);
+
         return {
-            date: parseGermanDate(dateStr),
+            source: "M&M",
+            date: date,
             amount,
             currency,
-            description: desc,
-            rawDescription: record["Description"] || "",
-            source: "M&M",
-            metadata: record
+            description: descRaw,
+            rawDescription: descRaw,
+            keyDesc: keyDesc, // EXPLICITLY SET
+            key: key,         // EXPLICITLY SET
+            metadata: record,
+            // Legacy/Derived
+            paymentDate: date,
+            descRaw: descRaw,
+            descNorm: keyDesc // Rule base
         };
     });
 
@@ -51,7 +103,8 @@ export async function parseMilesMoreCSV(content: string): Promise<ParseResult> {
         rowsTotal: transactions.length,
         rowsImported: transactions.length,
         errors: [],
-        monthAffected: "", // To be determined by caller
+        monthAffected: "",
+        format: "miles_and_more",
         meta: { 
             delimiter: ";", 
             warnings: [], 
@@ -72,7 +125,7 @@ export async function parseMilesMoreCSV(content: string): Promise<ParseResult> {
 }
 
 function parseGermanDate(dateStr: string): Date {
-    if (!dateStr) return new Date(); // Fallback
+    if (!dateStr) return new Date(); 
     const parts = dateStr.split(".");
     if (parts.length !== 3) return new Date(); 
 
@@ -80,12 +133,10 @@ function parseGermanDate(dateStr: string): Date {
     let fullYear = parseInt(year);
     if (isNaN(fullYear) || isNaN(parseInt(month)) || isNaN(parseInt(day))) return new Date();
 
-    if (year.length === 2) fullYear += 2000; // 26 -> 2026 implies M&M uses YY? M&M usually YYYY.
-    // M&M CSV format: DD.MM.YYYY usually.
-    // Logic handles both.
+    if (year.length === 2) fullYear += 2000;
     
-    const d = new Date(fullYear, parseInt(month) - 1, parseInt(day));
-    if (isNaN(d.getTime())) return new Date();
+    // UTC for consistency
+    const d = new Date(Date.UTC(fullYear, parseInt(month) - 1, parseInt(day)));
     return d;
 }
 

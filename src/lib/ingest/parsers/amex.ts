@@ -1,11 +1,22 @@
+
 import { ParseResult, ParsedTransaction } from "../types";
 import { parse } from "csv-parse/sync";
 
-// The file "activity (9) (1).csv" headers: "Datum,Beschreibung,Karteninhaber,..." looks like PayPal or Amex via PayPal.
-// Content: "01/01/2026,PAYPAL *BRUEDERLICH..."
-// Delimiter: Comma.
-// Date: MM/DD/YYYY (01/01/2026).
-// Amount: "10,61" (Quotes, comma decimal).
+// Helper for joining with --
+const joinComponents = (components: (string | number | undefined | null)[]): string => {
+    return components
+        .map(c => c?.toString().trim())
+        .filter(c => c && c.length > 0)
+        .join(" -- ");
+};
+
+const formatDateIso = (date: Date): string => {
+    try {
+        return date.toISOString().split("T")[0];
+    } catch (e) {
+        return "";
+    }
+};
 
 export async function parseAmexActivityCSV(content: string): Promise<ParseResult> {
   try {
@@ -18,19 +29,59 @@ export async function parseAmexActivityCSV(content: string): Promise<ParseResult
     });
 
     const transactions: ParsedTransaction[] = records.map((record: any) => {
-        const dateStr = record["Datum"]; // 01/01/2026
-        const amountStr = record["Betrag"]; // "10,61"
-        const desc = record["Beschreibung"] || "";
-        const details = record["Weitere Details"] || "";
+        const dateStr = record["Datum"]; 
+        const amountStr = record["Betrag"]; 
+        const beschreibung = record["Beschreibung"] || "";
+        const konto = record["Konto"] || "";
+        const karteninhaber = record["Karteninhaber"] || "";
+        const betreff = record["Betreff"] || "";
         
+        // Amex CSV: Expenses are Positive, we invert to Negative.
+        // Credits/Refunds are Negative, we invert to Positive.
+        const rawAmount = parseCommaAmount(amountStr);
+        const finalAmount = -rawAmount; 
+        const date = parseEURDate(dateStr);
+
+        // 1. Build Key_desc
+        // Components: Beschreibung, Konto, Karteninhaber, "Amex - " + Beschreibung
+        let keyDesc = joinComponents([
+            beschreibung,
+            konto,
+            karteninhaber,
+            `Amex - ${beschreibung}`
+        ]);
+
+        // Tagging Rules
+        if (beschreibung.toLowerCase().includes("erhalten besten dank")) {
+            keyDesc += " -- pagamento Amex";
+        } else if (rawAmount < 0) { 
+            // If raw amount is negative (Credit in CSV), it's a refund
+            keyDesc += " -- reembolso";
+        }
+
+        // 2. Build Key
+        // Key = join( Key_desc, invert(Betrag), Betreff )
+        // "invert(Betrag)" corresponds to our finalAmount
+        const key = joinComponents([
+            keyDesc,
+            finalAmount.toFixed(2),
+            betreff
+        ]);
+
         return {
-            date: parseEURDate(dateStr),
-            amount: -parseCommaAmount(amountStr), // Invert Amex charges
-            currency: "EUR", // Assumed from context
-            description: desc,
-            rawDescription: `${desc} ${details}`.trim(),
-            source: "Amex", 
-            metadata: record
+            source: "Amex",
+            date: date,
+            amount: finalAmount,
+            currency: "EUR",
+            description: beschreibung,
+            rawDescription: beschreibung,
+            keyDesc: keyDesc, // EXPLICITLY SET
+            key: key,         // EXPLICITLY SET
+            metadata: record,
+            // Legacy/Derived
+            paymentDate: date,
+            descRaw: beschreibung,
+            descNorm: keyDesc // Rule base
         };
     });
 
@@ -40,7 +91,8 @@ export async function parseAmexActivityCSV(content: string): Promise<ParseResult
         rowsTotal: transactions.length,
         rowsImported: transactions.length,
         errors: [],
-        monthAffected: "", // To be determined by caller
+        monthAffected: "",
+        format: "amex",
         meta: { 
             delimiter: ",", 
             warnings: [], 
@@ -63,17 +115,17 @@ export async function parseAmexActivityCSV(content: string): Promise<ParseResult
 
 function parseEURDate(dateStr: string): Date {
     if (!dateStr) return new Date();
-    // 20/12/2025 -> DD/MM/YYYY
+    // DD/MM/YYYY
     const [day, month, year] = dateStr.split("/");
-    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    if (!year) return new Date();
+
+    const d = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
+    return d;
 }
 
 function parseCommaAmount(amountStr: string): number {
     if (!amountStr) return 0;
-    // "10,61" -> 10.61
-    // Remove quotes handled by parser? parser returns clean string.
-    // If it has thousands sep? Paypal usually just comma decimal for EUR locale?
-    // "1.234,56"
+    // "1.234,56" -> 1234.56
     const clean = amountStr.replace(/\./g, "").replace(",", ".");
     return parseFloat(clean);
 }

@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { ingestionBatches, ingestionItems, transactions, rules } from "@/lib/db/schema";
+import { ingestionBatches, ingestionItems, transactions, rules, accounts, aliasAssets } from "@/lib/db/schema";
 import { parseIngestionFile } from "@/lib/ingest";
 import { generateFingerprint } from "@/lib/ingest/fingerprint";
 import { eq } from "drizzle-orm";
@@ -106,6 +106,7 @@ export async function getIngestionBatches() {
 
 import { getAICategorization } from "@/lib/ai/openai";
 import { getTaxonomyTree } from "./taxonomy";
+import { matchAlias } from "@/lib/rules/engine";
 
 export async function commitBatch(batchId: string) {
     const session = await auth();
@@ -120,9 +121,17 @@ export async function commitBatch(batchId: string) {
     if (!batch) return { error: "Batch not found" };
     if (batch.status === "committed") return { error: "Batch already imported" };
 
-    // Fetch user rules and taxonomy for categorization
+    // Fetch user rules, aliases, and accounts
     const userRules = await db.query.rules.findMany({
         where: eq(rules.userId, userId)
+    });
+
+    const userAliases = await db.query.aliasAssets.findMany({
+        where: eq(aliasAssets.userId, userId)
+    });
+
+    const userAccounts = await db.query.accounts.findMany({
+        where: eq(accounts.userId, userId)
     });
 
     // Map seed rules to Rule interface
@@ -152,14 +161,18 @@ export async function commitBatch(batchId: string) {
         if (item.status === "imported") continue;
 
         const data = item.parsedPayload as any;
+        const keyDesc = data.keyDesc || data.descNorm || data.description; // Rich description
         
-        // 1. Deterministic Rule Categorization
-        let categorization = categorizeTransaction(data.descNorm || data.description, effectiveRules);
+        // 1. Alias Matching
+        const aliasMatch = matchAlias(keyDesc, userAliases);
+
+        // 2. Deterministic Rule Categorization (using Rich KeyDesc)
+        let categorization = categorizeTransaction(keyDesc, effectiveRules);
         let aiResult = null;
 
-        // 2. AI Fallback (only if no rules match)
+        // 3. AI Fallback (only if no rules match)
         if (!categorization.ruleIdApplied && process.env.OPENAI_API_KEY) {
-            aiResult = await getAICategorization(data.descNorm || data.descRaw || data.description, taxonomyContext);
+            aiResult = await getAICategorization(keyDesc, taxonomyContext);
             if (aiResult && aiResult.confidence > 0.7) {
                 // Map AI result to categorization structure
                 categorization = {
@@ -167,22 +180,46 @@ export async function commitBatch(batchId: string) {
                     leafId: aiResult.suggested_leaf_id,
                     confidence: Math.round(aiResult.confidence * 100),
                     needsReview: aiResult.confidence < 0.9,
+                    category1: (aiResult.extracted_merchants?.[0] || categorization.category1 || "Outros") as any, // Fallback
                     suggestedKeyword: aiResult.rationale
                 };
             }
         }
 
+        // 4. Account Linking (Heuristic)
+        let accountId = batch.accountId;
+        if (!accountId) {
+             const source = (data.source || "Unknown").toLowerCase();
+             const sourceKeywords: Record<string, string[]> = {
+                "amex": ["american express", "amex"],
+                "m&m": ["miles", "more", "lufthansa", "m&m"],
+                "sparkasse": ["sparkasse"]
+             };
+             const keywords = sourceKeywords[source] || [source];
+             
+             const matchedAccount = userAccounts.find(acc => {
+                const accName = acc.name.toLowerCase();
+                const institution = (acc.institution || "").toLowerCase();
+                return keywords.some(k => accName.includes(k) || institution.includes(k));
+             });
+             
+             if (matchedAccount) accountId = matchedAccount.id;
+        }
+
         // Prepare Transaction
         const newTx = {
             userId: session.user.id,
+            accountId: accountId, 
             accountSource: data.accountSource || batch.sourceType || "Unknown",
             paymentDate: new Date(data.paymentDate || data.date),
             bookingDate: data.bookingDate ? new Date(data.bookingDate) : null,
             descRaw: data.descRaw || data.description || "No Description",
-            descNorm: data.descNorm || data.simpleDesc || data.description || "No Description",
+            descNorm: keyDesc, // Storing Rich KeyDesc
+            keyDesc: keyDesc, 
+            aliasDesc: aliasMatch ? aliasMatch.aliasDesc : null,
             amount: parseFloat(data.amount),
             currency: data.currency || "EUR",
-            category1: (categorization.category1 || aiResult?.extracted_merchants?.[0] || "Outros") as any,
+            category1: (categorization.category1 || "Outros") as any,
             category2: categorization.category2,
             category3: categorization.category3,
             needsReview: categorization.needsReview,
@@ -191,7 +228,7 @@ export async function commitBatch(batchId: string) {
             fixVar: (categorization.fixVar || "Variável") as any,
             ruleIdApplied: categorization.ruleIdApplied,
             source: (batch.sourceType || "upload") as any,
-            key: item.itemFingerprint, // Use item's fingerprint as the unique key
+            key: data.key || item.itemFingerprint, // Use Readable Key if available
             leafId: categorization.leafId,
             confidence: categorization.confidence,
             suggestedKeyword: categorization.suggestedKeyword || aiResult?.rationale

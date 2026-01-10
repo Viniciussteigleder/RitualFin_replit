@@ -1,101 +1,104 @@
+
 import { parse } from "csv-parse/sync";
 import type { ParseResult, ParsedTransaction } from "../types";
-import { logger } from "../logger";
 
-// ... Porting sparkasse-pipeline.ts logic ...
-// Since the original file is large, I will implement a simplified version for this turn focusing on the core pipeline
-// To be fully functional, I'd need to copy most of the logic. 
-// For now, I will create the structure and basic types/exports, and we can iterate.
-
-export type SparkasseStage =
-  | "file_intake"
-  | "encoding_handling"
-  | "csv_parse"
-  | "header_validation"
-  | "row_normalization"
-  | "db_insert";
-
-export type SparkasseErrorCode =
-  | "FILE_EMPTY"
-  | "FILE_TOO_LARGE"
-  | "ENCODING_DETECT_FAILED"
-  | "CSV_PARSE_FAILED"
-  | "DELIMITER_MISMATCH"
-  | "HEADER_MISSING_REQUIRED"
-  | "ROW_PARSE_FAILED"
-  | "DATE_PARSE_FAILED"
-  | "AMOUNT_PARSE_FAILED"
-  | "DB_INSERT_FAILED"
-  | "UNKNOWN";
-
-export interface SparkassePipelineInput {
-  uploadAttemptId: string;
-  userId: string;
-  filename: string;
-  buffer?: Buffer;
-  csvContent?: string;
-  encodingHint?: string;
-  sizeBytes?: number;
-  importDate?: Date;
-  mimeType?: string;
-}
-
-// ... Utility functions (formatAmountNormalized, formatDateIso, etc) need to be included ...
-// I will include them here for completeness.
-
-const formatAmountNormalized = (amount: number): string => {
-  const rounded = Math.round(amount * 100) / 100;
-  return rounded.toFixed(2).replace(/-0\.00$/, "0.00");
+// Helper for joining with --
+const joinComponents = (components: (string | number | undefined | null)[]): string => {
+    return components
+        .map(c => c?.toString().trim())
+        .filter(c => c && c.length > 0)
+        .join(" -- ");
 };
 
-const formatDateIso = (date: Date): string => date.toISOString().split("T")[0];
-
-const normalizeText = (text: string): string =>
-  text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+const formatDateIso = (date: Date): string => {
+    try {
+        return date.toISOString().split("T")[0];
+    } catch (e) {
+        return "";
+    }
+};
 
 export async function parseSparkasseCSV(content: string): Promise<ParseResult> {
   try {
-    // Sparkasse CSVs usually have a header and use semicolons.
-    // We need to skip lines until we find the header "Auftragskonto" or similar, 
-    // but the provided sample seems to have it on the first interesting line or after metadata.
-    // Sample: "Auftragskonto";"Buchungstag";...
-    
-    // Clean headers: remove quotes? csv-parse handles quotes.
+    const lines = content.split(/\r?\n/);
+    // Find the header line index (sometimes there's metadata above)
+    // We look for "Auftragskonto" and "Buchungstag"
+    let headerLineIndex = 0;
+    for (let i = 0; i < Math.min(20, lines.length); i++) { // search top 20 lines
+        if (lines[i].includes("Auftragskonto") && lines[i].includes("Buchungstag")) {
+            headerLineIndex = i;
+            break;
+        }
+    }
+
+    // Pass the content starting from the header line to csv-parse
+    // We rejoin because csv-parse takes a string input usually or we can just slice lines
+    // But csv-parse 'from_line' option is easier if we pass full content
     const records = parse(content, {
       columns: true,
       skip_empty_lines: true,
-      delimiter: ";",
+      delimiter: ";", // Sparkasse is usually semicolon
       relax_quotes: true,
       trim: true,
-      from_line: 1 // Adjust if metadata exists
+      from_line: headerLineIndex + 1
     });
 
     const transactions: ParsedTransaction[] = records.map((record: any) => {
-        // Map columns
-        // "Buchungstag" -> Date
-        // "Beguenstigter/Zahlungspflichtiger" -> Description / Payee
-        // "Verwendungszweck" -> Raw Description extra
-        // "Betrag" -> Amount (needs formatting "-260,00" -> -260.00)
-        
-        const dateStr = record["Buchungstag"] || record["Valutadatum"];
-        const amountStr = record["Betrag"];
-        const desc = record["Beguenstigter/Zahlungspflichtiger"] || "";
-        const memo = record["Verwendungszweck"] || "";
-        const currency = record["Waehrung"] || "EUR";
+        // Map columns correctly based on documentation
+        const buchungstag = record["Buchungstag"] || record["Valutadatum"];
+        const beguenstigter = record["Beguenstigter/Zahlungspflichtiger"] || "";
+        const verwendungszweck = record["Verwendungszweck"] || "";
+        const buchungstext = record["Buchungstext"] || "";
+        const iban = record["Kontonummer/IBAN"] || "";
+        const glaeubigerId = record["Glaeubiger ID"] || record["GlaeubigerID"] || "";
+        const betragStr = record["Betrag"];
+        const waehrung = record["Waehrung"] || "EUR";
+
+        const amount = parseGermanAmount(betragStr);
+        const date = parseGermanDate(buchungstag);
+
+        // 1. Build Key_desc
+        // Components: Beguenstigter, Verwendungszweck, Buchungstext, IBAN, "Sparkasse - " + Beguenstigter
+        let keyDesc = joinComponents([
+            beguenstigter,
+            verwendungszweck,
+            buchungstext,
+            iban,
+            `Sparkasse - ${beguenstigter}`
+        ]);
+
+        // Tagging Rules
+        const begLower = beguenstigter.toLowerCase();
+        if (begLower.includes("american express")) {
+            keyDesc += " -- pagamento Amex";
+        } else if (begLower.includes("deutsche kreditbank")) {
+            keyDesc += " -- pagamento M&M";
+        }
+
+        // 2. Build Key
+        // Key = join( Key_desc, Betrag, Buchungstag(ISO), GlaeubigerID )
+        // Using amount.toFixed(2) for stability
+        const key = joinComponents([
+            keyDesc,
+            amount.toFixed(2),
+            formatDateIso(date),
+            glaeubigerId
+        ]);
 
         return {
-            date: parseGermanDate(dateStr),
-            amount: parseGermanAmount(amountStr),
-            currency: currency,
-            description: desc,
-            rawDescription: `${desc} ${memo}`.trim(),
             source: "Sparkasse",
-            metadata: record
+            date: date,
+            amount: amount,
+            currency: waehrung,
+            description: beguenstigter, // Simple display description
+            rawDescription: record["Verwendungszweck"] || beguenstigter, // Legacy raw
+            keyDesc: keyDesc, // THE IMPORTANT FIELD
+            key: key,         // Unique ID
+            metadata: record,
+            // Additional legacy fields mapping
+            paymentDate: date,
+            descRaw: verwendungszweck || beguenstigter,
+            descNorm: keyDesc // Using keyDesc as the normalized base for rules
         };
     });
 
@@ -106,6 +109,7 @@ export async function parseSparkasseCSV(content: string): Promise<ParseResult> {
         rowsImported: transactions.length,
         errors: [],
         monthAffected: "",
+        format: "sparkasse",
         meta: {
             delimiter: ";",
             warnings: [],
@@ -128,44 +132,22 @@ export async function parseSparkasseCSV(content: string): Promise<ParseResult> {
 
 function parseGermanDate(dateStr: string): Date {
     // DD.MM.YY or DD.MM.YYYY
-    if (!dateStr) return new Date(); // Fallback
+    if (!dateStr) return new Date(); 
     const parts = dateStr.split(".");
-    if (parts.length !== 3) return new Date(); // Fallback for bad format
+    if (parts.length !== 3) return new Date(); 
 
     const [day, month, year] = parts;
     let fullYear = parseInt(year);
     if (isNaN(fullYear) || isNaN(parseInt(month)) || isNaN(parseInt(day))) return new Date();
 
     if (year.length === 2) fullYear += 2000;
-    const d = new Date(fullYear, parseInt(month) - 1, parseInt(day));
-    if (isNaN(d.getTime())) return new Date(); // Ensure valid
+    const d = new Date(Date.UTC(fullYear, parseInt(month) - 1, parseInt(day))); // Use UTC to avoid timezone shifts
     return d;
 }
 
 function parseGermanAmount(amountStr: string): number {
     if (!amountStr) return 0;
-    // "-260,00" -> -260.00
-    // "1.000,00" -> 1000.00
-    // Remove points (thousands), replace comma with dot
+    // "-260,00" -> -260.00 / "1.000,00" -> 1000.00
     const clean = amountStr.replace(/\./g, "").replace(",", ".");
     return parseFloat(clean);
-}
-
-export function runSparkasseParsePipeline(input: SparkassePipelineInput) {
-    // Placeholder: Need to fully port the 500 lines logic.
-    // For this context window, I will just stub it to indicate structure.
-    // In a real scenario, this file would contain the full content of server/sparkasse-pipeline.ts
-    // wrapped in this module.
-    
-    logger.info("sparkasse_pipeline_stub_called", { filename: input.filename });
-    
-    return {
-        success: false,
-        transactions: [],
-        errors: ["Not implemented yet"],
-        rowsTotal: 0,
-        rowsImported: 0,
-        monthAffected: "",
-        diagnostics: {}
-    };
 }
