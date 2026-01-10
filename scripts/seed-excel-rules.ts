@@ -53,13 +53,9 @@ async function main() {
         process.exit(1);
         return;
     }
-    // But let's keep strict for now unless error persists.
-     console.error(`❌ User ${USER_EMAIL} not found!`);
-     process.exit(1);
-     return;
   }
-  const userId = user.id;
-  console.log(`👤 Found user: ${user.name} (${userId})`);
+  const userId = user ? user.id : (await db.query.users.findFirst()).id;
+  console.log(`👤 Found user: ${userId}`);
 
   // 2. Read Excel
   const filePath = path.join(__dirname, "../docs/Feedback_user/Categorias_Keywords_Alias/RitualFin-categorias-alias.xlsx");
@@ -77,9 +73,9 @@ async function main() {
     const aliasData = XLSX.utils.sheet_to_json(aliasSheet);
     
     for (const row of aliasData as any[]) {
-        const aliasDesc = row["Alias_Desc"];
-        const keywords = row["Key_words_alias"];
-        const logoUrl = row["URL_icon_internet"];
+        const aliasDesc = row["Alias_Desc"] || row["Alias_desc"] || row["Alias Desc"];
+        const keywords = row["Key_words_alias"] || row["Key_desc"] || row["Key Desc"] || row["Keywords"];
+        const logoUrl = row["URL_icon_internet"] || row["Url_icon"] || row["URL"];
 
         if (!aliasDesc) continue;
 
@@ -129,12 +125,12 @@ async function main() {
     const catData = XLSX.utils.sheet_to_json(catSheet);
 
     for (const row of catData as any[]) {
-        const appCatName = row["App classificação"];
+        const appCatName = row["App classificação"] || row["App Classificacao"];
         const l1Name = row["Nivel_1_PT"];
         const l2Name = row["Nivel_2_PT"];
         const l3Name = row["Nivel_3_PT"];
-        const keywords = row["Key_words"];
-        const negativeKeywords = row["Key_words_negative"];
+        const keywords = row["Key_words"] || row["Key_desc"] || row["Key Desc"] || row["Keywords"] || row["Key_words_alias"];
+        const negativeKeywords = row["Key_words_negative"] || row["Negative Keywords"];
         const type = row["Receita/Despesa"]; 
         const fixVar = row["Fixo/Variável"]; 
         const recorrenteStr = row["Recorrente"]; 

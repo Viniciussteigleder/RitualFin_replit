@@ -4,17 +4,11 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
     Drawer,
-    DrawerContent,
-    DrawerHeader,
-    DrawerTitle,
-    DrawerDescription,
-    DrawerFooter
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
     Search,
-    Calendar,
     CreditCard,
     Tag,
     Info,
@@ -28,12 +22,10 @@ import {
     Check,
     ChevronDown,
     ShoppingBag,
-    TrendingUp,
     Utensils,
     Home,
     Car,
     Activity,
-    Smartphone,
     Wallet,
     Edit3
 } from "lucide-react";
@@ -43,18 +35,12 @@ import { BulkActionsBar as BulkActionsBarComp } from "@/components/transactions/
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { 
-    updateTransactionCategory, 
     confirmTransaction, 
-    deleteTransaction 
+    deleteTransaction,
+    updateTransactionCategory 
 } from "@/lib/actions/transactions";
 import { toast } from "sonner";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+import { TransactionDetailContent } from "@/components/transactions/transaction-detail-content";
 
 // Using categories from schema (simplified list for UI)
 const CATEGORIES = [
@@ -203,20 +189,31 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
             <div className="bg-card border border-border rounded-[2.5rem] overflow-hidden shadow-sm">
                 <div className="divide-y divide-border">
                     {filtered.length === 0 ? (
-                        <div className="text-center py-32">
-                            <div className="w-20 h-20 rounded-[2.5rem] bg-secondary flex items-center justify-center mx-auto mb-6 text-muted-foreground/40">
-                                <Search className="h-10 w-10" />
+                        <div className="text-center py-32 flex flex-col items-center animate-in fade-in zoom-in duration-500">
+                            <div className="w-24 h-24 rounded-[3rem] bg-gradient-to-br from-secondary to-secondary/30 flex items-center justify-center mb-8 shadow-xl text-muted-foreground/40">
+                                <Search className="h-12 w-12" />
                             </div>
-                            <h3 className="text-xl font-bold text-foreground font-display">Nenhuma transação encontrada</h3>
-                            <p className="text-sm text-muted-foreground mt-2 font-medium">Tente ajustar seus filtros para encontrar o que procura.</p>
+                            <h3 className="text-2xl font-bold text-foreground font-display tracking-tight">Nenhuma transação encontrada</h3>
+                            <p className="text-base text-muted-foreground mt-3 font-medium max-w-md mx-auto">
+                                Tente ajustar seus filtros ou remover termos de busca para encontrar o que procura.
+                            </p>
+                            <Button 
+                                variant="outline" 
+                                className="mt-8 rounded-2xl h-12 px-8 font-bold border-border hover:bg-secondary transition-all hover:scale-105 active:scale-95"
+                                onClick={() => { setSearch(""); setFilters(initialFilters); }}
+                            >
+                                Limpar Filtros
+                            </Button>
                         </div>
                     ) : (
                         filtered.map((tx) => {
                             const { color: catColor, bg: catBg, icon: CatIcon } = getCategoryStyles(tx.category1);
                             const isNegative = Number(tx.amount) < 0;
                             const score = tx.score || (tx.needsReview ? 40 : 98);
-                            const scoreColor = score >= 90 ? "bg-primary" : score >= 70 ? "bg-orange-400" : "bg-destructive";
-                            const scoreText = score >= 90 ? "text-primary" : score >= 70 ? "text-orange-500" : "text-destructive";
+                            
+                            // Improved AI Confidence Colors
+                            const scoreColor = score >= 90 ? "bg-emerald-500" : score >= 60 ? "bg-amber-400" : "bg-slate-300";
+                            const scoreText = score >= 90 ? "text-emerald-600 dark:text-emerald-400" : score >= 60 ? "text-amber-600 dark:text-amber-400" : "text-slate-500";
 
                             return (
                                 <div
@@ -256,7 +253,11 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
                                             </span>
                                             <div className="flex items-center gap-2">
                                                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{tx.source}</span>
-                                                {tx.needsReview && <Badge className="h-2 w-2 p-0 rounded-full bg-orange-400 border-none animate-pulse"></Badge>}
+                                                {tx.needsReview && (
+                                                    <Badge className="h-5 px-2 rounded-full bg-amber-100 text-amber-700 hover:bg-amber-200 border-none text-[9px] font-bold uppercase tracking-wide">
+                                                        Revisar
+                                                    </Badge>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -313,75 +314,13 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
 
             {/* Bottom Drawer Revamp */}
             <Drawer open={!!selectedTx} onOpenChange={(open) => !open && setSelectedTx(null)}>
-                <DrawerContent className="bg-card border-none p-0 overflow-hidden rounded-t-[3rem] shadow-2xl">
-                    {selectedTx && (
-                        <div className="mx-auto w-full max-w-2xl flex flex-col h-[80vh] md:h-auto">
-                            <div className="w-16 h-1.5 bg-secondary rounded-full mx-auto mt-6 mb-8" />
-                            
-                            <div className="px-10 pb-12 flex flex-col items-center text-center">
-                                <div className={cn(
-                                    "w-20 h-20 rounded-[2.5rem] flex items-center justify-center mb-8 shadow-2xl transition-transform hover:scale-110 duration-500",
-                                    Number(selectedTx.amount) < 0 ? "bg-destructive/10 text-destructive" : "bg-emerald-500/10 text-emerald-500"
-                                )}>
-                                    {Number(selectedTx.amount) < 0 ? <ShoppingBag className="h-10 w-10" /> : <TrendingUp className="h-10 w-10" />}
-                                </div>
-                                
-                                <h2 className="text-3xl font-bold text-foreground tracking-tight leading-tight mb-2 font-display">{selectedTx.description}</h2>
-                                <p className="text-muted-foreground text-sm font-bold uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
-                                    <span className="bg-secondary px-3 py-1 rounded-lg text-[10px]">{selectedTx.source}</span>
-                                    <span>•</span>
-                                    <span>{new Date(selectedTx.date).toLocaleDateString()}</span>
-                                </p>
-                                
-                                <div className={cn(
-                                   "text-6xl font-black tracking-tighter mb-10 font-display",
-                                   Number(selectedTx.amount) < 0 ? "text-destructive" : "text-emerald-500"
-                                )}>
-                                    {new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(Math.abs(Number(selectedTx.amount)))}
-                                </div>
-
-                                <div className="w-full grid grid-cols-2 gap-6 mb-10">
-                                    <div className="p-6 rounded-3xl bg-secondary/50 border border-border text-left group">
-                                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Categoria</p>
-                                        <Select 
-                                            defaultValue={selectedTx.category1} 
-                                            onValueChange={(val) => handleCategoryUpdate(selectedTx.id, val)}
-                                        >
-                                            <SelectTrigger className="w-full h-10 bg-transparent border-none p-0 focus:ring-0 text-lg font-bold text-foreground">
-                                                <SelectValue placeholder="Selecionar..." />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {CATEGORIES.map(cat => (
-                                                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="p-6 rounded-3xl bg-secondary/50 border border-border text-left group">
-                                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Confiabilidade</p>
-                                        <p className="text-lg font-bold text-foreground flex items-center gap-3">
-                                            <Brain className="h-5 w-5 text-primary" />
-                                            {selectedTx.needsReview ? "Revisão Manual" : "Alta (AI)"}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="w-full space-y-4">
-                                    <Button 
-                                        className="w-full h-16 bg-primary text-white hover:opacity-95 rounded-2xl font-bold shadow-2xl shadow-primary/20 gap-3 text-lg transition-all active:scale-95"
-                                        onClick={() => handleConfirm(selectedTx.id)}
-                                    >
-                                        <CheckCircle2 className="h-6 w-6" />
-                                        Confirmar Lançamento
-                                    </Button>
-                                    <Button variant="outline" className="w-full h-16 border-border hover:bg-secondary text-muted-foreground rounded-2xl font-bold transition-all text-sm uppercase tracking-widest" onClick={() => setSelectedTx(null)}>
-                                        Fechar Detalhes
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </DrawerContent>
+                <TransactionDetailContent 
+                    transaction={selectedTx} 
+                    onClose={() => setSelectedTx(null)}
+                    onConfirm={(id) => {
+                         if (selectedTx?.id === id) setSelectedTx(null);
+                    }}
+                />
             </Drawer>
 
             {/* Bulk Actions Bar Revamp */}

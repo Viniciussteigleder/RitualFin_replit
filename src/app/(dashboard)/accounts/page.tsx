@@ -20,12 +20,19 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 const ICON_MAP: Record<string, any> = {
   credit_card: CreditCard,
   bank_account: Building2,
   debit_card: Wallet,
   cash: Coins,
+};
+
+const ACCOUNT_FILTER_MAP: Record<string, string> = {
+  "American Express": "Amex",
+  "Sparkasse Girokonto": "Sparkasse",
+  "Miles & More Gold": "M&M"
 };
 
 export default async function AccountsPage() {
@@ -46,10 +53,12 @@ export default async function AccountsPage() {
           <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight font-display">Contas e Cartões</h1>
           <p className="text-muted-foreground font-medium">Gerencie suas conexões bancárias e cartões em um só lugar.</p>
         </div>
-        <Button className="h-14 px-8 bg-primary text-white hover:scale-105 transition-all rounded-2xl font-bold shadow-xl shadow-primary/20 gap-2">
-          <PlusCircle className="h-5 w-5" />
-          Conectar Conta
-        </Button>
+        <Link href="/admin/import">
+          <Button className="h-14 px-8 bg-primary text-white hover:scale-105 transition-all rounded-2xl font-bold shadow-xl shadow-primary/20 gap-2">
+            <PlusCircle className="h-5 w-5" />
+            Conectar Conta
+          </Button>
+        </Link>
       </div>
 
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
@@ -66,18 +75,18 @@ export default async function AccountsPage() {
                 Para começar a organizar sua vida financeira, você precisa adicionar seus bancos ou cartões.
               </p>
               <Button className="mt-12 h-16 px-12 bg-primary text-white rounded-2xl font-bold transition-all shadow-xl hover:scale-105 active:scale-95" asChild>
-                <a href="#">Adicionar Minha Primeira Conta</a>
+                <Link href="/admin/import">Adicionar Minha Primeira Conta</Link>
               </Button>
             </div>
           </div>
         ) : (
           accounts.map((account) => {
             const Icon = ICON_MAP[account.type] || Wallet;
-            // Dummy data for balance and limits as requested for V1 visuals
-            const balance = 1250.80; 
+            const balance = account.balance;
+            // Simplified logic for V1 until limits are in schema
             const limit = account.type === "credit_card" ? 5000 : 0;
-            const spent = account.type === "credit_card" ? 1250.80 : 0;
-            const percentageUsed = limit > 0 ? (spent / limit) * 100 : 0;
+            const spent = account.type === "credit_card" ? (limit - balance) : 0; 
+            const percentageUsed = limit > 0 ? (Math.abs(balance) / limit) * 100 : 0;
 
             return (
               <div key={account.id} className="group relative bg-card border border-border rounded-[2.5rem] p-10 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 overflow-hidden flex flex-col gap-10">
@@ -124,11 +133,20 @@ export default async function AccountsPage() {
                         {formatCurrency(balance)}
                       </span>
                     </div>
-                    <Button variant="secondary" size="icon" className="h-14 w-14 rounded-2xl bg-secondary/50 border-none hover:bg-secondary hover:scale-110 transition-all">
-                      <Settings2 className="h-6 w-6 text-muted-foreground" />
-                    </Button>
+                    <Link href={`/transactions?accounts=${encodeURIComponent(ACCOUNT_FILTER_MAP[account.name] || account.name)}`}>
+                        <Button variant="secondary" size="icon" className="h-14 w-14 rounded-2xl bg-secondary/50 border-none hover:bg-secondary hover:scale-110 transition-all">
+                            <Settings2 className="h-6 w-6 text-muted-foreground" />
+                        </Button>
+                    </Link>
                   </div>
                 </div>
+                
+                <div className="flex items-center justify-between pt-4 border-t border-border mt-2">
+                   <Link href={`/transactions?accounts=${encodeURIComponent(ACCOUNT_FILTER_MAP[account.name] || account.name)}`}>
+                       <Button variant="ghost" className="text-xs font-bold text-muted-foreground hover:text-primary p-0 h-auto">Detalhes</Button>
+                   </Link>
+                </div>
+
               </div>
             );
           })

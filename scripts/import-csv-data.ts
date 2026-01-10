@@ -1,19 +1,19 @@
 import { readFileSync } from 'fs';
 import { config } from 'dotenv';
-import { db } from '../src/lib/db/index.js';
-import { transactions, accounts } from '../src/lib/db/schema.js';
 import { parseIngestionFile } from '../src/lib/ingest/index.js';
 import { eq, and } from 'drizzle-orm';
 
 // Load environment variables
+config({ path: '.env.production.local' });
 config({ path: '.env.local' });
+config({ path: '.env' });
 
 /**
  * Import real transaction data from CSV files
  * This script processes the 3 CSV files from docs/Feedback_user/CSV_original/
  */
 
-const USER_ID = 'e9d1c9aa-fa90-4483-b132-b06db86792ac'; // Demo user
+const USER_ID = '6119b450-d6e2-441c-a987-b793dc9e282c'; // Vinicius Steigleder
 
 const CSV_FILES = [
   {
@@ -43,6 +43,10 @@ function generateTransactionKey(tx: any, accountName: string): string {
 
 async function importCSVData() {
   console.log('📊 Starting CSV import...\n');
+
+  // Dynamic import to ensure env vars are loaded first
+  const { db } = await import('../src/lib/db/index.js');
+  const { transactions, accounts } = await import('../src/lib/db/schema.js');
 
   let totalStats = {
     filesProcessed: 0,

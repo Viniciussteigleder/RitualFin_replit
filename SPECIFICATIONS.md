@@ -72,6 +72,22 @@
 * **Simulador:** Teste em tempo real de keywords ("What-if" analysis) para ver impacto antes de salvar.
 * **Criação de Regras:** Transformação de simulações em regras oficiais do sistema (Prioridade 950).
 
+## 2.10 Atualizações de Design (Feedback Jan 2026)
+* **Visual Geral:**
+    - Remover todas as animações de ícones (ex: `animate-spin`, `animate-pulse`). O app deve ser estático e sóbrio.
+    - Valores monetários: Simplificar removendo casas decimais em widgets gerais (ex: `1.234 €`). Manter decimais Apenas em tabelas de transações detalhadas.
+    - Título do Dashboard: Alterar "Resumo Executivo" para "Dashboard".
+* **Widgets Específicos:**
+    - **Disponível:** Adicionar barra de progresso visual abaixo do valor para contexto de limite.
+    - **Gastos por Categoria:**
+        - Filtro de visualização: Top 5 / Top 8 / Todas.
+        - Exclusão de "Transferências Internas" (pagamentos de cartão, transferências entre contas) dos cálculos.
+        - Ícones: Usar ícones simples representativos, remover "pontos" ou bolinhas abstratas.
+        - Drill-down: Permitir clique para expandir hierarquia (Categoria -> L1 -> L2 -> L3 -> Transações).
+        - Botão "Revisar": Estilo Gradient Verde (ex: `bg-gradient-to-r from-emerald-500 to-green-600`).
+* **Aliases e Logos:**
+    - Priorizar sempre a exibição do LOGO do estabelecimento seguido pelo ALIAS (nome fantasia) em todas as listagens.
+
 ---
 
 # 3) Lógica de Inteligência Artificial

@@ -5,10 +5,10 @@ import { AIAnalystChat } from "@/components/transactions/AIAnalystChat";
 export default async function TransactionsPage({
   searchParams
 }: {
-  searchParams: Promise<{ category?: string; needsReview?: string }>
+  searchParams: Promise<{ category?: string; needsReview?: string; accounts?: string | string[] }>
 }) {
   const params = await searchParams;
-  const transactions = await getTransactions();
+  const transactions = await getTransactions(2000);
   const aliases = await getAliases();
 
   const aliasMap = aliases.reduce((acc, alias) => {
@@ -18,7 +18,7 @@ export default async function TransactionsPage({
   
   const initialFilters = {
     categories: params.category ? [params.category] : undefined,
-    // Add logic for needsReview if filter-panel supports it, otherwise logic handles it elsewhere
+    accounts: params.accounts ? (Array.isArray(params.accounts) ? params.accounts : [params.accounts]) : undefined,
   };
 
   return (

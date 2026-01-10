@@ -1,5 +1,8 @@
 import { getTransactions, getPendingTransactions, getDashboardData } from "@/lib/actions/transactions";
 import { getAccounts } from "@/lib/actions/accounts";
+
+export const dynamic = 'force-dynamic';
+
 import { Card, CardContent } from "@/components/ui/card";
 import { 
   ArrowUpRight, 
@@ -28,9 +31,21 @@ import { Progress } from "@/components/ui/progress";
 import { SyncStatus } from "@/components/dashboard/SyncStatus";
 import { ForecastCard } from "@/components/dashboard/ForecastCard";
 import { CategoryChart } from "@/components/dashboard/CategoryChart";
+import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { RecentTransactionsList } from "@/components/dashboard/recent-transactions-list";
 
-export default async function DashboardPage() {
-  const dashboardData = await getDashboardData();
+const ACCOUNT_FILTER_MAP: Record<string, string> = {
+  "American Express": "Amex",
+  "Sparkasse Girokonto": "Sparkasse",
+  "Miles & More Gold": "M&M"
+};
+
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
+  const { month } = await searchParams;
+  const monthParam = month;
+  const targetDate = monthParam ? new Date(`${monthParam}-01T00:00:00`) : new Date();
+
+  const dashboardData = await getDashboardData(targetDate);
   const transactionsData = await getTransactions(5);
   const pendingTransactions = await getPendingTransactions();
   const accounts = await getAccounts();
@@ -43,76 +58,60 @@ export default async function DashboardPage() {
   return (
     <div className="max-w-7xl mx-auto flex flex-col gap-8 pb-32 font-sans overflow-hidden">
       {/* Header Section */}
-      <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 px-1">
-        <div className="flex flex-col gap-2">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight font-display">Resumo Executivo</h2>
-          <p className="text-muted-foreground font-medium">Controle total do seu fluxo financeiro em tempo real.</p>
-        </div>
-        
-        <div className="flex flex-col sm:flex-row items-center gap-4 w-full xl:w-auto">
-          <div className="flex items-center bg-card rounded-2xl shadow-sm p-1.5 border border-border w-full sm:w-auto justify-between sm:justify-start">
-            <button className="p-2 hover:bg-secondary rounded-xl text-muted-foreground transition-colors">
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            <div className="flex items-center justify-center gap-2 px-6">
-              <Calendar className="h-4 w-4 text-primary" />
-              <span className="text-sm font-bold text-foreground whitespace-nowrap">Janeiro 2026</span>
-            </div>
-            <button className="p-2 hover:bg-secondary rounded-xl text-muted-foreground transition-colors">
-              <ChevronRight className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-      </div>
+      <DashboardHeader />
 
-      {/* TopSummaryRow (User Request: MTD Spend, Projected Spend, Remaining) */}
+      {/* TopSummaryRow */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
         {/* Card 1: Gasto no Mês (MTD) */}
-        <Card className="rounded-[2.5rem] border-border bg-white dark:bg-card shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
-          <CardContent className="p-8 flex flex-col justify-between h-full gap-4">
-             <div className="flex items-center gap-3">
-                <div className="p-3 rounded-full bg-orange-100 text-orange-600">
-                    <TrendingUp className="h-5 w-5" />
+        <Link href="/transactions" className="contents">
+            <Card className="rounded-[2.5rem] border-border bg-white dark:bg-card shadow-sm hover:shadow-md transition-all group relative overflow-hidden cursor-pointer">
+            <CardContent className="p-8 flex flex-col justify-between h-full gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="p-3 rounded-full bg-orange-100 text-orange-600">
+                        <TrendingUp className="h-5 w-5" />
+                    </div>
+                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Gasto Atual (MTD)</span>
                 </div>
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Gasto Atual (MTD)</span>
-             </div>
-             <div>
-                <h3 className="text-4xl font-bold text-slate-900 dark:text-white font-display text-orange-600 tracking-tight" suppressHydrationWarning>
-                    {formatCurrency(spentMonthToDate)}
-                </h3>
-             </div>
-             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                Realizado até hoje
-             </p>
-          </CardContent>
-        </Card>
+                <div>
+                    <h3 className="text-4xl font-bold text-slate-900 dark:text-white font-display text-orange-600 tracking-tight" suppressHydrationWarning>
+                        {formatCurrency(spentMonthToDate, { hideDecimals: true })}
+                    </h3>
+                </div>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                    Realizado até hoje
+                </p>
+            </CardContent>
+            </Card>
+        </Link>
 
         {/* Card 2: Projetado (Projected) */}
-        <Card className="rounded-[2.5rem] border-border bg-card shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
-           <div className="absolute right-0 top-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl"></div>
-          <CardContent className="p-8 flex flex-col justify-between h-full gap-4 relative z-10">
-             <div className="flex items-center gap-3">
-                <div className="p-3 rounded-full bg-blue-100 text-blue-600">
-                    <Activity className="h-5 w-5" />
+        <Link href="/transactions" className="contents">
+            <Card className="rounded-[2.5rem] border-border bg-card shadow-sm hover:shadow-md transition-all group relative overflow-hidden cursor-pointer">
+            <div className="absolute right-0 top-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl"></div>
+            <CardContent className="p-8 flex flex-col justify-between h-full gap-4 relative z-10">
+                <div className="flex items-center gap-3">
+                    <div className="p-3 rounded-full bg-blue-100 text-blue-600">
+                        <Activity className="h-5 w-5" />
+                    </div>
+                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Projeção Final</span>
                 </div>
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Projeção Final</span>
-             </div>
-             <div>
-                <h3 className="text-4xl font-bold text-foreground font-display tracking-tight" suppressHydrationWarning>
-                    {formatCurrency(projectedSpend)}
-                </h3>
-             </div>
-             <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 text-[10px] font-bold px-2">
-                    IA ESTIMATED
-                </Badge>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                    Baseado no perfil
-                </p>
-             </div>
-          </CardContent>
-        </Card>
+                <div>
+                    <h3 className="text-4xl font-bold text-foreground font-display tracking-tight" suppressHydrationWarning>
+                        {formatCurrency(projectedSpend, { hideDecimals: true })}
+                    </h3>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 text-[10px] font-bold px-2">
+                        IA ESTIMATED
+                    </Badge>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                        Baseado no perfil
+                    </p>
+                </div>
+            </CardContent>
+            </Card>
+        </Link>
 
         {/* Card 3: Restante Disponível (Budget) */}
         <Card className="rounded-[2.5rem] border-border bg-card shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
@@ -126,15 +125,21 @@ export default async function DashboardPage() {
              </div>
              <div>
                 <h3 className={`text-4xl font-bold font-display tracking-tight ${remainingBudget >= 0 ? 'text-emerald-600' : 'text-red-500'}`} suppressHydrationWarning>
-                    {formatCurrency(remainingBudget)}
+                    {formatCurrency(remainingBudget, { hideDecimals: true })}
                 </h3>
              </div>
-             <div className="w-full bg-secondary h-1.5 rounded-full overflow-hidden mt-1">
-                <div className={`h-full ${remainingBudget > 0 ? 'bg-emerald-500' : 'bg-red-500'}`} style={{ width: `${Math.min((spentMonthToDate / monthlyGoal) * 100, 100)}%` }}></div>
+             
+             {/* Progress Bar: Remaining Visual */}
+             <div className="flex flex-col gap-1 w-full bg-secondary h-2.5 rounded-full overflow-hidden mt-1 relative">
+                <div 
+                    className={`h-full ${remainingBudget > 0 ? 'bg-emerald-500' : 'bg-red-500 transition-all duration-500'}`} 
+                    style={{ width: `${Math.max(0, Math.min((remainingBudget / monthlyGoal) * 100, 100))}%` }}
+                ></div>
              </div>
+             
              <div className="flex justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                <span>Meta: {formatCurrency(monthlyGoal)}</span>
-                <span>{Math.round((spentMonthToDate / monthlyGoal) * 100)}% Gasto</span>
+                <span>Meta: {formatCurrency(monthlyGoal, { hideDecimals: true })}</span>
+                <span>Restante</span> 
              </div>
           </CardContent>
         </Card>
@@ -145,10 +150,7 @@ export default async function DashboardPage() {
         {/* Category Chart Section */}
         <Card className="lg:col-span-2 rounded-[2.5rem] border-border bg-card shadow-sm p-2">
             <CardContent className="p-8">
-                <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-xl font-bold text-foreground font-display">Gastos por Categoria</h3>
-                    <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">TOP 5</Badge>
-                </div>
+                {/* Passing full data to Client Component to handle filtering/drilldown */}
                 <CategoryChart data={categoryData || []} total={spentMonthToDate} />
             </CardContent>
         </Card>
@@ -157,8 +159,9 @@ export default async function DashboardPage() {
         <div className="flex flex-col gap-6">
              <div className="flex flex-col gap-4 items-start justify-between bg-card p-8 rounded-[2.5rem] border border-border shadow-sm h-full">
                 <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary relative overflow-hidden mb-2">
-                    <div className="absolute inset-0 bg-primary/10 animate-pulse"></div>
-                    <RefreshCw className="h-6 w-6 relative z-10 animate-spin-slow" />
+                     {/* Animations Removed */}
+                    <div className="absolute inset-0 bg-primary/10"></div>
+                    <RefreshCw className="h-6 w-6 relative z-10" />
                 </div>
                 <div className="flex flex-col gap-1">
                     <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Última Sincronização</span>
@@ -168,7 +171,7 @@ export default async function DashboardPage() {
                 <div className="w-full h-px bg-border my-2"></div>
 
                 <Link href="/confirm" className="w-full">
-                    <Button className="w-full bg-foreground text-background hover:opacity-90 py-6 h-auto rounded-xl font-bold transition-all shadow-xl shadow-foreground/5 group gap-3 text-sm">
+                    <Button className="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white py-6 h-auto rounded-xl font-bold transition-all shadow-xl shadow-green-500/20 group gap-3 text-sm border-0">
                         <SearchCheck className="h-5 w-5 group-hover:scale-110 transition-transform" />
                         Revisar ({pendingTransactions.length})
                     </Button>
@@ -177,7 +180,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* AccountCardsGrid */}
+      {/* AccountCardsGrid - Kept mostly same but hide decimals */}
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between px-1">
           <h3 className="text-2xl font-bold text-foreground font-display">Minhas Contas</h3>
@@ -195,7 +198,6 @@ export default async function DashboardPage() {
             </Card>
           ) : (
             accounts.map((account) => {
-              const usagePercent = Math.min(Math.round((Math.random() * 80) + 10), 100); // Dummy usage
               return (
                 <Card key={account.id} className="rounded-[2.5rem] bg-card border-border shadow-sm hover:shadow-lg transition-all group overflow-hidden">
                   <CardContent className="p-8 flex flex-col gap-6">
@@ -215,16 +217,20 @@ export default async function DashboardPage() {
                           </span>
                         </div>
                       </div>
-                      <button className="p-1 hover:bg-secondary rounded-lg text-muted-foreground">
-                        <MoreHorizontal className="h-5 w-5" />
-                      </button>
+                      <Link href="/accounts">
+                        <button className="p-1 hover:bg-secondary rounded-lg text-muted-foreground transition-colors">
+                            <MoreHorizontal className="h-5 w-5" />
+                        </button>
+                      </Link>
                     </div>
 
                     <div className="flex flex-col gap-4">
                       <div className="flex justify-between items-end">
                         <div className="flex flex-col">
                           <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Saldo</span>
-                          <span className="text-xl font-bold text-foreground font-display" suppressHydrationWarning>{formatCurrency(account.balance)}</span>
+                          <span className="text-xl font-bold text-foreground font-display" suppressHydrationWarning>
+                             {formatCurrency(account.balance, { hideDecimals: true })}
+                          </span>
                         </div>
                         <div className="flex flex-col text-right">
                           <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Instituição</span>
@@ -249,7 +255,9 @@ export default async function DashboardPage() {
                     </div>
 
                     <div className="flex items-center justify-between pt-4 border-t border-border mt-2">
-                      <Button variant="ghost" className="text-xs font-bold text-muted-foreground hover:text-primary p-0 h-auto">Detalhes</Button>
+                       <Link href={`/transactions?accounts=${encodeURIComponent(ACCOUNT_FILTER_MAP[account.name] || account.name)}`}>
+                            <Button variant="ghost" className="text-xs font-bold text-muted-foreground hover:text-primary p-0 h-auto">Detalhes</Button>
+                       </Link>
                     </div>
                   </CardContent>
                 </Card>
@@ -268,22 +276,7 @@ export default async function DashboardPage() {
             </div>
           </div>
           <div className="flex flex-col gap-4">
-            {transactionsData.length === 0 ? (
-               <div className="flex flex-col items-center justify-center py-10 text-center opacity-40">
-                  <Activity className="h-8 w-8 mb-4" />
-                  <p className="text-xs font-bold uppercase tracking-widest">Tudo limpo por aqui</p>
-               </div>
-            ) : (
-              transactionsData.map((tx: any) => (
-                <div key={tx.id} className="flex items-center justify-between group/item cursor-pointer hover:bg-secondary p-4 rounded-3xl transition-all duration-300">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-foreground truncate max-w-[200px] tracking-tight">{tx.descNorm || tx.descRaw}</span>
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{formatCurrency(Math.abs(Number(tx.amount)))}</span>
-                  </div>
-                  <Button variant="ghost" size="sm" className="rounded-xl h-8 text-[10px] font-black uppercase tracking-widest text-primary border border-primary/20 hover:bg-primary/10">Validar</Button>
-                </div>
-              ))
-            )}
+            <RecentTransactionsList transactions={transactionsData} />
           </div>
           <Link href="/transactions" className="mt-8">
             <Button variant="outline" className="w-full py-6 text-[10px] font-black text-foreground border-border hover:bg-secondary rounded-2xl transition-all uppercase tracking-widest">

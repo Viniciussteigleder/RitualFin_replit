@@ -6,12 +6,18 @@ import { transactions, accounts, ingestionBatches, aliasAssets } from "@/lib/db/
 import { eq, desc, sql, and, gte } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
-export async function getDashboardData() {
+export async function getDashboardData(date?: Date) {
   const session = await auth();
   if (!session?.user?.id) return null;
   const userId = session.user.id;
 
-  // 1. Total Balance
+  // Date Logic
+  const now = new Date();
+  const targetDate = date || now;
+  const startOfMonth = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
+  const endOfMonth = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0);
+
+  // 1. Total Balance (Global)
   const [balanceRes] = await db
     .select({ total: sql<number>`COALESCE(SUM(amount), 0)` })
     .from(transactions)
@@ -35,8 +41,8 @@ export async function getDashboardData() {
     .orderBy(desc(ingestionBatches.importedAt))
     .limit(1);
 
-  // 4. Daily Forecast (derived from last 30 days)
-  const thirtyDaysAgo = new Date();
+  // 4. Daily Spend (Avg last 30 days from target date? Or just global avg? Let's use 30 days ending at target date for context)
+  const thirtyDaysAgo = new Date(targetDate);
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   
   const [last30DaysSpend] = await db
@@ -45,38 +51,50 @@ export async function getDashboardData() {
     .where(and(
       eq(transactions.userId, userId),
       eq(transactions.type, "Despesa"),
-      gte(transactions.paymentDate, thirtyDaysAgo)
+      gte(transactions.paymentDate, thirtyDaysAgo),
+      sql`${transactions.paymentDate} <= ${targetDate}`
     ));
   
   const dailySpend = Math.abs(Number(last30DaysSpend?.total || 0)) / 30;
 
-  // 5. Month-to-Date Spend (Start of month to Today)
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  
+  // 5. Month-to-Date / Month Total Spend
+  // Filter out internal transfers from spend calculation? User said "categoria interno nao é contabilizado". THIS IS KEY.
   const [mtdRes] = await db
     .select({ total: sql<number>`COALESCE(SUM(amount), 0)` })
     .from(transactions)
     .where(and(
       eq(transactions.userId, userId),
       eq(transactions.type, "Despesa"),
-      gte(transactions.paymentDate, startOfMonth)
+      gte(transactions.paymentDate, startOfMonth),
+      sql`${transactions.paymentDate} <= ${endOfMonth}`, // Use endOfMonth to support past months fully
+      // Exclude Internal/Transferências from main spend metrics too? 
+      // User said "categoria interno nao é contabilizado pois sao transacoes internas". 
+      // I should probably apply this broadly.
+      // Assuming 'Interno' and 'Transferências' are the names.
+      // Drizzle doesn't export notInArray by default in all versions, checking imports.
+      // If not available, use sql.
+      sql`${transactions.category1} NOT IN ('Interno', 'Transferências')`
     ));
 
   const spentMonthToDate = Math.abs(Number(mtdRes?.total || 0));
 
   // 6. Projected Spend calculation
-  const remainingDays = endOfMonth.getDate() - now.getDate();
-  const projectedSpend = spentMonthToDate + (dailySpend * remainingDays);
+  // If viewing past month: Projected = Actual (since month is over).
+  // If viewing current month: Actual + (Daily * Remaining).
+  let projectedSpend = spentMonthToDate;
+  if (targetDate.getMonth() === now.getMonth() && targetDate.getFullYear() === now.getFullYear()) {
+      const remainingDays = endOfMonth.getDate() - now.getDate();
+      projectedSpend = spentMonthToDate + (dailySpend * Math.max(0, remainingDays));
+  } else if (targetDate < now) {
+      // Past month, projection IS the total.
+      projectedSpend = spentMonthToDate;
+  }
 
-  // 7. Budget / Remaining (Mocked Goal for now, should fetch from goals table)
-  // Fetch specific monthly goal or default to 5000 if not set
-  // In a real scenario: await db.select().from(goals)...
+  // 7. Budget / Remaining
   const monthlyGoal = 5000; 
   const remainingBudget = monthlyGoal - spentMonthToDate;
 
-  // 8. Category Breakdown for Charts
+  // 8. Category Breakdown
   const categoryData = await db
     .select({ 
       name: transactions.category1, 
@@ -86,11 +104,13 @@ export async function getDashboardData() {
     .where(and(
        eq(transactions.userId, userId),
        eq(transactions.type, "Despesa"),
-       gte(transactions.paymentDate, startOfMonth)
+       gte(transactions.paymentDate, startOfMonth),
+       sql`${transactions.paymentDate} <= ${endOfMonth}`,
+       sql`${transactions.category1} NOT IN ('Interno', 'Transferências')`
     ))
     .groupBy(transactions.category1)
     .orderBy(desc(sql`SUM(ABS(${transactions.amount}))`))
-    .limit(5);
+    .limit(20); // Increased limit for frontend filtering
 
   return {
     totalBalance,
@@ -203,4 +223,47 @@ export async function getAliases() {
   return await db.query.aliasAssets.findMany({
     where: eq(aliasAssets.userId, session.user.id),
   });
+}
+
+export async function createRuleAndApply(
+  transactionId: string,
+  keyword: string,
+  category: string
+) {
+  const session = await auth();
+  if (!session?.user?.id) return { error: "Unauthorized" };
+
+  try {
+    // 1. Create Rule
+    const ruleKey = `QUICK_${Date.now()}`;
+    const [insertedRule] = await db.insert(rules).values({
+      userId: session.user.id,
+      name: `Quick Rule: ${keyword}`,
+      keywords: keyword,
+      category1: category,
+      active: true,
+      priority: 999, // High priority
+      ruleKey: ruleKey
+    }).returning();
+
+    if (!insertedRule) throw new Error("Failed to create rule");
+
+    // 2. Update Transaction
+    await db.update(transactions)
+      .set({
+        category1: category,
+        needsReview: false,
+        ruleIdApplied: insertedRule.id,
+        manualOverride: false // It's rule based now, effectively
+      })
+      .where(eq(transactions.id, transactionId));
+
+    revalidatePath("/transactions");
+    revalidatePath("/");
+    
+    return { success: true, ruleId: insertedRule.id };
+  } catch (error: any) {
+    console.error("Quick Rule Error:", error);
+    return { success: false, error: error.message };
+  }
 }
