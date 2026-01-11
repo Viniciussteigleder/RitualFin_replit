@@ -11,8 +11,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { User, Globe, Database, Shield, AlertTriangle, Settings2, Bell, Heart, Link2 } from "lucide-react";
+import { User, Globe, Database, Shield, AlertTriangle, Settings2, Bell, Heart, Link2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
 
 export default function SettingsPage() {
   return (
@@ -28,22 +29,22 @@ export default function SettingsPage() {
       <Tabs defaultValue="profile" className="w-full">
         <div className="overflow-x-auto pb-4 -mx-1 px-1">
           <TabsList className="inline-flex bg-secondary/50 p-1.5 h-auto rounded-[2rem] gap-2 border border-border min-w-full sm:min-w-0">
-            <TabsTrigger value="profile" className="rounded-2xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-all">Perfil</TabsTrigger>
-            <TabsTrigger value="preferences" className="rounded-2xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-all">Preferências</TabsTrigger>
-            <TabsTrigger value="notifications" className="rounded-2xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-all">Notificações</TabsTrigger>
-            <TabsTrigger value="data" className="rounded-2xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-all">Dados</TabsTrigger>
-            <TabsTrigger value="security" className="rounded-2xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-all">Segurança</TabsTrigger>
-            <TabsTrigger value="danger" className="rounded-2xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-all text-destructive data-[state=active]:text-destructive">Perigo</TabsTrigger>
+            <TabsTrigger value="profile" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-all">Perfil</TabsTrigger>
+            <TabsTrigger value="preferences" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-all">Preferências</TabsTrigger>
+            <TabsTrigger value="notifications" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-all">Notificações</TabsTrigger>
+            <TabsTrigger value="data" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-all">Dados</TabsTrigger>
+            <TabsTrigger value="security" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-all">Segurança</TabsTrigger>
+            <TabsTrigger value="danger" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-all text-destructive data-[state=active]:text-destructive">Perigo</TabsTrigger>
           </TabsList>
         </div>
 
         <div className="mt-10 max-w-3xl">
           {/* Profile Tab */}
           <TabsContent value="profile" className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <div className="bg-card border border-border rounded-[2.5rem] p-10 shadow-sm overflow-hidden relative group">
+            <div className="bg-card border border-border rounded-2xl p-10 shadow-sm overflow-hidden relative group">
               <div className="flex flex-col gap-8">
                 <div className="flex items-center gap-6">
-                   <div className="w-24 h-24 rounded-[2.5rem] bg-secondary flex items-center justify-center text-muted-foreground/30 shadow-inner group-hover:scale-105 transition-transform duration-500">
+                   <div className="w-24 h-24 rounded-2xl bg-secondary flex items-center justify-center text-muted-foreground/30 shadow-inner group-hover:scale-105 transition-transform duration-500">
                       <User className="h-10 w-10" />
                    </div>
                    <div className="flex flex-col gap-2">
@@ -74,12 +75,12 @@ export default function SettingsPage() {
 
           {/* Preferences Tab */}
           <TabsContent value="preferences" className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <div className="bg-card border border-border rounded-[2.5rem] p-10 shadow-sm space-y-12">
+            <div className="bg-card border border-border rounded-2xl p-10 shadow-sm space-y-12">
                
                {/* Section: Locality */}
                <section>
                 <div className="flex items-center gap-4 mb-10">
-                    <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                       <Globe className="h-6 w-6" />
                     </div>
                     <h3 className="text-2xl font-bold text-foreground font-display tracking-tight">Região e Formato</h3>
@@ -133,7 +134,7 @@ export default function SettingsPage() {
                   <div className="flex items-center justify-between p-6 rounded-2xl bg-secondary/20 border border-border/50">
                     <div className="space-y-1">
                       <h4 className="font-bold text-sm">Auto-Aprovação</h4>
-                      <p className="text-xs font-medium text-muted-foreground italic">Confirmar automaticamente quando confiança > 90%</p>
+                      <p className="text-xs font-medium text-muted-foreground italic">Confirmar automaticamente quando confiança {'>'} 90%</p>
                     </div>
                     <Switch />
                   </div>
@@ -189,7 +190,7 @@ export default function SettingsPage() {
 
           {/* Data Tab */}
           <TabsContent value="data" className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <div className="bg-card border border-border rounded-[2.5rem] p-10 shadow-sm">
+            <div className="bg-card border border-border rounded-2xl p-10 shadow-sm">
                <div className="flex items-center gap-4 mb-10">
                   <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center text-foreground">
                      <Database className="h-6 w-6" />
@@ -228,7 +229,7 @@ export default function SettingsPage() {
 
           {/* Danger Zone Tab */}
           <TabsContent value="danger" className="space-y-8 animate-in fade-in duration-500">
-            <div className="bg-destructive/5 border border-destructive/20 rounded-[2.5rem] p-10">
+            <div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-10">
                <div className="flex items-center gap-4 mb-8">
                   <div className="w-12 h-12 rounded-2xl bg-destructive/10 flex items-center justify-center text-destructive">
                      <AlertTriangle className="h-6 w-6" />

@@ -64,13 +64,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         
         {/* BIG Focus Card: Disponível (Budget) */}
-        <Card className="md:col-span-2 rounded-[2.5rem] border-primary/20 bg-emerald-50/50 dark:bg-emerald-950/10 shadow-sm transition-all group relative overflow-hidden ring-1 ring-emerald-500/10">
+        <Card className="md:col-span-2 rounded-2xl border-primary/20 bg-emerald-50/50 dark:bg-emerald-950/10 shadow-sm transition-all group relative overflow-hidden ring-1 ring-emerald-500/10">
            <div className={`absolute inset-0 opacity-10 ${remainingBudget > 0 ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
           <CardContent className="p-8 flex flex-col justify-between h-full gap-5 relative z-10">
              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className={`p-3 rounded-2xl ${remainingBudget > 0 ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600 shadow-lg shadow-red-500/20'}`}>
-                        <Wallet className="h-6 w-6" />
+                    <div className={`p-3 rounded-xl ${remainingBudget > 0 ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600 shadow-lg shadow-red-500/20'}`}>
+                        <Wallet className="h-5 w-5" />
                     </div>
                     <div className="flex flex-col">
                         <span className="text-xs font-black text-muted-foreground uppercase tracking-[0.15em]">Saldo Livre</span>
@@ -111,10 +111,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6 h-full">
             {/* Card: Gasto Realizado */}
             <Link href="/transactions" className="contents">
-                <Card className="rounded-[2.5rem] border-border bg-white dark:bg-card shadow-sm hover:shadow-md transition-all group relative overflow-hidden cursor-pointer border-l-4 border-l-orange-500/50">
+                <Card className="rounded-2xl border-border bg-white dark:bg-card shadow-sm hover:shadow-md transition-all group relative overflow-hidden cursor-pointer border-l-4 border-l-orange-500/50">
                 <CardContent className="p-8 flex flex-col justify-between h-full gap-4">
                     <div className="flex items-center gap-3">
-                        <div className="p-3 rounded-2xl bg-orange-100 text-orange-600">
+                        <div className="p-3 rounded-xl bg-orange-100 text-orange-600">
                             <TrendingUp className="h-5 w-5" />
                         </div>
                         <div className="flex flex-col">
@@ -136,11 +136,11 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
             {/* Card: Projeção Final */}
             <Link href="/transactions" className="contents">
-                <Card className="rounded-[2.5rem] border-border bg-card shadow-sm hover:shadow-md transition-all group relative overflow-hidden cursor-pointer border-l-4 border-l-blue-500/50">
+                <Card className="rounded-2xl border-border bg-card shadow-sm hover:shadow-md transition-all group relative overflow-hidden cursor-pointer border-l-4 border-l-blue-500/50">
                 <div className="absolute right-0 top-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl"></div>
                 <CardContent className="p-8 flex flex-col justify-between h-full gap-4 relative z-10">
                     <div className="flex items-center gap-3">
-                        <div className="p-3 rounded-2xl bg-blue-100 text-blue-600">
+                        <div className="p-3 rounded-xl bg-blue-100 text-blue-600">
                             <Activity className="h-5 w-5" />
                         </div>
                         <div className="flex flex-col">
@@ -167,7 +167,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       {/* Row 2: Category Chart & Sync Status */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Category Chart Section */}
-        <Card className="lg:col-span-2 rounded-[2.5rem] border-border bg-card shadow-sm p-2">
+        <Card className="lg:col-span-2 rounded-2xl border-border bg-card shadow-sm p-2">
             <CardContent className="p-8">
                 {/* Passing full data to Client Component to handle filtering/drilldown */}
                 <CategoryChart data={categoryData || []} total={spentMonthToDate} />
@@ -177,17 +177,17 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         {/* AI Action Center Side Card */}
         <div className="flex flex-col gap-6">
              <div className={cn(
-               "flex flex-col gap-6 items-start justify-between p-8 rounded-[2.5rem] border transition-all h-full",
+               "flex flex-col gap-6 items-start justify-between p-8 rounded-2xl border transition-all h-full",
                pendingTransactions.length > 0 
                 ? "bg-gradient-to-br from-emerald-600 to-green-700 border-none shadow-xl shadow-emerald-500/20 text-white" 
                 : "bg-card border-border shadow-sm"
              )}>
                 <div className="flex flex-col gap-4 w-full">
                   <div className={cn(
-                    "w-14 h-14 rounded-2xl flex items-center justify-center mb-2",
+                    "w-14 h-14 rounded-xl flex items-center justify-center mb-2",
                     pendingTransactions.length > 0 ? "bg-white/20 backdrop-blur-md" : "bg-primary/10 text-primary"
                   )}>
-                      <Sparkles className={cn("h-7 w-7", pendingTransactions.length > 0 ? "text-white" : "text-primary")} />
+                      <Sparkles className={cn("h-6 w-6", pendingTransactions.length > 0 ? "text-white" : "text-primary")} />
                   </div>
                   
                   <div className="flex flex-col gap-2">
@@ -247,7 +247,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {accounts.length === 0 ? (
-            <Card className="col-span-1 md:col-span-3 border-dashed border-2 py-20 flex flex-col items-center justify-center text-muted-foreground bg-secondary/5 rounded-[2.5rem]">
+            <Card className="col-span-1 md:col-span-3 border-dashed border-2 py-20 flex flex-col items-center justify-center text-muted-foreground bg-secondary/5 rounded-2xl">
               <Wallet className="h-10 w-10 mb-4 opacity-20" />
               <p className="font-medium">Nenhuma conta conectada</p>
               <Link href="/uploads">
@@ -257,11 +257,11 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           ) : (
             accounts.map((account) => {
               return (
-                <Card key={account.id} className="rounded-[2.5rem] bg-card border-border shadow-sm hover:shadow-lg transition-all group overflow-hidden">
+                <Card key={account.id} className="rounded-2xl bg-card border-border shadow-sm hover:shadow-lg transition-all group overflow-hidden">
                   <CardContent className="p-8 flex flex-col gap-6">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center group-hover:bg-primary transition-colors">
+                        <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center group-hover:bg-primary transition-colors">
                           {account.type === "credit_card" ? (
                             <CreditCard className="h-6 w-6 text-foreground group-hover:text-white transition-colors" />
                           ) : (
@@ -326,7 +326,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       </div>
 
       {/* Quick Review Queue (Moved bottom) */}
-      <div className="bg-card rounded-[2.5rem] p-8 border border-border shadow-sm flex flex-col group">
+      <div className="bg-card rounded-2xl p-8 border border-border shadow-sm flex flex-col group">
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-2xl font-bold text-foreground font-display tracking-tight">Fila de Revisão</h3>
             <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center">

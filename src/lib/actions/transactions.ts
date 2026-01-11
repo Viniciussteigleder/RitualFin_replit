@@ -2,9 +2,17 @@
 
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { transactions, accounts, ingestionBatches, aliasAssets } from "@/lib/db/schema";
+import { transactions, accounts, ingestionBatches, aliasAssets, rules } from "@/lib/db/schema";
 import { eq, desc, sql, and, gte } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { 
+  TransactionUpdateSchema, 
+  TransactionConfirmSchema, 
+  TransactionDeleteSchema,
+  Result,
+  success,
+  error 
+} from "@/lib/validators";
 
 export async function getDashboardData(date?: Date) {
   const session = await auth();

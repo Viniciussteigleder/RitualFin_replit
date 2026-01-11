@@ -6,6 +6,8 @@ import { ChevronDown, Download, TrendingDown, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
 import * as XLSX from "xlsx";
+import { exportFullDataset } from "@/lib/actions/export";
+import { toast } from "sonner";
 
 interface AnalyticsDrillDownProps {
   data: DrillDownData;
@@ -23,39 +25,40 @@ const CATEGORY_COLORS = [
 export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }: AnalyticsDrillDownProps) {
   const [isPending, startTransition] = useTransition();
 
-  const handleExportExcel = () => {
-    const wb = XLSX.utils.book_new();
-
-    // Export aggregates
-    if (data.aggregates.length > 0) {
-      const wsData = data.aggregates.map((item) => ({
-        Categoria: item.category,
-        Total: item.total.toFixed(2),
-        Quantidade: item.count,
-        Percentual: item.percentage.toFixed(1) + "%",
-      }));
-      const ws = XLSX.utils.json_to_sheet(wsData);
-      XLSX.utils.book_append_sheet(wb, ws, "Resumo");
-    }
-
-    // Export transactions if available
-    if (data.transactions && data.transactions.length > 0) {
-      const txData = data.transactions.map((tx) => ({
-        Data: format(new Date(tx.paymentDate), "dd/MM/yyyy"),
-        Descrição: tx.aliasDesc || tx.descNorm,
-        Categoria: tx.category1,
-        "Nível 1": tx.category2,
-        "Nível 2": tx.category3,
-        Valor: tx.amount.toFixed(2),
-        Moeda: tx.currency,
-        Conta: tx.accountId,
-        Tipo: tx.type,
-      }));
-      const wsTx = XLSX.utils.json_to_sheet(txData);
-      XLSX.utils.book_append_sheet(wb, wsTx, "Transações");
-    }
-
-    XLSX.writeFile(wb, `RitualFin_Analise_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+// ... inside component
+  const handleExportExcel = async () => {
+      try {
+        toast.info("Iniciando exportação completa...");
+        const result = await exportFullDataset(filters);
+        
+        if (result.success && result.data) {
+            // Create Blob from Base64
+            const byteCharacters = atob(result.data);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+            
+            // Create download link
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = result.filename || "export.xlsx";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            toast.success("Download iniciado!");
+        } else {
+            toast.error("Erro na exportação: " + result.error);
+        }
+      } catch (error) {
+          console.error(error);
+          toast.error("Erro inesperado ao exportar.");
+      }
   };
 
   const renderCategoryBar = (

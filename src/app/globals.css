@@ -5,11 +5,12 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --radius-sm: 0.3rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
-  --radius-2xl: 1.5rem;
+  /* Standardized border radius scale - reduced from excessive values */
+  --radius-sm: 0.5rem;    /* 8px - Small elements (badges, tags) */
+  --radius-md: 0.75rem;   /* 12px - Medium elements (buttons, inputs) */
+  --radius-lg: 1rem;      /* 16px - Large elements (cards, modals) */
+  --radius-xl: 1.5rem;    /* 24px - Extra large (hero cards) - MAX */
+  --radius-2xl: 1.5rem;   /* Deprecated: use xl instead */
 
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Sidebar } from "@/components/layout/sidebar";
 import { MonthProvider } from "@/lib/month-context";
 import { MobileNav } from "@/components/layout/mobile-nav";
+import { CommandPalette } from "@/components/ui/command-palette";
 import { Manrope, Noto_Sans } from "next/font/google";
 import "./globals.css";
 
@@ -38,6 +39,7 @@ export default function RootLayout({
             </div>
           </main>
           <MobileNav />
+          <CommandPalette />
         </MonthProvider>
       </body>
     </html>

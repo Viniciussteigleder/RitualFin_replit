@@ -17,6 +17,7 @@ import {
 import { cn, formatCurrency } from "@/lib/utils";
 import Link from "next/link";
 import { CalendarClient } from "./calendar-client";
+import { NewEventDialog } from "@/components/calendar/new-event-dialog";
 
 export default async function CalendarPage({
   searchParams,
@@ -107,10 +108,10 @@ export default async function CalendarPage({
     <div className="flex flex-col gap-8 pb-32">
       {/* Header & Toolbar */}
       {/* Header & Toolbar */}
-      <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-8 bg-card p-10 rounded-[3rem] border border-border shadow-sm">
+      <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-8 bg-card p-10 rounded-2xl border border-border shadow-sm">
         <div className="flex flex-col gap-3">
            <div className="flex items-center gap-3">
-              <div className="p-3 bg-blue-500/10 rounded-2xl">
+               <div className="p-3 bg-blue-500/10 rounded-xl">
                  <CalendarIcon className="h-8 w-8 text-blue-600 dark:text-blue-400" />
               </div>
               <h1 className="text-4xl font-bold text-foreground tracking-tight font-display">Calendário Financeiro</h1>
@@ -121,7 +122,7 @@ export default async function CalendarPage({
         </div>
 
         <div className="flex flex-col md:flex-row items-center gap-4 w-full xl:w-auto">
-          <div className="flex items-center bg-secondary/50 rounded-[2rem] p-1.5 border border-border">
+          <div className="flex items-center bg-secondary/50 rounded-2xl p-1.5 border border-border">
             <Link href={`/calendar?month=${prevMonthStr}`} className="p-3 hover:bg-white dark:hover:bg-card rounded-2xl text-muted-foreground transition-all shadow-sm">
               <ChevronLeft className="h-5 w-5" />
             </Link>
@@ -133,10 +134,7 @@ export default async function CalendarPage({
             </Link>
           </div>
           
-          <Button className="h-14 px-8 bg-foreground text-background font-bold rounded-2xl shadow-xl shadow-foreground/5 gap-2 w-full md:w-auto">
-            <Plus className="h-5 w-5" />
-            Novo Evento
-          </Button>
+          <NewEventDialog />
         </div>
       </div>
 

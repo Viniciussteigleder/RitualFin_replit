@@ -2,9 +2,6 @@
 
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import {
-    Drawer,
-} from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -15,7 +12,7 @@ import {
     CheckCircle2,
     AlertCircle,
     FileText,
-    ExternalLink,
+   ExternalLink,
     Brain,
     MoreHorizontal,
     Trash2,
@@ -39,8 +36,13 @@ import {
     deleteTransaction,
     updateTransactionCategory 
 } from "@/lib/actions/transactions";
+import { 
+    bulkConfirmTransactions,
+    bulkDeleteTransactions,
+    exportTransactions 
+} from "@/lib/actions/bulk-operations";
 import { toast } from "sonner";
-import { TransactionDetailContent } from "@/components/transactions/transaction-detail-content";
+import { TransactionDrawer } from "@/components/transactions/transaction-drawer";
 
 // Using categories from schema (simplified list for UI)
 const CATEGORIES = [
@@ -127,6 +129,69 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
         }
     };
 
+    // Bulk action handlers
+    const handleBulkConfirm = async () => {
+        const ids = Array.from(selectedIds);
+        try {
+            const result = await bulkConfirmTransactions(ids);
+            if (result.success) {
+                toast.success(`${result.data.updated} transações confirmadas!`);
+                setSelectedIds(new Set());
+                window.location.reload(); // Refresh data
+            } else {
+                toast.error(result.error);
+            }
+        } catch (error) {
+            toast.error("Erro ao confirmar transações");
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        const ids = Array.from(selectedIds);
+        if (!confirm(`Tem certeza que deseja eliminar ${ids.length} transações?`)) {
+            return;
+        }
+        
+        try {
+            const result = await bulkDeleteTransactions(ids);
+            if (result.success) {
+                toast.success(`${result.data.deleted} transações eliminadas!`);
+                setSelectedIds(new Set());
+                window.location.reload(); // Refresh data
+            } else {
+                toast.error(result.error);
+            }
+        } catch (error) {
+            toast.error("Erro ao eliminar transações");
+        }
+    };
+
+    const handleBulkExport = async () => {
+        const ids = selectedIds.size > 0 ? Array.from(selectedIds) : undefined;
+        try {
+            const result = await exportTransactions(ids);
+            if (result.success) {
+                // Create download link
+                const blob = new Blob([result.data.csv], { type: "text/csv;charset=utf-8;" });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = result.data.filename;
+                link.click();
+                URL.revokeObjectURL(url);
+                
+                toast.success("Exportação concluída!");
+                if (selectedIds.size > 0) {
+                    setSelectedIds(new Set());
+                }
+            } else {
+                toast.error(result.error);
+            }
+        } catch (error) {
+            toast.error("Erro ao exportar transações");
+        }
+    };
+
     // Helper to get category style and icon
     const getCategoryStyles = (category: string) => {
         const cat = category?.toLowerCase() || "";
@@ -177,7 +242,7 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
                         {isCompact ? <Activity className="h-4 w-4" /> : <ShoppingBag className="h-4 w-4" />}
                         {isCompact ? "Vista Normal" : "Vista Compacta"}
                     </Button>
-                    <Button variant="outline" className="h-14 px-6 border-border hover:bg-secondary rounded-2xl text-foreground font-bold gap-2 text-sm">
+                    <Button variant="outline" className="h-14 px-6 border-border hover:bg-secondary rounded-2xl text-foreground font-bold gap-2 text-sm" onClick={handleBulkExport}>
                         <FileText className="h-4 w-4" />
                         Exportar
                     </Button>
@@ -327,23 +392,21 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
                 </div>
             </div>
 
-            {/* Bottom Drawer Revamp */}
-            <Drawer open={!!selectedTx} onOpenChange={(open) => !open && setSelectedTx(null)}>
-                <TransactionDetailContent 
-                    transaction={selectedTx} 
-                    onClose={() => setSelectedTx(null)}
-                    onConfirm={(id) => {
-                         if (selectedTx?.id === id) setSelectedTx(null);
-                    }}
-                />
-            </Drawer>
+            {/* Transaction Detail Drawer */}
+            <TransactionDrawer 
+                transaction={selectedTx}
+                open={!!selectedTx}
+                onOpenChange={(open) => !open && setSelectedTx(null)}
+                onConfirm={handleConfirm}
+                onDelete={handleDelete}
+            />
 
-            {/* Bulk Actions Bar Revamp */}
+            {/* Bulk Actions Bar */}
             <BulkActionsBarComp
                 selectedCount={selectedIds.size}
-                onClassifyAll={() => toast.success(`Classificadas ${selectedIds.size} transações`)}
-                onExport={() => toast.success(`Exportando ${selectedIds.size} transações`)}
-                onDelete={() => toast.error(`Deletadas ${selectedIds.size} transações`)}
+                onClassifyAll={handleBulkConfirm}
+                onExport={handleBulkExport}
+                onDelete={handleBulkDelete}
                 onClearSelection={() => setSelectedIds(new Set())}
             />
         </div>
