@@ -332,7 +332,12 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
                                             {!isCompact && (
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{tx.source}</span>
-                                                    {tx.needsReview && (
+                                                    {tx.conflictFlag ? (
+                                                        <Badge className="h-5 px-2 rounded-full bg-red-100 text-red-700 hover:bg-red-200 border-none text-[9px] font-bold uppercase tracking-wide flex items-center gap-1">
+                                                            <AlertCircle className="w-3 h-3" />
+                                                            Conflito
+                                                        </Badge>
+                                                    ) : tx.needsReview && (
                                                         <Badge className="h-5 px-2 rounded-full bg-amber-100 text-amber-700 hover:bg-amber-200 border-none text-[9px] font-bold uppercase tracking-wide">
                                                             Revisar
                                                         </Badge>
@@ -399,6 +404,7 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
                 onOpenChange={(open) => !open && setSelectedTx(null)}
                 onConfirm={handleConfirm}
                 onDelete={handleDelete}
+                onCategoryChange={handleCategoryUpdate}
             />
 
             {/* Bulk Actions Bar */}

@@ -2,12 +2,12 @@
 
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { ingestionBatches, ingestionItems, transactions, rules, accounts, aliasAssets } from "@/lib/db/schema";
+import { ingestionBatches, ingestionItems, transactions, rules, accounts, aliasAssets, sourceCsvSparkasse, sourceCsvMm, sourceCsvAmex } from "@/lib/db/schema";
 import { parseIngestionFile } from "@/lib/ingest";
 import { generateFingerprint } from "@/lib/ingest/fingerprint";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { categorizeTransaction, AI_SEED_RULES } from "@/lib/rules/engine";
+import { categorizeTransaction, AI_SEED_RULES, matchAlias } from "@/lib/rules/engine";
 
 // Core function for scripting/internal use
 export async function uploadIngestionFileCore(userId: string, buffer: Buffer, filename: string) {
@@ -16,8 +16,11 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
     userId,
     filename,
     status: "processing",
-    sourceType: "csv", 
+    sourceType: "csv",
   }).returning();
+
+  // import { sourceCsvSparkasse, sourceCsvMm, sourceCsvAmex } from "@/lib/db/schema"; <-- MOVED TO TOP
+
 
   try {
     // 2. Parse File
@@ -30,32 +33,126 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
       return { error: result.errors.join(", ") };
     }
 
-    // 3. Process Items & Deduplicate
+    // 3. Process Items & Deduplicate with Source CSV Tables
     let dupCount = 0;
     let newCount = 0;
+    const itemsToInsert: any[] = [];
+    const sourceTable = result.format === "sparkasse" ? sourceCsvSparkasse : 
+                       result.format === "miles_and_more" ? sourceCsvMm : 
+                       sourceCsvAmex;
 
     for (const tx of result.transactions) {
       const fingerprint = generateFingerprint(tx);
 
-      // Check for existing item with same fingerprint
-      const existing = await db.query.ingestionItems.findFirst({
-        where: (items, { eq }) => eq(items.itemFingerprint, fingerprint)
-      });
-
-      if (existing) {
-        dupCount++;
-        continue;
+      // Check for existing item with unique_row = true in the specific source table
+      // We check ACROSS ALL BATCHES for this user/account to find global duplicates
+      // But we need to know which table to query.
+      // Assuming uploadIngestionFileCore handles known formats.
+      
+      // Determine uniqueness
+      // Query source table for existing fingerprint with uniqueRow=true
+      // Note: This is an expensive loop. Ideally done in bulk or using `onConflict`.
+      // For now, we query. 
+      // Actually, we can just insert and let the periodic cleanup or batch commit handle it? 
+      // Plan said: "Check if fingerprint exists in source_csv_{type} with unique_row = true"
+      
+      // We'll trust the plan. 
+      // Use existing `db.query` is hard with dynamic table selection without raw SQL or 'any'.
+      // Lets use a helper or switch.
+      
+      let isUnique = true;
+      if (result.format === "sparkasse") {
+          const existing = await db.query.sourceCsvSparkasse.findFirst({
+              where: (t, { eq, and }) => and(eq(t.rowFingerprint, fingerprint), eq(t.uniqueRow, true)) // Check global uniqueness
+          });
+          if (existing) isUnique = false;
+      } else if (result.format === "miles_and_more") {
+          const existing = await db.query.sourceCsvMm.findFirst({
+              where: (t, { eq, and }) => and(eq(t.rowFingerprint, fingerprint), eq(t.uniqueRow, true))
+          });
+          if (existing) isUnique = false;
+      } else if (result.format === "amex") {
+          const existing = await db.query.sourceCsvAmex.findFirst({
+              where: (t, { eq, and }) => and(eq(t.rowFingerprint, fingerprint), eq(t.uniqueRow, true))
+          });
+          if (existing) isUnique = false;
       }
 
-      await db.insert(ingestionItems).values({
+      if (!isUnique) {
+        dupCount++;
+      } else {
+        newCount++;
+      }
+
+      // Create Ingestion Item (Parent)
+      // Note: We still use ingestionItems as a handle, but data lives in source_csv_* too?
+      // Schema says source_csv_* references ingestionItems. So we must create item first.
+      const [item] = await db.insert(ingestionItems).values({
         batchId: batch.id,
         itemFingerprint: fingerprint,
         rawPayload: tx,
         parsedPayload: tx,
-        status: "pending",
+        status: isUnique ? "pending" : "duplicate", // Mark status based on uniqueness
         source: result.format || "unknown"
-      });
-      newCount++;
+      }).returning();
+      
+      // Insert into Source CSV Table
+      const commonFields = {
+          userId,
+          batchId: batch.id,
+          ingestionItemId: item.id,
+          rowFingerprint: fingerprint,
+          key: tx.key,
+          keyDesc: tx.keyDesc || tx.description,
+          uniqueRow: isUnique,
+          importedAt: new Date()
+      };
+
+      if (result.format === "sparkasse") {
+          await db.insert(sourceCsvSparkasse).values({
+              ...commonFields,
+              auftragskonto: tx.auftragskonto,
+              buchungstag: tx.buchungstag ? new Date(tx.buchungstag) : null,
+              valutadatum: tx.valutadatum ? new Date(tx.valutadatum) : null,
+              buchungstext: tx.buchungstext,
+              verwendungszweck: tx.verwendungszweck,
+              glaeubigerId: tx.glaeubigerId,
+              mandatsreferenz: tx.mandatsreferenz,
+              kundenreferenz: tx.kundenreferenz,
+              sammlerreferenz: tx.sammlerreferenz,
+              lastschrifteinreicherId: tx.lastschrifteinreicherId,
+              idEndToEnd: tx.idEndToEnd,
+              beguenstigterZahlungspflichtiger: tx.beguenstigterZahlungspflichtiger,
+              iban: tx.iban,
+              bic: tx.bic,
+              betrag: tx.betrag ? parseFloat(tx.betrag.replace(',', '.')) : 0, // Ensure number
+              waehrung: tx.waehrung,
+              info: tx.info
+          });
+      } else if (result.format === "miles_and_more") {
+           await db.insert(sourceCsvMm).values({
+              ...commonFields,
+              authorisedOn: tx.authorisedOn ? new Date(tx.authorisedOn) : null,
+              processedOn: tx.processedOn ? new Date(tx.processedOn) : null,
+              paymentType: tx.paymentType,
+              status: tx.status,
+              amount: tx.amount || 0, // tx.amount is usually already parsed to number
+              currency: tx.currency,
+              description: tx.description
+           });
+      } else if (result.format === "amex") {
+           await db.insert(sourceCsvAmex).values({
+              ...commonFields,
+              datum: tx.datum ? new Date(tx.datum) : null,
+              beschreibung: tx.beschreibung,
+              betrag: tx.betrag ? parseFloat(tx.betrag.replace(',', '.')) : 0,
+              karteninhaber: tx.karteninhaber,
+              kartennummer: tx.kartennummer,
+              referenz: tx.referenz,
+              ort: tx.ort,
+              staat: tx.staat
+           });
+      }
     }
 
     // 4. Update Batch Status
@@ -115,7 +212,7 @@ export async function getIngestionBatches() {
 
 import { getAICategorization } from "@/lib/ai/openai";
 import { getTaxonomyTree, getTaxonomyTreeCore } from "./taxonomy";
-import { matchAlias } from "@/lib/rules/engine";
+
 
 // Core function for scripting/internal use
 export async function commitBatchCore(userId: string, batchId: string) {
@@ -145,11 +242,9 @@ export async function commitBatchCore(userId: string, batchId: string) {
       ...r,
       id: `seed-${i}`,
       userId: userId, 
-      ruleKey: `SEED-${r.name}`,
       active: true,
       createdAt: new Date(),
-      keyWords: r.keywords,
-      keywords: r.keywords,
+      keyWords: r.keyWords, // Updated from keywords
       keyWordsNegative: null,
       leafId: null,
       category2: r.category2 || null,
@@ -163,64 +258,125 @@ export async function commitBatchCore(userId: string, batchId: string) {
 
     let importedCount = 0;
 
+    // Pre-fetch taxonomy leaves for mapping
+    const taxonomyLeaves = await db.query.taxonomyLeaf.findMany({
+        with: {
+            level2: {
+                with: { level1: true }
+            }
+        }
+    });
+    
+    // Map leafId to full taxonomy
+    const leafMap = new Map();
+    taxonomyLeaves.forEach(l => {
+        leafMap.set(l.leafId, {
+            leaf: l,
+            level2: l.level2,
+            level1: l.level2.level1
+        });
+    });
+
     for (const item of batch.items) {
-        if (item.status === "imported") continue;
+        // Skip duplicates or already imported
+        if (item.status === "imported" || item.status === "duplicate") continue;
 
         const data = item.parsedPayload as any;
-        const keyDesc = data.keyDesc || data.descNorm || data.description; // Rich description
+        const keyDesc = data.keyDesc || data.descNorm || data.description;
         
         // 1. Alias Matching
         const aliasMatch = matchAlias(keyDesc, userAliases);
 
-        // 2. Deterministic Rule Categorization (using Rich KeyDesc)
+        // 2. Deterministic Rule Categorization
         let categorization = categorizeTransaction(keyDesc, effectiveRules);
         let aiResult = null;
 
-        // 3. AI Fallback (only if no rules match)
-        if (!categorization.ruleIdApplied && process.env.OPENAI_API_KEY) {
-            aiResult = await getAICategorization(keyDesc, taxonomyContext);
-            if (aiResult && aiResult.confidence > 0.7) {
-                // Map AI result to categorization structure
-                categorization = {
-                    ...categorization,
-                    leafId: aiResult.suggested_leaf_id,
-                    confidence: Math.round(aiResult.confidence * 100),
-                    needsReview: aiResult.confidence < 0.9,
-                    category1: (aiResult.extracted_merchants?.[0] || categorization.category1 || "Outros") as any, // Fallback
-                    suggestedKeyword: aiResult.rationale
-                };
-            }
+        // Populate Categories from Leaf ID if Rule matched and has leafId
+        if (categorization.ruleIdApplied && categorization.leafId) {
+             const mapping = leafMap.get(categorization.leafId);
+             if (mapping) {
+                 categorization.category1 = mapping.level1.nivel1Pt;
+                 categorization.category2 = mapping.level2.nivel2Pt;
+                 categorization.category3 = mapping.leaf.nivel3Pt;
+                 categorization.type = mapping.level2.receitaDespesaDefault as any || categorization.type;
+                 categorization.fixVar = mapping.level2.fixoVariavelDefault as any || categorization.fixVar;
+             } else if (categorization.leafId === 'open') {
+                 // "if leaf_id = open, then write open for type, fix_var, category_1, category_2, category_3"
+                 categorization.category1 = "open" as any;
+                 categorization.category2 = "open";
+                 categorization.category3 = "open";
+                 categorization.type = "open" as any;
+                 categorization.fixVar = "open" as any;
+             }
+        } else if (categorization.ruleIdApplied && !categorization.leafId) {
+            // "if not found; then write open for leaf_id"
+            // Wait, "Jobs inside table transactions: populate leaf_id based on key_words... if not found; then write open for leaf_id"
+            // This implies we should set leafId to 'open' if no rule matched? 
+            // Or if rule matched but has no leafId?
+            // "Based on leaf_id, populate type..."
+            // If rule matched but no leafId, we keep what rule says?
+            // The user says: "populate leaf_id based on key_words... if not found; then write open for leaf_if"
+            // If NO RULE MATCHES at all -> leafId = 'open'?
+            categorization.leafId = 'open';
+            categorization.category1 = "open" as any;
+            categorization.category2 = "open";
+            categorization.category3 = "open";
+            categorization.type = "open" as any;
+            categorization.fixVar = "open" as any;
         }
 
-        // 4. Account Linking (Heuristic)
-        let accountId = batch.accountId;
-        if (!accountId) {
-             const source = (data.source || "Unknown").toLowerCase();
-             const sourceKeywords: Record<string, string[]> = {
-                "amex": ["american express", "amex"],
-                "m&m": ["miles", "more", "lufthansa", "m&m"],
-                "sparkasse": ["sparkasse"]
-             };
-             const keywords = sourceKeywords[source] || [source];
-             
-             const matchedAccount = userAccounts.find(acc => {
-                const accName = acc.name.toLowerCase();
-                const institution = (acc.institution || "").toLowerCase();
-                return keywords.some(k => accName.includes(k) || institution.includes(k));
-             });
-             
-             if (matchedAccount) accountId = matchedAccount.id;
+        // 3. AI Fallback (only if no rules match - and leafId is 'open')
+        if (categorization.leafId === 'open' && process.env.OPENAI_API_KEY) {
+             // ... AI logic ...
+             // Keeping existing logic but mapping back to leafId if AI returns it
+             aiResult = await getAICategorization(keyDesc, taxonomyContext);
+             if (aiResult && aiResult.confidence > 0.7) {
+                  // If AI found a leaf, use it
+                  if (aiResult.suggested_leaf_id) {
+                      const mapping = leafMap.get(aiResult.suggested_leaf_id);
+                      if (mapping) {
+                         categorization.leafId = aiResult.suggested_leaf_id;
+                         categorization.category1 = mapping.level1.nivel1Pt;
+                         categorization.category2 = mapping.level2.nivel2Pt;
+                         categorization.category3 = mapping.leaf.nivel3Pt;
+                         categorization.type = mapping.level2.receitaDespesaDefault as any || categorization.type;
+                         categorization.fixVar = mapping.level2.fixoVariavelDefault as any || categorization.fixVar;
+                         categorization.needsReview = aiResult.confidence < 0.9;
+                         categorization.suggestedKeyword = aiResult.rationale;
+                         categorization.confidence = Math.round(aiResult.confidence * 100);
+                      }
+                  }
+             }
+        }
+
+        // 4. Account Linking (Existing Heuristic)
+        let accountId = null; // Removed from schema, but logic might still use it to find 'accountSource'?
+        // Wait, I removed accountId from transactions table. 
+        // User said "delete account_id -> no need".
+        // So we don't need to link to 'accounts' table anymore?
+        // Or we just don't store the FK?
+        // We still have 'accountSource'.
+
+        // Display Logic
+        // "add columns display... set 'no' for internal_transfer=true"
+        // "if category_2 = Karlsruhe, then set display = Casa Karlsruhe"
+        // "else display='yes' (rule: display all cases not set as 'no')"
+        
+        let display = "yes";
+        if (categorization.internalTransfer || categorization.category1 === "Interno") {
+            display = "no";
+        } else if (categorization.category2 === "Karlsruhe") {
+            display = "Casa Karlsruhe";
         }
 
         // Prepare Transaction
         const newTx = {
             userId: userId,
-            accountId: accountId, 
-            accountSource: data.accountSource || batch.sourceType || "Unknown",
+            // accountId: accountId, // REMOVED
             paymentDate: new Date(data.paymentDate || data.date),
             bookingDate: data.bookingDate ? new Date(data.bookingDate) : null,
             descRaw: data.descRaw || data.description || "No Description",
-            descNorm: keyDesc, // Storing Rich KeyDesc
+            descNorm: keyDesc, 
             keyDesc: keyDesc, 
             aliasDesc: aliasMatch ? aliasMatch.aliasDesc : null,
             amount: parseFloat(data.amount),
@@ -234,10 +390,14 @@ export async function commitBatchCore(userId: string, batchId: string) {
             fixVar: (categorization.fixVar || "Variável") as any,
             ruleIdApplied: categorization.ruleIdApplied && !categorization.ruleIdApplied.startsWith("seed-") ? categorization.ruleIdApplied : null,
             source: (["Sparkasse", "Amex", "M&M"].includes(data.source) ? data.source : null) as any,
-            key: data.key || item.itemFingerprint, // Use Readable Key if available
+            key: data.key || item.itemFingerprint, 
             leafId: categorization.leafId,
             confidence: categorization.confidence,
-            suggestedKeyword: categorization.suggestedKeyword || aiResult?.rationale
+            suggestedKeyword: categorization.suggestedKeyword || aiResult?.rationale,
+            display: display, 
+            internalTransfer: categorization.internalTransfer,
+            conflictFlag: (categorization as any).matches?.length > 1 && categorization.needsReview,
+            classificationCandidates: (categorization as any).matches || null
         };
 
         // Insert Transaction

@@ -3,7 +3,7 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { transactions, accounts, ingestionBatches, aliasAssets, rules } from "@/lib/db/schema";
-import { eq, desc, sql, and, gte } from "drizzle-orm";
+import { eq, desc, sql, and, gte, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { 
   TransactionUpdateSchema, 
@@ -26,6 +26,10 @@ export async function getDashboardData(date?: Date) {
   const endOfMonth = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0);
 
   // 1. Total Balance (Global)
+  // Balance should reflect actual bank state, so we generally DO NOT filter by display='no' here, 
+  // unless 'display=no' implies it's not a real transaction. 
+  // Given 'Internal Transfer', it's net 0 usually? Or moving money. 
+  // Let's keep balance authoritative.
   const [balanceRes] = await db
     .select({ total: sql<number>`COALESCE(SUM(amount), 0)` })
     .from(transactions)
@@ -37,7 +41,11 @@ export async function getDashboardData(date?: Date) {
   const [pendingRes] = await db
     .select({ count: sql<number>`count(*)` })
     .from(transactions)
-    .where(and(eq(transactions.userId, userId), eq(transactions.needsReview, true)));
+    .where(and(
+      eq(transactions.userId, userId), 
+      eq(transactions.needsReview, true),
+      ne(transactions.display, "no")
+    ));
   
   const pendingCount = Number(pendingRes?.count || 0);
 
@@ -49,7 +57,7 @@ export async function getDashboardData(date?: Date) {
     .orderBy(desc(ingestionBatches.importedAt))
     .limit(1);
 
-  // 4. Daily Spend (Avg last 30 days from target date? Or just global avg? Let's use 30 days ending at target date for context)
+  // 4. Daily Spend (Avg last 30 days from target date)
   const thirtyDaysAgo = new Date(targetDate);
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   
@@ -60,13 +68,13 @@ export async function getDashboardData(date?: Date) {
       eq(transactions.userId, userId),
       eq(transactions.type, "Despesa"),
       gte(transactions.paymentDate, thirtyDaysAgo),
-      sql`${transactions.paymentDate} <= ${targetDate}`
+      sql`${transactions.paymentDate} <= ${targetDate}`,
+      ne(transactions.display, "no")
     ));
   
   const dailySpend = Math.abs(Number(last30DaysSpend?.total || 0)) / 30;
 
   // 5. Month-to-Date / Month Total Spend
-  // Filter out internal transfers from spend calculation? User said "categoria interno nao é contabilizado". THIS IS KEY.
   const [mtdRes] = await db
     .select({ total: sql<number>`COALESCE(SUM(amount), 0)` })
     .from(transactions)
@@ -81,7 +89,8 @@ export async function getDashboardData(date?: Date) {
       // Assuming 'Interno' and 'Transferências' are the names.
       // Drizzle doesn't export notInArray by default in all versions, checking imports.
       // If not available, use sql.
-      sql`${transactions.category1} NOT IN ('Interno', 'Transferências')`
+      sql`${transactions.category1} NOT IN ('Interno', 'Transferências')`,
+      ne(transactions.display, "no")
     ));
 
   const spentMonthToDate = Math.abs(Number(mtdRes?.total || 0));
@@ -114,7 +123,8 @@ export async function getDashboardData(date?: Date) {
        eq(transactions.type, "Despesa"),
        gte(transactions.paymentDate, startOfMonth),
        sql`${transactions.paymentDate} <= ${endOfMonth}`,
-       sql`${transactions.category1} NOT IN ('Interno', 'Transferências')`
+       sql`${transactions.category1} NOT IN ('Interno', 'Transferências')`,
+       ne(transactions.display, "no")
     ))
     .groupBy(transactions.category1)
     .orderBy(desc(sql`SUM(ABS(${transactions.amount}))`))
@@ -143,7 +153,11 @@ export async function getPendingTransactions() {
   const userId = session.user.id;
 
   return await db.query.transactions.findMany({
-    where: (tx, { eq, and }) => and(eq(tx.userId, userId), eq(tx.needsReview, true)),
+    where: (tx, { eq, and, ne }) => and(
+        eq(tx.userId, userId), 
+        eq(tx.needsReview, true),
+        ne(tx.display, "no")
+    ),
     orderBy: [desc(transactions.paymentDate)],
     with: {
       rule: true,
@@ -164,7 +178,10 @@ export async function getTransactions(limit = 50) {
 
   // TODO: Add filtering and pagination support
   return await db.query.transactions.findMany({
-    where: (tx, { eq }) => eq(tx.userId, userId),
+    where: (tx, { eq, ne, and }) => and(
+      eq(tx.userId, userId),
+      ne(tx.display, "no")
+    ),
     orderBy: [desc(transactions.paymentDate)],
     limit: limit,
     with: {
@@ -191,7 +208,8 @@ export async function updateTransactionCategory(
       category2: data.category2,
       category3: data.category3,
       needsReview: false, // Auto-confirm on manual edit
-      manualOverride: true
+      manualOverride: true,
+      conflictFlag: false // Resolution clears conflict
     })
     .where(eq(transactions.id, transactionId));
 
@@ -205,7 +223,7 @@ export async function confirmTransaction(transactionId: string) {
     if (!session?.user?.id) return { error: "Unauthorized" };
 
     await db.update(transactions)
-        .set({ needsReview: false })
+        .set({ needsReview: false, conflictFlag: false })
         .where(eq(transactions.id, transactionId));
 
     revalidatePath("/confirm");
@@ -262,15 +280,13 @@ export async function createRuleAndApply(
 
   try {
     // 1. Create Rule
-    const ruleKey = `QUICK_${Date.now()}`;
     const [insertedRule] = await db.insert(rules).values({
       userId: session.user.id,
-      name: `Quick Rule: ${keyword}`,
-      keywords: keyword,
-      category1: category,
+      keyWords: keyword,
+      category1: category as any,
       active: true,
-      priority: 999, // High priority
-      ruleKey: ruleKey
+      priority: 999, 
+      leafId: "open" 
     }).returning();
 
     if (!insertedRule) throw new Error("Failed to create rule");
@@ -278,7 +294,7 @@ export async function createRuleAndApply(
     // 2. Update Transaction
     await db.update(transactions)
       .set({
-        category1: category,
+        category1: category as any,
         needsReview: false,
         ruleIdApplied: insertedRule.id,
         manualOverride: false // It's rule based now, effectively

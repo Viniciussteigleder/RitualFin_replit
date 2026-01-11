@@ -135,7 +135,10 @@ export async function importCSVData() {
           // Insert transaction
           await db.insert(transactions).values({
             userId: userId,
-            accountId: accountId,
+            // accountId: accountId, // Removed from schema
+            source: csvFile.name.includes('Sparkasse') ? 'Sparkasse' :
+                   csvFile.name.includes('American') ? 'Amex' :
+                   csvFile.name.includes('Miles') ? 'M&M' : 'Sparkasse', // Default or logic
             paymentDate: paymentDate,
             descRaw: descRaw,
             descNorm: descNorm,

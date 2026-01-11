@@ -28,7 +28,7 @@ export function findMatchedExpression(haystack: string, expressions: string[]): 
 
 export function evaluateRuleMatch(keyDesc: string, rule: Rule) {
   const haystack = normalizeForMatch(keyDesc);
-  const positives = splitKeyExpressions(rule.keyWords || rule.keywords || "");
+  const positives = splitKeyExpressions(rule.keyWords || "");
   const negatives = splitKeyExpressions(rule.keyWordsNegative);
 
   const normalizedPositives = positives.map(normalizeForMatch);

@@ -72,6 +72,16 @@ export const sidebarCopy = {
     "pt-PT": "Exibe a sidebar no modo mobile.",
     "de-DE": "Zeigt die mobile Seitenleiste an.",
     "en-US": "Displays the mobile sidebar."
+  },
+  openMenu: {
+    "pt-PT": "Abrir menu",
+    "de-DE": "Menü öffnen",
+    "en-US": "Open menu"
+  },
+  closeMenu: {
+    "pt-PT": "Fechar menu",
+    "de-DE": "Menü schließen",
+    "en-US": "Close menu"
   }
 };
 
@@ -3547,6 +3557,8 @@ export const layoutCopy = {
     "pt-PT": {
       period: "Período",
       system: "Sistema",
+      openMenu: "Abrir menu",
+      closeMenu: "Fechar menu",
       toggleGroup: "Alternar grupo {group}",
       groups: {
         overview: "Visão Geral",
@@ -3597,6 +3609,8 @@ export const layoutCopy = {
     "de-DE": {
       period: "Zeitraum",
       system: "System",
+      openMenu: "Menü öffnen",
+      closeMenu: "Menü schließen",
       toggleGroup: "Gruppe {group} umschalten",
       groups: {
         overview: "Übersicht",
@@ -3647,6 +3661,8 @@ export const layoutCopy = {
     "en-US": {
       period: "Period",
       system: "System",
+      openMenu: "Open menu",
+      closeMenu: "Close menu",
       toggleGroup: "Toggle {group} group",
       groups: {
         overview: "Overview",

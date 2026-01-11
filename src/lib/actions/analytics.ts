@@ -52,7 +52,7 @@ export async function getAnalyticsData(
     conditions.push(lte(transactions.paymentDate, filters.endDate));
   }
   if (filters.accountId) {
-    conditions.push(eq(transactions.accountId, filters.accountId));
+    // conditions.push(eq(transactions.accountId, filters.accountId)); // Removed from schema
   }
   if (filters.type) {
     conditions.push(eq(transactions.type, filters.type));

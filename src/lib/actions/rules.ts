@@ -115,8 +115,7 @@ export async function simulateRule(keyword: string): Promise<SimulationResult> {
  * Create a new official rule
  */
 export async function createRule(data: {
-  name: string;
-  keywords: string;
+  keyWords: string;
   category1: string;
   category2?: string;
   type?: "Receita" | "Despesa";
@@ -128,15 +127,16 @@ export async function createRule(data: {
   try {
     await db.insert(rules).values({
       userId: session.user.id,
-      name: data.name,
-      keywords: data.keywords,
+      // name: data.name, // Removed
+      keyWords: data.keyWords,
       category1: data.category1 as any, // Enum cast
       category2: data.category2,
       type: data.type || "Despesa",
       fixVar: data.fixVar || "Variável",
       active: true,
       priority: 950, // User rules have high priority
-      ruleKey: `AUTO_${Date.now()}` // Unique key
+      // ruleKey: `AUTO_${Date.now()}` // Removed
+      leafId: "open" // Default
     });
 
     revalidatePath("/admin/rules");
@@ -205,15 +205,17 @@ export async function upsertRules(rulesData: any[]) {
     try {
         for (const r of rulesData) {
             // Clean data
+            // Clean data
             const payload = {
                 userId: session.user.id,
-                name: r.name || r.Name || "Regra Importada",
-                keywords: r.keywords || r.Keywords || r.keyWords || "",
+                // name: r.name || r.Name || "Regra Importada",
+                keyWords: r.keywords || r.Keywords || r.keyWords || "",
                 category1: r.category1 || r.Category1 || "Outros",
                 category2: r.category2 || r.Category2 || null,
                 priority: parseInt(r.priority || r.Priority || "500"),
                 active: r.active === true || r.active === "true" || r.Active === true,
-                ruleKey: r.ruleKey || r.RuleKey || `IMPORT_${Date.now()}_${Math.random()}`
+                // ruleKey: r.ruleKey || r.RuleKey || `IMPORT_${Date.now()}_${Math.random()}`
+                leafId: "open"
             };
 
             // If ID exists and is valid UUID, try update, else insert
@@ -250,10 +252,10 @@ export async function reApplyAllRules() {
     ...r,
     id: `seed-${i}`,
     userId: userId,
-    ruleKey: `SEED-${r.name}`,
+    // ruleKey: `SEED-${r.name}`,
     active: true,
     createdAt: new Date(),
-    keywords: r.keywords,
+    keyWords: r.keyWords,
     category2: r.category2 || null,
     category3: null
   } as any));

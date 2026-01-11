@@ -14,6 +14,7 @@ export interface RuleMatch {
   strict: boolean;
   isSystem: boolean;
   matchedKeyword?: string;
+  leafId?: string | null;  // Added leafId to match logic
 }
 
 export interface CategorizationResult {
@@ -50,9 +51,9 @@ export function matchRules(descNorm: string, rules: Rule[], settings: UserSettin
   const sortedRules = [...rules].sort((a, b) => (b.priority || 500) - (a.priority || 500));
 
   for (const rule of sortedRules) {
-    if (!rule.keywords && !rule.keyWords) continue; // Skip rules without keywords
+    if (!rule.keyWords) continue; // Skip rules without key_words (legacy keywords removed)
 
-    const keywordString = rule.keyWords || rule.keywords || "";
+    const keywordString = rule.keyWords || "";
     const keywords = keywordString
       .split(";")
       .map((k: string) => normalizeForMatch(k))
@@ -163,7 +164,7 @@ export function categorizeTransaction(
   descNorm: string,
   rules: Rule[],
   settings: UserSettings = {}
-): Partial<Transaction> & { confidence?: number } {
+): Partial<Transaction> & { confidence?: number; matches?: RuleMatch[] } {
   const result = matchRules(descNorm, rules, settings);
   
   if (result.appliedRule && !result.needsReview) {
@@ -180,13 +181,15 @@ export function categorizeTransaction(
       ruleIdApplied: rule.ruleId,
       internalTransfer: isInterno,
       excludeFromBudget: isInterno,
-      confidence: result.confidence
+      confidence: result.confidence,
+      matches: result.matches // Return all candidates
     };
   }
 
   if (result.appliedRule && result.needsReview) {
     const rule = result.appliedRule;
     const isInterno = rule.category1 === "Interno";
+    const isConflict = result.matches.length > 1; // Basic conflict detection logic
 
     return {
       type: rule.type,
@@ -198,13 +201,16 @@ export function categorizeTransaction(
       ruleIdApplied: rule.ruleId,
       internalTransfer: isInterno,
       excludeFromBudget: isInterno,
-      confidence: result.confidence
+      confidence: result.confidence,
+      matches: result.matches,
+      // We can interpret this in ingest.ts to set conflictFlag
     };
   }
 
   return {
     needsReview: true,
-    confidence: 0
+    confidence: 0,
+    matches: result.matches
   };
 }
 
@@ -225,7 +231,7 @@ export interface KeyDescMatchResult {
 }
 
 export function classifyByKeyDesc(keyDesc: string, rules: Rule[]): KeyDescMatchResult {
-  for (const rule of rules.filter(r => r.active !== false && (r.keyWords || r.keywords))) {
+  for (const rule of rules.filter(r => r.active !== false && r.keyWords)) {
     const result = evaluateRuleMatch(keyDesc, rule);
     if (result.isMatch) {
       return {
@@ -259,7 +265,7 @@ export function matchAlias(descNorm: string, aliases: AliasAssets[]): AliasAsset
 export const AI_SEED_RULES = [
   {
     name: "Interno",
-    keywords: "AMEX - ZAHLUNG;ZAHLUNG ERHALTEN;PAGAMENTO AMEX;PAGAMENTO M&M;AMERICAN EXPRESS ZAHLUNG;DEUTSCHE KREDITBANK;CREDIT CARD PAYMENT RECEIVED",
+    keyWords: "AMEX - ZAHLUNG;ZAHLUNG ERHALTEN;PAGAMENTO AMEX;PAGAMENTO M&M;AMERICAN EXPRESS ZAHLUNG;DEUTSCHE KREDITBANK;CREDIT CARD PAYMENT RECEIVED",
     type: "Despesa" as const,
     fixVar: "Fixo" as const,
     category1: "Interno" as const,
@@ -270,7 +276,7 @@ export const AI_SEED_RULES = [
   },
   {
     name: "Mercados",
-    keywords: "REWE;EDEKA;ALDI;LIDL;NETTO;NORMA;DM;DM-DROGERIE;ROSSMANN;MUELLER;MÜLLER;ASIA MARKT;BACKSTUBE;BAECKEREI;IHLE;WUENSCHE;FRUCHTWERK",
+    keyWords: "REWE;EDEKA;ALDI;LIDL;NETTO;NORMA;DM;DM-DROGERIE;ROSSMANN;MUELLER;MÜLLER;ASIA MARKT;BACKSTUBE;BAECKEREI;IHLE;WUENSCHE;FRUCHTWERK",
     type: "Despesa" as const,
     fixVar: "Variável" as const,
     category1: "Mercados" as const,

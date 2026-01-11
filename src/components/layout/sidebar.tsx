@@ -57,7 +57,14 @@ export function Sidebar() {
           </div>
           <span className="font-bold text-xl tracking-tighter text-foreground font-display">RitualFin</span>
         </div>
-        <Button variant="ghost" size="icon" onClick={() => setIsOpen(!isOpen)} className="dark:text-white">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => setIsOpen(!isOpen)} 
+          className="dark:text-white focus-ring"
+          aria-label={isOpen ? sidebarLabels.closeMenu : sidebarLabels.openMenu}
+          aria-expanded={isOpen}
+        >
           {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </Button>
       </div>
@@ -104,11 +111,12 @@ export function Sidebar() {
                     href={item.href}
                     onClick={() => setIsOpen(false)}
                     className={cn(
-                      "flex items-center justify-between px-4 py-3 rounded-xl transition-all group",
+                      "flex items-center justify-between px-4 py-3 rounded-xl transition-all group focus-ring",
                       isActive
                         ? "bg-primary/10 text-primary font-bold shadow-sm shadow-primary/5 border border-primary/20"
                         : "text-muted-foreground hover:bg-secondary hover:text-foreground font-medium"
                     )}
+                    aria-current={isActive ? "page" : undefined}
                   >
                     <div className="flex items-center gap-3">
                       <item.icon className={cn(
@@ -144,11 +152,12 @@ export function Sidebar() {
                     href={item.href}
                     onClick={() => setIsOpen(false)}
                     className={cn(
-                      "flex items-center gap-3 px-4 py-3 rounded-xl transition-all group",
+                      "flex items-center gap-3 px-4 py-3 rounded-xl transition-all group focus-ring",
                       isActive
                         ? "bg-secondary text-foreground font-bold border border-border"
                         : "text-muted-foreground hover:bg-secondary hover:text-foreground font-medium"
                     )}
+                    aria-current={isActive ? "page" : undefined}
                   >
                     <item.icon className={cn(
                       "h-4 w-4 transition-transform group-hover:scale-110",
@@ -174,11 +183,12 @@ export function Sidebar() {
                     href={item.href}
                     onClick={() => setIsOpen(false)}
                     className={cn(
-                      "flex items-center gap-3 px-4 py-3 rounded-xl transition-all group opacity-70 hover:opacity-100",
+                      "flex items-center gap-3 px-4 py-3 rounded-xl transition-all group opacity-70 hover:opacity-100 focus-ring",
                       isActive
                         ? "bg-secondary text-foreground font-bold"
                         : "text-muted-foreground hover:bg-secondary hover:text-foreground font-medium"
                     )}
+                    aria-current={isActive ? "page" : undefined}
                   >
                     <item.icon className={cn(
                       "h-4 w-4",
@@ -198,16 +208,18 @@ export function Sidebar() {
             href="/settings"
             onClick={() => setIsOpen(false)}
             className={cn(
-              "flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-muted-foreground hover:bg-secondary hover:text-foreground font-medium group text-sm",
+              "flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-muted-foreground hover:bg-secondary hover:text-foreground font-medium group text-sm focus-ring",
               pathname === "/settings" && "bg-secondary text-foreground font-bold"
             )}
+            aria-current={pathname === "/settings" ? "page" : undefined}
           >
             <Settings className="h-5 w-5 text-muted-foreground/60 group-hover:text-foreground group-hover:rotate-45 transition-transform" />
             <span>{sidebarLabels.items.settings}</span>
           </Link>
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-muted-foreground hover:bg-destructive/10 hover:text-destructive font-medium group text-sm"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-muted-foreground hover:bg-destructive/10 hover:text-destructive font-medium group text-sm w-full text-left focus-ring"
+            aria-label={sidebarLabels.items.logout}
           >
             <LogOut className="h-5 w-5 text-muted-foreground/60 group-hover:text-destructive group-hover:-translate-x-1 transition-transform" />
             <span>{sidebarLabels.items.logout}</span>

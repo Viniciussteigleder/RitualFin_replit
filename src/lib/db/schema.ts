@@ -244,9 +244,7 @@ export const transactionEvidenceLink = pgTable("transaction_evidence_link", {
 export const rules = pgTable("rules", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => users.id),
-  ruleKey: text("rule_key"), // NEW
-  name: text("name"),
-  keywords: text("keywords"), 
+  // Removed: ruleKey, name, keywords as requested
   type: transactionTypeEnum("type"),
   fixVar: fixVarEnum("fix_var"),
   category1: category1Enum("category_1"),
@@ -261,7 +259,7 @@ export const rules = pgTable("rules", {
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
-  userRuleKeyIdx: uniqueIndex("rules_user_rule_key_idx").on(table.userId, table.ruleKey),
+  // Removed index on ruleKey
 }));
 
 export const rulesRelations = relations(rules, ({ one }) => ({
@@ -335,7 +333,8 @@ export const transactions = pgTable("transactions", {
   externalRef: text("external_ref"), // NEW
   enrichedAt: timestamp("enriched_at"), // NEW
   importedAt: timestamp("imported_at").notNull().defaultNow(),
-  accountId: varchar("account_id").references(() => accounts.id),
+  display: text("display").default("yes"), // NEW: for filtered views
+  // Removed: accountId
   descRaw: text("desc_raw").notNull(),
   descNorm: text("desc_norm").notNull(),
   rawDescription: text("raw_description"),
@@ -371,18 +370,17 @@ export const transactions = pgTable("transactions", {
   uploadId: varchar("upload_id"), 
   confidence: integer("confidence"),
   suggestedKeyword: text("suggested_keyword"),
+  conflictFlag: boolean("conflict_flag").notNull().default(false),
+  classificationCandidates: jsonb("classification_candidates"),
 }, (table) => ({
   uniqueKeyPerUser: uniqueIndex("transactions_unique_key_per_user").on(table.userId, table.key),
-  accAmtPostingIdx: index("transactions_acc_amt_posting_idx").on(table.accountId, table.amount, table.postingDate),
-  accAmtEventIdx: index("transactions_acc_amt_event_idx").on(table.accountId, table.amount, table.eventDate),
-  accPostingStatusIdx: index("transactions_acc_posting_status_idx").on(table.accountId, table.postingStatus),
-  accProcessingStatusIdx: index("transactions_acc_processing_status_idx").on(table.accountId, table.processingStatus),
+  // Removed indices dependent on accountId
 }));
 
 export const transactionsRelations = relations(transactions, ({ one, many }) => ({
   user: one(users, { fields: [transactions.userId], references: [users.id] }),
   rule: one(rules, { fields: [transactions.ruleIdApplied], references: [rules.id] }),
-  account: one(accounts, { fields: [transactions.accountId], references: [accounts.id] }),
+  // Removed account relation
   leaf: one(taxonomyLeaf, { fields: [transactions.leafId], references: [taxonomyLeaf.leafId] }),
   evidenceLinks: many(transactionEvidenceLink),
 }));
@@ -445,8 +443,8 @@ export const sourceCsvSparkasse = pgTable("source_csv_sparkasse", {
   ingestionItemId: varchar("ingestion_item_id").references(() => ingestionItems.id),
   // Columns matching Sparkasse CSV
   auftragskonto: text("auftragskonto"),
-  buchungstag: date("buchungstag"),
-  valutadatum: date("valutadatum"),
+  buchungstag: date("buchungstag", { mode: "date" }),
+  valutadatum: date("valutadatum", { mode: "date" }),
   buchungstext: text("buchungstext"),
   verwendungszweck: text("verwendungszweck"),
   glaeubigerId: text("glaeubiger_id"),
@@ -464,6 +462,7 @@ export const sourceCsvSparkasse = pgTable("source_csv_sparkasse", {
   rowFingerprint: text("row_fingerprint").notNull(),
   key: text("key"),
   keyDesc: text("key_desc"),
+  uniqueRow: boolean("unique_row").default(false), // NEW
   importedAt: timestamp("imported_at").notNull().defaultNow(),
 }, (table) => ({
   accBookingIdx: index("sparkasse_acc_booking_idx").on(table.accountId, table.buchungstag),
@@ -478,8 +477,8 @@ export const sourceCsvMm = pgTable("source_csv_mm", {
   batchId: varchar("batch_id").references(() => ingestionBatches.id),
   ingestionItemId: varchar("ingestion_item_id").references(() => ingestionItems.id),
   // Columns matching M&M
-  authorisedOn: date("authorised_on"),
-  processedOn: date("processed_on"),
+  authorisedOn: date("authorised_on", { mode: "date" }),
+  processedOn: date("processed_on", { mode: "date" }),
   paymentType: text("payment_type"),
   status: text("status"),
   amount: real("amount"),
@@ -488,6 +487,7 @@ export const sourceCsvMm = pgTable("source_csv_mm", {
   rowFingerprint: text("row_fingerprint").notNull(),
   key: text("key"),
   keyDesc: text("key_desc"),
+  uniqueRow: boolean("unique_row").default(false), // NEW
   importedAt: timestamp("imported_at").notNull().defaultNow(),
 }, (table) => ({
   accProcessedIdx: index("mm_acc_processed_idx").on(table.accountId, table.processedOn),
@@ -502,7 +502,7 @@ export const sourceCsvAmex = pgTable("source_csv_amex", {
   batchId: varchar("batch_id").references(() => ingestionBatches.id),
   ingestionItemId: varchar("ingestion_item_id").references(() => ingestionItems.id),
   // Columns matching Amex
-  datum: date("datum"),
+  datum: date("datum", { mode: "date" }),
   beschreibung: text("beschreibung"),
   betrag: real("betrag"),
   karteninhaber: text("karteninhaber"),
@@ -513,6 +513,7 @@ export const sourceCsvAmex = pgTable("source_csv_amex", {
   rowFingerprint: text("row_fingerprint").notNull(),
   key: text("key"),
   keyDesc: text("key_desc"),
+  uniqueRow: boolean("unique_row").default(false), // NEW
   importedAt: timestamp("imported_at").notNull().defaultNow(),
 }, (table) => ({
   accDatumIdx: index("amex_acc_datum_idx").on(table.accountId, table.datum),

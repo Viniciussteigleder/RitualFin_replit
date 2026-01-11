@@ -69,7 +69,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           <CardContent className="p-8 flex flex-col justify-between h-full gap-5 relative z-10">
              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className={`p-3 rounded-xl ${remainingBudget > 0 ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600 shadow-lg shadow-red-500/20'}`}>
+                    <div className={`p-3 rounded-xl ${remainingBudget > 0 ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-400/10 dark:text-red-400 shadow-lg shadow-red-500/20'}`}>
                         <Wallet className="h-5 w-5" />
                     </div>
                     <div className="flex flex-col">
@@ -84,7 +84,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
              </div>
              
              <div>
-                <h3 className={`text-6xl font-bold font-display tracking-tightest ${remainingBudget >= 0 ? 'text-emerald-600' : 'text-red-500'}`} suppressHydrationWarning>
+                <h3 className={`text-6xl font-bold font-display tracking-tightest ${remainingBudget >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`} suppressHydrationWarning>
                     {formatCurrency(remainingBudget, { hideDecimals: true })}
                 </h3>
              </div>
@@ -114,7 +114,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                 <Card className="rounded-2xl border-border bg-white dark:bg-card shadow-sm hover:shadow-md transition-all group relative overflow-hidden cursor-pointer border-l-4 border-l-orange-500/50">
                 <CardContent className="p-8 flex flex-col justify-between h-full gap-4">
                     <div className="flex items-center gap-3">
-                        <div className="p-3 rounded-xl bg-orange-100 text-orange-600">
+                        <div className="p-3 rounded-xl bg-orange-100 text-orange-600 dark:bg-orange-400/10 dark:text-orange-400">
                             <TrendingUp className="h-5 w-5" />
                         </div>
                         <div className="flex flex-col">
@@ -123,7 +123,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                         </div>
                     </div>
                     <div>
-                        <h3 className="text-4xl font-bold font-display text-orange-600 tracking-tight" suppressHydrationWarning>
+                        <h3 className="text-4xl font-bold font-display text-orange-600 dark:text-orange-400 tracking-tight" suppressHydrationWarning>
                             {formatCurrency(spentMonthToDate, { hideDecimals: true })}
                         </h3>
                     </div>
@@ -140,7 +140,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                 <div className="absolute right-0 top-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl"></div>
                 <CardContent className="p-8 flex flex-col justify-between h-full gap-4 relative z-10">
                     <div className="flex items-center gap-3">
-                        <div className="p-3 rounded-xl bg-blue-100 text-blue-600">
+                        <div className="p-3 rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-400/10 dark:text-blue-400">
                             <Activity className="h-5 w-5" />
                         </div>
                         <div className="flex flex-col">
@@ -154,7 +154,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                         </h3>
                     </div>
                     <div>
-                        <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 text-[9px] font-black px-2 tracking-tighter uppercase">
+                        <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-400/10 dark:text-blue-400 dark:border-blue-400/20 text-[9px] font-black px-2 tracking-tighter uppercase">
                             Previsão estimada
                         </Badge>
                     </div>

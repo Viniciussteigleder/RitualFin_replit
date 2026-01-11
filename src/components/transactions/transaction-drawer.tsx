@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { formatCurrency } from "@/lib/utils";
-import { Calendar, Building2, Tag, FileText, ExternalLink, Edit, Trash2, CheckCircle2 } from "lucide-react";
+import { Calendar, Building2, Tag, FileText, ExternalLink, Edit, Trash2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { CATEGORY_CONFIGS } from "@/lib/constants/categories";
 import { useState } from "react";
 
@@ -27,6 +27,8 @@ type Transaction = {
   needsReview: boolean;
   manualOverride: boolean;
   accountId?: string | null;
+  conflictFlag?: boolean | null;
+  classificationCandidates?: any | null;
 };
 
 interface TransactionDrawerProps {
@@ -36,6 +38,7 @@ interface TransactionDrawerProps {
   onEdit?: (transaction: Transaction) => void;
   onDelete?: (transactionId: string) => void;
   onConfirm?: (transactionId: string) => void;
+  onCategoryChange?: (transactionId: string, category: string) => void;
 }
 
 export function TransactionDrawer({ 
@@ -44,7 +47,8 @@ export function TransactionDrawer({
   onOpenChange,
   onEdit,
   onDelete,
-  onConfirm
+  onConfirm,
+  onCategoryChange
 }: TransactionDrawerProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
@@ -127,6 +131,46 @@ export function TransactionDrawer({
         </SheetHeader>
 
         <div className="space-y-6 py-6">
+          {/* Conflict Resolution Section */}
+          {transaction.conflictFlag && transaction.classificationCandidates && (
+            <div className="p-4 border border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 rounded-2xl space-y-3 animate-in fade-in slide-in-from-top-4">
+                <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-bold uppercase tracking-wide text-xs">
+                <AlertTriangle className="w-4 h-4" />
+                Conflito de Regras Detectado
+                </div>
+                <p className="text-sm text-amber-900 dark:text-amber-200">
+                O sistema encontrou múltiplas regras para esta transação. Escolha a mais adequada para resolver:
+                </p>
+                <div className="grid gap-2">
+                {Array.isArray(transaction.classificationCandidates) && transaction.classificationCandidates.map((match: any, idx: number) => (
+                    <button 
+                        key={idx}
+                        onClick={() => {
+                            if (onCategoryChange) {
+                                onCategoryChange(transaction.id, match.category1);
+                                if (onConfirm) onConfirm(transaction.id); // Auto-confirm on resolution?
+                            }
+                        }}
+                        className="flex items-center justify-between p-3 bg-white dark:bg-card border border-amber-200 dark:border-amber-800 rounded-xl hover:border-amber-400 hover:shadow-md transition-all text-left group"
+                    >
+                        <div>
+                            <div className="font-bold text-sm flex items-center gap-2">
+                                {match.category1}
+                                {match.category2 && <span className="text-xs font-normal text-muted-foreground">→ {match.category2}</span>}
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                                Regra: <span className="font-mono text-amber-600 dark:text-amber-400 font-bold">{match.matchedKeyword}</span>
+                            </div>
+                        </div>
+                        <div className="text-[10px] font-bold text-amber-700 bg-amber-100 dark:bg-amber-900/40 dark:text-amber-300 px-2 py-1 rounded-lg">
+                            {match.confidence}%
+                        </div>
+                    </button>
+                ))}
+                </div>
+            </div>
+          )}
+
           {/* Category Section */}
           <div className="space-y-3">
             <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Categorização</h3>

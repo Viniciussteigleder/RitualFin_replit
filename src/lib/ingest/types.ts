@@ -18,6 +18,43 @@ export interface ParsedTransaction {
   accountSource?: string;
   keyDesc?: string;
   simpleDesc?: string;
+
+  // Source Specific Fields (for staging tables)
+  // Sparkasse
+  auftragskonto?: string;
+  buchungstag?: string;
+  valutadatum?: string;
+  buchungstext?: string;
+  verwendungszweck?: string;
+  glaeubigerId?: string;
+  mandatsreferenz?: string;
+  kundenreferenz?: string;
+  sammlerreferenz?: string;
+  lastschrifteinreicherId?: string;
+  idEndToEnd?: string;
+  beguenstigterZahlungspflichtiger?: string;
+  iban?: string;
+  bic?: string;
+  betrag?: string;
+  waehrung?: string;
+  info?: string;
+  
+  // Miles & More
+  authorisedOn?: string;
+  processedOn?: string;
+  paymentType?: string;
+  status?: string;
+  // amount, currency, description exist in base
+  
+  // Amex
+  datum?: string;
+  beschreibung?: string;
+  // betrag exists
+  karteninhaber?: string;
+  kartennummer?: string;
+  referenz?: string;
+  ort?: string;
+  staat?: string;
 }
 
 export interface ParseDiagnostics {
