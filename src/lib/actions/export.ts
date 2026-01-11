@@ -14,7 +14,7 @@ export async function exportFullDataset(filters: AnalyticsFilters) {
     if (filters.startDate) conditions.push(gte(transactions.paymentDate, filters.startDate));
     if (filters.endDate) conditions.push(lte(transactions.paymentDate, filters.endDate));
     if (filters.accountId && filters.accountId !== "all") conditions.push(eq(transactions.source as any, filters.accountId)); // Force cast for enum
-    if (filters.type && filters.type !== "all") {
+    if (filters.type && (filters.type as string) !== "all") {
         if (filters.type === "Receita") conditions.push(gte(transactions.amount, 0)); // Using number 0
         else if (filters.type === "Despesa") conditions.push(lte(transactions.amount, 0));
         // Fallback for English literals if passed
