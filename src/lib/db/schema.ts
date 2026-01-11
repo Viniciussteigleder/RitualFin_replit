@@ -333,7 +333,7 @@ export const transactions = pgTable("transactions", {
   externalRef: text("external_ref"), // NEW
   enrichedAt: timestamp("enriched_at"), // NEW
   importedAt: timestamp("imported_at").notNull().defaultNow(),
-  display: text("display").default("yes"), // NEW: for filtered views
+  // display: column removed (duplicate)
   // Removed: accountId
   descRaw: text("desc_raw").notNull(),
   descNorm: text("desc_norm").notNull(),
@@ -370,6 +370,7 @@ export const transactions = pgTable("transactions", {
   uploadId: varchar("upload_id"), 
   confidence: integer("confidence"),
   suggestedKeyword: text("suggested_keyword"),
+  display: text("display").notNull().default("yes"),
   conflictFlag: boolean("conflict_flag").notNull().default(false),
   classificationCandidates: jsonb("classification_candidates"),
 }, (table) => ({

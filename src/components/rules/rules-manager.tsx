@@ -65,8 +65,7 @@ export function RulesManager({ initialRules }: { initialRules: any[] }) {
     // Filter Logic
     const filteredRules = rules.filter(rule => {
         const matchesSearch = 
-            (rule.name || "").toLowerCase().includes(search.toLowerCase()) ||
-            (rule.keywords || "").toLowerCase().includes(search.toLowerCase());
+            (rule.keyWords || "").toLowerCase().includes(search.toLowerCase());
         
         const matchesCategory = categoryFilter === "ALL" || rule.category1 === categoryFilter;
 
@@ -78,13 +77,13 @@ export function RulesManager({ initialRules }: { initialRules: any[] }) {
         try {
             const dataToExport = rules.map(r => ({
                 ID: r.id, // Important for updates
-                Name: r.name,
-                Keywords: r.keywords,
+                // Name: r.name, // Removed
+                Keywords: r.keyWords,
                 Category1: r.category1,
                 Category2: r.category2,
                 Priority: r.priority,
                 Active: r.active,
-                RuleKey: r.ruleKey
+                // RuleKey: r.ruleKey // Removed
             }));
 
             const ws = XLSX.utils.json_to_sheet(dataToExport);
@@ -153,8 +152,8 @@ export function RulesManager({ initialRules }: { initialRules: any[] }) {
         setIsLoading(true);
         try {
             const result = await updateRule(editingRule.id, {
-                name: editingRule.name,
-                keywords: editingRule.keywords,
+                // name: editingRule.name, // Removed
+                keyWords: editingRule.keyWords,
                 category1: editingRule.category1,
                 category2: editingRule.category2,
                 priority: parseInt(editingRule.priority),
@@ -246,9 +245,9 @@ export function RulesManager({ initialRules }: { initialRules: any[] }) {
                         </div>
                         
                         <div className="flex-1 space-y-1">
-                            <h3 className="font-bold text-lg text-foreground">{rule.name}</h3>
+                            <h3 className="font-bold text-lg text-foreground">{rule.keyWords}</h3>
                             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                <Badge variant="secondary" className="rounded-lg font-mono tracking-wide">{rule.keywords}</Badge>
+                                {/* <Badge variant="secondary" className="rounded-lg font-mono tracking-wide">{rule.keywords}</Badge> */}
                                 <span className="flex items-center gap-1 bg-secondary/50 px-2 py-0.5 rounded-lg">
                                     <Tag className="h-3 w-3" /> {rule.category1}
                                 </span>
@@ -290,6 +289,8 @@ export function RulesManager({ initialRules }: { initialRules: any[] }) {
 
                         {editingRule && (
                             <div className="p-6 space-y-6 flex-1">
+                                {/* Name input removed */}
+                                {/*
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Nome da Regra</label>
                                     <Input 
@@ -298,12 +299,13 @@ export function RulesManager({ initialRules }: { initialRules: any[] }) {
                                         className="bg-secondary/50 border-none h-12"
                                     />
                                 </div>
+                                */}
 
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Palavras-Chave (Keywords)</label>
+                                    <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Palavras-Chave (Matches)</label>
                                     <Input 
-                                        value={editingRule.keywords} 
-                                        onChange={(e) => setEditingRule({...editingRule, keywords: e.target.value.toUpperCase()})}
+                                        value={editingRule.keyWords} 
+                                        onChange={(e) => setEditingRule({...editingRule, keyWords: e.target.value.toUpperCase()})}
                                         className="bg-secondary/50 border-none h-12 font-mono uppercase"
                                     />
                                     <p className="text-[10px] text-muted-foreground">Use termos únicos da transação.</p>

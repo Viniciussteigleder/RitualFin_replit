@@ -54,7 +54,7 @@ export default async function RulesPage() {
                                 Se conter
                             </div>
                             <div className="font-bold text-lg text-foreground bg-secondary/50 px-3 py-1 rounded-lg inline-block border border-border/50">
-                                "{rule.keywords || rule.keyWords}"
+                                "{rule.keyWords}"
                             </div>
                         </div>
                     </div>

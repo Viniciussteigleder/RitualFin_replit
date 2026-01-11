@@ -12,6 +12,7 @@ import { getRuleSuggestions, simulateRule, createRule, getRules, reApplyAllRules
 import { CATEGORY_CONFIGS } from "@/lib/constants/categories";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { formatCurrency } from "@/lib/utils";
 
 export default function RulesStudioPage() {
   const [suggestions, setSuggestions] = useState<RuleProposal[]>([]);
@@ -78,8 +79,8 @@ export default function RulesStudioPage() {
     setCreating(true);
     try {
       const res = await createRule({
-        name: keyword.toUpperCase(), // Default name
-        keywords: keyword,
+        // name: keyword.toUpperCase(), // Removed 
+        keyWords: keyword,
         category1: selectedCategory,
         type: "Despesa", // Default
         fixVar: "Variável" // Default
@@ -396,9 +397,9 @@ export default function RulesStudioPage() {
                         <TableCell>
                           <Badge variant="outline">{rule.priority}</Badge>
                         </TableCell>
-                        <TableCell className="font-medium">{rule.name}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground font-mono max-w-[200px] truncate" title={rule.keywords}>
-                          {rule.keywords}
+                        <TableCell className="font-medium">{rule.keyWords}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground font-mono max-w-[200px] truncate" title={rule.keyWords}>
+                          {rule.keyWords}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">

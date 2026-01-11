@@ -179,6 +179,7 @@ export function categorizeTransaction(
       category3: rule.category3,
       needsReview: false,
       ruleIdApplied: rule.ruleId,
+      leafId: rule.leafId, // Added leafId
       internalTransfer: isInterno,
       excludeFromBudget: isInterno,
       confidence: result.confidence,
@@ -199,6 +200,7 @@ export function categorizeTransaction(
       category3: rule.category3,
       needsReview: true,
       ruleIdApplied: rule.ruleId,
+      leafId: rule.leafId, // Added leafId
       internalTransfer: isInterno,
       excludeFromBudget: isInterno,
       confidence: result.confidence,
