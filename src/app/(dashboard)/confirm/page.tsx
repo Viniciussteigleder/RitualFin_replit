@@ -17,7 +17,7 @@ export default async function ConfirmPage() {
   const taxonomyOptions = await getTaxonomyOptions();
 
   return (
-    <div className="max-w-7xl mx-auto flex flex-col gap-10 pb-32 font-sans px-1">
+    <div className="max-w-6xl mx-auto flex flex-col gap-10 pb-32 font-sans px-4 sm:px-6 lg:px-8 py-8 animate-in fade-in duration-500">
        {/* Header Section */}
        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8 bg-card p-10 rounded-[3rem] border border-border shadow-sm">
         <div className="flex flex-col gap-3">

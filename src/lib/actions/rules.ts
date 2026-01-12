@@ -116,6 +116,7 @@ export async function simulateRule(keyword: string): Promise<SimulationResult> {
  */
 export async function createRule(data: {
   keyWords: string;
+  keyWordsNegative?: string;
   category1: string;
   category2?: string;
   category3?: string;
@@ -130,6 +131,7 @@ export async function createRule(data: {
     await db.insert(rules).values({
       userId: session.user.id,
       keyWords: data.keyWords,
+      keyWordsNegative: data.keyWordsNegative || null,
       category1: data.category1 as any, 
       category2: data.category2,
       category3: data.category3, // Added category3
