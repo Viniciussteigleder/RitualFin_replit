@@ -3,18 +3,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { MonthProvider } from "@/lib/month-context";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { CommandPalette } from "@/components/ui/command-palette";
-import { Manrope, Noto_Sans } from "next/font/google";
 import "./globals.css";
-
-const manrope = Manrope({
-  subsets: ["latin"],
-  variable: "--font-display",
-});
-
-const notoTabs = Noto_Sans({
-  subsets: ["latin"],
-  variable: "--font-sans",
-});
 
 export const metadata: Metadata = {
   title: "RitualFin",
@@ -27,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-PT" className={`${manrope.variable} ${notoTabs.variable}`} suppressHydrationWarning>
+    <html lang="pt-PT" suppressHydrationWarning>
       <body className="antialiased bg-background text-foreground flex min-h-screen font-sans" suppressHydrationWarning>
         <MonthProvider>
           <Sidebar />
