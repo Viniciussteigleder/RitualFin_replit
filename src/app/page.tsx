@@ -336,7 +336,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </div>
       </div>
 
-      {/* Quick Review Queue (Moved bottom) */}
+      {/* Quick Review Queue & Discovery */}
       <div className="bg-card rounded-2xl p-8 border border-border shadow-sm flex flex-col group">
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-2xl font-bold text-foreground font-display tracking-tight">Fila de Revisão</h3>
@@ -344,12 +344,30 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               <Sparkles className="h-5 w-5 text-primary" />
             </div>
           </div>
-          <div className="flex flex-col gap-4">
-            <RecentTransactionsList transactions={transactionsData} />
+          
+          <div className="flex flex-col gap-6 ">
+            {/* Quick Link to Discovery if pending > 0 (assuming pending often correlates with discovery needs) */}
+            <Link href="/confirm">
+              <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/50 p-4 rounded-xl flex items-center justify-between group/discovery cursor-pointer hover:bg-emerald-100/50 transition-colors">
+                  <div className="flex items-center gap-3">
+                      <div className="bg-white dark:bg-emerald-900/40 p-2 rounded-lg text-emerald-600">
+                          <SearchCheck className="h-4 w-4" />
+                      </div>
+                      <div className="flex flex-col">
+                          <span className="text-xs font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-wide">Discovery de Regras</span>
+                          <span className="text-[10px] text-emerald-600/70 font-medium">Encontrar padrões em {pendingTransactions.length} itens</span>
+                      </div>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-emerald-600 group-hover/discovery:translate-x-1 transition-transform" />
+              </div>
+            </Link>
+
+
+            <RecentTransactionsList transactions={pendingTransactions.slice(0, 5)} />
           </div>
-          <Link href="/transactions" className="mt-8">
+          <Link href="/confirm" className="mt-8">
             <Button variant="outline" className="w-full py-6 text-[10px] font-black text-foreground border-border hover:bg-secondary rounded-2xl transition-all uppercase tracking-widest">
-              Ver todas transações
+              Revisar Tudo ({pendingTransactions.length})
             </Button>
           </Link>
         </div>

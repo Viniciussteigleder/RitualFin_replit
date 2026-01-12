@@ -118,6 +118,8 @@ export async function createRule(data: {
   keyWords: string;
   category1: string;
   category2?: string;
+  category3?: string;
+  leafId?: string;
   type?: "Receita" | "Despesa";
   fixVar?: "Fixo" | "Variável";
 }) {
@@ -127,16 +129,15 @@ export async function createRule(data: {
   try {
     await db.insert(rules).values({
       userId: session.user.id,
-      // name: data.name, // Removed
       keyWords: data.keyWords,
-      category1: data.category1 as any, // Enum cast
+      category1: data.category1 as any, 
       category2: data.category2,
+      category3: data.category3, // Added category3
       type: data.type || "Despesa",
       fixVar: data.fixVar || "Variável",
       active: true,
-      priority: 950, // User rules have high priority
-      // ruleKey: `AUTO_${Date.now()}` // Removed
-      leafId: "open" // Default
+      priority: 950, 
+      leafId: data.leafId || "open" // Use provided leafId
     });
 
     revalidatePath("/admin/rules");
