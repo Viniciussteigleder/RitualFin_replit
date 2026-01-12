@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { rules } from "@/lib/db/schema";
+import { rules, appCategoryLeaf } from "@/lib/db/schema";
 import { sql, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
@@ -93,7 +93,82 @@ export async function fixAppCategoryIssues() {
         
         fixedCount++;
       } else {
-        log.push(`Could not find match for Rule ${String(rule.id).slice(0,8)}: ${c1} > ${c2} > ${c3}`);
+        // If no match found, we must CREATE the taxonomy structure
+        // This handles cases like "Alimentação > Supermercado > Outros desc" that don't satisfy existing taxonomy
+        
+        try {
+            // 1. Find or Create Level 1
+            const resultL1 = await db.execute(sql`
+                SELECT level_1_id FROM taxonomy_level_1 WHERE nivel_1_pt = ${c1} LIMIT 1
+            `);
+            let l1Id = resultL1.rows[0]?.level_1_id as string;
+            
+            if (!l1Id) {
+                // Should exist but just in case
+                console.log(`Warning: Level 1 ${c1} not found, skipping creation for safety.`);
+                log.push(`Skipped Rule ${String(rule.id).slice(0,8)}: Level 1 '${c1}' not found.`);
+                continue; 
+            }
+
+            // 2. Find or Create Level 2
+            let l2Id: string;
+            const resultL2 = await db.execute(sql`
+                SELECT level_2_id FROM taxonomy_level_2 
+                WHERE level_1_id = ${l1Id} AND nivel_2_pt = ${c2 || 'Outros'} LIMIT 1
+            `);
+            
+            if (resultL2.rows.length > 0) {
+                l2Id = resultL2.rows[0].level_2_id as string;
+            } else {
+                const newL2 = await db.execute(sql`
+                    INSERT INTO taxonomy_level_2 (user_id, level_1_id, nivel_2_pt)
+                    VALUES (${session.user.id}, ${l1Id}, ${c2 || 'Outros'})
+                    RETURNING level_2_id
+                `);
+                l2Id = newL2.rows[0].level_2_id as string;
+                log.push(`Created Level 2: ${c2}`);
+            }
+
+            // 3. Create Leaf (Level 3)
+            const newLeaf = await db.execute(sql`
+                INSERT INTO taxonomy_leaf (user_id, level_2_id, nivel_3_pt)
+                VALUES (${session.user.id}, ${l2Id}, ${c3 || 'Geral'})
+                RETURNING leaf_id
+            `);
+            const newLeafId = newLeaf.rows[0].leaf_id as string;
+            log.push(`Created Leaf: ${c3}`);
+
+            // 4. Update Rule
+            await db.update(rules)
+                .set({ leafId: newLeafId })
+                .where(eq(rules.id, rule.id as string));
+
+            // 5. Link to App Category
+            // Find appropriate App Cat ID based on Level 1 (Heuristic)
+            // Or default to 'Alimentação' if C1 is Alimentação
+            const appCatResult = await db.execute(sql`
+                SELECT ac.app_cat_id 
+                FROM app_category ac
+                WHERE ac.name = ${c1} OR ac.name ILIKE ${'%' + c1 + '%'}
+                LIMIT 1
+            `);
+            
+            if (appCatResult.rows.length > 0) {
+                const appCatId = appCatResult.rows[0].app_cat_id as string;
+                await db.insert(appCategoryLeaf).values({
+                    userId: session.user.id,
+                    appCatId: appCatId,
+                    leafId: newLeafId
+                });
+                 log.push(`Linked new Leaf to App Category: ${c1}`);
+            } else {
+                 log.push(`Warning: Could not link new Leaf to App Category (No match for ${c1})`);
+            }
+
+            fixedCount++;
+        } catch (err: any) {
+            log.push(`Failed to create taxonomy for ${c1}>${c2}>${c3}: ${err.message}`);
+        }
       }
     }
 
