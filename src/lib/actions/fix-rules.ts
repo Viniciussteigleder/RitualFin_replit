@@ -2,8 +2,8 @@
 
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { rules, appCategoryLeaf } from "@/lib/db/schema";
-import { sql, eq, and } from "drizzle-orm";
+import { rules } from "@/lib/db/schema";
+import { sql, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 export async function fixAppCategoryIssues() {
@@ -13,96 +13,104 @@ export async function fixAppCategoryIssues() {
   const log = [];
   
   try {
-    // 1. Get all rules with full taxonomy info to identify broken ones
-    const allRules = await db.execute(sql`
+    // 1. Get all rules (including those without leaf_id)
+    const result = await db.execute(sql`
       SELECT 
         r.id,
         r.user_id,
         r.category_1,
+        r.category_2,
+        r.category_3,
         r.leaf_id,
-        r.key_words,
-        t1.nivel_1_pt as level1_nivel1,
         acl.app_cat_id,
         ac.name as app_category_name
       FROM rules r
       LEFT JOIN taxonomy_leaf tl ON r.leaf_id = tl.leaf_id
-      LEFT JOIN taxonomy_level_2 t2 ON tl.level_2_id = t2.level_2_id
-      LEFT JOIN taxonomy_level_1 t1 ON t2.level_1_id = t1.level_1_id
       LEFT JOIN app_category_leaf acl ON tl.leaf_id = acl.leaf_id
       LEFT JOIN app_category ac ON acl.app_cat_id = ac.app_cat_id
-      WHERE r.user_id = ${session.user.id} AND r.leaf_id IS NOT NULL
+      WHERE r.user_id = ${session.user.id}
     `);
 
-    // Filter for broken rules: Have leaf_id but no app_category
-    const rulesWithoutAppCat = allRules.rows.filter(r => !r.app_category_name && r.leaf_id);
-    const rulesWithAppCat = allRules.rows.filter(r => r.app_category_name && r.leaf_id);
+    const allRules = result.rows as any[]; // Cast to any[] to handle raw SQL result
 
-    log.push(`Found ${rulesWithoutAppCat.length} broken rules out of ${allRules.rows.length} total.`);
+    // Rules that are missing app category
+    const brokenRules = allRules.filter(r => !r.app_category_name);
+    log.push(`Found ${brokenRules.length} rules missing App Category.`);
 
-    if (rulesWithoutAppCat.length === 0) {
-      return { success: true, message: "No issues found to fix.", log };
+    if (brokenRules.length === 0) {
+      return { success: true, message: "No issues found.", log };
     }
 
-    // 2. Classify into Fixable vs Unfixable
-    const fixes = [];
-    const deletions = [];
+    // 2. Build Taxonomy Lookup Map
+    // We need to match (Cat1, Cat2, Cat3) -> LeafID
+    const taxonomyData = await db.execute(sql`
+      SELECT 
+        t1.nivel_1_pt as c1,
+        t2.nivel_2_pt as c2,
+        tl.nivel_3_pt as c3,
+        tl.leaf_id
+      FROM taxonomy_leaf tl
+      JOIN taxonomy_level_2 t2 ON tl.level_2_id = t2.level_2_id
+      JOIN taxonomy_level_1 t1 ON t2.level_1_id = t1.level_1_id
+    `);
 
-    for (const rule of rulesWithoutAppCat) {
-      // Logic: Find any other rule (or mapping) that relies on the same 'Category 1' (taxonomy level 1)
-      // and see what App Category it uses.
-      // Note: This relies on the assumption that Category 1 maps loosely to App Category.
-      
-      const match = rulesWithAppCat.find(r => 
-        r.level1_nivel1 === rule.level1_nivel1 && 
-        r.app_cat_id
-      );
-
-      if (match) {
-        fixes.push({
-          ruleId: rule.id,
-          leafId: rule.leaf_id,
-          appCatId: match.app_cat_id,
-          appCatName: match.app_category_name,
-        });
-      } else {
-        deletions.push(rule);
+    const taxonomyMap = new Map<string, string>();
+    (taxonomyData.rows as any[]).forEach(row => {
+      // Create comprehensive keys for matching
+      // Full match: C1|C2|C3
+      if (row.c1 && row.c2 && row.c3) {
+        taxonomyMap.set(`${row.c1}|${row.c2}|${row.c3}`.toLowerCase(), row.leaf_id as string);
       }
-    }
+      // Partial match: C1|C2 (assuming generic C3 or matching first available)
+      if (row.c1 && row.c2) {
+        const key2 = `${row.c1}|${row.c2}`.toLowerCase();
+        if (!taxonomyMap.has(key2)) taxonomyMap.set(key2, row.leaf_id as string);
+      }
+    });
 
-    // 3. Apply Fixes (Insert missing findings into app_category_leaf)
+    // 3. Attempt to Fix
     let fixedCount = 0;
-    for (const fix of fixes) {
-      // Check if mapping exists (it shouldn't, based on query, but safety first)
-      const existing = await db.execute(sql`
-        SELECT id FROM app_category_leaf 
-        WHERE leaf_id = ${fix.leafId} AND app_cat_id = ${fix.appCatId}
-      `);
+    
+    for (const rule of brokenRules) {
+      // Constructs search keys
+      const c1 = (rule.category_1 || "").toString().trim();
+      const c2 = (rule.category_2 || "").toString().trim();
+      const c3 = (rule.category_3 || "").toString().trim();
 
-      if (existing.rows.length === 0) {
-        await db.insert(appCategoryLeaf).values({
-            userId: session.user.id,
-            appCatId: fix.appCatId as string,
-            leafId: fix.leafId as string
-        });
+      // Try exact match first
+      let matchId = taxonomyMap.get(`${c1}|${c2}|${c3}`.toLowerCase());
+      
+      // Try Level 2 match if no match found yet
+      if (!matchId && c2) {
+         matchId = taxonomyMap.get(`${c1}|${c2}`.toLowerCase());
+      }
+      
+      // If we found a leaf_id, update the rule!
+      if (matchId) {
+        await db.update(rules)
+          .set({ leafId: matchId })
+          .where(eq(rules.id, rule.id as string));
+        
         fixedCount++;
+      } else {
+        log.push(`Could not find match for Rule ${String(rule.id).slice(0,8)}: ${c1} > ${c2} > ${c3}`);
       }
     }
-    log.push(`Fixed ${fixedCount} mappings.`);
 
-    // 4. Delete unfixable rules
-    let deletedCount = 0;
-    for (const del of deletions) {
-      await db.delete(rules).where(eq(rules.id, del.id as string));
-      deletedCount++;
+    const unfixableCount = brokenRules.length - fixedCount;
+    if (fixedCount > 0) {
+        log.push(`Successfully hydrated ${fixedCount} rules with new Leaf IDs.`);
     }
-    log.push(`Deleted ${deletedCount} unfixable rules.`);
+    if (unfixableCount > 0) {
+        log.push(`Unable to fix ${unfixableCount} rules (no matching taxonomy found).`);
+    }
 
     revalidatePath("/diagnose");
     revalidatePath("/settings/rules");
 
     return { 
       success: true, 
-      message: `Operation complete. Fixed: ${fixedCount}, Deleted: ${deletedCount}`,
+      message: `Hydrated ${fixedCount} rules. Unfixable: ${unfixableCount}`,
       log 
     };
 
