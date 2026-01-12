@@ -150,16 +150,58 @@ export async function createRule(data: {
 }
 
 /**
- * Get all rules for the current user
+ * Get all rules for the current user with app category information
  */
 export async function getRules() {
   const session = await auth();
   if (!session?.user?.id) return [];
 
-  return await db.query.rules.findMany({
-    where: eq(rules.userId, session.user.id),
-    orderBy: [desc(rules.priority)]
-  });
+  // Fetch rules with app category information via joins
+  const rulesData = await db
+    .select({
+      id: rules.id,
+      userId: rules.userId,
+      type: rules.type,
+      fixVar: rules.fixVar,
+      category1: rules.category1,
+      category2: rules.category2,
+      category3: rules.category3,
+      priority: rules.priority,
+      strict: rules.strict,
+      isSystem: rules.isSystem,
+      leafId: rules.leafId,
+      keyWords: rules.keyWords,
+      keyWordsNegative: rules.keyWordsNegative,
+      active: rules.active,
+      createdAt: rules.createdAt,
+      appCategoryId: sql<string | null>`app_category.app_cat_id`,
+      appCategoryName: sql<string | null>`app_category.name`,
+    })
+    .from(rules)
+    .leftJoin(
+      sql`taxonomy_leaf`,
+      sql`rules.leaf_id = taxonomy_leaf.leaf_id`
+    )
+    .leftJoin(
+      sql`taxonomy_level_2`,
+      sql`taxonomy_leaf.level_2_id = taxonomy_level_2.level_2_id`
+    )
+    .leftJoin(
+      sql`taxonomy_level_1`,
+      sql`taxonomy_level_2.level_1_id = taxonomy_level_1.level_1_id`
+    )
+    .leftJoin(
+      sql`app_category_leaf`,
+      sql`taxonomy_leaf.leaf_id = app_category_leaf.leaf_id`
+    )
+    .leftJoin(
+      sql`app_category`,
+      sql`app_category_leaf.app_cat_id = app_category.app_cat_id`
+    )
+    .where(eq(rules.userId, session.user.id))
+    .orderBy(desc(rules.priority));
+
+  return rulesData;
 }
 
 export async function updateRule(id: string, data: Partial<typeof rules.$inferInsert>) {

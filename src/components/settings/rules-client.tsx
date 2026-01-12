@@ -33,13 +33,14 @@ import {
 
 interface Rule {
   id: string;
-  keyWords: string;
+  userId: string | null;
+  keyWords: string | null;
   keyWordsNegative?: string | null;
-  category1: string;
+  category1: string | null;
   category2?: string | null;
   category3?: string | null;
-  type: "Despesa" | "Receita";
-  fixVar: "Fixo" | "Variável";
+  type: "Despesa" | "Receita" | null;
+  fixVar: "Fixo" | "Variável" | null;
   priority: number;
   strict: boolean;
   active: boolean;
@@ -47,6 +48,7 @@ interface Rule {
   leafId?: string | null;
   appCategoryId?: string | null;
   appCategoryName?: string | null;
+  createdAt: Date;
 }
 
 interface RulesClientProps {
@@ -67,8 +69,8 @@ export default function RulesClient({ initialRules }: RulesClientProps) {
       // Search filter
       const matchesSearch = 
         searchQuery === "" ||
-        rule.keyWords.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        rule.category1.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        rule.keyWords?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        rule.category1?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         rule.category2?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         rule.category3?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         rule.appCategoryName?.toLowerCase().includes(searchQuery.toLowerCase());
