@@ -43,6 +43,11 @@ export async function applyCategorization() {
 
     // Apply categorization to each transaction
     for (const tx of allTransactions) {
+      // Respect manual overrides - user request
+      if (tx.manualOverride || (tx.classifiedBy as string) === 'MANUAL') {
+          continue;
+      }
+
       const result = categorizeTransaction(tx.descNorm, userRules);
       const aliasMatch = matchAlias(tx.descNorm, userAliases);
 
@@ -70,7 +75,7 @@ export async function applyCategorization() {
       } else {
          // NO MATCH FOUND - Use OPEN Category fallback
          // Only apply if transaction is not manually classified/reviewed
-         if (tx.classifiedBy !== 'MANUAL' && (!tx.category1 || tx.category1 === 'Outros')) {
+         if ((tx.classifiedBy as string) !== 'MANUAL' && (!tx.category1 || tx.category1 === 'Outros')) {
              await db.update(transactions)
                 .set({
                     category1: "OPEN" as any, // Cast because we runtime-migrated the enum

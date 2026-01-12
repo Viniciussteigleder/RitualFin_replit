@@ -1,6 +1,7 @@
 import { getTransactions, getAliases } from "@/lib/actions/transactions";
 import { TransactionList } from "./transaction-list";
 import { AIAnalystChat } from "@/components/transactions/AIAnalystChat";
+import { ReRunRulesButton } from "@/components/transactions/re-run-rules-button";
 
 export default async function TransactionsPage({
   searchParams
@@ -30,7 +31,10 @@ export default async function TransactionsPage({
           <p className="text-muted-foreground font-medium">Explore, filtre e gerencie seu histórico financeiro com precisão.</p>
         </div>
         
-        <AIAnalystChat />
+        <div className="flex items-center gap-3">
+             <ReRunRulesButton />
+             <AIAnalystChat />
+        </div>
       </div>
 
       <div className="animate-fade-in-up">
