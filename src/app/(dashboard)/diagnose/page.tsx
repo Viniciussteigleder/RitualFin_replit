@@ -1,13 +1,17 @@
 import { diagnoseAppCategoryIssues } from "@/lib/actions/diagnose";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import FixButton from "./fix-button";
 
 export default async function DiagnosePage() {
   const diagnosis = await diagnoseAppCategoryIssues();
 
   return (
     <div className="max-w-7xl mx-auto p-8 space-y-6">
-      <h1 className="text-3xl font-bold">App Category Diagnosis</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">App Category Diagnosis</h1>
+        <FixButton />
+      </div>
 
       <Card>
         <CardHeader>
