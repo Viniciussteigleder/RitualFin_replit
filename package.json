@@ -86,6 +86,7 @@
     "zod-validation-error": "^4.0.2"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.1.1",
     "@playwright/test": "^1.57.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.19.0",

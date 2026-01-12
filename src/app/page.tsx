@@ -1,8 +1,5 @@
 import { getTransactions, getPendingTransactions, getDashboardData } from "@/lib/actions/transactions";
 import { getAccounts } from "@/lib/actions/accounts";
-
-export const dynamic = 'force-dynamic';
-
 import { Card, CardContent } from "@/components/ui/card";
 import { 
   ArrowUpRight, 
@@ -30,9 +27,24 @@ import Link from "next/link";
 import { Progress } from "@/components/ui/progress";
 import { SyncStatus } from "@/components/dashboard/SyncStatus";
 import { ForecastCard } from "@/components/dashboard/ForecastCard";
-import { CategoryChart } from "@/components/dashboard/CategoryChart";
+import dynamicImport from "next/dynamic";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { RecentTransactionsList } from "@/components/dashboard/recent-transactions-list";
+
+// Dynamic import for heavy chart component (reduces initial bundle)
+const CategoryChart = dynamicImport(
+  () => import("@/components/dashboard/CategoryChart").then(mod => ({ default: mod.CategoryChart })),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    ),
+    ssr: false // Chart doesn't need SSR
+  }
+);
+
+export const dynamic = 'force-dynamic';
 
 const ACCOUNT_FILTER_MAP: Record<string, string> = {
   "American Express": "Amex",
