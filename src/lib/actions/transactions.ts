@@ -9,10 +9,13 @@ import {
   TransactionUpdateSchema, 
   TransactionConfirmSchema, 
   TransactionDeleteSchema,
+  BulkConfirmSchema,
   Result,
   success,
-  error 
+  error,
+  validate 
 } from "@/lib/validators";
+import { Errors, logError, sanitizeError } from "@/lib/errors";
 
 export async function getDashboardData(date?: Date) {
   const session = await auth();
@@ -248,67 +251,101 @@ export async function getTransactions(limit = 50) {
 export async function updateTransactionCategory(
   transactionId: string, 
   data: { category1: string; category2?: string; category3?: string }
-) {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "Unauthorized" };
-
-  await db.update(transactions)
-    .set({
-      category1: data.category1 as any,
-      category2: data.category2,
-      category3: data.category3,
-      needsReview: false, // Auto-confirm on manual edit
-      manualOverride: true,
-      conflictFlag: false // Resolution clears conflict
-    })
-    .where(eq(transactions.id, transactionId));
-
-  revalidatePath("/transactions");
-  revalidatePath("/"); // Dashboard
-  return { success: true };
-}
-
-export async function confirmTransaction(transactionId: string) {
+): Promise<Result<void>> {
+  try {
     const session = await auth();
-    if (!session?.user?.id) return { error: "Unauthorized" };
+    if (!session?.user?.id) throw Errors.authRequired();
+
+    // Validate input
+    const validated = validate(TransactionUpdateSchema, { transactionId, ...data });
 
     await db.update(transactions)
-        .set({ needsReview: false, conflictFlag: false })
-        .where(eq(transactions.id, transactionId));
+      .set({
+        category1: validated.category1 as any,
+        category2: validated.category2,
+        category3: validated.category3,
+        needsReview: false,
+        manualOverride: true,
+        conflictFlag: false
+      })
+      .where(eq(transactions.id, validated.transactionId));
+
+    revalidatePath("/transactions");
+    revalidatePath("/");
+    return success(undefined);
+  } catch (err) {
+    const errorId = logError(err, { action: 'updateTransactionCategory', transactionId });
+    const sanitized = sanitizeError(err);
+    return error(sanitized.message, errorId, sanitized.code);
+  }
+}
+
+export async function confirmTransaction(transactionId: string): Promise<Result<void>> {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) throw Errors.authRequired();
+
+    const validated = validate(TransactionConfirmSchema, { transactionId });
+
+    await db.update(transactions)
+      .set({ needsReview: false, conflictFlag: false })
+      .where(eq(transactions.id, validated.transactionId));
 
     revalidatePath("/confirm");
     revalidatePath("/transactions");
-    return { success: true };
+    return success(undefined);
+  } catch (err) {
+    const errorId = logError(err, { action: 'confirmTransaction', transactionId });
+    const sanitized = sanitizeError(err);
+    return error(sanitized.message, errorId, sanitized.code);
+  }
 }
 
-export async function confirmHighConfidenceTransactions(threshold = 80) {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "Unauthorized" };
-
-  await db.update(transactions)
-    .set({ needsReview: false })
-    .where(and(
-      eq(transactions.userId, session.user.id),
-      eq(transactions.needsReview, true),
-      sql`${transactions.confidence} >= ${threshold}`
-    ));
-
-  revalidatePath("/confirm");
-  revalidatePath("/transactions");
-  revalidatePath("/");
-  return { success: true };
-}
-
-export async function deleteTransaction(transactionId: string) {
+export async function confirmHighConfidenceTransactions(threshold = 80): Promise<Result<{ count: number }>> {
+  try {
     const session = await auth();
-    if (!session?.user?.id) return { error: "Unauthorized" };
+    if (!session?.user?.id) throw Errors.authRequired();
+
+    const validated = validate(BulkConfirmSchema, { threshold });
+
+    const result = await db.update(transactions)
+      .set({ needsReview: false })
+      .where(and(
+        eq(transactions.userId, session.user.id),
+        eq(transactions.needsReview, true),
+        sql`${transactions.confidence} >= ${validated.threshold}`
+      ));
+
+    revalidatePath("/confirm");
+    revalidatePath("/transactions");
+    revalidatePath("/");
+    
+    return success({ count: result.rowCount || 0 });
+  } catch (err) {
+    const errorId = logError(err, { action: 'confirmHighConfidenceTransactions', threshold });
+    const sanitized = sanitizeError(err);
+    return error(sanitized.message, errorId, sanitized.code);
+  }
+}
+
+export async function deleteTransaction(transactionId: string): Promise<Result<void>> {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) throw Errors.authRequired();
+
+    const validated = validate(TransactionDeleteSchema, { transactionId });
 
     await db.delete(transactions)
-        .where(eq(transactions.id, transactionId));
+      .where(eq(transactions.id, validated.transactionId));
 
     revalidatePath("/transactions");
-    revalidatePath("/"); // Dashboard
-    return { success: true };
+    revalidatePath("/");
+    return success(undefined);
+  } catch (err) {
+    const errorId = logError(err, { action: 'deleteTransaction', transactionId });
+    const sanitized = sanitizeError(err);
+    return error(sanitized.message, errorId, sanitized.code);
+  }
 }
 
 export async function getAliases() {

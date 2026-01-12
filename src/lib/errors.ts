@@ -228,9 +228,9 @@ export function logError(
   context?: {
     action?: string;
     userId?: string;
-    metadata?: Record<string, any>;
+    [key: string]: any; // Allow any additional metadata
   }
-) {
+): string | undefined {
   const sanitized = sanitizeError(error);
   const redactedContext = context ? redactSensitiveData(context) : {};
 
