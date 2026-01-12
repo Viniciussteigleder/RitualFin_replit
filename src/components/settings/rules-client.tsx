@@ -59,6 +59,7 @@ export default function RulesClient({ initialRules }: RulesClientProps) {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [expandedRule, setExpandedRule] = useState<string | null>(null);
+  const [editingRule, setEditingRule] = useState<string | null>(null);
 
   // Intelligent filtering
   const filteredRules = useMemo(() => {
@@ -87,11 +88,11 @@ export default function RulesClient({ initialRules }: RulesClientProps) {
     });
   }, [rules, searchQuery, typeFilter, statusFilter]);
 
-  // Group rules by category
+  // Group rules by app_category (leading dimension)
   const groupedRules = useMemo(() => {
     const groups: Record<string, Rule[]> = {};
     filteredRules.forEach((rule) => {
-      const key = rule.category1;
+      const key = rule.appCategoryName || "Sem App Category";
       if (!groups[key]) groups[key] = [];
       groups[key].push(rule);
     });
@@ -100,6 +101,21 @@ export default function RulesClient({ initialRules }: RulesClientProps) {
 
   const toggleExpand = (ruleId: string) => {
     setExpandedRule(expandedRule === ruleId ? null : ruleId);
+  };
+
+  const handleEdit = (ruleId: string) => {
+    setEditingRule(ruleId);
+    setExpandedRule(ruleId);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingRule(null);
+  };
+
+  const handleSaveEdit = async (ruleId: string) => {
+    // TODO: Implement save logic with server action
+    console.log("Saving rule:", ruleId);
+    setEditingRule(null);
   };
 
   return (
@@ -305,12 +321,23 @@ export default function RulesClient({ initialRules }: RulesClientProps) {
                         {/* Center: Arrow */}
                         <ArrowRight className="h-6 w-6 text-muted-foreground/30 flex-shrink-0" />
 
-                        {/* Right: Category Path */}
+                        {/* Right: Category Path with App Category FIRST */}
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <div className="flex items-center gap-1">
+                            {/* App Category - Leading dimension */}
+                            {rule.appCategoryName && (
+                              <>
+                                <Badge className="h-8 px-4 rounded-xl text-sm font-bold bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300 border-0">
+                                  {rule.appCategoryName}
+                                </Badge>
+                                <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+                              </>
+                            )}
+                            {/* Category 1 */}
                             <Badge className="h-8 px-4 rounded-xl text-sm font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 border-0">
                               {rule.category1}
                             </Badge>
+                            {/* Category 2 */}
                             {rule.category2 && (
                               <>
                                 <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
@@ -319,6 +346,7 @@ export default function RulesClient({ initialRules }: RulesClientProps) {
                                 </Badge>
                               </>
                             )}
+                            {/* Category 3 */}
                             {rule.category3 && (
                               <>
                                 <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
@@ -341,8 +369,13 @@ export default function RulesClient({ initialRules }: RulesClientProps) {
                               ? "bg-emerald-500 shadow-lg shadow-emerald-500/50"
                               : "bg-gray-300 dark:bg-gray-700"
                           }`}></div>
-                          <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-xl">
-                            <Edit2 className="h-4 w-4" />
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-9 w-9 p-0 rounded-xl hover:bg-violet-50 dark:hover:bg-violet-950/30"
+                            onClick={() => handleEdit(rule.id)}
+                          >
+                            <Edit2 className="h-4 w-4 text-violet-600 dark:text-violet-400" />
                           </Button>
                           <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-xl text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30">
                             <Trash2 className="h-4 w-4" />
