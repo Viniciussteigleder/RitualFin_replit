@@ -119,10 +119,12 @@ export async function getAnalyticsData(
   }
 
   if (filters.level3) {
-    conditions.push(
-      sql`COALESCE(${transactions.aliasDesc}, ${transactions.descNorm}) = ${filters.level3}`
-    );
-    breadcrumb.push({ label: "Nível 3", value: filters.level3 });
+    if (filters.level3 !== "ALL") {
+      conditions.push(
+        sql`COALESCE(${transactions.aliasDesc}, ${transactions.descNorm}) = ${filters.level3}`
+      );
+    }
+    breadcrumb.push({ label: "Nível 3", value: filters.level3 === "ALL" ? "Todas" : filters.level3 });
     currentLevel = "transactions";
   }
 

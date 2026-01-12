@@ -117,52 +117,113 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
 
   // Show transactions list if this is the transactions level
   if (data.transactions && data.transactions.length > 0) {
+    // Group transactions by date
+    const groupedTransactions = data.transactions.reduce((groups: Record<string, any[]>, tx) => {
+      const dateKey = format(new Date(tx.paymentDate), "yyyy-MM-dd");
+      if (!groups[dateKey]) {
+        groups[dateKey] = [];
+      }
+      groups[dateKey].push(tx);
+      return groups;
+    }, {});
+
+    const sortedDates = Object.keys(groupedTransactions).sort((a, b) => 
+      new Date(b).getTime() - new Date(a).getTime()
+    );
+
     return (
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-lg border border-gray-100/50">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-2xl font-semibold text-gray-900 tracking-tight">
-            {title} ({data.transactions.length})
-          </h3>
+        <div className="flex items-center justify-between mb-8">
+          <div className="space-y-1">
+            <h3 className="text-2xl font-semibold text-gray-900 tracking-tight">
+              {title}
+            </h3>
+            <p className="text-sm text-muted-foreground font-medium">
+              {data.transactions.length} transações encontradas
+            </p>
+          </div>
           <button
             onClick={handleExportExcel}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-100 transition-all duration-300 font-medium"
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-100 transition-all duration-300 font-medium shadow-sm"
           >
             <Download className="w-4 h-4" />
             Excel
           </button>
         </div>
-        <div className="space-y-2">
-          {data.transactions.map((tx) => (
-            <div
-              key={tx.id}
-              className="flex items-center justify-between p-4 rounded-2xl hover:bg-gray-50/80 transition-all duration-300 border border-gray-100/50 group"
-            >
-              <div className="flex-1">
-                <div className="font-semibold text-gray-900 group-hover:text-emerald-700 transition-colors">
-                  {tx.aliasDesc || tx.descNorm}
-                </div>
-                <div className="text-sm text-gray-500 mt-0.5 font-medium">
-                  {format(new Date(tx.paymentDate), "dd MMM yyyy", { locale: pt })}
-                </div>
+
+        <div className="space-y-8">
+          {sortedDates.map((dateKey) => (
+            <div key={dateKey} className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-px flex-1 bg-border/50"></div>
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider bg-white/50 px-3 py-1 rounded-full border border-border/50">
+                  {format(new Date(dateKey), "dd 'de' MMMM, yyyy", { locale: pt })}
+                </span>
+                <div className="h-px flex-1 bg-border/50"></div>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="text-right">
+
+              <div className="grid gap-2">
+                {groupedTransactions[dateKey].map((tx) => (
                   <div
-                    className={`font-bold tabular-nums ${
-                      tx.amount < 0 ? "text-red-600" : "text-emerald-600"
-                    }`}
+                    key={tx.id}
+                    className="group relative flex items-center justify-between p-4 rounded-2xl bg-white border border-gray-100 hover:border-emerald-100 hover:shadow-md transition-all duration-300"
                   >
-                    {tx.amount < 0 ? "-" : "+"}€{Math.abs(tx.amount).toFixed(2)}
+                    <div className="flex items-center gap-4 flex-1">
+                      {/* Date Box */}
+                      <div className="flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-gray-50 group-hover:bg-emerald-50 transition-colors border border-gray-100 group-hover:border-emerald-100">
+                        <span className="text-sm font-bold text-gray-700 group-hover:text-emerald-700">
+                          {format(new Date(tx.paymentDate), "dd")}
+                        </span>
+                        <span className="text-[10px] font-medium text-gray-500 uppercase">
+                          {format(new Date(tx.paymentDate), "MMM", { locale: pt })}
+                        </span>
+                      </div>
+
+                      {/* Info */}
+                      <div className="space-y-0.5">
+                        <div className="font-semibold text-gray-900 group-hover:text-emerald-700 transition-colors line-clamp-1">
+                          {tx.aliasDesc || tx.descNorm}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          {tx.category1 && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-600 font-medium">
+                              {tx.category1}
+                            </span>
+                          )}
+                           {tx.recurrent && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-600 font-medium">
+                              Recorrente
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Amount */}
+                    <div className="flex items-center gap-4 pl-4">
+                      <div className="text-right">
+                        <div
+                          className={`text-lg font-bold tabular-nums tracking-tight ${
+                            tx.amount < 0 ? "text-gray-900 group-hover:text-red-600 transition-colors" : "text-emerald-600"
+                          }`}
+                        >
+                          {tx.amount < 0 ? "-" : "+"}€{Math.abs(tx.amount).toFixed(2)}
+                        </div>
+                      </div>
+                      <div className={`p-2 rounded-full ${
+                          tx.amount < 0 ? "bg-gray-50 group-hover:bg-red-50" : "bg-emerald-50"
+                        } transition-colors`}>
+                        {tx.amount < 0 ? (
+                            <TrendingDown className={`w-4 h-4 ${
+                                tx.amount < 0 ? "text-gray-400 group-hover:text-red-500 transition-colors" : "text-emerald-500"
+                            }`} />
+                        ) : (
+                            <TrendingUp className="w-4 h-4 text-emerald-500" />
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  {tx.category1 && (
-                    <div className="text-xs text-gray-500 font-medium">{tx.category1}</div>
-                  )}
-                </div>
-                {tx.amount < 0 ? (
-                  <TrendingDown className="w-5 h-5 text-red-500" />
-                ) : (
-                  <TrendingUp className="w-5 h-5 text-emerald-500" />
-                )}
+                ))}
               </div>
             </div>
           ))}

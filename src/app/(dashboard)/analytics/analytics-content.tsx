@@ -83,9 +83,11 @@ export function AnalyticsContent() {
       title = `${value} - Nível 2`;
     } else if (currentLevel === "level2") {
       newFilters.level2 = value;
-      nextLevel = "level3";
-      title = `${value} - Detalhamento`;
+      newFilters.level3 = "ALL"; // Special flag to show all transactions for this leaf
+      nextLevel = "transactions";
+      title = `${value} - Transações`;
     } else if (currentLevel === "level3") {
+      // This block might become unreachable but keeping for safety
       newFilters.level3 = value;
       nextLevel = "transactions";
       title = `${value} - Transações`;
