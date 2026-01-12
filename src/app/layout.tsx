@@ -5,6 +5,9 @@ import { MobileNav } from "@/components/layout/mobile-nav";
 import { CommandPalette } from "@/components/ui/command-palette";
 import "./globals.css";
 
+// Validate environment variables on startup
+import "@/lib/env";
+
 export const metadata: Metadata = {
   title: "RitualFin",
   description: "Financial Ritual Orchestrator",
@@ -17,6 +20,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-PT" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link 
+          href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&family=Noto+Sans:wght@100..900&display=swap" 
+          rel="stylesheet" 
+        />
+      </head>
       <body className="antialiased bg-background text-foreground flex min-h-screen font-sans" suppressHydrationWarning>
         <MonthProvider>
           <Sidebar />
