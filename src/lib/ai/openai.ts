@@ -2,19 +2,11 @@ import OpenAI from "openai";
 import { z } from "zod";
 import { zodResponseFormat } from "openai/helpers/zod";
 
-// Lazy initialization to avoid throwing during build when OPENAI_API_KEY is not set
-let _openai: OpenAI | null = null;
-function getOpenAIClient(): OpenAI | null {
-  if (!process.env.OPENAI_API_KEY) {
-    return null;
-  }
-  if (!_openai) {
-    _openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-  }
-  return _openai;
-}
+// Initialize OpenAI client - uses dummy key if not set to prevent build errors
+// Actual API calls check for valid key before execution
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY || "sk-placeholder-for-build",
+});
 
 export const AI_DESIGN = {
   model: "gpt-4o-mini",
@@ -32,8 +24,7 @@ export const CategorizationSchema = z.object({
 export type CategorizationResult = z.infer<typeof CategorizationSchema>;
 
 export async function getAICategorization(description: string, taxonomyContext: string): Promise<CategorizationResult | null> {
-  const openai = getOpenAIClient();
-  if (!openai) {
+  if (!process.env.OPENAI_API_KEY) {
     console.warn("AI categorization skipped: OPENAI_API_KEY not found.");
     return null;
   }
@@ -44,7 +35,7 @@ export async function getAICategorization(description: string, taxonomyContext: 
       messages: [
         {
           role: "system",
-          content: `You are a financial expert assistant specialized in transaction categorization. 
+          content: `You are a financial expert assistant specialized in transaction categorization.
           Use the provided taxonomy context to categorize the transaction.
           Strictly follow the output schema.
           Context: ${taxonomyContext}`
@@ -66,8 +57,7 @@ export async function getAICategorization(description: string, taxonomyContext: 
 }
 
 export async function getAIInsights(data: any): Promise<string | null> {
-  const openai = getOpenAIClient();
-  if (!openai) return null;
+  if (!process.env.OPENAI_API_KEY) return null;
 
   try {
     const response = await openai.chat.completions.create({

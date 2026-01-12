@@ -1,0 +1,1509 @@
+[
+  {
+    "app_category": "ALIMENTACAO",
+    "level1_pt": "ALIMENTACAO",
+    "level2_pt": "BEBIDAS",
+    "level3_pt": "BEBIDAS",
+    "keywords": [],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "ALIMENTACAO",
+    "level1_pt": "ALIMENTACAO",
+    "level2_pt": "PADARIA/CAFE",
+    "level3_pt": "PADARIA/CAFE",
+    "keywords": [
+      "BACKSTUBE",
+      "BAECKEREI",
+      "IHLE",
+      "*BAECKEREI WUEN",
+      "RISCHARTS BACKHAU",
+      "UZR*BACKZEIT AKD GMBH",
+      "BACKZEIT",
+      "UZR*BACKZEIT AKD GMBH",
+      "BACKZEIT",
+      "UZR*BACKZEIT AKD GMBH",
+      "BACKZEIT",
+      "UZR*BACKZEIT AKD GMBH",
+      "BACKZEIT",
+      "UZR*BACKZEIT AKD GMBH",
+      "BACKZEIT",
+      "UZR*BACKZEIT AKD GMBH",
+      "BACKZEIT",
+      "UZR*BACKZEIT AKD GMBH",
+      "BACKZEIT",
+      "UZR*BACKZEIT AKD GMBH",
+      "BACKZEIT",
+      "WUENSCHE BERGKIRCHEN"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "ALIMENTACAO",
+    "level1_pt": "ALIMENTACAO",
+    "level2_pt": "RESTAURANTES",
+    "level3_pt": "RESTAURANTE",
+    "keywords": [
+      "MCDONALDS",
+      "PABLO EMILIO BURGER",
+      "PIZZA HUT",
+      "RISTORANTE DA UMBERTO",
+      "EISCAFE DOLOMITI",
+      "BELMONDO",
+      "HANS IM TAL",
+      "HEINRITZI GMBH & CO.",
+      "BOTECO BRAZILIAN RESTAU NUERNBERG",
+      "ABACCOS STEAKHOUSE",
+      "DING TEA MUENCHEN",
+      "I LOVE LEO GMBH&CO",
+      "WEINTREFF ZOM HASATANZ",
+      "RESTAURANT",
+      "KATNI ASIA"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "MERCADOS",
+    "level1_pt": "ALIMENTACAO",
+    "level2_pt": "SUPERMERCADO",
+    "level3_pt": "ALDI",
+    "keywords": [
+      "ALDI"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "MERCADOS",
+    "level1_pt": "ALIMENTACAO",
+    "level2_pt": "SUPERMERCADO",
+    "level3_pt": "EDEKA",
+    "keywords": [
+      "EDEKA"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "MERCADOS",
+    "level1_pt": "ALIMENTACAO",
+    "level2_pt": "SUPERMERCADO",
+    "level3_pt": "LIDL",
+    "keywords": [
+      "LIDL"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "MERCADOS",
+    "level1_pt": "ALIMENTACAO",
+    "level2_pt": "SUPERMERCADO",
+    "level3_pt": "NETTO",
+    "keywords": [
+      "NETTO"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "MERCADOS",
+    "level1_pt": "ALIMENTACAO",
+    "level2_pt": "SUPERMERCADO",
+    "level3_pt": "OUTROS MERCADOS",
+    "keywords": [
+      "MADE IN PORTUGAL//MUENCHEN/DE",
+      "NORMA",
+      "ASIA MARKT"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "MERCADOS",
+    "level1_pt": "ALIMENTACAO",
+    "level2_pt": "SUPERMERCADO",
+    "level3_pt": "REWE",
+    "keywords": [
+      "REWE"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "ALIMENTACAO",
+    "level1_pt": "ALIMENTACAO",
+    "level2_pt": "TRABALHO",
+    "level3_pt": "ALMOCO BOSCH",
+    "keywords": [
+      "FRUCHTWERK E.K."
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "RENDA EXTRA",
+    "level1_pt": "ASSINATURAS",
+    "level2_pt": "AI",
+    "level3_pt": "CHATGPT",
+    "keywords": [
+      "OPENAI *CHATGPT SUBSCR"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": true
+  },
+  {
+    "app_category": "RENDA EXTRA",
+    "level1_pt": "ASSINATURAS",
+    "level2_pt": "AI",
+    "level3_pt": "CLAUDE.AI",
+    "keywords": [
+      "CLAUDE"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": true
+  },
+  {
+    "app_category": "RENDA EXTRA",
+    "level1_pt": "ASSINATURAS",
+    "level2_pt": "AI",
+    "level3_pt": "ELEVENLABS",
+    "keywords": [
+      "ELEVENLABS"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": true
+  },
+  {
+    "app_category": "RENDA EXTRA",
+    "level1_pt": "ASSINATURAS",
+    "level2_pt": "AI",
+    "level3_pt": "REPLIT",
+    "keywords": [
+      "REPLIT"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": true
+  },
+  {
+    "app_category": "OUTROS",
+    "level1_pt": "ASSINATURAS",
+    "level2_pt": "APPLE",
+    "level3_pt": "APPLE ICLOUD/APP STORE",
+    "keywords": [
+      "APPLE.COM/BILL"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": true
+  },
+  {
+    "app_category": "LAZER / ESPORTE",
+    "level1_pt": "ASSINATURAS",
+    "level2_pt": "AUDIO LIVRO",
+    "level3_pt": "AUDIABLE",
+    "keywords": [
+      "AUDIBLE GMBH"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": true
+  },
+  {
+    "app_category": "OUTROS",
+    "level1_pt": "ASSINATURAS",
+    "level2_pt": "GOOGLE",
+    "level3_pt": "GOOGLE ONE",
+    "keywords": [
+      "GOOGLE*GOOGLE ONE -- -9.99",
+      "GOOGLE*GOOGLE ONE",
+      "GOOGLE*GOOGLE ONE"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": true
+  },
+  {
+    "app_category": "RENDA EXTRA",
+    "level1_pt": "ASSINATURAS",
+    "level2_pt": "MKT DIGITAL",
+    "level3_pt": "ACTIVE CAMPAIGN",
+    "keywords": [
+      "EBN *ACTIVECAMP -- -9.92",
+      "ACTIVECAMP"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Fixo",
+    "recurring": true
+  },
+  {
+    "app_category": "LAZER / ESPORTE",
+    "level1_pt": "ASSINATURAS",
+    "level2_pt": "STREAMING",
+    "level3_pt": "DISNEY+",
+    "keywords": [
+      "DISNEY"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": true
+  },
+  {
+    "app_category": "LAZER / ESPORTE",
+    "level1_pt": "ASSINATURAS",
+    "level2_pt": "STREAMING",
+    "level3_pt": "NETFLIX",
+    "keywords": [
+      "NETFLIX"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": true
+  },
+  {
+    "app_category": "LAZER / ESPORTE",
+    "level1_pt": "ASSINATURAS",
+    "level2_pt": "STREAMING",
+    "level3_pt": "PARAMOUNT PLUS",
+    "keywords": [
+      "PARAMOUNT+"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": true
+  },
+  {
+    "app_category": "LAZER / ESPORTE",
+    "level1_pt": "ASSINATURAS",
+    "level2_pt": "STREAMING",
+    "level3_pt": "YOUTUBE PREMIUM",
+    "keywords": [],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": true
+  },
+  {
+    "app_category": "COMPRAS",
+    "level1_pt": "COMPRAS",
+    "level2_pt": "CASA",
+    "level3_pt": "DECORACAO",
+    "keywords": [
+      "JYSK SE"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "COMPRAS",
+    "level1_pt": "COMPRAS",
+    "level2_pt": "CASA",
+    "level3_pt": "ELETRODOMESTICOS",
+    "keywords": [
+      "SATURN",
+      "MEDIAMARKT"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "COMPRAS",
+    "level1_pt": "COMPRAS",
+    "level2_pt": "CASA",
+    "level3_pt": "MOVEIS",
+    "keywords": [
+      "IKEA",
+      "MOEMAX"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "COMPRAS",
+    "level1_pt": "COMPRAS",
+    "level2_pt": "CASA",
+    "level3_pt": "TEDI",
+    "keywords": [
+      "TEDI"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "COMPRAS",
+    "level1_pt": "COMPRAS",
+    "level2_pt": "HIGIENE",
+    "level3_pt": "DM",
+    "keywords": [
+      "DM DROGERIE",
+      "DM-DROGERIE MARKT"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "COMPRAS",
+    "level1_pt": "COMPRAS",
+    "level2_pt": "HIGIENE",
+    "level3_pt": "MULLER",
+    "keywords": [
+      "MUELLER MH HANDELS GMB",
+      "MUELLER OLCHING 1-1 E",
+      "MUELLER 1500"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "COMPRAS",
+    "level1_pt": "COMPRAS",
+    "level2_pt": "HIGIENE",
+    "level3_pt": "ROSSMANN",
+    "keywords": [
+      "ROSSMANN"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "COMPRAS",
+    "level1_pt": "COMPRAS",
+    "level2_pt": "ONLINE",
+    "level3_pt": "AMAZON",
+    "keywords": [
+      "AMAZON",
+      "AMZN",
+      "AMZ*"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "COMPRAS",
+    "level1_pt": "COMPRAS",
+    "level2_pt": "ONLINE",
+    "level3_pt": "PAYPAL COMPRAS",
+    "keywords": [],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "COMPRAS",
+    "level1_pt": "COMPRAS",
+    "level2_pt": "ONLINE",
+    "level3_pt": "TEMU",
+    "keywords": [
+      "TEMU.COM DUBLIN 2",
+      "TEMU.COM"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "COMPRAS",
+    "level1_pt": "COMPRAS",
+    "level2_pt": "PRESENTES",
+    "level3_pt": "GERAL",
+    "keywords": [],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "COMPRAS",
+    "level1_pt": "COMPRAS",
+    "level2_pt": "ROUPAS",
+    "level3_pt": "ROUPAS GERAL",
+    "keywords": [
+      "ZALANDO",
+      "DECATHLON",
+      "ABOUT YOU",
+      "HM.COM HAMBURG",
+      "DEICHMANN SE 1129 GROEBENZELL",
+      "ZARA",
+      "H&M",
+      "ABOUT YOU",
+      "DECATHLON DEUTSCHLAND"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "OUTROS",
+    "level1_pt": "DOACOES",
+    "level2_pt": "BOG MITGLIED",
+    "level3_pt": "BOG MITGLIED",
+    "keywords": [
+      "MITGLIEDSBEITRAG 2024 F R ERICA UND VINICIUS STEIGLEDE",
+      "BRUEDERLICHKEIT OHNE GRENZEN E.V.--MITGLIEDSBEITRAG 2025",
+      "BRUEDERLICHKEIT OHNE GRENZEN E.V. -- MITGLIEDSBEITRAG",
+      "PAYPAL *BRUEDERLICH 4029357733"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": true
+  },
+  {
+    "app_category": "OUTROS",
+    "level1_pt": "EDUCACAO",
+    "level2_pt": "ESCOLA",
+    "level3_pt": "GYMNASIUM OLCHING",
+    "keywords": [
+      "GYMNASIUM OLCHING"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "OUTROS",
+    "level1_pt": "EDUCACAO",
+    "level2_pt": "KINDERGELD",
+    "level3_pt": "KINDERGELD",
+    "keywords": [
+      "ARBEIT - FAMILIEN KASSE",
+      "BUNDESAGENTUR"
+    ],
+    "keywords_negative": [],
+    "type": "Receita",
+    "fix_var": "Fixo",
+    "recurring": true
+  },
+  {
+    "app_category": "OUTROS",
+    "level1_pt": "EDUCACAO",
+    "level2_pt": "LIVROS",
+    "level3_pt": "LIVROS",
+    "keywords": [
+      "DANKE DER BUCHLADEN"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "OUTROS",
+    "level1_pt": "EDUCACAO",
+    "level2_pt": "ONLINE",
+    "level3_pt": "ONLINE SCHULERHILFE",
+    "keywords": [
+      "SCHULHILFEV"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": true
+  },
+  {
+    "app_category": "LAZER / ESPORTE",
+    "level1_pt": "ESPORTES",
+    "level2_pt": "CLUBES",
+    "level3_pt": "FLOORBALL - ...",
+    "keywords": [],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Fixo",
+    "recurring": true
+  },
+  {
+    "app_category": "LAZER / ESPORTE",
+    "level1_pt": "ESPORTES",
+    "level2_pt": "CLUBES",
+    "level3_pt": "NATACAO",
+    "keywords": [
+      "SV FUERSTENFELDBRUCKER WASSERRATTEN E.V.",
+      "SCHWIMMVEREIN"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Fixo",
+    "recurring": true
+  },
+  {
+    "app_category": "LAZER / ESPORTE",
+    "level1_pt": "ESPORTES",
+    "level2_pt": "CLUBES",
+    "level3_pt": "TENNIS VEREIN",
+    "keywords": [
+      "TENNISCLUB EDELWEISS GROEBENZELL E.V."
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": true
+  },
+  {
+    "app_category": "LAZER / ESPORTE",
+    "level1_pt": "ESPORTES",
+    "level2_pt": "ESPORTES",
+    "level3_pt": "BJJ",
+    "keywords": [
+      "BJJ AUSBILDUNG DACHAU",
+      "BJJ EVENT"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": true
+  },
+  {
+    "app_category": "LAZER / ESPORTE",
+    "level1_pt": "ESPORTES",
+    "level2_pt": "ESPORTES",
+    "level3_pt": "CLEVERFIT FITNESS",
+    "keywords": [
+      "OLC--0157-0000631 OLC-2637639",
+      "OLC-2637639",
+      "OLC--0157-0000373 OLC-2428106 RED LABEL",
+      "OLC-2428106 RED LABEL",
+      "OLC--0156-0000276 OLC-2637461 RED LABEL",
+      "OLC-2637461 RED LABEL"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Fixo",
+    "recurring": true
+  },
+  {
+    "app_category": "LAZER / ESPORTE",
+    "level1_pt": "ESPORTES",
+    "level2_pt": "TENIS",
+    "level3_pt": "TENNIS KIDS",
+    "keywords": [
+      "GEORGI KRANCHEV",
+      "TANJA MAYR"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "LAZER / ESPORTE",
+    "level1_pt": "FERIAS",
+    "level2_pt": "FERIAS CASSIUS",
+    "level3_pt": "FERIAS VISTA CASSIUS",
+    "keywords": [
+      "WOLFSSCHLUCHT PRUEM MBH"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "LAZER / ESPORTE",
+    "level1_pt": "FERIAS",
+    "level2_pt": "FERIAS LONDRES",
+    "level3_pt": "FERIAS LONDRES",
+    "keywords": [
+      "THISTLEMARBLE LONDON",
+      "FLUGSTRECKE:VON: MEMMINGEN NACH: LONDON",
+      "ENGLAND UK FLUGLINIE:",
+      "WARNER BROS WARNER BROS UNITED KINGDOM"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "FINANCIAMENTO",
+    "level1_pt": "FINANCAS",
+    "level2_pt": "CARTOES",
+    "level3_pt": "JUROS AMEX",
+    "keywords": [
+      "ZINSBELASTUNG"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "FINANCIAMENTO",
+    "level1_pt": "FINANCAS",
+    "level2_pt": "CARTOES",
+    "level3_pt": "JUROS M&M",
+    "keywords": [
+      "1,95% FUR WAHRUNGSUMRECHN"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "FINANCIAMENTO",
+    "level1_pt": "FINANCAS",
+    "level2_pt": "CARTOES",
+    "level3_pt": "MILES & MORE MENSALIDADE",
+    "keywords": [
+      "MONATLICHER KARTENPREIS"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Fixo",
+    "recurring": true
+  },
+  {
+    "app_category": "FINANCIAMENTO",
+    "level1_pt": "FINANCAS",
+    "level2_pt": "FINANCIAMENTO",
+    "level3_pt": "APOLLO OPTIK PARCELADO",
+    "keywords": [
+      "CC28K3RBB78RKBG6",
+      "APOLLO-OPTIK HOLDING GMBH ? CO. KG DP25-00125921",
+      "APOLLO-OPTIK HOLDING GMBH ? CO. KG",
+      "DE52100190001000027873"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Fixo",
+    "recurring": true
+  },
+  {
+    "app_category": "FINANCIAMENTO",
+    "level1_pt": "FINANCAS",
+    "level2_pt": "FINANCIAMENTO",
+    "level3_pt": "DIBA FINANCIAMENTO",
+    "keywords": [
+      "ING-DIBA AG 5328937129"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Fixo",
+    "recurring": true
+  },
+  {
+    "app_category": "FINANCIAMENTO",
+    "level1_pt": "FINANCAS",
+    "level2_pt": "FINANCIAMENTO",
+    "level3_pt": "DIBA RAHMENKREDIT",
+    "keywords": [
+      "RAHMENKREDIT KOMPLETT ABBEZAHT",
+      "DE12500105175705720690",
+      "RAHMENKREDIT",
+      "5705720690.KKRATKR.01.002.142920"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Fixo",
+    "recurring": true
+  },
+  {
+    "app_category": "FINANCIAMENTO",
+    "level1_pt": "FINANCAS",
+    "level2_pt": "FINANCIAMENTO",
+    "level3_pt": "EMPRESTIMO TARGOBANK",
+    "keywords": [
+      "00007285400453 VINICIUS STEIGLEDER VIELEN DANK IHRE TARGOBANK"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Fixo",
+    "recurring": true
+  },
+  {
+    "app_category": "FINANCIAMENTO",
+    "level1_pt": "FINANCAS",
+    "level2_pt": "JUROS CONTA NEGATIVA",
+    "level3_pt": "JUROS SPARKASSE",
+    "keywords": [
+      "ABSCHLUSS -- 0000000000 -- SPARKASSE"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "FINANCIAMENTO",
+    "level1_pt": "FINANCAS",
+    "level2_pt": "SAQUE",
+    "level3_pt": "SAQUE",
+    "keywords": [
+      "BARGELDAUSZAHLUNG -- DE66700530709000481409",
+      "GELDAUTOMAT",
+      "BARGELDAUSZAHLUNG"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "FINANCIAMENTO",
+    "level1_pt": "FINANCAS",
+    "level2_pt": "TAXAS E JUROS",
+    "level3_pt": "JUROS/CAMBIO",
+    "keywords": [
+      "1,95% FUR WAHRUNGSUMRECHN"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "FINANCIAMENTO",
+    "level1_pt": "FINANCAS",
+    "level2_pt": "TAXAS E JUROS",
+    "level3_pt": "TAXAS SPARKASSE",
+    "keywords": [
+      "ENTGELTABSCHLUSS"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "INTERNO",
+    "level1_pt": "INTERNO",
+    "level2_pt": "CARTOES",
+    "level3_pt": "AMEX FATURA/PAGAMENTO",
+    "keywords": [
+      "PAGAMENTO AMEX",
+      "AMERICAN EXPRESS",
+      "AMEX - RETOURNIERTE LASTSCHRIFT",
+      "AMEX - ZAHLUNG ERHALTEN. BESTEN DANK."
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": true
+  },
+  {
+    "app_category": "INTERNO",
+    "level1_pt": "INTERNO",
+    "level2_pt": "CARTOES",
+    "level3_pt": "MILES & MORE FATURA/PAGAMENTO",
+    "keywords": [
+      "PAGAMENTO M&M",
+      "DEUTSCHE KREDITBANK AKTIENGESELLSCHAFT"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": true
+  },
+  {
+    "app_category": "INTERNO",
+    "level1_pt": "INTERNO",
+    "level2_pt": "CARTOES",
+    "level3_pt": "SPARKASSE PAGAMENTO",
+    "keywords": [
+      "PAGAMENTO SPARKASSE",
+      "PAGAMENTO CARTAO DE CREDITO AMEX"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": true
+  },
+  {
+    "app_category": "OUTROS",
+    "level1_pt": "LAZER",
+    "level2_pt": "EVENTOS",
+    "level3_pt": "INGRESSOS",
+    "keywords": [],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "OUTROS",
+    "level1_pt": "LAZER",
+    "level2_pt": "EVENTOS",
+    "level3_pt": "LAZER GERAL",
+    "keywords": [],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "OUTROS",
+    "level1_pt": "LAZER",
+    "level2_pt": "JOGOS ONLINE",
+    "level3_pt": "JOGOS - DAVID",
+    "keywords": [
+      "ROBLOX.COM 18888582569 SAN MATEO"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "OUTROS",
+    "level1_pt": "LAZER",
+    "level2_pt": "OKTOBERFEST",
+    "level3_pt": "OKTOBERFEST",
+    "keywords": [
+      "OKTOBERFEST"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "OUTROS",
+    "level1_pt": "LAZER",
+    "level2_pt": "PRESENTES E FESTAS",
+    "level3_pt": "FESTA DE ANIVER DAVID",
+    "keywords": [
+      "UZR*FUNZONE"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "TRANSPORTE",
+    "level1_pt": "MOBILIDADE",
+    "level2_pt": "CARRO",
+    "level3_pt": "COMBUSTIVEL",
+    "keywords": [
+      "TANKSTELLE",
+      "ALLGUTH"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "TRANSPORTE",
+    "level1_pt": "MOBILIDADE",
+    "level2_pt": "CARRO",
+    "level3_pt": "ESTACIONAMENTO",
+    "keywords": [
+      "PARKHAUS",
+      "HANDYPARKEN MUENCHEN",
+      "PARKGARAGEN",
+      "PBW PG KRIEGSBERGSTR.",
+      "PARKGARAGE",
+      "PARKEN OLYMPIA"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "TRANSPORTE",
+    "level1_pt": "MOBILIDADE",
+    "level2_pt": "CARRO",
+    "level3_pt": "MULTAS/INFRACOES",
+    "keywords": [
+      "STADT MANNHEIM"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "TRANSPORTE",
+    "level1_pt": "MOBILIDADE",
+    "level2_pt": "CARRO",
+    "level3_pt": "SEGURO",
+    "keywords": [
+      "KFZ-VERSICHERUNG NR 870711522 FUERIHR FAHRZEUG MIT DEM KENNZEICHEN FFB FA 317",
+      "KFZ0047667216"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Fixo",
+    "recurring": false
+  },
+  {
+    "app_category": "TRANSPORTE",
+    "level1_pt": "MOBILIDADE",
+    "level2_pt": "TRANSPORTE",
+    "level3_pt": "MVV / BUS / TREM",
+    "keywords": [
+      "MVV TICKETSHOP LOGPAY VOI DE"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "MORADIA",
+    "level1_pt": "MORADIA",
+    "level2_pt": "ESTING",
+    "level3_pt": "FINANCIAMENTO",
+    "keywords": [
+      "7060327031D660501010022518260 DARLEHENSABSCHLUSS IBAN DE20701694600020137367",
+      "R + V LEBENSVERSICHERUNG AKTIENGESELLSCHAFT"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Fixo",
+    "recurring": true
+  },
+  {
+    "app_category": "MORADIA",
+    "level1_pt": "MORADIA",
+    "level2_pt": "ESTING",
+    "level3_pt": "HAUS ESTING - NK GRUNDSTUCK",
+    "keywords": [
+      "HAUSHALTSSTELLE:06001/10000/STEIGLEDER",
+      "AGF IMMOBILIEN UND SERVICES GMBH"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "MORADIA",
+    "level1_pt": "MORADIA",
+    "level2_pt": "ESTING",
+    "level3_pt": "MANUTENCAO",
+    "keywords": [],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "MORADIA",
+    "level1_pt": "MORADIA",
+    "level2_pt": "ESTING",
+    "level3_pt": "MATERIAIS E OBRAS",
+    "keywords": [],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "MORADIA",
+    "level1_pt": "MORADIA",
+    "level2_pt": "ESTING",
+    "level3_pt": "SERVICOS",
+    "keywords": [],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "MORADIA",
+    "level1_pt": "MORADIA",
+    "level2_pt": "ESTING",
+    "level3_pt": "UTILIDADES",
+    "keywords": [],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "MORADIA",
+    "level1_pt": "MORADIA",
+    "level2_pt": "KARLSRUHE",
+    "level3_pt": "ALUGUEL RECEBIDO",
+    "keywords": [
+      "MIETE INCL. NEBENKOSTEN"
+    ],
+    "keywords_negative": [],
+    "type": "Receita",
+    "fix_var": "Fixo",
+    "recurring": true
+  },
+  {
+    "app_category": "MORADIA",
+    "level1_pt": "MORADIA",
+    "level2_pt": "KARLSRUHE",
+    "level3_pt": "AQUECIMENTO/FERNWARME",
+    "keywords": [
+      "VERTRAGSNR 250014203",
+      "V 2004774510-BEL400000778120-VK250014203"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Fixo",
+    "recurring": true
+  },
+  {
+    "app_category": "MORADIA",
+    "level1_pt": "MORADIA",
+    "level2_pt": "KARLSRUHE",
+    "level3_pt": "ENERGIA/AGUA",
+    "keywords": [
+      "VERTRAGSKONTO 210672822"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Fixo",
+    "recurring": true
+  },
+  {
+    "app_category": "MORADIA",
+    "level1_pt": "MORADIA",
+    "level2_pt": "KARLSRUHE",
+    "level3_pt": "FINANCIAMENTO",
+    "keywords": [
+      "31440560102023",
+      "31432225842024",
+      "AZ 7545532023",
+      "AZ 7545532014"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Fixo",
+    "recurring": true
+  },
+  {
+    "app_category": "MORADIA",
+    "level1_pt": "MORADIA",
+    "level2_pt": "KARLSRUHE",
+    "level3_pt": "IMPOSTOS E TAXAS",
+    "keywords": [
+      "501004496409/GRUNDSTEUER B 2025",
+      "501004496409/GRUNDSTEUER"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Fixo",
+    "recurring": true
+  },
+  {
+    "app_category": "MORADIA",
+    "level1_pt": "MORADIA",
+    "level2_pt": "KARLSRUHE",
+    "level3_pt": "NEBENKOSTEN/WEG/HAUSVERWALTUNG",
+    "keywords": [
+      "WEG LOSWOHNEN II",
+      "LOSWOHNEN II , KARLSRUHE -- HG VORAUSZAHLUNG 302-1-1",
+      "WEG LOSWOHNEN 2",
+      "DE74660501010022518260",
+      "WEG"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Fixo",
+    "recurring": true
+  },
+  {
+    "app_category": "MORADIA",
+    "level1_pt": "MORADIA",
+    "level2_pt": "OLCHING",
+    "level3_pt": "ALUGUEL INCL. NK",
+    "keywords": [
+      "SCHROEDER -- MONATSMIETE -- DAUERAUFTRAG",
+      "SCHROEDER",
+      "SCHROEDER -- MONATSMIETE -- DAUERAUFTRAG"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Fixo",
+    "recurring": true
+  },
+  {
+    "app_category": "MORADIA",
+    "level1_pt": "MORADIA",
+    "level2_pt": "OLCHING",
+    "level3_pt": "ENERGIA",
+    "keywords": [
+      "S/836678520540/602712118857",
+      "LICHTBLICK SE -- ABSCHLAG (STROM)",
+      "VATTENFALL EUROPE SALES",
+      "LICHTBLICK SE"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Fixo",
+    "recurring": true
+  },
+  {
+    "app_category": "MORADIA",
+    "level1_pt": "MORADIA",
+    "level2_pt": "OLCHING",
+    "level3_pt": "INTERNET/TV/TELEFONE",
+    "keywords": [
+      "933951689"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Fixo",
+    "recurring": true
+  },
+  {
+    "app_category": "MORADIA",
+    "level1_pt": "MORADIA",
+    "level2_pt": "OLCHING",
+    "level3_pt": "MANUTENCAO / BAUMARKT",
+    "keywords": [
+      "DANKE BZO OLCHING GMBH"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "OUTROS",
+    "level1_pt": "PETS",
+    "level2_pt": "COMPRAS",
+    "level3_pt": "ALIMENTACAO E ACESSORIOS",
+    "keywords": [
+      "WWW.FUTALIS.DE",
+      "FRESSNAPF"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "OUTROS",
+    "level1_pt": "PETS",
+    "level2_pt": "VETERINARIO",
+    "level3_pt": "VETERINARIO",
+    "keywords": [],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "SAUDE",
+    "level1_pt": "SAUDE",
+    "level2_pt": "CABELEREIRO",
+    "level3_pt": "CABELEREIRO",
+    "keywords": [],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "SAUDE",
+    "level1_pt": "SAUDE",
+    "level2_pt": "CUIDADOS PESSOAIS",
+    "level3_pt": "LIMPEZA DE PELE",
+    "keywords": [
+      "NATALIA.FERTSC"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "SAUDE",
+    "level1_pt": "SAUDE",
+    "level2_pt": "CUIDADOS PESSOAIS",
+    "level3_pt": "PRODUTOS DE ESTETICA",
+    "keywords": [
+      "SILVIA GRIEBL",
+      "L'OCCITANE DUSSELDORF"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "SAUDE",
+    "level1_pt": "SAUDE",
+    "level2_pt": "DENTISTA/ORTODONTIA",
+    "level3_pt": "DENTISTA/ORTODONTIA",
+    "keywords": [
+      "GEMEINSCHAFTSPRAXIS FUER KINDERZAHNHEILKUNDE",
+      "ZAHNARZTPRAXIS"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "SAUDE",
+    "level1_pt": "SAUDE",
+    "level2_pt": "FARMACIA",
+    "level3_pt": "FARMACIA",
+    "keywords": [
+      "APOTHEKE"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "SAUDE",
+    "level1_pt": "SAUDE",
+    "level2_pt": "GASTOS GERAIS",
+    "level3_pt": "PALMILHA",
+    "keywords": [
+      "AGM MUELLER GMBH"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "SAUDE",
+    "level1_pt": "SAUDE",
+    "level2_pt": "LABORATORIO",
+    "level3_pt": "LABORATORIO",
+    "keywords": [
+      "LABOR AUGSBURG MVZ"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "SAUDE",
+    "level1_pt": "SAUDE",
+    "level2_pt": "LOGOPADIE",
+    "level3_pt": "LOGO DAVID",
+    "keywords": [
+      "MARION SCHANZ"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "SAUDE",
+    "level1_pt": "SAUDE",
+    "level2_pt": "MEDICO",
+    "level3_pt": "MEDICO",
+    "keywords": [
+      "PVS BAYERN GMBH",
+      "GEMEINSCHAFTSPRAXIS DRES. HUBER NEU//MARKT SCHWABEN/DE",
+      "HAUTARZTPRAXIS DR POPPE"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "SAUDE",
+    "level1_pt": "SAUDE",
+    "level2_pt": "OCULOS APOLLO",
+    "level3_pt": "OCULOS DAVID",
+    "keywords": [
+      "APOLLO OPTIK -- -40 -- PROCESSED",
+      "OLCHING -- APOLLO-OPTIK"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": true
+  },
+  {
+    "app_category": "SAUDE",
+    "level1_pt": "SAUDE",
+    "level2_pt": "SEGUROS",
+    "level3_pt": "AOK SEGURO VINAO",
+    "keywords": [
+      "OB-D400492027"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Fixo",
+    "recurring": true
+  },
+  {
+    "app_category": "SAUDE",
+    "level1_pt": "SAUDE",
+    "level2_pt": "SEGUROS",
+    "level3_pt": "DEVK",
+    "keywords": [
+      "Z00013153275 LEBEN",
+      "HAUSHALTGLAS",
+      "HAUSRAT",
+      "HAFTPFLICHT",
+      "RECHTSSCHUTZ",
+      "622026799196",
+      "DEVK RIEHLERSTRASSE 190 KOELN",
+      "DE87370605900000402702",
+      "DEVK LEBENSVERSICHERUNGSVEREIN"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Fixo",
+    "recurring": true
+  },
+  {
+    "app_category": "OUTROS",
+    "level1_pt": "TELEFONE",
+    "level2_pt": "CELULAR",
+    "level3_pt": "CELULAR FAMILY",
+    "keywords": [
+      "KD-NR.: 6074738889"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Fixo",
+    "recurring": true
+  },
+  {
+    "app_category": "TRABALHO",
+    "level1_pt": "TRABALHO",
+    "level2_pt": "BOSCH VIAGEM",
+    "level3_pt": "REEMBOLSO BOSCH",
+    "keywords": [
+      "BOSCH GMBHTVL EXP"
+    ],
+    "keywords_negative": [],
+    "type": "Receita",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "TRABALHO",
+    "level1_pt": "TRABALHO",
+    "level2_pt": "BOSCH VIAGEM",
+    "level3_pt": "TEAM-EVENT",
+    "keywords": [
+      "BANCA PREALPI SANBIAGIO CREDITO COOPERATIVO"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "TRABALHO",
+    "level1_pt": "TRABALHO",
+    "level2_pt": "SALARIO",
+    "level3_pt": "SALARIO ERICA",
+    "keywords": [
+      "EMYLIE MARIA BERNARDES PEREIRA",
+      "ROGERIO BEHR",
+      "RICARDO NUBER",
+      "DAVID BRANDAO DA SILVA",
+      "FERNANDA MENDONCA FINATO",
+      "EMYLIE MARIA BERNARDES PEREIRA",
+      "LEONARDO MORASSI CAPITANIO"
+    ],
+    "keywords_negative": [],
+    "type": "Receita",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "TRABALHO",
+    "level1_pt": "TRABALHO",
+    "level2_pt": "SALARIO",
+    "level3_pt": "SALARIO VINICIUS",
+    "keywords": [
+      "ENTGELT 71336818"
+    ],
+    "keywords_negative": [],
+    "type": "Receita",
+    "fix_var": "Fixo",
+    "recurring": true
+  },
+  {
+    "app_category": "OUTROS",
+    "level1_pt": "TRANSFERENCIAS",
+    "level2_pt": "TRANSFERENCIAS PARA BRASIL",
+    "level3_pt": "TRANSFERENCIAS WISE/TRANSFERWISE",
+    "keywords": [
+      "TRANSFERWISE",
+      "WISE"
+    ],
+    "keywords_negative": [],
+    "type": "Despesa",
+    "fix_var": "Variável",
+    "recurring": false
+  },
+  {
+    "app_category": "RENDA EXTRA",
+    "level1_pt": "VENDAS",
+    "level2_pt": "VENDAS ONLINE",
+    "level3_pt": "VENDAS VINTED/MANGOPAY",
+    "keywords": [
+      "MANGOPAY",
+      "KLEINANZEIGEN"
+    ],
+    "keywords_negative": [],
+    "type": "Receita",
+    "fix_var": "Variável",
+    "recurring": false
+  }
+]

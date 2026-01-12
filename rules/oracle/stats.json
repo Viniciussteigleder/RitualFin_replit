@@ -1,0 +1,18 @@
+{
+  "total_categories": 108,
+  "unique_level1": 18,
+  "unique_level2": 56,
+  "unique_level3": 107,
+  "total_keywords": 224,
+  "categories_with_keywords": 95,
+  "total_aliases": 64,
+  "total_alias_keywords": 112,
+  "type_breakdown": {
+    "despesa": 102,
+    "receita": 6
+  },
+  "fix_var_breakdown": {
+    "fixo": 25,
+    "variavel": 83
+  }
+}
