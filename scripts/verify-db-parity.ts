@@ -6,12 +6,16 @@
  * - Extra records (DB -> Excel)
  * - Field mismatches
  *
- * Usage: DATABASE_URL=... npx tsx scripts/verify-db-parity.ts
+ * Usage: npx tsx scripts/verify-db-parity.ts
  */
+
+import { config } from 'dotenv';
+config({ path: '.env.local' });
 
 import fs from 'fs';
 import path from 'path';
-import { db } from '../src/lib/db';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import pg from 'pg';
 import {
   taxonomyLevel1,
   taxonomyLevel2,
@@ -19,9 +23,15 @@ import {
   rules,
   aliasAssets,
 } from '../src/lib/db/schema';
-import { sql } from 'drizzle-orm';
 
 const ORACLE_DIR = 'rules/oracle';
+
+// Create pool with explicit DATABASE_URL
+const pool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+const db = drizzle(pool);
 
 interface OracleCategory {
   app_category: string;
@@ -261,6 +271,7 @@ async function main() {
   console.log('='.repeat(60));
   console.log('Database Parity Verification');
   console.log('='.repeat(60));
+  console.log(`DATABASE_URL: ${process.env.DATABASE_URL ? 'SET (****' + process.env.DATABASE_URL.slice(-20) + ')' : 'NOT SET'}`);
 
   // Load Oracle data
   console.log('\nLoading Oracle data...');
@@ -334,6 +345,9 @@ async function main() {
   fs.writeFileSync('docs/rules-parity-report.md', mdReport);
   console.log(`Markdown report: docs/rules-parity-report.md`);
 
+  // Close pool
+  await pool.end();
+
   process.exit(verdict === 'PASS' ? 0 : 1);
 }
 
@@ -396,4 +410,8 @@ function generateMarkdownReport(report: any): string {
   return lines.join('\n');
 }
 
-main().catch(console.error);
+main().catch(err => {
+  console.error('Error:', err);
+  pool.end();
+  process.exit(1);
+});
