@@ -115,7 +115,7 @@ export async function getDashboardData(date?: Date) {
   const categoryData = await db
     .select({ 
       name: transactions.category1, 
-      value: sql<number>`SUM(ABS(${transactions.amount}))` 
+      value: sql<number>`ABS(SUM(${transactions.amount}))` // Changed from SUM(ABS(...)) to ABS(SUM(...))
     })
     .from(transactions)
     .where(and(
@@ -127,7 +127,7 @@ export async function getDashboardData(date?: Date) {
        ne(transactions.display, "no")
     ))
     .groupBy(transactions.category1)
-    .orderBy(desc(sql`SUM(ABS(${transactions.amount}))`))
+    .orderBy(desc(sql`ABS(SUM(${transactions.amount}))`)) // Changed from SUM(ABS(...)) to ABS(SUM(...))
     .limit(20); // Increased limit for frontend filtering
 
   return {
@@ -176,23 +176,73 @@ export async function getTransactions(limit = 50) {
 
   const userId = session.user.id;
 
-  // TODO: Add filtering and pagination support
-  return await db.query.transactions.findMany({
-    where: (tx, { eq, ne, and }) => and(
-      eq(tx.userId, userId),
-      ne(tx.display, "no")
-    ),
-    orderBy: [desc(transactions.paymentDate)],
-    limit: limit,
-    with: {
-      rule: true,
-      evidenceLinks: {
-        with: {
-          ingestionItem: true
-        }
-      }
-    }
-  });
+  // Use raw SQL to get transactions with taxonomy data
+  const result = await db.execute(sql`
+    SELECT 
+      t.*,
+      COALESCE(t1.nivel_1_pt, 'OPEN') as level_1,
+      COALESCE(t2.nivel_2_pt, 'OPEN') as level_2,
+      COALESCE(tl.nivel_3_pt, 'OPEN') as level_3,
+      COALESCE(t.app_category_name, 'OPEN') as app_category,
+      t.matched_keyword,
+      r.key_words as rule_keywords,
+      r.category_1 as rule_category_1,
+      r.category_2 as rule_category_2,
+      r.category_3 as rule_category_3
+    FROM transactions t
+    LEFT JOIN taxonomy_leaf tl ON t.leaf_id = tl.leaf_id
+    LEFT JOIN taxonomy_level_2 t2 ON tl.level_2_id = t2.level_2_id
+    LEFT JOIN taxonomy_level_1 t1 ON t2.level_1_id = t1.level_1_id
+    LEFT JOIN rules r ON t.rule_id_applied = r.id
+    WHERE t.user_id = ${userId}
+    AND t.display != 'no'
+    ORDER BY t.payment_date DESC
+    LIMIT ${limit}
+  `);
+
+  // Map snake_case to camelCase for UI compatibility
+  return result.rows.map((row: any) => ({
+    ...row,
+    paymentDate: row.payment_date,
+    descRaw: row.desc_raw,
+    descNorm: row.desc_norm,
+    simpleDesc: row.simple_desc,
+    aliasDesc: row.alias_desc,
+    leafId: row.leaf_id,
+    classifiedBy: row.classified_by,
+    recurringFlag: row.recurring_flag,
+    recurringGroupId: row.recurring_group_id,
+    recurringConfidence: row.recurring_confidence,
+    recurringDayOfMonth: row.recurring_day_of_month,
+    recurringDayWindow: row.recurring_day_window,
+    fixVar: row.fix_var,
+    category1: row.category_1,
+    category2: row.category_2,
+    category3: row.category_3,
+    manualOverride: row.manual_override,
+    internalTransfer: row.internal_transfer,
+    excludeFromBudget: row.exclude_from_budget,
+    needsReview: row.needs_review,
+    ruleIdApplied: row.rule_id_applied,
+    uploadId: row.upload_id,
+    suggestedKeyword: row.suggested_keyword,
+    matchedKeyword: row.matched_keyword,
+    appCategoryId: row.app_category_id,
+    appCategoryName: row.app_category_name,
+    conflictFlag: row.conflict_flag,
+    classificationCandidates: row.classification_candidates,
+    userId: row.user_id,
+    // Taxonomy fields
+    level1: row.level_1,
+    level2: row.level_2,
+    level3: row.level_3,
+    appCategory: row.app_category,
+    // Rule fields
+    ruleKeywords: row.rule_keywords,
+    ruleCategory1: row.rule_category_1,
+    ruleCategory2: row.rule_category_2,
+    ruleCategory3: row.rule_category_3,
+  }));
 }
 
 export async function updateTransactionCategory(

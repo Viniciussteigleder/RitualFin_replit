@@ -250,7 +250,7 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
             </div>
 
             {/* Table Header (Desktop Only) */}
-            <div className="hidden md:grid grid-cols-[60px_1fr_2.5fr_1.5fr_1.5fr_1.2fr_120px] gap-6 px-10 py-6 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+            <div className="hidden md:grid grid-cols-[60px_1fr_2fr_1.2fr_1.2fr_1.2fr_1fr_100px] gap-4 px-8 py-6 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
                 <div className="flex justify-center">
                     <Checkbox checked={selectedIds.size === filtered.length && filtered.length > 0} onCheckedChange={toggleSelectAll} className="h-5 w-5 rounded-lg border-2" />
                 </div>
@@ -258,6 +258,7 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
                 <div>Estabelecimento</div>
                 <div>Valor</div>
                 <div>Categoria</div>
+                <div>App Cat</div>
                 <div>AI Status</div>
                 <div className="text-right">Ações</div>
             </div>
@@ -296,7 +297,7 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
                                 <div
                                     key={tx.id}
                                     className={cn(
-                                        "group flex flex-col md:grid md:grid-cols-[60px_1fr_2.5fr_1.5fr_1.5fr_1.2fr_120px] gap-2 md:gap-6 items-center hover:bg-secondary/40 transition-all cursor-pointer",
+                                        "group flex flex-col md:grid md:grid-cols-[60px_1fr_2fr_1.2fr_1.2fr_1.2fr_1fr_100px] gap-2 md:gap-4 items-center hover:bg-secondary/40 transition-all cursor-pointer",
                                         isCompact ? "p-4 md:p-0 md:h-[60px]" : "p-6 md:p-0 md:h-[80px]",
                                         selectedIds.has(tx.id) && "bg-primary/5 border-l-4 border-l-primary"
                                     )}
@@ -313,24 +314,24 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
                                     </div>
 
                                     {/* Column: Estabelecimento */}
-                                    <div className={cn("md:py-4 flex flex-row items-center gap-3 w-full md:w-auto", isCompact && "md:py-2")}>
+                                    <div className={cn("md:py-4 flex flex-row items-center gap-3 w-full md:w-auto min-w-0", isCompact && "md:py-2")}>
                                         {tx.aliasDesc && aliasMap[tx.aliasDesc] ? (
                                             <img 
                                                 src={aliasMap[tx.aliasDesc]} 
                                                 alt={tx.aliasDesc} 
-                                                className={cn("rounded-full object-cover border border-border bg-white", isCompact ? "w-8 h-8" : "w-10 h-10")}
+                                                className={cn("rounded-full object-cover border border-border bg-white flex-shrink-0", isCompact ? "w-8 h-8" : "w-10 h-10")}
                                             />
                                         ) : (
-                                            <div className={cn("rounded-full bg-secondary flex items-center justify-center text-muted-foreground/50", isCompact ? "w-8 h-8" : "w-10 h-10")}>
+                                            <div className={cn("rounded-full bg-secondary flex items-center justify-center text-muted-foreground/50 flex-shrink-0", isCompact ? "w-8 h-8" : "w-10 h-10")}>
                                                 <ShoppingBag className={cn(isCompact ? "w-4 h-4" : "w-5 h-5")} />
                                             </div>
                                         )}
-                                        <div className="flex flex-col gap-0.5 overflow-hidden">
-                                            <span className={cn("font-bold text-foreground truncate tracking-tight", isCompact ? "text-sm" : "text-base")}>
+                                        <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                                            <span className={cn("font-bold text-foreground tracking-tight line-clamp-2", isCompact ? "text-sm" : "text-base")}>
                                                 {tx.aliasDesc || tx.description}
                                             </span>
                                             {!isCompact && (
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-2 flex-wrap">
                                                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{tx.source}</span>
                                                     {tx.conflictFlag ? (
                                                         <Badge className="h-5 px-2 rounded-full bg-red-100 text-red-700 hover:bg-red-200 border-none text-[9px] font-bold uppercase tracking-wide flex items-center gap-1">
@@ -365,6 +366,13 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
                                             <CatIcon className="h-4 w-4" />
                                             {tx.category1 || "Não Classificado"}
                                         </button>
+                                    </div>
+
+                                    {/* Column: App Category */}
+                                    <div className="md:py-4 flex items-center w-full md:w-auto">
+                                        <Badge variant="outline" className="font-mono text-[10px] bg-background/50 border-border text-muted-foreground">
+                                            {tx.appCategory || tx.appCategoryName || "OPEN"}
+                                        </Badge>
                                     </div>
 
                                     {/* Column: AI Status */}

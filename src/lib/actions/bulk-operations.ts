@@ -153,49 +153,57 @@ export async function exportTransactions(
       return error("Sessão expirada. Faça login novamente.");
     }
 
-    // Get transactions
-    const txList = transactionIds
-      ? await db.query.transactions.findMany({
-          where: and(
-            eq(transactions.userId, session.user.id),
-            inArray(transactions.id, transactionIds)
-          ),
-          orderBy: (tx, { desc }) => [desc(tx.paymentDate)],
-        })
-      : await db.query.transactions.findMany({
-          where: eq(transactions.userId, session.user.id),
-          orderBy: (tx, { desc }) => [desc(tx.paymentDate)],
-        });
+    // Use raw SQL to get transactions with taxonomy data
+    const txList = await db.execute(sql`
+      SELECT 
+        t.*,
+        COALESCE(t1.nivel_1_pt, 'OPEN') as level_1,
+        COALESCE(t2.nivel_2_pt, 'OPEN') as level_2,
+        COALESCE(tl.nivel_3_pt, 'OPEN') as level_3,
+        COALESCE(t.app_category_name, 'OPEN') as app_category,
+        t.matched_keyword
+      FROM transactions t
+      LEFT JOIN taxonomy_leaf tl ON t.leaf_id = tl.leaf_id
+      LEFT JOIN taxonomy_level_2 t2 ON tl.level_2_id = t2.level_2_id
+      LEFT JOIN taxonomy_level_1 t1 ON t2.level_1_id = t1.level_1_id
+      WHERE t.user_id = ${session.user.id}
+      ${transactionIds ? sql`AND t.id = ANY(${transactionIds})` : sql``}
+      ORDER BY t.payment_date DESC
+    `);
 
-    if (txList.length === 0) {
+    if (txList.rows.length === 0) {
       return error("Nenhuma transação para exportar");
     }
 
-    // Generate CSV
+    // Generate CSV with new columns
     const headers = [
       "Data",
       "Descrição",
       "Valor",
-      "Categoria L1",
-      "Categoria L2",
-      "Categoria L3",
+      "Nível 1",
+      "Nível 2", 
+      "Nível 3",
+      "App Category",
+      "Keyword Matched",
       "Tipo",
       "Fixo/Variável",
       "Origem",
       "Status",  
     ];
 
-    const rows = txList.map((tx) => [
-      new Date(tx.paymentDate).toLocaleDateString("pt-PT"),
-      tx.aliasDesc || tx.descNorm || tx.descRaw,
+    const rows = txList.rows.map((tx: any) => [
+      new Date(tx.payment_date).toLocaleDateString("pt-PT"),
+      tx.alias_desc || tx.desc_norm || tx.desc_raw,
       tx.amount.toString(),
-      tx.category1 || "",
-      tx.category2 || "",
-      tx.category3 || "",
+      tx.level_1 || "OPEN",
+      tx.level_2 || "OPEN",
+      tx.level_3 || "OPEN",
+      tx.app_category || "OPEN",
+      tx.matched_keyword || "",
       tx.type || "",
-      tx.fixVar || "",
+      tx.fix_var || "",
       tx.source || "",
-      tx.needsReview ? "Revisar" : "Confirmado",
+      tx.needs_review ? "Revisar" : "Confirmado",
     ]);
 
     const csvContent = [

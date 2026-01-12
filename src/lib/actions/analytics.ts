@@ -72,21 +72,48 @@ export async function getAnalyticsData(
   let currentLevel: DrillDownData["currentLevel"] = "category";
   const breadcrumb: DrillDownData["breadcrumb"] = [];
 
-  // Apply filters cumulatively based on hierarchy
+  // Apply filters cumulatively based on taxonomy hierarchy
   if (filters.category) {
-    conditions.push(sql`${transactions.category1} = ${filters.category}`);
+    if (filters.category === "OPEN") {
+      conditions.push(sql`${transactions.leafId} IS NULL`);
+    } else {
+      conditions.push(sql`EXISTS (
+        SELECT 1 FROM taxonomy_leaf tl
+        JOIN taxonomy_level_2 t2 ON tl.level_2_id = t2.level_2_id
+        JOIN taxonomy_level_1 t1 ON t2.level_1_id = t1.level_1_id
+        WHERE tl.leaf_id = ${transactions.leafId}
+        AND t1.nivel_1_pt = ${filters.category}
+      )`);
+    }
     breadcrumb.push({ label: "Categoria", value: filters.category });
     currentLevel = "level1";
   }
 
   if (filters.level1) {
-    conditions.push(eq(transactions.category2, filters.level1));
+    if (filters.level1 === "OPEN") {
+      conditions.push(sql`${transactions.leafId} IS NULL`);
+    } else {
+      conditions.push(sql`EXISTS (
+        SELECT 1 FROM taxonomy_leaf tl
+        JOIN taxonomy_level_2 t2 ON tl.level_2_id = t2.level_2_id
+        WHERE tl.leaf_id = ${transactions.leafId}
+        AND t2.nivel_2_pt = ${filters.level1}
+      )`);
+    }
     breadcrumb.push({ label: "Nível 1", value: filters.level1 });
     currentLevel = "level2";
   }
 
   if (filters.level2) {
-    conditions.push(eq(transactions.category3, filters.level2));
+    if (filters.level2 === "OPEN") {
+      conditions.push(sql`${transactions.leafId} IS NULL`);
+    } else {
+      conditions.push(sql`EXISTS (
+        SELECT 1 FROM taxonomy_leaf tl
+        WHERE tl.leaf_id = ${transactions.leafId}
+        AND tl.nivel_3_pt = ${filters.level2}
+      )`);
+    }
     breadcrumb.push({ label: "Nível 2", value: filters.level2 });
     currentLevel = "level3";
   }
@@ -102,7 +129,7 @@ export async function getAnalyticsData(
 
   // Get total for percentage calculation
   const totalResult = await db
-    .select({ total: sql<number>`COALESCE(SUM(ABS(${transactions.amount})), 0)` })
+    .select({ total: sql<number>`COALESCE(ABS(SUM(${transactions.amount})), 0)` })
     .from(transactions)
     .where(and(...conditions));
 
@@ -112,58 +139,65 @@ export async function getAnalyticsData(
   let aggregates: CategoryAggregate[] = [];
 
   if (currentLevel === "category") {
-    // Group by category1
+    // Group by Level 1 from taxonomy
     const results = await db
       .select({
-        category: transactions.category1,
-        total: sql<number>`COALESCE(SUM(ABS(${transactions.amount})), 0)`,
+        category: sql<string>`COALESCE(t1.nivel_1_pt, 'OPEN')`,
+        total: sql<number>`COALESCE(ABS(SUM(${transactions.amount})), 0)`,
         count: sql<number>`COUNT(*)`,
       })
       .from(transactions)
+      .leftJoin(sql`taxonomy_leaf tl`, sql`${transactions.leafId} = tl.leaf_id`)
+      .leftJoin(sql`taxonomy_level_2 t2`, sql`tl.level_2_id = t2.level_2_id`)
+      .leftJoin(sql`taxonomy_level_1 t1`, sql`t2.level_1_id = t1.level_1_id`)
       .where(and(...conditions))
-      .groupBy(transactions.category1)
-      .orderBy(desc(sql`COALESCE(SUM(ABS(${transactions.amount})), 0)`));
+      .groupBy(sql`COALESCE(t1.nivel_1_pt, 'OPEN')`)
+      .orderBy(desc(sql`COALESCE(ABS(SUM(${transactions.amount})), 0)`));
 
     aggregates = results.map((r) => ({
-      category: r.category || "Sem Categoria",
+      category: r.category || "OPEN",
       total: Number(r.total),
       count: Number(r.count),
       percentage: totalAmount > 0 ? (Number(r.total) / totalAmount) * 100 : 0,
     }));
   } else if (currentLevel === "level1") {
-    // Group by category2 (L1)
+    // Group by Level 2 from taxonomy
     const results = await db
       .select({
-        category: transactions.category2,
+        category: sql<string>`COALESCE(t2.nivel_2_pt, 'OPEN')`,
         total: sql<number>`COALESCE(SUM(ABS(${transactions.amount})), 0)`,
         count: sql<number>`COUNT(*)`,
       })
       .from(transactions)
+      .leftJoin(sql`taxonomy_leaf tl`, sql`${transactions.leafId} = tl.leaf_id`)
+      .leftJoin(sql`taxonomy_level_2 t2`, sql`tl.level_2_id = t2.level_2_id`)
+      .leftJoin(sql`taxonomy_level_1 t1`, sql`t2.level_1_id = t1.level_1_id`)
       .where(and(...conditions))
-      .groupBy(transactions.category2)
+      .groupBy(sql`COALESCE(t2.nivel_2_pt, 'OPEN')`)
       .orderBy(desc(sql`COALESCE(SUM(ABS(${transactions.amount})), 0)`));
 
     aggregates = results.map((r) => ({
-      category: r.category || "Sem Subcategoria",
+      category: r.category || "OPEN",
       total: Number(r.total),
       count: Number(r.count),
       percentage: totalAmount > 0 ? (Number(r.total) / totalAmount) * 100 : 0,
     }));
   } else if (currentLevel === "level2") {
-    // Group by category3 (L2)
+    // Group by Leaf from taxonomy
     const results = await db
       .select({
-        category: transactions.category3,
+        category: sql<string>`COALESCE(tl.nivel_3_pt, 'OPEN')`,
         total: sql<number>`COALESCE(SUM(ABS(${transactions.amount})), 0)`,
         count: sql<number>`COUNT(*)`,
       })
       .from(transactions)
+      .leftJoin(sql`taxonomy_leaf tl`, sql`${transactions.leafId} = tl.leaf_id`)
       .where(and(...conditions))
-      .groupBy(transactions.category3)
+      .groupBy(sql`COALESCE(tl.nivel_3_pt, 'OPEN')`)
       .orderBy(desc(sql`COALESCE(SUM(ABS(${transactions.amount})), 0)`));
 
     aggregates = results.map((r) => ({
-      category: r.category || "Sem Nível 2",
+      category: r.category || "OPEN",
       total: Number(r.total),
       count: Number(r.count),
       percentage: totalAmount > 0 ? (Number(r.total) / totalAmount) * 100 : 0,

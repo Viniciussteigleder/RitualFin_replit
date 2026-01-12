@@ -29,6 +29,12 @@ type Transaction = {
   accountId?: string | null;
   conflictFlag?: boolean | null;
   classificationCandidates?: any | null;
+  // Taxonomy fields
+  level1?: string | null;
+  level2?: string | null;
+  level3?: string | null;
+  appCategory?: string | null;
+  matchedKeyword?: string | null;
 };
 
 interface TransactionDrawerProps {
@@ -194,6 +200,50 @@ export function TransactionDrawer({
                       {transaction.fixVar || 'Variável'}
                     </Badge>
                   </div>
+
+                  {/* Taxonomy Details */}
+                  {(transaction.level1 || transaction.appCategory) && (
+                    <>
+                      <Separator className="my-3" />
+                      <div className="space-y-2">
+                        <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Classificação Automática</div>
+                        
+                        {/* Matched Keyword */}
+                        {transaction.matchedKeyword && (
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground flex items-center gap-1.5">
+                              <Tag className="w-3 h-3" /> Keyword:
+                            </span>
+                            <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono font-bold text-primary">
+                              {transaction.matchedKeyword}
+                            </code>
+                          </div>
+                        )}
+
+                        {/* Hierarquia */}
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Nível 1:</span>
+                          <span className="font-medium">{transaction.level1 || 'OPEN'}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Nível 2:</span>
+                          <span className="font-medium">{transaction.level2 || 'OPEN'}</span>
+                        </div>
+                        {transaction.level3 && transaction.level3 !== 'OPEN' && (
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Nível 3:</span>
+                            <span className="font-medium">{transaction.level3}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">App Category:</span>
+                          <Badge variant="outline" className="font-mono text-xs">
+                            {transaction.appCategory || 'OPEN'}
+                          </Badge>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </>
               ) : (
                 <div className="text-center py-4 text-muted-foreground">

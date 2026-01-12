@@ -370,6 +370,9 @@ export const transactions = pgTable("transactions", {
   uploadId: varchar("upload_id"), 
   confidence: integer("confidence"),
   suggestedKeyword: text("suggested_keyword"),
+  matchedKeyword: text("matched_keyword"), // Which keyword from the rule matched this transaction
+  appCategoryId: varchar("app_category_id"), // Reference to app_category table
+  appCategoryName: text("app_category_name"), // Denormalized for performance
   display: text("display").notNull().default("yes"),
   conflictFlag: boolean("conflict_flag").notNull().default(false),
   classificationCandidates: jsonb("classification_candidates"),
