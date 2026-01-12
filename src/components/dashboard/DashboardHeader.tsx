@@ -4,6 +4,7 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { format, addMonths, subMonths, parse } from "date-fns";
 import { pt } from "date-fns/locale";
+import { ReRunRulesButton } from "@/components/transactions/re-run-rules-button";
 
 export function DashboardHeader() {
   const router = useRouter();
@@ -25,12 +26,12 @@ export function DashboardHeader() {
     <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 px-1">
         <div className="flex flex-col gap-2">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight font-display">Dashboard</h2>
-          {/* <p className="text-muted-foreground font-medium">Controle total do seu fluxo financeiro em tempo real.</p> */} 
-          {/* Removed tagline to be cleaner or kept? User just said change title. I'll keep the subtitle as it's nice. */}
           <p className="text-muted-foreground font-medium">Controle total do seu fluxo financeiro em tempo real.</p>
         </div>
         
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full xl:w-auto">
+          <ReRunRulesButton />
+          
           <div className="flex items-center bg-card rounded-2xl shadow-sm p-1.5 border border-border w-full sm:w-auto justify-between sm:justify-start">
             <button 
                 onClick={() => handleMonthChange('prev')}

@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { AnalyticsContent } from "./analytics-content";
 import type { Metadata } from "next";
 import { BarChart3, Sparkles } from "lucide-react";
+import { ReRunRulesButton } from "@/components/transactions/re-run-rules-button";
 
 export const metadata: Metadata = {
   title: "Análise Financeira | RitualFin",
@@ -25,11 +26,12 @@ export default function AnalyticsPage() {
           
           {/* Stats Preview - Now more compact and secondary */}
           <div className="flex items-center gap-3">
-             <div className="bg-white dark:bg-card border border-border rounded-2xl p-3 flex items-center gap-3 shadow-sm px-4">
+             <ReRunRulesButton />
+             <div className="hidden md:flex bg-white dark:bg-card border border-border rounded-2xl p-3 items-center gap-3 shadow-sm px-4">
                 <Sparkles className="w-4 h-4 text-emerald-500" />
                 <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Multi-nível</span>
              </div>
-             <div className="bg-white dark:bg-card border border-border rounded-2xl p-3 flex items-center gap-3 shadow-sm px-4">
+             <div className="hidden md:flex bg-white dark:bg-card border border-border rounded-2xl p-3 items-center gap-3 shadow-sm px-4">
                 <BarChart3 className="w-4 h-4 text-emerald-500" />
                 <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">4 Níveis</span>
              </div>
