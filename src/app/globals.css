@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Google Fonts - loaded via CSS for build resilience (falls back to system fonts) */
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&family=Noto+Sans:wght@100..900&display=swap');
+
 /* Custom variant for dark mode matching existing app */
 @custom-variant dark (&:is(.dark *));
 

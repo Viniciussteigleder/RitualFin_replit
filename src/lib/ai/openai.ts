@@ -1,11 +1,20 @@
-
 import OpenAI from "openai";
 import { z } from "zod";
 import { zodResponseFormat } from "openai/helpers/zod";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization to avoid throwing during build when OPENAI_API_KEY is not set
+let _openai: OpenAI | null = null;
+function getOpenAIClient(): OpenAI | null {
+  if (!process.env.OPENAI_API_KEY) {
+    return null;
+  }
+  if (!_openai) {
+    _openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return _openai;
+}
 
 export const AI_DESIGN = {
   model: "gpt-4o-mini",
@@ -23,7 +32,8 @@ export const CategorizationSchema = z.object({
 export type CategorizationResult = z.infer<typeof CategorizationSchema>;
 
 export async function getAICategorization(description: string, taxonomyContext: string): Promise<CategorizationResult | null> {
-  if (!process.env.OPENAI_API_KEY) {
+  const openai = getOpenAIClient();
+  if (!openai) {
     console.warn("AI categorization skipped: OPENAI_API_KEY not found.");
     return null;
   }
@@ -56,7 +66,8 @@ export async function getAICategorization(description: string, taxonomyContext: 
 }
 
 export async function getAIInsights(data: any): Promise<string | null> {
-  if (!process.env.OPENAI_API_KEY) return null;
+  const openai = getOpenAIClient();
+  if (!openai) return null;
 
   try {
     const response = await openai.chat.completions.create({
