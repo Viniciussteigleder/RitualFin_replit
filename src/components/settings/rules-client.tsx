@@ -62,6 +62,8 @@ export default function RulesClient({ initialRules }: RulesClientProps) {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [expandedRule, setExpandedRule] = useState<string | null>(null);
   const [editingRule, setEditingRule] = useState<string | null>(null);
+  const [editKeywords, setEditKeywords] = useState<string>("");
+  const [editKeywordsNegative, setEditKeywordsNegative] = useState<string>("");
 
   // Intelligent filtering
   const filteredRules = useMemo(() => {
@@ -106,18 +108,43 @@ export default function RulesClient({ initialRules }: RulesClientProps) {
   };
 
   const handleEdit = (ruleId: string) => {
-    setEditingRule(ruleId);
-    setExpandedRule(ruleId);
+    const rule = rules.find(r => r.id === ruleId);
+    if (rule) {
+      setEditKeywords(rule.keyWords || "");
+      setEditKeywordsNegative(rule.keyWordsNegative || "");
+      setEditingRule(ruleId);
+      setExpandedRule(ruleId);
+    }
   };
 
   const handleCancelEdit = () => {
     setEditingRule(null);
+    setEditKeywords("");
+    setEditKeywordsNegative("");
   };
 
   const handleSaveEdit = async (ruleId: string) => {
-    // TODO: Implement save logic with server action
-    console.log("Saving rule:", ruleId);
-    setEditingRule(null);
+    try {
+      // Update local state optimistically
+      setRules(prevRules => 
+        prevRules.map(rule => 
+          rule.id === ruleId 
+            ? { ...rule, keyWords: editKeywords, keyWordsNegative: editKeywordsNegative }
+            : rule
+        )
+      );
+      
+      // TODO: Call server action to update in database
+      // await updateRule(ruleId, { keyWords: editKeywords, keyWordsNegative: editKeywordsNegative });
+      
+      setEditingRule(null);
+      setEditKeywords("");
+      setEditKeywordsNegative("");
+    } catch (error) {
+      console.error("Failed to save rule:", error);
+      // Revert optimistic update on error
+      setRules(initialRules);
+    }
   };
 
   return (
@@ -391,32 +418,69 @@ export default function RulesClient({ initialRules }: RulesClientProps) {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* Keywords Section */}
                             <div className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                                    Palavras-chave (incluir)
+                                  </span>
+                                </div>
+                                {editingRule === rule.id && (
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={handleCancelEdit}
+                                      className="h-7 px-3 text-xs"
+                                    >
+                                      Cancelar
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      onClick={() => handleSaveEdit(rule.id)}
+                                      className="h-7 px-3 text-xs bg-violet-600 hover:bg-violet-700"
+                                    >
+                                      Guardar
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {editingRule === rule.id ? (
+                                <textarea
+                                  value={editKeywords}
+                                  onChange={(e) => setEditKeywords(e.target.value)}
+                                  className="w-full min-h-[100px] p-4 rounded-xl bg-secondary/30 border border-border font-mono text-sm resize-y focus:outline-none focus:ring-2 focus:ring-violet-500"
+                                  placeholder="Digite as palavras-chave separadas por vírgula..."
+                                />
+                              ) : (
+                                <div className="bg-secondary/30 rounded-xl p-4">
+                                  <code className="text-sm font-mono text-foreground break-all">
+                                    {rule.keyWords || "Nenhuma palavra-chave definida"}
+                                  </code>
+                                </div>
+                              )}
+
+                              <div className="flex items-center gap-2 mt-4">
+                                <X className="h-4 w-4 text-red-600" />
                                 <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                                  Palavras-chave (incluir)
+                                  Palavras-chave (excluir)
                                 </span>
                               </div>
-                              <div className="bg-secondary/30 rounded-xl p-4">
-                                <code className="text-sm font-mono text-foreground break-all">
-                                  {rule.keyWords}
-                                </code>
-                              </div>
-
-                              {rule.keyWordsNegative && (
-                                <>
-                                  <div className="flex items-center gap-2 mt-4">
-                                    <X className="h-4 w-4 text-red-600" />
-                                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                                      Palavras-chave (excluir)
-                                    </span>
-                                  </div>
-                                  <div className="bg-red-50 dark:bg-red-950/20 rounded-xl p-4 border border-red-200 dark:border-red-900/30">
-                                    <code className="text-sm font-mono text-red-800 dark:text-red-300 break-all">
-                                      {rule.keyWordsNegative}
-                                    </code>
-                                  </div>
-                                </>
+                              
+                              {editingRule === rule.id ? (
+                                <textarea
+                                  value={editKeywordsNegative}
+                                  onChange={(e) => setEditKeywordsNegative(e.target.value)}
+                                  className="w-full min-h-[80px] p-4 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 font-mono text-sm resize-y focus:outline-none focus:ring-2 focus:ring-red-500"
+                                  placeholder="Digite as palavras-chave negativas separadas por vírgula..."
+                                />
+                              ) : (
+                                <div className="bg-red-50 dark:bg-red-950/20 rounded-xl p-4 border border-red-200 dark:border-red-900/30">
+                                  <code className="text-sm font-mono text-red-800 dark:text-red-300 break-all">
+                                    {rule.keyWordsNegative || "Nenhuma palavra-chave negativa"}
+                                  </code>
+                                </div>
                               )}
                             </div>
 
