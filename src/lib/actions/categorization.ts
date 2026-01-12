@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { transactions, rules, aliasAssets } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { categorizeTransaction, matchAlias } from "@/lib/rules/engine";
+import { ensureOpenCategory } from "@/lib/actions/setup-open";
 
 /**
  * Server action to apply categorization to all transactions
@@ -30,6 +31,8 @@ export async function applyCategorization() {
       where: eq(aliasAssets.userId, session.user.id),
     });
 
+    const { openLeafId } = await ensureOpenCategory();
+    
     // Get all transactions
     const allTransactions = await db.query.transactions.findMany({
       where: eq(transactions.userId, session.user.id),
@@ -46,9 +49,7 @@ export async function applyCategorization() {
       if (result.category1 || aliasMatch) {
         await db.update(transactions)
           .set({
-            category1: result.category1 || tx.category1, // Preserve if not new match? Or update if result found. Engine returns partial with undefined if no match?
-            // Actually result always returns basic structure. If match, it has values.
-            // But if categorization result is found, use it. If not, we might still want to set alias.
+            category1: result.category1 || tx.category1, 
             ...(result.category1 ? {
                 category1: result.category1,
                 category2: result.category2 || null,
@@ -56,6 +57,7 @@ export async function applyCategorization() {
                 type: result.type,
                 fixVar: result.fixVar,
                 ruleIdApplied: result.ruleIdApplied || null,
+                leafId: result.leafId || null,
                 confidence: result.confidence || 0,
                 needsReview: result.needsReview !== undefined ? result.needsReview : true,
                 classifiedBy: result.ruleIdApplied ? 'AUTO_KEYWORDS' : 'MANUAL',
@@ -64,13 +66,25 @@ export async function applyCategorization() {
           })
           .where(eq(transactions.id, tx.id));
 
-        if (result.ruleIdApplied) {
-          categorized++;
-        }
-        // Count alias application? Maybe not in "categorized" strict sense but good to know working.
+        if (result.ruleIdApplied) categorized++;
+      } else {
+         // NO MATCH FOUND - Use OPEN Category fallback
+         // Only apply if transaction is not manually classified/reviewed
+         if (tx.classifiedBy !== 'MANUAL' && (!tx.category1 || tx.category1 === 'Outros')) {
+             await db.update(transactions)
+                .set({
+                    category1: "OPEN" as any, // Cast because we runtime-migrated the enum
+                    category2: "OPEN",
+                    category3: "OPEN", 
+                    leafId: openLeafId,
+                    ruleIdApplied: null,
+                    confidence: 0,
+                    needsReview: true,
+                    classifiedBy: 'AUTO_KEYWORDS' // Use valid enum, confidence 0 indicates fallback
+                })
+                .where(eq(transactions.id, tx.id));
+         }
       }
-
-
     }
 
     return {
