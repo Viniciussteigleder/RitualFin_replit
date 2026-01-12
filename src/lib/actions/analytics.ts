@@ -165,7 +165,7 @@ export async function getAnalyticsData(
     const results = await db
       .select({
         category: sql<string>`COALESCE(t2.nivel_2_pt, 'OPEN')`,
-        total: sql<number>`COALESCE(SUM(ABS(${transactions.amount})), 0)`,
+        total: sql<number>`COALESCE(ABS(SUM(${transactions.amount})), 0)`,
         count: sql<number>`COUNT(*)`,
       })
       .from(transactions)
@@ -174,7 +174,7 @@ export async function getAnalyticsData(
       .leftJoin(sql`taxonomy_level_1 t1`, sql`t2.level_1_id = t1.level_1_id`)
       .where(and(...conditions))
       .groupBy(sql`COALESCE(t2.nivel_2_pt, 'OPEN')`)
-      .orderBy(desc(sql`COALESCE(SUM(ABS(${transactions.amount})), 0)`));
+      .orderBy(desc(sql`COALESCE(ABS(SUM(${transactions.amount})), 0)`));
 
     aggregates = results.map((r) => ({
       category: r.category || "OPEN",
@@ -187,14 +187,14 @@ export async function getAnalyticsData(
     const results = await db
       .select({
         category: sql<string>`COALESCE(tl.nivel_3_pt, 'OPEN')`,
-        total: sql<number>`COALESCE(SUM(ABS(${transactions.amount})), 0)`,
+        total: sql<number>`COALESCE(ABS(SUM(${transactions.amount})), 0)`,
         count: sql<number>`COUNT(*)`,
       })
       .from(transactions)
       .leftJoin(sql`taxonomy_leaf tl`, sql`${transactions.leafId} = tl.leaf_id`)
       .where(and(...conditions))
       .groupBy(sql`COALESCE(tl.nivel_3_pt, 'OPEN')`)
-      .orderBy(desc(sql`COALESCE(SUM(ABS(${transactions.amount})), 0)`));
+      .orderBy(desc(sql`COALESCE(ABS(SUM(${transactions.amount})), 0)`));
 
     aggregates = results.map((r) => ({
       category: r.category || "OPEN",
@@ -207,13 +207,13 @@ export async function getAnalyticsData(
     const results = await db
       .select({
         category: sql<string>`COALESCE(${transactions.aliasDesc}, ${transactions.descNorm})`,
-        total: sql<number>`COALESCE(SUM(ABS(${transactions.amount})), 0)`,
+        total: sql<number>`COALESCE(ABS(SUM(${transactions.amount})), 0)`,
         count: sql<number>`COUNT(*)`,
       })
       .from(transactions)
       .where(and(...conditions))
       .groupBy(sql`COALESCE(${transactions.aliasDesc}, ${transactions.descNorm})`)
-      .orderBy(desc(sql`COALESCE(SUM(ABS(${transactions.amount})), 0)`))
+      .orderBy(desc(sql`COALESCE(ABS(SUM(${transactions.amount})), 0)`))
       .limit(50);
 
     aggregates = results.map((r) => ({
