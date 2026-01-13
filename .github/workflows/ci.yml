@@ -6,8 +6,28 @@ on:
   pull_request:
 
 jobs:
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
   build:
-    name: Build & Lint
+    name: Build & Deploy Preview
+    needs: lint
     runs-on: ubuntu-latest
     env:
       VERCEL_TOKEN: "${{ secrets['VERCEL_TOKEN'] }}"
@@ -30,13 +50,11 @@ jobs:
         run: npm ci
 
       - name: Pull Vercel env for CI
+        if: env.VERCEL_TOKEN != ''
         run: |
           npm i -g vercel
           vercel link --yes --token "$VERCEL_TOKEN" --org "$VERCEL_ORG_ID" --project "$VERCEL_PROJECT_ID"
           vercel env pull .env.ci --yes --token "$VERCEL_TOKEN" --environment preview
-
-      - name: Lint
-        run: npm run lint
 
       - name: Build
         run: |
