@@ -679,6 +679,41 @@ export const uploads = pgTable("uploads", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Exclusion Rules: Define which categories/conditions to exclude from specific screens
+export const screenExclusionEnum = pgEnum("screen_exclusion_type", [
+  "dashboard",
+  "analytics",
+  "transactions",
+  "calendar",
+  "budgets"
+]);
+
+export const exclusionRules = pgTable("exclusion_rules", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(), // Human-readable name
+  // Conditions: What to exclude
+  category1: text("category_1"), // Match by category1
+  category2: text("category_2"), // Match by category2
+  appCategoryName: text("app_category_name"), // Match by app category
+  isInternal: boolean("is_internal"), // Match internal transfers
+  customCondition: text("custom_condition"), // SQL-like condition for flexibility
+  // Screens to exclude from
+  excludeFromDashboard: boolean("exclude_from_dashboard").default(false),
+  excludeFromAnalytics: boolean("exclude_from_analytics").default(false),
+  excludeFromTransactions: boolean("exclude_from_transactions").default(false),
+  excludeFromCalendar: boolean("exclude_from_calendar").default(false),
+  excludeFromBudgets: boolean("exclude_from_budgets").default(false),
+  // Metadata
+  active: boolean("active").default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const exclusionRulesRelations = relations(exclusionRules, ({ one }) => ({
+  user: one(users, { fields: [exclusionRules.userId], references: [users.id] }),
+}));
+
 export type Transaction = typeof transactions.$inferSelect;
 export type NewTransaction = typeof transactions.$inferInsert;
 export type Rule = typeof rules.$inferSelect;
@@ -688,3 +723,5 @@ export type IngestionItem = typeof ingestionItems.$inferSelect;
 export type AliasAssets = typeof aliasAssets.$inferSelect;
 export type Account = typeof accounts.$inferSelect;
 export type NewAccount = typeof accounts.$inferInsert;
+export type ExclusionRule = typeof exclusionRules.$inferSelect;
+export type NewExclusionRule = typeof exclusionRules.$inferInsert;

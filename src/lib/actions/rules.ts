@@ -112,7 +112,8 @@ export async function simulateRule(keyword: string): Promise<SimulationResult> {
 }
 
 /**
- * Create a new official rule
+ * Create a new official rule or merge keywords into existing rule with same leafId
+ * Goal: One rule per category3 (leafId) with all keywords combined
  */
 export async function createRule(data: {
   keyWords: string;
@@ -128,24 +129,67 @@ export async function createRule(data: {
   if (!session?.user?.id) throw new Error("Not authenticated");
 
   try {
-    await db.insert(rules).values({
+    const effectiveLeafId = data.leafId || "open";
+
+    // Check if a rule with same leafId already exists for this user
+    const existingRule = await db.query.rules.findFirst({
+      where: and(
+        eq(rules.userId, session.user.id),
+        eq(rules.leafId, effectiveLeafId),
+        eq(rules.active, true)
+      )
+    });
+
+    if (existingRule) {
+      // Merge keywords into existing rule
+      const existingKeywords = existingRule.keyWords?.split(";").map(k => k.trim().toUpperCase()).filter(k => k) || [];
+      const newKeywords = data.keyWords.split(";").map(k => k.trim().toUpperCase()).filter(k => k);
+
+      // Combine and deduplicate keywords
+      const combinedKeywords = [...new Set([...existingKeywords, ...newKeywords])].join("; ");
+
+      // Merge negative keywords if provided
+      let combinedNegativeKeywords = existingRule.keyWordsNegative || "";
+      if (data.keyWordsNegative) {
+        const existingNegative = existingRule.keyWordsNegative?.split(";").map(k => k.trim().toUpperCase()).filter(k => k) || [];
+        const newNegative = data.keyWordsNegative.split(";").map(k => k.trim().toUpperCase()).filter(k => k);
+        combinedNegativeKeywords = [...new Set([...existingNegative, ...newNegative])].join("; ");
+      }
+
+      await db.update(rules)
+        .set({
+          keyWords: combinedKeywords,
+          keyWordsNegative: combinedNegativeKeywords || null,
+        })
+        .where(eq(rules.id, existingRule.id));
+
+      revalidatePath("/settings/rules");
+      revalidatePath("/confirm");
+      revalidatePath("/transactions");
+
+      return { success: true, merged: true, ruleId: existingRule.id };
+    }
+
+    // No existing rule, create new one
+    const [newRule] = await db.insert(rules).values({
       userId: session.user.id,
-      keyWords: data.keyWords,
-      keyWordsNegative: data.keyWordsNegative || null,
-      category1: data.category1 as any, 
+      keyWords: data.keyWords.toUpperCase(),
+      keyWordsNegative: data.keyWordsNegative?.toUpperCase() || null,
+      category1: data.category1 as any,
       category2: data.category2,
-      category3: data.category3, // Added category3
+      category3: data.category3,
       type: data.type || "Despesa",
       fixVar: data.fixVar || "Variável",
       active: true,
-      priority: 950, 
-      leafId: data.leafId || "open" // Use provided leafId
-    });
+      priority: 950,
+      leafId: effectiveLeafId
+    }).returning({ id: rules.id });
 
-    revalidatePath("/admin/rules");
-    revalidatePath("/admin/import");
-    
-    return { success: true };
+    revalidatePath("/settings/rules");
+    revalidatePath("/confirm");
+    revalidatePath("/transactions");
+
+    return { success: true, merged: false, ruleId: newRule.id };
   } catch (error: any) {
     console.error("Failed to create rule:", error);
     return { success: false, error: error.message };
@@ -338,4 +382,93 @@ export async function reApplyAllRules() {
   revalidatePath("/transactions");
   revalidatePath("/admin/rules");
   return { success: true, updatedCount };
+}
+
+/**
+ * Consolidate duplicate rules with same leafId
+ * Merges all keywords into a single rule per leafId and deletes duplicates
+ */
+export async function consolidateDuplicateRules() {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  const userId = session.user.id;
+
+  try {
+    // Get all active rules for user
+    const allRules = await db.query.rules.findMany({
+      where: and(eq(rules.userId, userId), eq(rules.active, true))
+    });
+
+    // Group rules by leafId
+    const rulesByLeafId = new Map<string, typeof allRules>();
+    for (const rule of allRules) {
+      if (!rule.leafId) continue;
+      const existing = rulesByLeafId.get(rule.leafId) || [];
+      existing.push(rule);
+      rulesByLeafId.set(rule.leafId, existing);
+    }
+
+    let mergedCount = 0;
+    let deletedCount = 0;
+
+    // Process each leafId group
+    for (const [leafId, rulesGroup] of rulesByLeafId.entries()) {
+      if (rulesGroup.length <= 1) continue; // No duplicates
+
+      // Keep the first rule (oldest by createdAt or first in array)
+      const keepRule = rulesGroup.sort((a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      )[0];
+      const duplicates = rulesGroup.slice(1);
+
+      // Merge all keywords from duplicates into the keep rule
+      const allKeywords = new Set<string>();
+      const allNegativeKeywords = new Set<string>();
+
+      for (const rule of rulesGroup) {
+        if (rule.keyWords) {
+          rule.keyWords.split(";").forEach(k => {
+            const kw = k.trim().toUpperCase();
+            if (kw) allKeywords.add(kw);
+          });
+        }
+        if (rule.keyWordsNegative) {
+          rule.keyWordsNegative.split(";").forEach(k => {
+            const kw = k.trim().toUpperCase();
+            if (kw) allNegativeKeywords.add(kw);
+          });
+        }
+      }
+
+      // Update the kept rule with merged keywords
+      await db.update(rules)
+        .set({
+          keyWords: [...allKeywords].join("; "),
+          keyWordsNegative: allNegativeKeywords.size > 0 ? [...allNegativeKeywords].join("; ") : null,
+        })
+        .where(eq(rules.id, keepRule.id));
+
+      // Delete duplicate rules
+      for (const dup of duplicates) {
+        await db.delete(rules).where(eq(rules.id, dup.id));
+        deletedCount++;
+      }
+
+      mergedCount++;
+    }
+
+    revalidatePath("/settings/rules");
+    revalidatePath("/confirm");
+    revalidatePath("/transactions");
+
+    return {
+      success: true,
+      mergedCount,
+      deletedCount,
+      message: `Consolidated ${mergedCount} rule groups, deleted ${deletedCount} duplicate rules`
+    };
+  } catch (error: any) {
+    console.error("Failed to consolidate rules:", error);
+    return { success: false, error: error.message };
+  }
 }

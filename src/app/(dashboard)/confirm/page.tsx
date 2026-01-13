@@ -12,8 +12,9 @@ export default async function ConfirmPage() {
   const transactions = await getPendingTransactions();
   const highConfidenceCount = transactions.filter(tx => (tx.confidence || 0) >= 80).length;
   
-  // New Discovery Data
-  const candidates = await getDiscoveryCandidates();
+  // New Discovery Data - sorted by count (highest first = more impact)
+  const rawCandidates = await getDiscoveryCandidates();
+  const candidates = rawCandidates.sort((a, b) => b.count - a.count);
   const taxonomyOptions = await getTaxonomyOptions();
 
   return (

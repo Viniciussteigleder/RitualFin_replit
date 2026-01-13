@@ -2,12 +2,13 @@
 
 import { useTransition } from "react";
 import { CategoryAggregate, DrillDownData, AnalyticsFilters } from "@/lib/actions/analytics";
-import { ChevronDown, Download, TrendingDown, TrendingUp } from "lucide-react";
+import { ChevronRight, Download, TrendingDown, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
-import * as XLSX from "xlsx";
 import { exportFullDataset } from "@/lib/actions/export";
 import { toast } from "sonner";
+import { getCategoryConfig } from "@/lib/constants/categories";
+import { cn } from "@/lib/utils";
 
 interface AnalyticsDrillDownProps {
   data: DrillDownData;
@@ -17,10 +18,33 @@ interface AnalyticsDrillDownProps {
   level: "category" | "level1" | "level2" | "level3" | "transactions";
 }
 
-const CATEGORY_COLORS = [
+// Fallback colors if category not found in config
+const FALLBACK_COLORS = [
   "#10b981", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899",
   "#14b8a6", "#f97316", "#6366f1", "#84cc16", "#06b6d4", "#a855f7",
 ];
+
+// Get color for a category
+const getCategoryColor = (category: string, index: number): string => {
+  const config = getCategoryConfig(category);
+  // Extract hex from Tailwind class (simplified - use fallback if not found)
+  const colorMap: Record<string, string> = {
+    "text-orange-600": "#ea580c",
+    "text-emerald-600": "#059669",
+    "text-blue-600": "#2563eb",
+    "text-slate-600": "#475569",
+    "text-purple-600": "#9333ea",
+    "text-pink-600": "#db2777",
+    "text-red-600": "#dc2626",
+    "text-indigo-600": "#4f46e5",
+    "text-green-600": "#16a34a",
+    "text-amber-600": "#d97706",
+    "text-gray-600": "#4b5563",
+    "text-yellow-600": "#ca8a04",
+    "text-neutral-600": "#525252",
+  };
+  return colorMap[config.textColor] || FALLBACK_COLORS[index % FALLBACK_COLORS.length];
+};
 
 export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }: AnalyticsDrillDownProps) {
   const [isPending, startTransition] = useTransition();
@@ -62,24 +86,29 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
   };
 
   const renderCategoryBar = (
-    item: CategoryAggregate & { color: string },
+    item: CategoryAggregate & { color: string; config: ReturnType<typeof getCategoryConfig> },
     hasChildren: boolean
   ) => {
+    const CatIcon = item.config.lucideIcon;
     return (
       <div className="group">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {/* Icon */}
+          <div
+            className={cn(
+              "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0",
+              item.config.bgColor
+            )}
+          >
+            <CatIcon className={cn("w-5 h-5", item.config.textColor)} />
+          </div>
+
           {/* Main Bar */}
           <div className="flex-1">
             <div className="flex items-center justify-between mb-1.5">
-              <div className="flex items-center gap-2.5">
-                <div
-                  className="w-3 h-3 rounded-full shadow-sm"
-                  style={{ backgroundColor: item.color }}
-                />
-                <span className="font-semibold text-gray-900 group-hover:text-emerald-700 transition-colors">
-                  {item.category}
-                </span>
-              </div>
+              <span className="font-semibold text-gray-900 group-hover:text-emerald-700 transition-colors">
+                {item.category}
+              </span>
               <div className="flex items-center gap-4">
                 <span className="font-bold text-gray-900 tabular-nums">
                   €{item.total.toFixed(0)}
@@ -89,11 +118,11 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
                 </span>
               </div>
             </div>
-            <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
               <div
-                className="h-full rounded-full transition-all duration-700 ease-out group-hover:opacity-90"
+                className="h-full rounded-full transition-all duration-700 ease-out group-hover:opacity-80"
                 style={{
-                  width: `${item.percentage}%`,
+                  width: `${Math.max(item.percentage, 2)}%`,
                   backgroundColor: item.color,
                 }}
               />
@@ -104,10 +133,10 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
           {hasChildren && (
             <button
               onClick={() => onDrillDown(level, item.category)}
-              className="flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-all duration-300 shadow-sm hover:shadow-md"
+              className="flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-all duration-300 shadow-sm hover:shadow-md flex-shrink-0"
               title="Expandir próximo nível"
             >
-              <ChevronDown className="w-5 h-5" />
+              <ChevronRight className="w-5 h-5" />
             </button>
           )}
         </div>
@@ -233,11 +262,19 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
   }
 
   // Show chart for category levels
-  if (data.aggregates.length === 0) return null;
+  if (data.aggregates.length === 0) {
+    return (
+      <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-lg border border-gray-100/50 text-center py-16">
+        <p className="text-muted-foreground">Nenhum dado encontrado para este período.</p>
+      </div>
+    );
+  }
 
-  const chartData = data.aggregates.slice(0, 12).map((item, index) => ({
+  // Use all aggregates (not just 12) for better visibility
+  const chartData = data.aggregates.map((item, index) => ({
     ...item,
-    color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
+    color: getCategoryColor(item.category, index),
+    config: getCategoryConfig(item.category),
   }));
 
   const total = chartData.reduce((sum, d) => sum + d.total, 0);
