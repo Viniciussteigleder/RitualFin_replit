@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Calendar, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { CATEGORY_CONFIGS } from "@/lib/constants/categories";
+import { createCalendarEvent } from "@/lib/actions/calendar";
+import { useRouter } from "next/navigation";
 
 interface NewEventDialogProps {
   onEventCreated?: () => void;
@@ -17,7 +19,8 @@ interface NewEventDialogProps {
 export function NewEventDialog({ onEventCreated }: NewEventDialogProps) {
   const [open, setOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  
+  const router = useRouter();
+
   const [formData, setFormData] = useState({
     name: "",
     amount: "",
@@ -30,40 +33,47 @@ export function NewEventDialog({ onEventCreated }: NewEventDialogProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name || !formData.amount || !formData.category1) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
     }
 
     setIsCreating(true);
-    
+
     try {
-      // TODO: Implement server action for creating calendar events
-      // const result = await createCalendarEvent(formData);
-      
-      // Simulating API call for now
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast.success("Evento criado com sucesso!", {
-        description: `${formData.name} agendado para ${new Date(formData.nextDueDate).toLocaleDateString('pt-PT')}`
+      const result = await createCalendarEvent({
+        name: formData.name,
+        amount: parseFloat(formData.amount),
+        category1: formData.category1,
+        recurrence: formData.recurrence,
+        nextDueDate: formData.nextDueDate,
       });
-      
-      // Reset form
-      setFormData({
-        name: "",
-        amount: "",
-        category1: "",
-        recurrence: "monthly",
-        nextDueDate: new Date().toISOString().split('T')[0],
-      });
-      
-      setOpen(false);
-      
-      if (onEventCreated) {
-        onEventCreated();
+
+      if (result.success) {
+        toast.success("Evento criado com sucesso!", {
+          description: `${formData.name} agendado para ${new Date(formData.nextDueDate).toLocaleDateString('pt-PT')}`
+        });
+
+        // Reset form
+        setFormData({
+          name: "",
+          amount: "",
+          category1: "",
+          recurrence: "monthly",
+          nextDueDate: new Date().toISOString().split('T')[0],
+        });
+
+        setOpen(false);
+        router.refresh();
+
+        if (onEventCreated) {
+          onEventCreated();
+        }
+      } else {
+        toast.error(result.error || "Erro ao criar evento");
       }
-      
+
     } catch (error) {
       toast.error("Erro ao criar evento");
       console.error('[NewEventDialog]', error);

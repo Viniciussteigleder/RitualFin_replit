@@ -2,10 +2,10 @@ import { z } from 'zod';
 
 /**
  * Environment Variable Validation
- * 
+ *
  * Validates required environment variables at application startup.
  * Fails fast with clear error messages if configuration is invalid.
- * 
+ *
  * Usage: Import this file in app/layout.tsx or middleware.ts
  */
 
@@ -51,22 +51,46 @@ const envSchema = z.object({
     .optional()
     .transform((val) => val === 'true')
     .describe('Enable bundle analyzer'),
+
+  // Optional - AI
+  OPENAI_API_KEY: z
+    .string()
+    .optional()
+    .describe('OpenAI API key for AI features'),
 });
 
 export type Env = z.infer<typeof envSchema>;
 
+// Check if we're in build phase (env vars might not be available)
+const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build';
+
 /**
  * Validated environment variables
- * 
- * @throws {z.ZodError} if validation fails
+ *
+ * During build phase, returns partial env to prevent build failures.
+ * At runtime, throws if required env vars are missing.
  */
 export const env: Env = (() => {
+  // During build, use defaults to prevent failure
+  if (isBuildPhase) {
+    return {
+      DATABASE_URL: process.env.DATABASE_URL || 'postgresql://placeholder:placeholder@localhost/placeholder',
+      AUTH_SECRET: process.env.AUTH_SECRET || 'placeholder-secret-for-build-phase-only-32chars',
+      AUTH_GOOGLE_ID: process.env.AUTH_GOOGLE_ID || 'placeholder',
+      AUTH_GOOGLE_SECRET: process.env.AUTH_GOOGLE_SECRET || 'placeholder',
+      AUTH_URL: process.env.AUTH_URL,
+      NODE_ENV: (process.env.NODE_ENV as 'development' | 'production' | 'test') || 'development',
+      ANALYZE: process.env.ANALYZE === 'true',
+      OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    } as Env;
+  }
+
   try {
     return envSchema.parse(process.env);
   } catch (error) {
     if (error instanceof z.ZodError) {
       console.error('❌ Environment variable validation failed:\n');
-      
+
       error.issues.forEach((err) => {
         const path = err.path.join('.');
         console.error(`  • ${path}: ${err.message}`);
@@ -78,7 +102,7 @@ export const env: Env = (() => {
       console.error('  - AUTH_GOOGLE_ID');
       console.error('  - AUTH_GOOGLE_SECRET');
       console.error('\n💡 See .env.example for reference');
-      
+
       throw new Error('Invalid environment configuration');
     }
     throw error;
