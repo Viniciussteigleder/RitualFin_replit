@@ -33,6 +33,7 @@ export async function getBudgetsWithSpent(month?: string): Promise<BudgetWithSpe
   const session = await auth();
   if (!session?.user?.id) return [];
 
+  const userId = session.user.id;
   const userBudgets = await getBudgets(month);
 
   const budgetsWithSpent = await Promise.all(
@@ -47,7 +48,7 @@ export async function getBudgetsWithSpent(month?: string): Promise<BudgetWithSpe
         .from(transactions)
         .where(
           and(
-            eq(transactions.userId, session.user.id),
+            eq(transactions.userId, userId),
             eq(transactions.category1, budget.category1),
             eq(transactions.type, "Despesa"),
             gte(transactions.paymentDate, startDate),
@@ -162,6 +163,8 @@ export async function copyBudgetsToNextMonth(currentMonth: string) {
     return { success: false, error: "Não autenticado" };
   }
 
+  const userId = session.user.id;
+
   try {
     const currentBudgets = await getBudgets(currentMonth);
 
@@ -183,7 +186,7 @@ export async function copyBudgetsToNextMonth(currentMonth: string) {
     // Copy budgets
     await db.insert(budgets).values(
       currentBudgets.map((b) => ({
-        userId: session.user.id,
+        userId,
         month: nextMonth,
         category1: b.category1,
         amount: b.amount,
