@@ -1,19 +1,19 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useTransition } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  ArrowRight, 
-  Brain, 
-  Zap, 
-  Edit2, 
-  Trash2, 
+import {
+  Plus,
+  Search,
+  Filter,
+  ArrowRight,
+  Brain,
+  Zap,
+  Edit2,
+  Trash2,
   ChevronDown,
   ChevronRight,
   Tag,
@@ -21,7 +21,10 @@ import {
   Layers,
   AlertCircle,
   CheckCircle2,
-  X
+  X,
+  Info,
+  Loader2,
+  Merge
 } from "lucide-react";
 import {
   Select,
@@ -30,6 +33,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { TYPE_STYLES, FIXVAR_STYLES, PRIORITY_INFO, MODE_INFO } from "@/lib/constants/categories";
+import { updateRule, deleteRule, consolidateDuplicateRules } from "@/lib/actions/rules";
+import { toast } from "sonner";
 
 interface Rule {
   id: string;
@@ -64,6 +85,8 @@ export default function RulesClient({ initialRules }: RulesClientProps) {
   const [editingRule, setEditingRule] = useState<string | null>(null);
   const [editKeywords, setEditKeywords] = useState<string>("");
   const [editKeywordsNegative, setEditKeywordsNegative] = useState<string>("");
+  const [isPending, startTransition] = useTransition();
+  const [isConsolidating, setIsConsolidating] = useState(false);
 
   // Intelligent filtering
   const filteredRules = useMemo(() => {
@@ -124,64 +147,138 @@ export default function RulesClient({ initialRules }: RulesClientProps) {
   };
 
   const handleSaveEdit = async (ruleId: string) => {
+    startTransition(async () => {
+      try {
+        // Call server action to update in database
+        const result = await updateRule(ruleId, {
+          keyWords: editKeywords,
+          keyWordsNegative: editKeywordsNegative || null
+        });
+
+        if (result.success) {
+          // Update local state
+          setRules(prevRules =>
+            prevRules.map(rule =>
+              rule.id === ruleId
+                ? { ...rule, keyWords: editKeywords, keyWordsNegative: editKeywordsNegative }
+                : rule
+            )
+          );
+          toast.success("Regra atualizada com sucesso");
+        } else {
+          toast.error("Erro ao atualizar regra", { description: result.error });
+        }
+
+        setEditingRule(null);
+        setEditKeywords("");
+        setEditKeywordsNegative("");
+      } catch (error) {
+        console.error("Failed to save rule:", error);
+        toast.error("Erro ao salvar regra");
+      }
+    });
+  };
+
+  const handleDeleteRule = async (ruleId: string) => {
+    if (!confirm("Tem certeza que deseja excluir esta regra?")) return;
+
+    startTransition(async () => {
+      try {
+        const result = await deleteRule(ruleId);
+        if (result.success) {
+          setRules(prevRules => prevRules.filter(rule => rule.id !== ruleId));
+          toast.success("Regra excluída");
+        } else {
+          toast.error("Erro ao excluir regra", { description: result.error });
+        }
+      } catch (error) {
+        toast.error("Erro ao excluir regra");
+      }
+    });
+  };
+
+  const handleConsolidateRules = async () => {
+    setIsConsolidating(true);
     try {
-      // Update local state optimistically
-      setRules(prevRules => 
-        prevRules.map(rule => 
-          rule.id === ruleId 
-            ? { ...rule, keyWords: editKeywords, keyWordsNegative: editKeywordsNegative }
-            : rule
-        )
-      );
-      
-      // TODO: Call server action to update in database
-      // await updateRule(ruleId, { keyWords: editKeywords, keyWordsNegative: editKeywordsNegative });
-      
-      setEditingRule(null);
-      setEditKeywords("");
-      setEditKeywordsNegative("");
+      const result = await consolidateDuplicateRules();
+      if (result.success) {
+        toast.success(result.message);
+        // Reload page to get updated rules
+        window.location.reload();
+      } else {
+        toast.error("Erro ao consolidar regras", { description: result.error });
+      }
     } catch (error) {
-      console.error("Failed to save rule:", error);
-      // Revert optimistic update on error
-      setRules(initialRules);
+      toast.error("Erro ao consolidar regras");
+    } finally {
+      setIsConsolidating(false);
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto flex flex-col gap-8 pb-32 font-sans px-1">
-      {/* Premium Header */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50 dark:from-violet-950/20 dark:via-purple-950/20 dark:to-fuchsia-950/20 p-10 rounded-3xl border border-violet-200/50 dark:border-violet-800/30 shadow-xl">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-violet-400/10 to-purple-400/10 rounded-full blur-3xl"></div>
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-4">
-              <div className="p-4 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl shadow-lg shadow-violet-500/30">
-                <Brain className="h-8 w-8 text-white" />
+    <TooltipProvider>
+      <div className="max-w-7xl mx-auto flex flex-col gap-8 pb-32 font-sans px-1">
+        {/* Premium Header */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50 dark:from-violet-950/20 dark:via-purple-950/20 dark:to-fuchsia-950/20 p-10 rounded-3xl border border-violet-200/50 dark:border-violet-800/30 shadow-xl">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-violet-400/10 to-purple-400/10 rounded-full blur-3xl"></div>
+          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-4">
+                <div className="p-4 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl shadow-lg shadow-violet-500/30">
+                  <Brain className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-4xl font-bold text-foreground tracking-tight font-display">Motor de Regras</h1>
+                  <p className="text-sm text-muted-foreground font-medium mt-1">Sistema de Classificação Automática</p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-4xl font-bold text-foreground tracking-tight font-display">Motor de Regras</h1>
-                <p className="text-sm text-muted-foreground font-medium mt-1">Neural Classification Engine</p>
+              <div className="flex items-center gap-4 flex-wrap">
+                <Badge className="h-8 px-4 rounded-xl text-sm font-bold bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300 border-0">
+                  {filteredRules.length} regras ativas
+                </Badge>
+                <Badge className="h-8 px-4 rounded-xl text-sm font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 border-0">
+                  {Object.keys(groupedRules).length} categorias
+                </Badge>
+                <Badge className="h-8 px-4 rounded-xl text-sm font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border-0">
+                  {rules.filter(r => r.isSystem).length} sistema
+                </Badge>
               </div>
             </div>
-            <div className="flex items-center gap-4 flex-wrap">
-              <Badge className="h-8 px-4 rounded-xl text-sm font-bold bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300 border-0">
-                {filteredRules.length} regras ativas
-              </Badge>
-              <Badge className="h-8 px-4 rounded-xl text-sm font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 border-0">
-                {Object.keys(groupedRules).length} categorias
-              </Badge>
-              <Badge className="h-8 px-4 rounded-xl text-sm font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border-0">
-                {rules.filter(r => r.isSystem).length} sistema
-              </Badge>
+
+            <div className="flex items-center gap-3">
+              {/* Consolidate Duplicates Button */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    onClick={handleConsolidateRules}
+                    disabled={isConsolidating}
+                    className="h-12 px-6 rounded-xl border-violet-200 hover:bg-violet-50"
+                  >
+                    {isConsolidating ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Merge className="h-4 w-4 mr-2" />
+                    )}
+                    Consolidar
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Mesclar regras duplicadas com mesmo leafId</p>
+                </TooltipContent>
+              </Tooltip>
+
+              {/* Nova Regra - Navigate to Confirm page */}
+              <Button
+                onClick={() => window.location.href = '/confirm'}
+                className="h-14 px-8 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold rounded-2xl shadow-xl shadow-violet-500/30 gap-2 transition-all"
+              >
+                <Plus className="h-5 w-5" />
+                Nova Regra
+              </Button>
             </div>
           </div>
-          
-          <Button className="h-14 px-8 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold rounded-2xl shadow-xl shadow-violet-500/30 gap-2 transition-all">
-            <Plus className="h-5 w-5" />
-            Nova Regra
-          </Button>
         </div>
-      </div>
 
       {/* Advanced Filters */}
       <Card className="rounded-2xl border-border shadow-sm">
@@ -389,16 +486,46 @@ export default function RulesClient({ initialRules }: RulesClientProps) {
 
                         {/* Actions */}
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          <div className="flex flex-col items-end mr-2">
-                            <span className="text-[9px] font-bold text-muted-foreground uppercase">Prioridade</span>
-                            <span className="font-mono font-bold text-sm">{rule.priority}</span>
-                          </div>
+                          {/* Priority with tooltip */}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex flex-col items-end mr-2 cursor-help">
+                                <span className="text-[9px] font-bold text-muted-foreground uppercase flex items-center gap-1">
+                                  Prioridade
+                                  <Info className="h-3 w-3" />
+                                </span>
+                                <span className="font-mono font-bold text-sm">{rule.priority}</span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p className="font-semibold">{PRIORITY_INFO.title}</p>
+                              <p className="text-xs">{PRIORITY_INFO.description}</p>
+                            </TooltipContent>
+                          </Tooltip>
+
+                          {/* Mode indicator with tooltip */}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className={`px-2 py-1 rounded-lg text-[10px] font-bold cursor-help ${
+                                rule.strict
+                                  ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+                                  : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                              }`}>
+                                {rule.strict ? "Estrito" : "Flexível"}
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p className="font-semibold">{rule.strict ? MODE_INFO.strict.title : MODE_INFO.flexible.title}</p>
+                              <p className="text-xs">{rule.strict ? MODE_INFO.strict.description : MODE_INFO.flexible.description}</p>
+                            </TooltipContent>
+                          </Tooltip>
+
                           <div className={`w-3 h-3 rounded-full ${
                             rule.active
                               ? "bg-emerald-500 shadow-lg shadow-emerald-500/50"
                               : "bg-gray-300 dark:bg-gray-700"
                           }`}></div>
-                          <Button 
+                          <Button
                             variant="ghost" 
                             size="sm" 
                             className="h-9 w-9 p-0 rounded-xl hover:bg-violet-50 dark:hover:bg-violet-950/30"
@@ -406,7 +533,13 @@ export default function RulesClient({ initialRules }: RulesClientProps) {
                           >
                             <Edit2 className="h-4 w-4 text-violet-600 dark:text-violet-400" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-xl text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-9 w-9 p-0 rounded-xl text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                            onClick={() => handleDeleteRule(rule.id)}
+                            disabled={isPending}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -556,6 +689,7 @@ export default function RulesClient({ initialRules }: RulesClientProps) {
           ))
         )}
       </div>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }

@@ -1,48 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
     Search,
-    CreditCard,
     Tag,
-    Info,
-    CheckCircle2,
     AlertCircle,
     FileText,
-   ExternalLink,
-    Brain,
-    MoreHorizontal,
     Trash2,
     Check,
     ChevronDown,
+    ChevronUp,
     ShoppingBag,
     Utensils,
     Home,
     Car,
     Activity,
-    Wallet,
-    Edit3
+    Edit3,
+    ArrowUpDown,
+    LayoutGrid
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { FilterPanel as FilterPanelComp, TransactionFilters } from "@/components/transactions/filter-panel";
 import { BulkActionsBar as BulkActionsBarComp } from "@/components/transactions/bulk-actions-bar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { 
-    confirmTransaction, 
+import {
+    confirmTransaction,
     deleteTransaction,
-    updateTransactionCategory 
+    updateTransactionCategory
 } from "@/lib/actions/transactions";
-import { 
+import {
     bulkConfirmTransactions,
     bulkDeleteTransactions,
-    exportTransactions 
+    exportTransactions
 } from "@/lib/actions/bulk-operations";
 import { toast } from "sonner";
 import { TransactionDrawer } from "@/components/transactions/transaction-drawer";
+import { getCategoryConfig } from "@/lib/constants/categories";
+
+type SortField = "date" | "amount" | "category" | "confidence";
+type SortDirection = "asc" | "desc";
 
 // Using categories from schema (simplified list for UI)
 const CATEGORIES = [
@@ -61,36 +60,105 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
     const [filters, setFilters] = useState<TransactionFilters>(initialFilters);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isCompact, setIsCompact] = useState(false);
+    const [hideCents, setHideCents] = useState(false);
+    const [sortField, setSortField] = useState<SortField>("date");
+    const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
-    const filtered = transactions.filter(tx => {
+    // Format date as DD.MM.YY
+    const formatDate = (date: Date | string) => {
+        const d = new Date(date);
+        const day = d.getDate().toString().padStart(2, '0');
+        const month = (d.getMonth() + 1).toString().padStart(2, '0');
+        const year = d.getFullYear().toString().slice(-2);
+        return `${day}.${month}.${year}`;
+    };
 
-        const descMatch = (tx.descNorm || tx.descRaw || "").toLowerCase();
-        const catMatch = (tx.category1 || "").toLowerCase();
-        const matchesSearch = descMatch.includes(search.toLowerCase()) ||
-            catMatch.includes(search.toLowerCase());
+    // Format currency
+    const formatAmount = (amount: number) => {
+        const absAmount = Math.abs(amount);
+        if (hideCents) {
+            return new Intl.NumberFormat("pt-PT", {
+                style: "currency",
+                currency: "EUR",
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(Math.round(absAmount));
+        }
+        return new Intl.NumberFormat("pt-PT", {
+            style: "currency",
+            currency: "EUR"
+        }).format(absAmount);
+    };
 
-        if (!matchesSearch) return false;
+    // Handle sorting
+    const handleSort = (field: SortField) => {
+        if (sortField === field) {
+            setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+        } else {
+            setSortField(field);
+            setSortDirection("desc");
+        }
+    };
 
-        if (filters.categories?.length && !filters.categories.includes(tx.category1)) return false;
-        if (filters.accounts?.length && !filters.accounts.includes(tx.source)) return false;
-        if (filters.minAmount !== undefined && Math.abs(tx.amount) < filters.minAmount) return false;
-        if (filters.maxAmount !== undefined && Math.abs(tx.amount) > filters.maxAmount) return false;
-        if (filters.dateFrom && new Date(tx.date) < filters.dateFrom) return false;
-        if (filters.dateTo && new Date(tx.date) > filters.dateTo) return false;
+    const filtered = useMemo(() => {
+        return transactions.filter(tx => {
+            const descMatch = (tx.descNorm || tx.descRaw || "").toLowerCase();
+            const catMatch = (tx.category1 || "").toLowerCase();
+            const matchesSearch = descMatch.includes(search.toLowerCase()) ||
+                catMatch.includes(search.toLowerCase());
 
-        return true;
-    });
+            if (!matchesSearch) return false;
 
-    const groupedTransactions = filtered.reduce((acc: Record<string, any[]>, tx: any) => {
-        const dateKey = new Date(tx.date).toISOString().split('T')[0]; // YYYY-MM-DD stable key
-        if (!acc[dateKey]) acc[dateKey] = [];
-        acc[dateKey].push(tx);
-        return acc;
-    }, {} as Record<string, any[]>);
+            if (filters.categories?.length && !filters.categories.includes(tx.category1)) return false;
+            if (filters.accounts?.length && !filters.accounts.includes(tx.source)) return false;
+            if (filters.minAmount !== undefined && Math.abs(tx.amount) < filters.minAmount) return false;
+            if (filters.maxAmount !== undefined && Math.abs(tx.amount) > filters.maxAmount) return false;
+            if (filters.dateFrom && new Date(tx.date) < filters.dateFrom) return false;
+            if (filters.dateTo && new Date(tx.date) > filters.dateTo) return false;
 
-    const sortedDateKeys = Object.keys(groupedTransactions).sort((a, b) => 
-        new Date(b).getTime() - new Date(a).getTime()
-    );
+            return true;
+        });
+    }, [transactions, search, filters]);
+
+    // Sort and group transactions
+    const sortedTransactions = useMemo(() => {
+        const sorted = [...filtered].sort((a, b) => {
+            let comparison = 0;
+            switch (sortField) {
+                case "date":
+                    comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
+                    break;
+                case "amount":
+                    comparison = Math.abs(a.amount) - Math.abs(b.amount);
+                    break;
+                case "category":
+                    comparison = (a.category1 || "").localeCompare(b.category1 || "");
+                    break;
+                case "confidence":
+                    comparison = (a.confidence || 0) - (b.confidence || 0);
+                    break;
+            }
+            return sortDirection === "asc" ? comparison : -comparison;
+        });
+        return sorted;
+    }, [filtered, sortField, sortDirection]);
+
+    const groupedTransactions = useMemo(() => {
+        return sortedTransactions.reduce((acc: Record<string, any[]>, tx: any) => {
+            const dateKey = new Date(tx.date).toISOString().split('T')[0];
+            if (!acc[dateKey]) acc[dateKey] = [];
+            acc[dateKey].push(tx);
+            return acc;
+        }, {} as Record<string, any[]>);
+    }, [sortedTransactions]);
+
+    const sortedDateKeys = useMemo(() => {
+        return Object.keys(groupedTransactions).sort((a, b) =>
+            sortDirection === "desc"
+                ? new Date(b).getTime() - new Date(a).getTime()
+                : new Date(a).getTime() - new Date(b).getTime()
+        );
+    }, [groupedTransactions, sortDirection]);
 
     const toggleSelect = (id: string) => {
         const newSelected = new Set(selectedIds);
@@ -203,23 +271,29 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
         }
     };
 
-    // Helper to get category style and icon
+    // Helper to get category style and icon using centralized config
     const getCategoryStyles = (category: string) => {
-        const cat = category?.toLowerCase() || "";
-        if (cat.includes("alimentação") || cat.includes("restaurante")) {
-            return { color: "text-orange-700 dark:text-orange-300", bg: "bg-orange-50 dark:bg-orange-900/30", icon: Utensils };
-        }
-        if (cat.includes("transporte") || cat.includes("uber")) {
-            return { color: "text-blue-700 dark:text-blue-300", bg: "bg-blue-50 dark:bg-blue-900/30", icon: Car };
-        }
-        if (cat.includes("moradia") || cat.includes("aluguel")) {
-            return { color: "text-emerald-700 dark:text-emerald-300", bg: "bg-emerald-50 dark:bg-emerald-900/30", icon: Home };
-        }
-        if (cat.includes("lazer") || cat.includes("netflix")) {
-            return { color: "text-purple-700 dark:text-purple-300", bg: "bg-purple-50 dark:bg-purple-900/30", icon: Activity };
-        }
-        return { color: "text-gray-700 dark:text-gray-300", bg: "bg-gray-100 dark:bg-white/10", icon: Tag };
+        const config = getCategoryConfig(category);
+        return {
+            color: config.textColor,
+            bg: config.bgColor,
+            border: config.borderColor,
+            icon: config.lucideIcon
+        };
     };
+
+    // Sortable header component
+    const SortableHeader = ({ field, children, className }: { field: SortField, children: React.ReactNode, className?: string }) => (
+        <button
+            onClick={() => handleSort(field)}
+            className={cn("flex items-center gap-1 hover:text-foreground transition-colors", className)}
+        >
+            {children}
+            {sortField === field && (
+                sortDirection === "desc" ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />
+            )}
+        </button>
+    );
 
     return (
         <div className="space-y-6 pb-32">
@@ -242,16 +316,26 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
                         accounts={Array.from(new Set(transactions.map(t => t.source).filter(Boolean)))}
                         onFilterChange={setFilters}
                     />
-                    <Button 
-                        variant="outline" 
+                    <Button
+                        variant="outline"
                         className={cn(
                             "h-14 px-6 border-border rounded-2xl text-foreground font-bold gap-2 text-sm transition-all",
                             isCompact && "bg-primary text-white border-transparent"
                         )}
                         onClick={() => setIsCompact(!isCompact)}
                     >
-                        {isCompact ? <Activity className="h-4 w-4" /> : <ShoppingBag className="h-4 w-4" />}
-                        {isCompact ? "Vista Normal" : "Vista Compacta"}
+                        <LayoutGrid className="h-4 w-4" />
+                        {isCompact ? "Normal" : "Compacta"}
+                    </Button>
+                    <Button
+                        variant="outline"
+                        className={cn(
+                            "h-14 px-4 border-border rounded-2xl text-foreground font-medium gap-2 text-sm transition-all",
+                            hideCents && "bg-secondary"
+                        )}
+                        onClick={() => setHideCents(!hideCents)}
+                    >
+                        {hideCents ? "€123" : "€123,45"}
                     </Button>
                     <Button variant="outline" className="h-14 px-6 border-border hover:bg-secondary rounded-2xl text-foreground font-bold gap-2 text-sm" onClick={handleBulkExport}>
                         <FileText className="h-4 w-4" />
@@ -260,23 +344,23 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
                 </div>
             </div>
 
-            {/* Table Header (Desktop Only) */}
-            <div className="hidden md:grid grid-cols-[60px_1fr_2fr_1.2fr_1.2fr_1.2fr_1fr_100px] gap-4 px-8 py-6 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+            {/* Table Header (Desktop Only) - Improved spacing and sortable */}
+            <div className="hidden md:grid grid-cols-[40px_80px_2.5fr_1fr_1.2fr_1fr_80px_80px] gap-3 px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-wider bg-secondary/30 rounded-t-2xl border border-border">
                 <div className="flex justify-center">
-                    <Checkbox checked={selectedIds.size === filtered.length && filtered.length > 0} onCheckedChange={toggleSelectAll} className="h-5 w-5 rounded-lg border-2" />
+                    <Checkbox checked={selectedIds.size === filtered.length && filtered.length > 0} onCheckedChange={toggleSelectAll} className="h-4 w-4 rounded border-2" />
                 </div>
-                <div>Data</div>
+                <SortableHeader field="date">Data</SortableHeader>
                 <div>Estabelecimento</div>
-                <div>Valor</div>
-                <div>Categoria</div>
-                <div>App Cat</div>
-                <div>AI Status</div>
-                <div className="text-right">Ações</div>
+                <SortableHeader field="amount">Valor</SortableHeader>
+                <SortableHeader field="category">Categoria</SortableHeader>
+                <div>Cat 1 / Cat 2</div>
+                <SortableHeader field="confidence">AI %</SortableHeader>
+                <div className="text-center">Ações</div>
             </div>
 
             {/* Transaction Rows */}
-            <div className="bg-card border border-border rounded-[2.5rem] overflow-hidden shadow-sm">
-                <div className="divide-y divide-border">
+            <div className="bg-card border border-border border-t-0 rounded-b-2xl overflow-hidden shadow-sm">
+                <div className="divide-y divide-border/50">
                     {filtered.length === 0 ? (
                         <div className="text-center py-32 flex flex-col items-center animate-in fade-in zoom-in duration-500">
                             <div className="w-24 h-24 rounded-[3rem] bg-gradient-to-br from-secondary to-secondary/30 flex items-center justify-center mb-8 shadow-xl text-muted-foreground/40">
@@ -301,138 +385,133 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
                                     {new Date(dateKey).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
                                 </div>
                                 {groupedTransactions[dateKey].map((tx) => {
-                                    const { color: catColor, bg: catBg, icon: CatIcon } = getCategoryStyles(tx.category1);
+                                    const { color: catColor, bg: catBg, border: catBorder, icon: CatIcon } = getCategoryStyles(tx.category1);
                                     const isNegative = Number(tx.amount) < 0;
-                                    const score = tx.score || (tx.needsReview ? 40 : 98);
-                                    
-                                    const scoreColor = score >= 90 ? "bg-emerald-500" : score >= 60 ? "bg-amber-400" : "bg-slate-300";
-                                    const scoreText = score >= 90 ? "text-emerald-600 dark:text-emerald-400" : score >= 60 ? "text-amber-600 dark:text-amber-400" : "text-slate-500";
+                                    const score = tx.confidence || tx.score || (tx.needsReview ? 40 : 98);
+                                    const scoreText = score >= 90 ? "text-emerald-600" : score >= 60 ? "text-amber-600" : "text-slate-500";
 
                                     return (
                                         <div
                                             key={tx.id}
                                             className={cn(
-                                                "group flex flex-col md:grid md:grid-cols-[60px_1fr_2fr_1.2fr_1.2fr_1.2fr_1fr_100px] gap-2 md:gap-4 items-stretch md:items-center hover:bg-secondary/40 transition-all cursor-pointer border-b border-border/40 last:border-0",
-                                                isCompact ? "p-3 md:p-0 md:h-[60px]" : "p-4 md:p-0 md:h-[80px]",
+                                                "group flex flex-col md:grid md:grid-cols-[40px_80px_2.5fr_1fr_1.2fr_1fr_80px_80px] gap-2 md:gap-3 items-stretch md:items-center hover:bg-secondary/30 transition-all cursor-pointer",
+                                                isCompact ? "px-4 py-2 md:px-6" : "px-4 py-3 md:px-6",
                                                 selectedIds.has(tx.id) && "bg-primary/5 border-l-4 border-l-primary"
                                             )}
                                             onClick={() => setSelectedTx(tx)}
                                         >
-                                            {/* Column: Checkbox (Desktop) */}
+                                            {/* Column: Checkbox */}
                                             <div className="hidden md:flex justify-center" onClick={(e) => e.stopPropagation()}>
-                                                <Checkbox checked={selectedIds.has(tx.id)} onCheckedChange={() => toggleSelect(tx.id)} className="h-5 w-5 rounded-lg border-2" />
+                                                <Checkbox checked={selectedIds.has(tx.id)} onCheckedChange={() => toggleSelect(tx.id)} className="h-4 w-4 rounded border-2" />
                                             </div>
 
-                                            {/* Column: Data (Hidden in List View as we have headers, shown in grid if needed or remove) */}
-                                            <div className="hidden md:block md:px-10 md:py-4 text-[11px] font-black text-muted-foreground self-center uppercase tracking-wider">
-                                                {/* Date already in header, maybe show time? */}
-                                                {new Date(tx.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            {/* Column: Date (DD.MM.YY format, no time) */}
+                                            <div className="hidden md:flex items-center text-xs font-medium text-muted-foreground">
+                                                {formatDate(tx.date)}
                                             </div>
 
                                             {/* Mobile: Top Row with Avatar, Name, Amount */}
                                             <div className="flex items-center gap-3 w-full md:contents">
                                                 {/* Mobile Checkbox */}
                                                 <div className="md:hidden" onClick={(e) => e.stopPropagation()}>
-                                                    <Checkbox checked={selectedIds.has(tx.id)} onCheckedChange={() => toggleSelect(tx.id)} className="h-4 w-4 rounded-md border-2" />
+                                                    <Checkbox checked={selectedIds.has(tx.id)} onCheckedChange={() => toggleSelect(tx.id)} className="h-4 w-4 rounded border-2" />
                                                 </div>
 
-                                                {/* Avatar */}
-                                                <div className={cn("md:py-4 flex flex-row items-center gap-3 min-w-0 flex-1", isCompact && "md:py-2")}>
+                                                {/* Logo/Avatar - Rectangle/flexible */}
+                                                <div className="flex flex-row items-center gap-3 min-w-0 flex-1">
                                                     {tx.aliasDesc && aliasMap[tx.aliasDesc] ? (
-                                                        <img 
-                                                            src={aliasMap[tx.aliasDesc]} 
-                                                            alt={tx.aliasDesc} 
-                                                            className={cn("rounded-full object-cover border border-border bg-white flex-shrink-0", isCompact ? "w-8 h-8" : "w-10 h-10")}
+                                                        <img
+                                                            src={aliasMap[tx.aliasDesc]}
+                                                            alt={tx.aliasDesc}
+                                                            className={cn(
+                                                                "object-contain border border-border bg-white flex-shrink-0 rounded-lg",
+                                                                isCompact ? "w-8 h-8" : "w-10 h-8"
+                                                            )}
                                                         />
                                                     ) : (
-                                                        <div className={cn("rounded-full bg-secondary flex items-center justify-center text-muted-foreground/50 flex-shrink-0", isCompact ? "w-8 h-8" : "w-10 h-10")}>
-                                                            <ShoppingBag className={cn(isCompact ? "w-4 h-4" : "w-5 h-5")} />
+                                                        <div className={cn(
+                                                            "rounded-lg flex items-center justify-center flex-shrink-0",
+                                                            catBg, catBorder, "border",
+                                                            isCompact ? "w-8 h-8" : "w-10 h-8"
+                                                        )}>
+                                                            <CatIcon className={cn("w-4 h-4", catColor)} />
                                                         </div>
                                                     )}
-                                                    
-                                                    {/* Description & Source */}
+
+                                                    {/* Description (not bold) & Source */}
                                                     <div className="flex flex-col gap-0.5 min-w-0 flex-1">
                                                         <div className="flex justify-between items-start gap-2">
-                                                            <span className={cn("font-bold text-foreground tracking-tight line-clamp-1", isCompact ? "text-sm" : "text-base")}>
+                                                            <span className={cn(
+                                                                "text-foreground tracking-tight line-clamp-1",
+                                                                isCompact ? "text-sm" : "text-sm"
+                                                            )}>
                                                                 {tx.aliasDesc || tx.description || tx.descRaw}
                                                             </span>
-                                                            
-                                                            {/* Amount (Mobile Only - Floated Right) */}
+
+                                                            {/* Amount (Mobile Only) */}
                                                             <div className={cn(
-                                                                "md:hidden text-sm font-bold tracking-tighter whitespace-nowrap",
-                                                                isNegative ? "text-destructive" : "text-emerald-500"
+                                                                "md:hidden text-sm font-semibold tracking-tight whitespace-nowrap",
+                                                                isNegative ? "text-red-600" : "text-emerald-600"
                                                             )}>
-                                                                {Number(tx.amount) > 0 ? "+" : "-"} {new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(Math.abs(Number(tx.amount)))}
+                                                                {isNegative ? "-" : "+"} {formatAmount(Number(tx.amount))}
                                                             </div>
                                                         </div>
 
-                                                        {/* Badges Row */}
-                                                        <div className="flex items-center gap-2 flex-wrap text-xs md:text-sm">
-                                                             <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest md:hidden">{tx.source}</span>
-                                                             {/* Mobile Category Badge */}
-                                                             <div className="md:hidden flex items-center gap-1 bg-secondary/50 px-1.5 py-0.5 rounded-md">
-                                                                <CatIcon className="w-3 h-3 text-muted-foreground" />
-                                                                <span className="text-[9px] font-bold text-muted-foreground uppercase">{tx.category1 || "N/A"}</span>
-                                                             </div>
-                                                             
-                                                             {tx.conflictFlag && (
-                                                                <Badge className="h-4 px-1 rounded-full bg-red-100 text-red-700 border-none text-[8px] font-bold uppercase tracking-wide flex items-center gap-1">
-                                                                    <AlertCircle className="w-3 h-3" />
+                                                        {/* Mobile info badges */}
+                                                        <div className="flex items-center gap-2 flex-wrap text-xs md:hidden">
+                                                            <span className="text-[9px] text-muted-foreground">{formatDate(tx.date)}</span>
+                                                            <span className="text-[9px] text-muted-foreground">•</span>
+                                                            <span className="text-[9px] text-muted-foreground">{tx.category1 || "N/A"}</span>
+                                                            {tx.conflictFlag && (
+                                                                <Badge className="h-4 px-1 rounded bg-red-100 text-red-700 border-none text-[8px]">
+                                                                    <AlertCircle className="w-3 h-3 mr-0.5" />
                                                                     Conflito
                                                                 </Badge>
-                                                             )}
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
 
                                                 {/* Desktop Amount */}
                                                 <div className={cn(
-                                                    "hidden md:block md:py-4 text-lg font-bold tracking-tighter w-full md:w-auto",
-                                                    isNegative ? "text-destructive" : "text-emerald-500"
+                                                    "hidden md:flex items-center font-semibold",
+                                                    isNegative ? "text-red-600" : "text-emerald-600"
                                                 )}>
-                                                    {Number(tx.amount) > 0 ? "+" : "-"} {new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(Math.abs(Number(tx.amount)))}
+                                                    {isNegative ? "-" : "+"} {formatAmount(Number(tx.amount))}
                                                 </div>
 
-                                                {/* Desktop Category */}
-                                                <div className="hidden md:flex md:py-4 items-center w-full md:w-auto">
-                                                    <button className={cn(
-                                                        "flex items-center gap-2.5 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95",
-                                                        catBg,
-                                                        catColor
+                                                {/* Desktop Category (App Category) */}
+                                                <div className="hidden md:flex items-center">
+                                                    <div className={cn(
+                                                        "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border",
+                                                        catBg, catColor, catBorder
                                                     )}>
-                                                        <CatIcon className="h-4 w-4" />
-                                                        {tx.category1 || "Não Classificado"}
-                                                    </button>
-                                                </div>
-                                            
-                                                {/* Desktop App Cat */}
-                                                 <div className="hidden md:flex md:py-4 items-center w-full md:w-auto">
-                                                    <Badge variant="outline" className="font-mono text-[10px] bg-background/50 border-border text-muted-foreground">
-                                                        {tx.appCategory || tx.appCategoryName || "OPEN"}
-                                                    </Badge>
-                                                </div>
-
-                                                {/* Desktop AI Score */}
-                                                 <div className="hidden md:flex md:py-4 items-center gap-4 w-full md:w-auto">
-                                                    <div className="flex-1 max-w-[60px] h-2 bg-secondary rounded-full overflow-hidden">
-                                                        <div className={cn("h-full rounded-full transition-all duration-700", scoreColor)} style={{ width: `${score}%` }}></div>
+                                                        <CatIcon className="h-3.5 w-3.5" />
+                                                        <span className="truncate max-w-[100px]">{tx.appCategoryName || tx.category1 || "OPEN"}</span>
                                                     </div>
-                                                    <span className={cn("text-[10px] font-black", scoreText)}>{score}%</span>
                                                 </div>
 
-                                                {/* Action Buttons */}
-                                                <div className="hidden md:flex md:pr-10 md:py-4 items-center justify-end gap-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button 
-                                                        className="p-3 hover:bg-destructive/10 hover:text-destructive rounded-xl transition-all"
-                                                        onClick={(e) => { e.stopPropagation(); handleDelete(tx.id); }}
+                                                {/* Desktop Cat1 / Cat2 */}
+                                                <div className="hidden md:flex flex-col text-xs text-muted-foreground">
+                                                    <span className="truncate">{tx.category1 || "-"}</span>
+                                                    {tx.category2 && (
+                                                        <span className="truncate text-[10px] text-muted-foreground/70">{tx.category2}</span>
+                                                    )}
+                                                </div>
+
+                                                {/* Desktop AI Score - percentage only */}
+                                                <div className="hidden md:flex items-center justify-center">
+                                                    <span className={cn("text-xs font-bold", scoreText)}>{score}%</span>
+                                                </div>
+
+                                                {/* Action Button - Edit only (opens drawer) */}
+                                                <div className="hidden md:flex items-center justify-center">
+                                                    <button
+                                                        className="p-2 hover:bg-secondary rounded-lg transition-all text-muted-foreground hover:text-foreground"
+                                                        onClick={(e) => { e.stopPropagation(); setSelectedTx(tx); }}
+                                                        title="Editar transação"
                                                     >
-                                                        <Trash2 className="h-5 w-5" />
-                                                    </button>
-                                                    <button 
-                                                        className="p-3 bg-foreground text-background hover:opacity-90 rounded-xl transition-all shadow-lg shadow-foreground/5"
-                                                        onClick={(e) => { e.stopPropagation(); handleConfirm(tx.id); }}
-                                                    >
-                                                        <Check className="h-5 w-5" />
+                                                        <Edit3 className="h-4 w-4" />
                                                     </button>
                                                 </div>
                                             </div>

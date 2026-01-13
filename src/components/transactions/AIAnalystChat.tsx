@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-import { Sparkles, Send, User, Bot, Loader2 } from "lucide-react";
+import { Sparkles, Send, User, Loader2, MessageCircle, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { sendChatMessage, SAMPLE_QUESTIONS } from "@/lib/actions/ai-chat";
+import Image from "next/image";
 
 type Message = {
     role: "user" | "assistant";
@@ -14,17 +16,22 @@ type Message = {
     timestamp: Date;
 };
 
-export function AIAnalystChat() {
+interface AIAnalystChatProps {
+    currentScreen?: string;
+}
+
+export function AIAnalystChat({ currentScreen = "transactions" }: AIAnalystChatProps) {
     const [open, setOpen] = useState(false);
     const [input, setInput] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
+    const [isPending, startTransition] = useTransition();
     const [messages, setMessages] = useState<Message[]>([
         {
             role: "assistant",
-            content: "Olá! Sou seu Analista Financeiro via IA. Como posso ajudar a analisar seus gastos hoje?",
+            content: "Olá! Sou o Analista Ritual, seu assistente financeiro. Posso ajudar a analisar seus gastos, comparar períodos, identificar padrões e muito mais. Como posso ajudar?",
             timestamp: new Date()
         }
     ]);
+    const [showSuggestions, setShowSuggestions] = useState(true);
     const scrollRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -33,27 +40,47 @@ export function AIAnalystChat() {
         }
     }, [messages, open]);
 
-    const handleSend = async () => {
-        if (!input.trim()) return;
-        
-        const userMsg = input;
+    // Hide suggestions after first user message
+    useEffect(() => {
+        if (messages.filter(m => m.role === "user").length > 0) {
+            setShowSuggestions(false);
+        }
+    }, [messages]);
+
+    const handleSend = async (messageText?: string) => {
+        const userMsg = messageText || input;
+        if (!userMsg.trim()) return;
+
         setInput("");
         setMessages(prev => [...prev, { role: "user", content: userMsg, timestamp: new Date() }]);
-        setIsLoading(true);
 
-        // Simulate AI response for now (to be connected to real backend later)
-        setTimeout(() => {
-            let response = "Interessante. Baseado nos seus dados, parece que você está seguindo o planejado. Posso analisar mais a fundo se quiser.";
-            if (userMsg.toLowerCase().includes("gastei") && userMsg.toLowerCase().includes("mercado")) {
-                response = "Você gastou cerca de €450 em Mercado este mês, o que está 10% acima da sua média habitual.";
-            } else if (userMsg.toLowerCase().includes("economia")) {
-                response = "Identifiquei oportunidades de economia em 'Assinaturas' e 'Lazer'.";
+        startTransition(async () => {
+            const conversationHistory = messages.map(m => ({ role: m.role, content: m.content }));
+            const result = await sendChatMessage(userMsg, conversationHistory, currentScreen);
+
+            if (result.success && result.response) {
+                setMessages(prev => [...prev, {
+                    role: "assistant",
+                    content: result.response!,
+                    timestamp: new Date()
+                }]);
+            } else {
+                setMessages(prev => [...prev, {
+                    role: "assistant",
+                    content: result.error || "Desculpe, não consegui processar sua pergunta. Tente novamente.",
+                    timestamp: new Date()
+                }]);
             }
-
-            setMessages(prev => [...prev, { role: "assistant", content: response, timestamp: new Date() }]);
-            setIsLoading(false);
-        }, 1500);
+        });
     };
+
+    // Get random sample questions (5 at a time)
+    const getSampleQuestions = () => {
+        const shuffled = [...SAMPLE_QUESTIONS].sort(() => 0.5 - Math.random());
+        return shuffled.slice(0, 5);
+    };
+
+    const [sampleQuestions] = useState(getSampleQuestions);
 
     return (
         <Sheet open={open} onOpenChange={setOpen}>
@@ -71,16 +98,26 @@ export function AIAnalystChat() {
             <SheetContent className="w-full sm:max-w-md p-0 flex flex-col bg-card border-l border-border">
                 <SheetHeader className="p-6 border-b border-border bg-secondary/20">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                            <Sparkles className="h-5 w-5" />
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center overflow-hidden shadow-sm">
+                            <Image
+                                src="/logo-ritualfin-wax-seal.png"
+                                alt="RitualFin"
+                                width={40}
+                                height={40}
+                                className="object-contain"
+                                onError={(e) => {
+                                    // Fallback to icon if image fails
+                                    e.currentTarget.style.display = 'none';
+                                }}
+                            />
                         </div>
                         <div>
                             <SheetTitle className="font-display text-xl">Analista Ritual</SheetTitle>
-                            <SheetDescription className="text-xs font-bold uppercase tracking-widest">Inteligência Financeira</SheetDescription>
+                            <SheetDescription className="text-xs font-bold uppercase tracking-widest text-emerald-600">Inteligência Financeira • GPT-4</SheetDescription>
                         </div>
                     </div>
                 </SheetHeader>
-                
+
                 <ScrollArea className="flex-1 p-6">
                     <div className="flex flex-col gap-6">
                         {messages.map((msg, i) => (
@@ -90,24 +127,66 @@ export function AIAnalystChat() {
                             )}>
                                 <div className={cn(
                                     "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
-                                    msg.role === "user" ? "bg-slate-900 text-white" : "bg-primary/10 text-primary"
+                                    msg.role === "user" ? "bg-slate-900 text-white" : "bg-amber-100"
                                 )}>
-                                    {msg.role === "user" ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+                                    {msg.role === "user" ? (
+                                        <User className="h-4 w-4" />
+                                    ) : (
+                                        <Image
+                                            src="/logo-ritualfin-wax-seal.png"
+                                            alt="R"
+                                            width={20}
+                                            height={20}
+                                            className="object-contain"
+                                            onError={(e) => {
+                                                e.currentTarget.style.display = 'none';
+                                            }}
+                                        />
+                                    )}
                                 </div>
                                 <div className={cn(
                                     "p-4 rounded-2xl text-sm font-medium shadow-sm",
-                                    msg.role === "user" 
-                                        ? "bg-slate-900 text-white rounded-tr-none" 
+                                    msg.role === "user"
+                                        ? "bg-slate-900 text-white rounded-tr-none"
                                         : "bg-white dark:bg-secondary/50 border border-border rounded-tl-none"
                                 )}>
                                     {msg.content}
                                 </div>
                             </div>
                         ))}
-                        {isLoading && (
+
+                        {/* Sample Questions */}
+                        {showSuggestions && messages.length === 1 && (
+                            <div className="mr-auto max-w-[90%]">
+                                <div className="flex items-center gap-2 mb-3 text-muted-foreground">
+                                    <Lightbulb className="h-4 w-4" />
+                                    <span className="text-xs font-bold uppercase tracking-widest">Sugestões</span>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {sampleQuestions.map((question, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => handleSend(question)}
+                                            disabled={isPending}
+                                            className="px-3 py-2 text-xs font-medium bg-secondary hover:bg-secondary/80 rounded-full border border-border transition-colors text-left disabled:opacity-50"
+                                        >
+                                            {question}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {isPending && (
                             <div className="flex items-start gap-3 mr-auto max-w-[85%]">
-                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                                    <Bot className="h-4 w-4" />
+                                <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                                    <Image
+                                        src="/logo-ritualfin-wax-seal.png"
+                                        alt="R"
+                                        width={20}
+                                        height={20}
+                                        className="object-contain"
+                                    />
                                 </div>
                                 <div className="p-4 bg-white dark:bg-secondary/50 border border-border rounded-2xl rounded-tl-none shadow-sm flex items-center gap-2">
                                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -120,20 +199,24 @@ export function AIAnalystChat() {
                 </ScrollArea>
 
                 <div className="p-4 border-t border-border bg-background">
-                    <form 
+                    <form
                         className="flex items-center gap-2 bg-secondary p-2 rounded-2xl border-2 border-transparent focus-within:border-primary/20 transition-all"
                         onSubmit={(e) => { e.preventDefault(); handleSend(); }}
                     >
-                        <Input 
-                            className="flex-1 border-none bg-transparent shadow-none focus-visible:ring-0 h-10 font-medium" 
+                        <Input
+                            className="flex-1 border-none bg-transparent shadow-none focus-visible:ring-0 h-10 font-medium"
                             placeholder="Faça uma pergunta sobre suas finanças..."
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
+                            disabled={isPending}
                         />
-                        <Button size="icon" className="rounded-xl h-10 w-10 shrink-0" type="submit" disabled={!input.trim() || isLoading}>
+                        <Button size="icon" className="rounded-xl h-10 w-10 shrink-0" type="submit" disabled={!input.trim() || isPending}>
                             <Send className="h-4 w-4" />
                         </Button>
                     </form>
+                    <p className="text-[10px] text-muted-foreground text-center mt-2">
+                        Powered by OpenAI GPT-4 • Seus dados são privados
+                    </p>
                 </div>
             </SheetContent>
         </Sheet>

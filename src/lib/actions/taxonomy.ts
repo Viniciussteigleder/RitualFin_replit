@@ -31,10 +31,93 @@ export async function createLevel1(name: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
-  return await db.insert(taxonomyLevel1).values({
+  const result = await db.insert(taxonomyLevel1).values({
     userId: session.user.id,
     nivel1Pt: name,
   }).returning();
+
+  return { success: true, data: result[0] };
 }
 
-// Additional CRUD actions can be added as needed
+export async function updateLevel1(id: string, name: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  await db.update(taxonomyLevel1)
+    .set({ nivel1Pt: name })
+    .where(eq(taxonomyLevel1.level1Id, id));
+
+  return { success: true };
+}
+
+export async function deleteLevel1(id: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  await db.delete(taxonomyLevel1).where(eq(taxonomyLevel1.level1Id, id));
+  return { success: true };
+}
+
+export async function createLevel2(level1Id: string, name: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const result = await db.insert(taxonomyLevel2).values({
+    userId: session.user.id,
+    level1Id: level1Id,
+    nivel2Pt: name,
+  }).returning();
+
+  return { success: true, data: result[0] };
+}
+
+export async function updateLevel2(id: string, name: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  await db.update(taxonomyLevel2)
+    .set({ nivel2Pt: name })
+    .where(eq(taxonomyLevel2.level2Id, id));
+
+  return { success: true };
+}
+
+export async function deleteLevel2(id: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  await db.delete(taxonomyLevel2).where(eq(taxonomyLevel2.level2Id, id));
+  return { success: true };
+}
+
+export async function createLeaf(level2Id: string, name: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const result = await db.insert(taxonomyLeaf).values({
+    userId: session.user.id,
+    level2Id: level2Id,
+    nivel3Pt: name,
+  }).returning();
+
+  return { success: true, data: result[0] };
+}
+
+export async function updateLeaf(id: string, name: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  await db.update(taxonomyLeaf)
+    .set({ nivel3Pt: name })
+    .where(eq(taxonomyLeaf.leafId, id));
+
+  return { success: true };
+}
+
+export async function deleteLeaf(id: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  await db.delete(taxonomyLeaf).where(eq(taxonomyLeaf.leafId, id));
+  return { success: true };
+}
