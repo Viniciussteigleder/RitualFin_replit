@@ -297,8 +297,8 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
 
     return (
         <div className="space-y-6 pb-32">
-            {/* Filters & Search - Re-styled */}
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-card p-6 rounded-[2rem] border border-border shadow-sm">
+            {/* Filters & Search - Premium Style */}
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-card p-6 rounded-[2.5rem] border border-border shadow-sm transition-all duration-300 hover:shadow-md">
                 <div className="w-full lg:flex-1 max-w-lg">
                     <div className="relative group">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
@@ -344,8 +344,8 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
                 </div>
             </div>
 
-            {/* Table Header (Desktop Only) - Improved spacing and sortable */}
-            <div className="hidden md:grid grid-cols-[40px_80px_2.5fr_1fr_1.2fr_1fr_80px_80px] gap-3 px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-wider bg-secondary/30 rounded-t-2xl border border-border">
+            {/* Table Header (Desktop Only) - Premium Style */}
+            <div className="hidden md:grid grid-cols-[40px_80px_2.5fr_1fr_1.2fr_1fr_80px_80px] gap-3 px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-wider bg-secondary/50 rounded-t-3xl border border-border backdrop-blur-sm">
                 <div className="flex justify-center">
                     <Checkbox checked={selectedIds.size === filtered.length && filtered.length > 0} onCheckedChange={toggleSelectAll} className="h-4 w-4 rounded border-2" />
                 </div>
@@ -359,8 +359,8 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
             </div>
 
             {/* Transaction Rows */}
-            <div className="bg-card border border-border border-t-0 rounded-b-2xl overflow-hidden shadow-sm">
-                <div className="divide-y divide-border/50">
+            <div className="bg-card border border-border border-t-0 rounded-b-3xl overflow-hidden shadow-sm">
+                <div className="divide-y divide-border/30">
                     {filtered.length === 0 ? (
                         <div className="text-center py-32 flex flex-col items-center animate-in fade-in zoom-in duration-500">
                             <div className="w-24 h-24 rounded-[3rem] bg-gradient-to-br from-secondary to-secondary/30 flex items-center justify-center mb-8 shadow-xl text-muted-foreground/40">
@@ -394,8 +394,8 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
                                         <div
                                             key={tx.id}
                                             className={cn(
-                                                "group flex flex-col md:grid md:grid-cols-[40px_80px_2.5fr_1fr_1.2fr_1fr_80px_80px] gap-2 md:gap-3 items-stretch md:items-center hover:bg-secondary/30 transition-all cursor-pointer",
-                                                isCompact ? "px-4 py-2 md:px-6" : "px-4 py-3 md:px-6",
+                                                "group flex flex-col md:grid md:grid-cols-[40px_80px_2.5fr_1fr_1.2fr_1fr_80px_80px] gap-2 md:gap-3 items-stretch md:items-center hover:bg-secondary/40 transition-all duration-200 cursor-pointer",
+                                                isCompact ? "px-4 py-2 md:px-6" : "px-4 py-4 md:px-6",
                                                 selectedIds.has(tx.id) && "bg-primary/5 border-l-4 border-l-primary"
                                             )}
                                             onClick={() => setSelectedTx(tx)}
@@ -507,7 +507,7 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
                                                 {/* Action Button - Edit only (opens drawer) */}
                                                 <div className="hidden md:flex items-center justify-center">
                                                     <button
-                                                        className="p-2 hover:bg-secondary rounded-lg transition-all text-muted-foreground hover:text-foreground"
+                                                        className="p-2.5 hover:bg-secondary rounded-xl transition-all duration-200 text-muted-foreground hover:text-foreground hover:scale-110 active:scale-95"
                                                         onClick={(e) => { e.stopPropagation(); setSelectedTx(tx); }}
                                                         title="Editar transação"
                                                     >

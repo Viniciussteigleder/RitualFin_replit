@@ -72,7 +72,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       <DashboardHeader />
 
       {/* TopSummaryRow */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 animate-fade-in-up" style={{ animationDelay: '50ms' }}>
         
         {/* BIG Focus Card: Disponível (Budget) */}
         <Card className="md:col-span-2 rounded-2xl border-primary/20 bg-emerald-50/50 dark:bg-emerald-950/10 shadow-sm transition-all group relative overflow-hidden ring-1 ring-emerald-500/10">
@@ -176,7 +176,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       </div>
 
       {/* Row 2: Category Chart & Sync Status */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
         {/* Category Chart Section */}
         <Card className="lg:col-span-2 rounded-2xl border-border bg-card shadow-sm p-2">
             <CardContent className="p-8">
@@ -250,7 +250,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       </div>
 
       {/* AccountCardsGrid - Kept mostly same but hide decimals */}
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
         <div className="flex items-center justify-between px-1">
           <h3 className="text-2xl font-bold text-foreground font-display">Minhas Contas</h3>
           <Link href="/accounts" className="text-sm font-bold text-primary hover:underline">Ver todas</Link>
@@ -337,7 +337,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       </div>
 
       {/* Quick Review Queue & Discovery */}
-      <div className="bg-card rounded-2xl p-8 border border-border shadow-sm flex flex-col group">
+      <div className="bg-card rounded-2xl p-8 border border-border shadow-sm flex flex-col group animate-fade-in-up" style={{ animationDelay: '200ms' }}>
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-2xl font-bold text-foreground font-display tracking-tight">Fila de Revisão</h3>
             <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center">
