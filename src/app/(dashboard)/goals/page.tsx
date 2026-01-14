@@ -53,17 +53,17 @@ export default async function GoalsPage() {
   return (
     <div className="flex flex-col gap-10 pb-32 max-w-7xl mx-auto px-1">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
-        <div className="flex flex-col gap-2">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 bg-card p-10 rounded-[3rem] border border-border shadow-sm animate-fade-in-up">
+        <div className="flex flex-col gap-3">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-primary/10 rounded-2xl">
+            <div className="p-3 bg-primary/10 rounded-2xl transition-transform duration-300 hover:scale-110">
               <Target className="h-8 w-8 text-primary" />
             </div>
             <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight font-display">
               Previsão e Metas
             </h1>
           </div>
-          <p className="text-muted-foreground font-medium leading-relaxed">
+          <p className="text-muted-foreground font-medium leading-relaxed max-w-xl">
             Projeção inteligente baseada no seu comportamento financeiro habitual.
           </p>
         </div>

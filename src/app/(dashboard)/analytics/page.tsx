@@ -11,34 +11,37 @@ export const metadata: Metadata = {
 
 export default function AnalyticsPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50/30 via-white to-white">
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
-        {/* Compact Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-1">
-          <div className="space-y-1">
-            <h1 className="text-4xl font-bold text-foreground tracking-tight font-display">
-              Análise Financeira
-            </h1>
-            <p className="text-muted-foreground font-medium">
+    <div className="min-h-screen">
+      <div className="max-w-7xl mx-auto px-1 py-8 space-y-6">
+        {/* Premium Card Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 bg-card p-10 rounded-[3rem] border border-border shadow-sm animate-fade-in-up">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-emerald-500/10 rounded-2xl transition-transform duration-300 hover:scale-110">
+                <BarChart3 className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <h1 className="text-4xl font-bold text-foreground tracking-tight font-display">
+                Análise Total
+              </h1>
+            </div>
+            <p className="text-muted-foreground font-medium max-w-xl leading-relaxed">
               Explore seus gastos com drill-down interativo e filtros avançados.
             </p>
           </div>
-          
-          {/* Stats Preview - Now more compact and secondary */}
+
+          {/* Stats Preview - Premium badges */}
           <div className="flex items-center gap-3">
              <ReRunRulesButton />
-             <div className="hidden md:flex bg-white dark:bg-card border border-border rounded-2xl p-3 items-center gap-3 shadow-sm px-4">
+             <div className="hidden md:flex bg-secondary/30 border border-border rounded-3xl p-3 items-center gap-3 shadow-inner px-5 transition-all duration-300 hover:shadow-md hover:scale-105">
                 <Sparkles className="w-4 h-4 text-emerald-500" />
                 <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Multi-nível</span>
              </div>
-             <div className="hidden md:flex bg-white dark:bg-card border border-border rounded-2xl p-3 items-center gap-3 shadow-sm px-4">
+             <div className="hidden md:flex bg-secondary/30 border border-border rounded-3xl p-3 items-center gap-3 shadow-inner px-5 transition-all duration-300 hover:shadow-md hover:scale-105">
                 <BarChart3 className="w-4 h-4 text-emerald-500" />
                 <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">4 Níveis</span>
              </div>
           </div>
         </div>
-
-        <div className="h-px bg-border w-full"></div>
 
         {/* Content */}
         <Suspense

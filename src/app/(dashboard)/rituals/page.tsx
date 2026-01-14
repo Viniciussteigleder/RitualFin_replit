@@ -28,10 +28,10 @@ export default async function RitualsPage() {
   return (
     <div className="flex flex-col gap-10 pb-32 max-w-5xl mx-auto">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 bg-card p-10 rounded-[3rem] border border-border shadow-sm">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 bg-card p-10 rounded-[3rem] border border-border shadow-sm animate-fade-in-up">
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-amber-500/10 rounded-2xl">
+            <div className="p-3 bg-amber-500/10 rounded-2xl transition-transform duration-300 hover:scale-110">
               <Zap className="h-8 w-8 text-amber-600 dark:text-amber-400" />
             </div>
             <h1 className="text-4xl font-bold text-foreground tracking-tight font-display">
@@ -44,7 +44,7 @@ export default async function RitualsPage() {
         </div>
 
         <div className="flex items-center gap-6">
-          <div className="flex flex-col items-end mr-2 bg-secondary/30 p-4 rounded-3xl border border-border px-6">
+          <div className="flex flex-col items-end mr-2 bg-secondary/30 p-4 rounded-3xl border border-border px-6 transition-all duration-300 hover:shadow-md hover:scale-105">
             <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">
               Sequência Atual
             </span>
@@ -52,7 +52,7 @@ export default async function RitualsPage() {
               <span className="text-2xl font-bold text-amber-500 tracking-tighter">
                 {maxStreak} {maxStreak === 1 ? "Dia" : "Dias"}
               </span>
-              {maxStreak > 0 && <Flame className="h-4 w-4 text-orange-500" />}
+              {maxStreak > 0 && <Flame className="h-4 w-4 text-orange-500 animate-pulse" />}
             </div>
           </div>
         </div>

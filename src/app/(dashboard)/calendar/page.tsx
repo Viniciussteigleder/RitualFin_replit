@@ -105,36 +105,35 @@ export default async function CalendarPage({
   // ... imports and logic remain the same up to data preparation ...
 
   return (
-    <div className="flex flex-col gap-8 pb-32">
-      {/* Header */}
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 bg-card p-10 rounded-2xl border border-border shadow-sm">
-          <div className="flex flex-col gap-3">
-             <div className="flex items-center gap-3">
-                 <div className="p-3 bg-blue-500/10 rounded-xl">
-                   <CalendarIcon className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-                </div>
-                <h1 className="text-4xl font-bold text-foreground tracking-tight font-display">Calendário Financeiro</h1>
-             </div>
-             <p className="text-muted-foreground font-medium max-w-xl leading-relaxed">
-               Visualize seus vencimentos e planeje seu fluxo de caixa mensal.
-             </p>
+    <div className="flex flex-col gap-8 pb-32 max-w-7xl mx-auto px-1">
+      {/* Header & Toolbar */}
+      <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-8 bg-card p-10 rounded-[3rem] border border-border shadow-sm animate-fade-in-up">
+        <div className="flex flex-col gap-3">
+           <div className="flex items-center gap-3">
+               <div className="p-3 bg-blue-500/10 rounded-2xl transition-transform duration-300 hover:scale-110">
+                 <CalendarIcon className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+              </div>
+              <h1 className="text-4xl font-bold text-foreground tracking-tight font-display">Calendário Financeiro</h1>
+           </div>
+           <p className="text-muted-foreground font-medium max-w-xl leading-relaxed">
+             Visualize seus vencimentos e planeje seu fluxo de caixa mensal.
+           </p>
+        </div>
+
+        <div className="flex flex-col md:flex-row items-center gap-4 w-full xl:w-auto">
+          <div className="flex items-center bg-secondary/50 rounded-2xl p-1.5 border border-border transition-all duration-300 hover:shadow-md">
+            <Link href={`/calendar?month=${prevMonthStr}`} className="p-3 hover:bg-white dark:hover:bg-card rounded-2xl text-muted-foreground transition-all shadow-sm hover:scale-110 active:scale-95">
+              <ChevronLeft className="h-5 w-5" />
+            </Link>
+            <div className="px-8 flex items-center gap-3 min-w-[180px] justify-center">
+              <span className="text-lg font-bold text-foreground capitalize tracking-tight">{monthName}</span>
+            </div>
+            <Link href={`/calendar?month=${nextMonthStr}`} className="p-3 hover:bg-white dark:hover:bg-card rounded-2xl text-muted-foreground transition-all shadow-sm hover:scale-110 active:scale-95">
+              <ChevronRight className="h-5 w-5" />
+            </Link>
           </div>
 
           <NewEventDialog />
-        </div>
-
-        {/* Month/Year Navigation */}
-        <div className="flex items-center justify-center bg-secondary/30 backdrop-blur-sm p-4 rounded-2xl border border-border/50">
-          <Link href={`/calendar?month=${prevMonthStr}`} className="p-3 hover:bg-white dark:hover:bg-card rounded-2xl text-muted-foreground transition-all">
-            <ChevronLeft className="h-6 w-6" />
-          </Link>
-          <div className="px-12 flex items-center gap-3 min-w-[240px] justify-center">
-            <span className="text-2xl font-bold text-foreground capitalize tracking-tight">{monthName}</span>
-          </div>
-          <Link href={`/calendar?month=${nextMonthStr}`} className="p-3 hover:bg-white dark:hover:bg-card rounded-2xl text-muted-foreground transition-all">
-            <ChevronRight className="h-6 w-6" />
-          </Link>
         </div>
       </div>
 
