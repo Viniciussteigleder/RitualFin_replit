@@ -1,8 +1,18 @@
+import { auth } from "@/auth";
 import { BatchList } from "./batch-list";
 import { UploadClient } from "./upload-client";
 import { History, Database, UploadCloud } from "lucide-react";
 
-export default function UploadsPage() {
+export default async function UploadsPage() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <p className="text-muted-foreground font-bold">Por favor, faça login para importar arquivos.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto flex flex-col gap-10 pb-32 px-1 font-sans">
        {/* Header Section */}
@@ -48,4 +58,3 @@ export default function UploadsPage() {
     </div>
   );
 }
-

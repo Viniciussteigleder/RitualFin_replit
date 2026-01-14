@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { auth } from "@/auth";
 import { AnalyticsContent } from "./analytics-content";
 import type { Metadata } from "next";
 import { BarChart3, Sparkles } from "lucide-react";
@@ -9,7 +10,16 @@ export const metadata: Metadata = {
   description: "Análise detalhada de gastos com drill-down hierárquico",
 };
 
-export default function AnalyticsPage() {
+export default async function AnalyticsPage() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <p className="text-muted-foreground font-bold">Por favor, faça login para ver a análise.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen">
       <div className="max-w-7xl mx-auto px-1 py-8 space-y-6">
