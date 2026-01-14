@@ -96,25 +96,21 @@ export function AIAnalystChat({ currentScreen = "transactions" }: AIAnalystChatP
                    </div>
                 </Button>
             </SheetTrigger>
-            <SheetContent className="w-full sm:max-w-md p-0 flex flex-col bg-card border-l border-border">
+            <SheetContent className="w-full sm:max-w-xl p-0 flex flex-col bg-card border-l border-border shadow-2xl">
                 <SheetHeader className="p-6 border-b border-border bg-secondary/20">
-                    <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center overflow-hidden shadow-sm">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center overflow-hidden shadow-lg shadow-primary/20 relative border border-primary/20">
                             <Image
                                 src="/logo-ritualfin-wax-seal.png"
                                 alt="RitualFin"
-                                width={40}
-                                height={40}
-                                className="object-contain"
-                                onError={(e) => {
-                                    // Fallback to icon if image fails
-                                    e.currentTarget.style.display = 'none';
-                                }}
+                                fill
+                                className="object-contain p-2"
+                                priority
                             />
                         </div>
-                        <div>
-                            <SheetTitle className="font-display text-xl">Analista Ritual</SheetTitle>
-                            <SheetDescription className="text-xs font-bold uppercase tracking-widest text-emerald-600">Inteligência Financeira • GPT-4</SheetDescription>
+                        <div className="flex flex-col text-left">
+                            <SheetTitle className="font-display text-xl font-bold tracking-tight">Analista Ritual</SheetTitle>
+                            <SheetDescription className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400">Inteligência Financeira</SheetDescription>
                         </div>
                     </div>
                 </SheetHeader>
@@ -123,33 +119,29 @@ export function AIAnalystChat({ currentScreen = "transactions" }: AIAnalystChatP
                     <div className="flex flex-col gap-6">
                         {messages.map((msg, i) => (
                             <div key={i} className={cn(
-                                "flex items-start gap-3 max-w-[85%]",
+                                "flex items-start gap-3 max-w-[90%]",
                                 msg.role === "user" ? "ml-auto flex-row-reverse" : "mr-auto"
                             )}>
                                 <div className={cn(
-                                    "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
-                                    msg.role === "user" ? "bg-slate-900 text-white" : "bg-amber-100"
+                                    "w-8 h-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden relative border",
+                                    msg.role === "user" ? "bg-slate-900 border-slate-700" : "bg-primary border-primary/20"
                                 )}>
                                     {msg.role === "user" ? (
-                                        <User className="h-4 w-4" />
+                                        <User className="h-4 w-4 text-white" />
                                     ) : (
                                         <Image
                                             src="/logo-ritualfin-wax-seal.png"
                                             alt="R"
-                                            width={20}
-                                            height={20}
-                                            className="object-contain"
-                                            onError={(e) => {
-                                                e.currentTarget.style.display = 'none';
-                                            }}
+                                            fill
+                                            className="object-contain p-1"
                                         />
                                     )}
                                 </div>
                                 <div className={cn(
-                                    "p-4 rounded-2xl text-sm font-medium shadow-sm",
+                                    "p-5 rounded-2xl text-sm font-medium shadow-sm leading-relaxed whitespace-pre-wrap",
                                     msg.role === "user"
-                                        ? "bg-slate-900 text-white rounded-tr-none"
-                                        : "bg-white dark:bg-secondary/50 border border-border rounded-tl-none"
+                                        ? "bg-slate-900 text-white rounded-tr-none border border-slate-800"
+                                        : "bg-white dark:bg-secondary/30 border border-border rounded-tl-none text-foreground/90"
                                 )}>
                                     {msg.content}
                                 </div>
