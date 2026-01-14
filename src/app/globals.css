@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Google Fonts - loaded via HTML link in layout.tsx for proper load order */
+/* Fonts are loaded via `next/font` in `src/app/layout.tsx` */
 
 
 /* Custom variant for dark mode matching existing app */
@@ -58,8 +58,8 @@
   --color-sidebar-border: hsl(var(--sidebar-border));
   --color-sidebar-ring: hsl(var(--sidebar-ring));
 
-  --font-sans: "Noto Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Manrope", sans-serif;
+  --font-sans: var(--font-noto-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-manrope), sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
