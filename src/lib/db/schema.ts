@@ -627,6 +627,23 @@ export const rituals = pgTable("rituals", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const ritualGoals = pgTable("ritual_goals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  ritualId: varchar("ritual_id").references(() => rituals.id),
+  ritualType: text("ritual_type").notNull(), // 'daily', 'weekly', 'monthly'
+  goalText: text("goal_text").notNull(),
+  targetDate: timestamp("target_date"),
+  completed: boolean("completed").notNull().default(false),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  userIdx: index("ritual_goals_user_idx").on(table.userId),
+  ritualIdx: index("ritual_goals_ritual_idx").on(table.ritualId),
+  typeIdx: index("ritual_goals_type_idx").on(table.ritualType),
+}));
+
 // Relations
 export const oauthAccountsRelations = relations(oauthAccounts, ({ one }) => ({
   user: one(users, { fields: [oauthAccounts.userId], references: [users.id] }),
@@ -659,6 +676,16 @@ export const goalsRelations = relations(goals, ({ many }) => ({
 
 export const categoryGoalsRelations = relations(categoryGoals, ({ one }) => ({
   goal: one(goals, { fields: [categoryGoals.goalId], references: [goals.id] }),
+}));
+
+export const ritualsRelations = relations(rituals, ({ one, many }) => ({
+  user: one(users, { fields: [rituals.userId], references: [users.id] }),
+  goals: many(ritualGoals),
+}));
+
+export const ritualGoalsRelations = relations(ritualGoals, ({ one }) => ({
+  user: one(users, { fields: [ritualGoals.userId], references: [users.id] }),
+  ritual: one(rituals, { fields: [ritualGoals.ritualId], references: [rituals.id] }),
 }));
 
 export const transactionEvidenceLinkRelations = relations(transactionEvidenceLink, ({ one }) => ({

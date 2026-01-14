@@ -7,7 +7,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Sparkles, Send, User, Loader2, MessageCircle, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { sendChatMessage, SAMPLE_QUESTIONS } from "@/lib/actions/ai-chat";
+import { sendChatMessage } from "@/lib/actions/ai-chat";
+import { SAMPLE_QUESTIONS } from "@/lib/constants/ai-questions";
 import Image from "next/image";
 
 type Message = {
