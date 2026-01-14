@@ -136,7 +136,7 @@ export default function SettingsPage() {
                   </p>
                   <div className="space-y-3 mt-6">
                     <Label htmlFor="confirmDelete" className="text-[10px] font-black text-destructive uppercase tracking-widest ml-1">
-                      Digite "EXCLUIR" para confirmar
+                      Digite &quot;EXCLUIR&quot; para confirmar
                     </Label>
                     <Input
                       id="confirmDelete"

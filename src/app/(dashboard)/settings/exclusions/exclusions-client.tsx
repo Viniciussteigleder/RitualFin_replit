@@ -290,7 +290,7 @@ export function ExclusionsClient({ initialRules }: ExclusionsClientProps) {
           <div className="text-center py-16 text-muted-foreground">
             <Filter className="h-12 w-12 mx-auto mb-4 opacity-30" />
             <p>Nenhuma regra de exclusão definida.</p>
-            <p className="text-sm">Clique em "Nova Regra" para começar.</p>
+            <p className="text-sm">Clique em &quot;Nova Regra&quot; para começar.</p>
           </div>
         ) : (
           rules.map((rule) => (
@@ -364,8 +364,8 @@ export function ExclusionsClient({ initialRules }: ExclusionsClientProps) {
         <h4 className="font-medium text-foreground mb-2">Como funciona:</h4>
         <ul className="list-disc pl-5 space-y-1">
           <li>Crie regras para excluir certas categorias ou condições de telas específicas</li>
-          <li>Por exemplo: excluir "Interno" do Dashboard para não afetar relatórios</li>
-          <li>Ou excluir "Karlsruhe" (casa alugada) dos Analytics para ver apenas gastos locais</li>
+          <li>Por exemplo: excluir &quot;Interno&quot; do Dashboard para não afetar relatórios</li>
+          <li>Ou excluir &quot;Karlsruhe&quot; (casa alugada) dos Analytics para ver apenas gastos locais</li>
           <li>As regras são aplicadas automaticamente quando você abre cada tela</li>
         </ul>
       </div>

@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { BulkConfirmButton } from "@/components/transactions/bulk-confirm-button";
 import { RuleDiscoveryCard } from "@/components/confirm/rule-discovery-card";
 import { ReRunRulesButton } from "@/components/transactions/re-run-rules-button";
+import Link from "next/link";
 
 export default async function ConfirmPage() {
   const transactions = await getPendingTransactions();
@@ -98,7 +99,7 @@ export default async function ConfirmPage() {
               Não encontramos padrões não categorizados nem revisões pendentes. Seu sistema está otimizado.
             </p>
             <Button className="mt-12 h-16 px-12 bg-foreground text-background rounded-2xl font-bold transition-all shadow-xl hover:opacity-90 active:scale-95 text-base" asChild>
-              <a href="/">Voltar ao Painel</a>
+              <Link href="/">Voltar ao Painel</Link>
             </Button>
           </div>
         </div>

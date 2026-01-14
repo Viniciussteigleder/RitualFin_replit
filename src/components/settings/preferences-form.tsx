@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Globe, Sparkles, Settings2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -26,11 +26,11 @@ export function PreferencesForm() {
   const [isSaving, setIsSaving] = useState(false);
 
   // Auto-save function
-  const debouncedSave = useCallback(
-    debounce((newData: PreferencesData) => {
+  const debouncedSave = useMemo(() => {
+    return debounce((newData: PreferencesData) => {
       setIsSaving(true);
       const toastId = toast.loading("Salvando preferências...");
-      
+
       savePreferences(newData)
         .then(() => {
           toast.success("Preferências salvas", { id: toastId });
@@ -40,9 +40,8 @@ export function PreferencesForm() {
           toast.error("Erro ao salvar", { id: toastId });
           setIsSaving(false);
         });
-    }, 1000),
-    []
-  );
+    }, 1000);
+  }, []);
 
   const updateField = (field: keyof PreferencesData, value: any) => {
     const newData = { ...data, [field]: value };

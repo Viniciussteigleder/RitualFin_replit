@@ -27,9 +27,9 @@ function LoginContent() {
   return (
     <div className="flex h-screen items-center justify-center bg-muted/40 p-4">
       <div className="w-full max-w-sm space-y-8 bg-white p-8 rounded-xl shadow-lg border border-border/50">
-        <div className="text-center space-y-2">
+          <div className="text-center space-y-2">
           <div className="flex justify-center">
-            <img src="/ritualfin-logo.png" alt="RitualFin Logo" className="h-16 w-16 mb-2" />
+            <img src="/logo-ritualfin-wax-seal.png" alt="RitualFin Logo" className="h-16 w-16 mb-2" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Welcome to RitualFin</h1>
           <p className="text-sm text-muted-foreground">
@@ -114,7 +114,7 @@ function LoginContent() {
           </form>
 
           <div className="text-center text-sm">
-            <span className="text-muted-foreground">Don't have an account? </span>
+            <span className="text-muted-foreground">Don&apos;t have an account? </span>
             <Link href="/signup" className="font-medium hover:underline">
               Sign Up
             </Link>

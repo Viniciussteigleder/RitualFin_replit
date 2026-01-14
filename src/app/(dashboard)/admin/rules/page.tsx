@@ -154,7 +154,7 @@ export default function RulesStudioPage() {
                     Sugestões Automáticas
                   </CardTitle>
                   <CardDescription>
-                    Termos frequentes "Sem Categoria"
+                    Termos frequentes &quot;Sem Categoria&quot;
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -318,7 +318,7 @@ export default function RulesStudioPage() {
                 
                 {simulationResult.samples.length === 0 ? (
                   <div className="p-8 text-center text-muted-foreground">
-                    Nenhuma transação encontrada com o termo "{keyword}".
+                    Nenhuma transação encontrada com o termo &quot;{keyword}&quot;.
                   </div>
                 ) : (
                   <div className="divide-y divide-border">
