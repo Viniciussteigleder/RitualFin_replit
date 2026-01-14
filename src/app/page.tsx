@@ -55,8 +55,7 @@ const ACCOUNT_FILTER_MAP: Record<string, string> = {
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
   try {
     const { month } = await searchParams;
-    const monthParam = month;
-    const targetDate = monthParam ? new Date(`${monthParam}-01T00:00:00`) : new Date();
+    const targetDate = month ? new Date(`${month}-01T00:00:00`) : new Date();
 
     // Fetch data with error handling
     let dashboardData, transactionsData, pendingTransactions, accounts;
