@@ -23,6 +23,7 @@ Optional:
 - `AUTH_URL`
 - `OPENAI_API_KEY`
 - `ANALYZE`
+- `PG_POOL_MAX`
 
 ## Common Incidents
 
@@ -33,7 +34,7 @@ Optional:
 ### DB connectivity failures
 - Symptom: actions fail with connection errors; `GET /api/auth/debug` reports `DB_CONNECTIVITY=fail` (dev/preview only).
 - Verify `DATABASE_URL` points to the correct Neon branch and includes required SSL options (don’t paste full URL into tickets).
-- Verify connection pool limits (`src/lib/db/index.ts`) are reasonable for the environment.
+- Verify connection pool limits (`src/lib/db/index.ts`) are reasonable for the environment (tunable via `PG_POOL_MAX`).
 
 ### Preview deploy checks failing (Neon branch workflow)
 - Workflow: `.github/workflows/neon_workflow.yml`
@@ -43,4 +44,3 @@ Optional:
 
 - Do not log secrets (DB URLs, OAuth secrets, tokens). Prefer boolean presence checks and redacted summaries.
 - Treat categorization behavior as immutable per `docs/LOGIC_CONTRACT.md` and `rules/oracle/*`.
-
