@@ -77,14 +77,17 @@ export function TransactionRow({
                 {/* Logo/Avatar - Rectangle/flexible */}
                 <div className="flex flex-row items-center gap-3 min-w-0 flex-1">
                     {transaction.aliasDesc && aliasMap[transaction.aliasDesc] ? (
-                        <img
-                            src={aliasMap[transaction.aliasDesc]}
-                            alt={transaction.aliasDesc}
-                            className={cn(
-                                "object-contain border border-border bg-white flex-shrink-0 rounded-lg transition-transform duration-200 group-hover:scale-110",
-                                isCompact ? "w-8 h-8" : "w-10 h-8"
-                            )}
-                        />
+                        <>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                                src={aliasMap[transaction.aliasDesc]}
+                                alt={transaction.aliasDesc}
+                                className={cn(
+                                    "object-contain border border-border bg-white flex-shrink-0 rounded-lg transition-transform duration-200 group-hover:scale-110",
+                                    isCompact ? "w-8 h-8" : "w-10 h-8"
+                                )}
+                            />
+                        </>
                     ) : (
                         <div className={cn(
                             "rounded-lg flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-110",

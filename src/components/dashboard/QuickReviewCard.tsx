@@ -60,6 +60,7 @@ export function QuickReviewCard({
                                 <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full" />
                                 {transaction.aliasDesc && aliasMap[transaction.aliasDesc] ? (
                                     <div className="w-24 h-24 rounded-[2.5rem] bg-white shadow-2xl flex items-center justify-center border border-border overflow-hidden relative p-4">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img
                                             src={aliasMap[transaction.aliasDesc]}
                                             alt={transaction.aliasDesc}
