@@ -3,6 +3,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { MonthProvider } from "@/lib/month-context";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { CommandPalette } from "@/components/ui/command-palette";
+import { FloatingAssistant } from "@/components/assistant/floating-assistant";
 import "./globals.css";
 
 // Validate environment variables on startup
@@ -40,6 +41,7 @@ export default function RootLayout({
           </main>
           <MobileNav />
           <CommandPalette />
+          <FloatingAssistant />
         </MonthProvider>
       </body>
     </html>

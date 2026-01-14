@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 // removed Select imports
-import { User, Globe, Database, Shield, AlertTriangle, Settings2, Bell, Heart, Link2, Sparkles } from "lucide-react";
+import { User, Globe, Database, Shield, AlertTriangle, Settings2, Bell, Heart, Link2, Sparkles, Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PreferencesForm } from "@/components/settings/preferences-form";
+import { AssistantSettingsForm } from "@/components/settings/assistant-settings-form";
 
 export default function SettingsPage() {
   return (
@@ -25,6 +26,7 @@ export default function SettingsPage() {
           <TabsList className="inline-flex bg-secondary/50 p-1.5 h-auto rounded-[2rem] gap-2 border border-border min-w-full sm:min-w-0">
             <TabsTrigger value="profile" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-all">Perfil</TabsTrigger>
             <TabsTrigger value="preferences" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-all">Preferências</TabsTrigger>
+            <TabsTrigger value="assistant" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-all text-amber-600 data-[state=active]:text-amber-600">Assistente</TabsTrigger>
             <TabsTrigger value="notifications" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-all">Notificações</TabsTrigger>
             <TabsTrigger value="data" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-all">Dados</TabsTrigger>
             <TabsTrigger value="security" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-all">Segurança</TabsTrigger>
@@ -70,6 +72,11 @@ export default function SettingsPage() {
           {/* Preferences Tab */}
           <TabsContent value="preferences" className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
              <PreferencesForm />
+          </TabsContent>
+
+          {/* Assistant Tab */}
+          <TabsContent value="assistant" className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+             <AssistantSettingsForm />
           </TabsContent>
 
           {/* Data Tab */}

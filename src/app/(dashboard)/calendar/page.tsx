@@ -22,7 +22,7 @@ import { NewEventDialog } from "@/components/calendar/new-event-dialog";
 export default async function CalendarPage({
   searchParams,
 }: {
-  searchParams: { month?: string };
+  searchParams: Promise<{ month?: string }>;
 }) {
   const session = await auth();
 
@@ -30,8 +30,9 @@ export default async function CalendarPage({
     return <div>Por favor, faça login para ver o calendário</div>;
   }
 
-  const currentDate = searchParams.month
-    ? new Date(searchParams.month + "-01")
+  const params = await searchParams;
+  const currentDate = params.month
+    ? new Date(params.month + "-01")
     : new Date();
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
