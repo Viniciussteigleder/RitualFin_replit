@@ -8,8 +8,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sparkles, RefreshCw, Save, Loader2, Info, MessageSquare, Settings2, Wand2 } from "lucide-react";
-import { getAssistantSettings, updateAssistantSettings, resetAssistantSettings } from "@/lib/actions/assistant-settings";
+import { Sparkles, RefreshCw, Save, Loader2, Info, MessageSquare, Settings2, Wand2, Copy } from "lucide-react";
+import {
+  getAssistantSettings,
+  updateAssistantSettings,
+  resetAssistantSettings,
+  DEFAULT_DATABASE_CONTEXT,
+  DEFAULT_ANALYSIS_PROMPT,
+  DEFAULT_ADVICE_PROMPT,
+  DEFAULT_SUMMARY_PROMPT,
+} from "@/lib/actions/assistant-settings";
 import type { AssistantSettings } from "@/lib/db/schema";
 
 export function AssistantSettingsForm() {
@@ -100,29 +108,41 @@ export function AssistantSettingsForm() {
     <div className="space-y-8">
       {/* Database Context */}
       <div className="bg-card border border-border rounded-2xl p-10 shadow-sm">
-        <div className="flex items-center gap-4 mb-8">
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-600">
-            <Info className="h-6 w-6" />
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-600">
+              <Info className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold text-foreground font-display tracking-tight">Contexto do Banco de Dados</h3>
+              <p className="text-sm text-muted-foreground">Explica ao assistente como seus dados estao organizados</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-2xl font-bold text-foreground font-display tracking-tight">Contexto do Banco de Dados</h3>
-            <p className="text-sm text-muted-foreground">Descreva sua situacao financeira para melhorar as respostas</p>
-          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setDatabaseContext(DEFAULT_DATABASE_CONTEXT)}
+            className="rounded-xl"
+          >
+            <Copy className="h-4 w-4 mr-2" />
+            Usar Padrao
+          </Button>
         </div>
 
         <div className="space-y-4">
           <div className="space-y-3">
             <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
-              Descricao das suas financas
+              Contexto do Sistema e Dados
             </Label>
             <Textarea
               value={databaseContext}
               onChange={(e) => setDatabaseContext(e.target.value)}
-              placeholder="Ex: Tenho 2 contas bancarias (Sparkasse e Amex), salario mensal de 5000 EUR, moro na Alemanha, objetivo de economizar 20% do salario..."
-              className="min-h-[120px] bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-all resize-none"
+              placeholder={DEFAULT_DATABASE_CONTEXT.substring(0, 200) + "..."}
+              className="min-h-[200px] bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-all resize-none font-mono text-xs"
             />
             <p className="text-xs text-muted-foreground ml-1">
-              Essa informacao ajuda o assistente a entender melhor seu contexto financeiro
+              Define a estrutura do banco de dados, tabelas, categorias e como o assistente deve interpretar os dados
             </p>
           </div>
         </div>
@@ -136,49 +156,94 @@ export function AssistantSettingsForm() {
           </div>
           <div>
             <h3 className="text-2xl font-bold text-foreground font-display tracking-tight">Prompts Personalizados</h3>
-            <p className="text-sm text-muted-foreground">Defina instrucoes especificas para diferentes tipos de perguntas</p>
+            <p className="text-sm text-muted-foreground">Instrucoes especificas para cada tipo de pergunta</p>
           </div>
         </div>
 
         <div className="space-y-6">
           <div className="space-y-3">
-            <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
-              Prompt para Analises
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
+                Prompt para Analises
+              </Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setAnalysisPrompt(DEFAULT_ANALYSIS_PROMPT)}
+                className="text-xs h-7"
+              >
+                <Copy className="h-3 w-3 mr-1" />
+                Padrao
+              </Button>
+            </div>
             <Textarea
               value={analysisPrompt}
               onChange={(e) => setAnalysisPrompt(e.target.value)}
-              placeholder="Ex: Ao analisar gastos, sempre compare com o mes anterior e sugira onde economizar..."
-              className="min-h-[100px] bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-all resize-none"
+              placeholder={DEFAULT_ANALYSIS_PROMPT}
+              className="min-h-[120px] bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-all resize-none font-mono text-xs"
             />
+            <p className="text-xs text-muted-foreground ml-1">
+              Usado quando o usuario pergunta sobre gastos, categorias ou comparacoes
+            </p>
           </div>
 
           <Separator className="bg-border/50" />
 
           <div className="space-y-3">
-            <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
-              Prompt para Conselhos
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
+                Prompt para Conselhos
+              </Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setAdvicePrompt(DEFAULT_ADVICE_PROMPT)}
+                className="text-xs h-7"
+              >
+                <Copy className="h-3 w-3 mr-1" />
+                Padrao
+              </Button>
+            </div>
             <Textarea
               value={advicePrompt}
               onChange={(e) => setAdvicePrompt(e.target.value)}
-              placeholder="Ex: Ao dar conselhos financeiros, considere que meu objetivo principal e economizar para aposentadoria..."
-              className="min-h-[100px] bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-all resize-none"
+              placeholder={DEFAULT_ADVICE_PROMPT}
+              className="min-h-[120px] bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-all resize-none font-mono text-xs"
             />
+            <p className="text-xs text-muted-foreground ml-1">
+              Usado quando o usuario pede sugestoes, dicas ou como economizar
+            </p>
           </div>
 
           <Separator className="bg-border/50" />
 
           <div className="space-y-3">
-            <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
-              Prompt para Resumos
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
+                Prompt para Resumos
+              </Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setSummaryPrompt(DEFAULT_SUMMARY_PROMPT)}
+                className="text-xs h-7"
+              >
+                <Copy className="h-3 w-3 mr-1" />
+                Padrao
+              </Button>
+            </div>
             <Textarea
               value={summaryPrompt}
               onChange={(e) => setSummaryPrompt(e.target.value)}
-              placeholder="Ex: Ao resumir, sempre inclua o total gasto, categorias principais e comparativo mensal..."
-              className="min-h-[100px] bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-all resize-none"
+              placeholder={DEFAULT_SUMMARY_PROMPT}
+              className="min-h-[120px] bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-all resize-none font-mono text-xs"
             />
+            <p className="text-xs text-muted-foreground ml-1">
+              Usado quando o usuario pede visao geral, status ou situacao financeira
+            </p>
           </div>
         </div>
       </div>
