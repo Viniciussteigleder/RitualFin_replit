@@ -5,17 +5,19 @@
   "license": "MIT",
   "scripts": {
     "dev": "next dev",
+    "analyze": "ANALYZE=true npm run build",
     "build": "next build",
     "start": "next start",
     "lint": "npm run check && npm run lint:eslint",
     "lint:eslint": "eslint src next.config.ts drizzle.config.ts playwright.config.ts",
-    "kill:port": "lsof -ti:${PORT:-3000} | xargs kill -9 || true",
+    "kill:port": "lsof -ti:${PORT:-3000} | xargs -r kill -TERM || true",
     "check": "tsc",
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "release:gate": "npx tsx scripts/pre-deploy-check.ts",
+    "test:unit": "npx tsx tests/unit/rules-engine.test.ts",
     "test:e2e": "playwright test"
   },
   "dependencies": {
@@ -104,7 +106,5 @@
     "typescript": "5.6.3",
     "xlsx": "^0.18.5"
   },
-  "optionalDependencies": {
-    "bufferutil": "^4.0.8"
-  }
+  "optionalDependencies": {}
 }

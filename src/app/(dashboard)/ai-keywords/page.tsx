@@ -1,10 +1,20 @@
 
+import { auth } from "@/auth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Brain, Sparkles, Filter, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export default function AIKeywordsPage() {
+export default async function AIKeywordsPage() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <p className="text-muted-foreground font-bold">Por favor, faça login para acessar esta página.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">

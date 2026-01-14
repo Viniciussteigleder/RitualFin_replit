@@ -1,6 +1,7 @@
 "use client";
 
 import { signIn } from "next-auth/react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,16 +27,16 @@ function LoginContent() {
 
   return (
     <div className="flex h-screen items-center justify-center bg-muted/40 p-4">
-      <div className="w-full max-w-sm space-y-8 bg-white p-8 rounded-xl shadow-lg border border-border/50">
-          <div className="text-center space-y-2">
-          <div className="flex justify-center">
-            <img src="/logo-ritualfin-wax-seal.png" alt="RitualFin Logo" className="h-16 w-16 mb-2" />
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight">Welcome to RitualFin</h1>
-          <p className="text-sm text-muted-foreground">
-            Sign in to orchestrate your financial rituals
-          </p>
-        </div>
+	      <div className="w-full max-w-sm space-y-8 bg-white p-8 rounded-xl shadow-lg border border-border/50">
+	          <div className="text-center space-y-2">
+	          <div className="flex justify-center">
+	            <Image src="/logo-ritualfin-wax-seal.png" alt="RitualFin Logo" width={64} height={64} priority className="h-16 w-16 mb-2" />
+	          </div>
+	          <h1 className="text-2xl font-bold tracking-tight">Welcome to RitualFin</h1>
+	          <p className="text-sm text-muted-foreground">
+	            Sign in to orchestrate your financial rituals
+	          </p>
+	        </div>
 
         {error && (
           <div className="flex items-center gap-2 p-3 bg-destructive/10 text-destructive rounded-md text-sm font-medium">

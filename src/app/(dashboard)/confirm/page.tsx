@@ -1,3 +1,4 @@
+import { auth } from "@/auth";
 import { getPendingTransactions } from "@/lib/actions/transactions";
 import { getDiscoveryCandidates, getTaxonomyOptions } from "@/lib/actions/discovery";
 import { TransactionList } from "../transactions/transaction-list";
@@ -10,6 +11,15 @@ import { ReRunRulesButton } from "@/components/transactions/re-run-rules-button"
 import Link from "next/link";
 
 export default async function ConfirmPage() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <p className="text-muted-foreground font-bold">Por favor, faça login para acessar a fila de revisão.</p>
+      </div>
+    );
+  }
+
   const transactions = await getPendingTransactions();
   const highConfidenceCount = transactions.filter(tx => (tx.confidence || 0) >= 80).length;
   

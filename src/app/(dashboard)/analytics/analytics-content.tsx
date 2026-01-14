@@ -28,12 +28,6 @@ export function AnalyticsContent() {
   const [accounts, setAccounts] = useState<any[]>([]);
   const [isPending, startTransition] = useTransition();
 
-  // Load initial data
-  useEffect(() => {
-    loadInitialData();
-    loadAccounts();
-  }, []);
-
   const loadInitialData = async () => {
     const result = await getAnalyticsData(filters);
     setLevels([
@@ -50,6 +44,13 @@ export function AnalyticsContent() {
     const result = await getAccounts();
     setAccounts(result);
   };
+
+  // Load initial data
+  useEffect(() => {
+    void loadInitialData();
+    void loadAccounts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: load once on mount
+  }, []);
 
   const handleFiltersChange = (newFilters: AnalyticsFilters) => {
     setFilters(newFilters);

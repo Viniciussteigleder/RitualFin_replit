@@ -54,6 +54,7 @@
 |----------|-------------|---------|
 | `NODE_ENV` | Environment | `production` |
 | `ANALYZE` | Enable bundle analyzer | `false` |
+| `PG_POOL_MAX` | Postgres pool max connections | `5` |
 
 ### Validation Script
 
