@@ -1,17 +1,28 @@
 import { NextResponse } from "next/server";
 
+import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { sql } from "drizzle-orm";
 
 export async function GET() {
+  // Never expose environment diagnostics publicly in production.
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ status: "not_found" }, { status: 404 });
+  }
+
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ status: "unauthorized" }, { status: 401 });
+  }
+
   let db_connectivity = "unknown";
   try {
     // simple pulse check
      await db.execute(sql`SELECT 1`);
      db_connectivity = "ok";
   } catch (e: any) {
-     db_connectivity = `fail: ${e.message}`;
+     db_connectivity = "fail";
   }
 
   const envStatus = {

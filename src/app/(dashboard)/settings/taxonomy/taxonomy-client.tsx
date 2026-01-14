@@ -189,7 +189,7 @@ export function TaxonomyClient({ initialTaxonomy }: TaxonomyClientProps) {
           <div className="text-center py-20 text-muted-foreground">
             <Layers className="h-12 w-12 mx-auto mb-4 opacity-30" />
             <p>Nenhuma categoria definida.</p>
-            <p className="text-sm">Clique em "Nova Categoria" para começar.</p>
+            <p className="text-sm">Clique em &quot;Nova Categoria&quot; para começar.</p>
           </div>
         ) : (
           taxonomy.map((l1) => (

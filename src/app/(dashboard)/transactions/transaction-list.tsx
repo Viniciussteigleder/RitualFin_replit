@@ -29,6 +29,29 @@ import { TransactionFilters } from "@/components/transactions/filter-panel";
 type SortField = "date" | "amount" | "category" | "confidence";
 type SortDirection = "asc" | "desc";
 
+function SortableHeader({
+    field,
+    sortField,
+    sortDirection,
+    onSort,
+    className,
+    children,
+}: {
+    field: SortField;
+    sortField: SortField;
+    sortDirection: SortDirection;
+    onSort: (field: SortField) => void;
+    className?: string;
+    children: React.ReactNode;
+}) {
+    return (
+        <button onClick={() => onSort(field)} className={cn("flex items-center gap-1 hover:text-foreground transition-colors", className)}>
+            {children}
+            {sortField === field && (sortDirection === "desc" ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />)}
+        </button>
+    );
+}
+
 export function TransactionList({ transactions, initialFilters = {}, aliasMap = {} }: { transactions: any[], initialFilters?: TransactionFilters, aliasMap?: Record<string, string> }) {
     const [selectedTx, setSelectedTx] = useState<any>(null);
     const [search, setSearch] = useState("");
@@ -219,19 +242,6 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
         }
     };
 
-    // Sortable header component
-    const SortableHeader = ({ field, children, className }: { field: SortField, children: React.ReactNode, className?: string }) => (
-        <button
-            onClick={() => handleSort(field)}
-            className={cn("flex items-center gap-1 hover:text-foreground transition-colors", className)}
-        >
-            {children}
-            {sortField === field && (
-                sortDirection === "desc" ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />
-            )}
-        </button>
-    );
-
     return (
         <div className="space-y-6 pb-32">
             <TransactionFiltersComp
@@ -252,12 +262,12 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
                 <div className="flex justify-center">
                     <Checkbox checked={selectedIds.size === filtered.length && filtered.length > 0} onCheckedChange={toggleSelectAll} className="h-4 w-4 rounded border-2" />
                 </div>
-                <SortableHeader field="date">Data</SortableHeader>
+                <SortableHeader field="date" sortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Data</SortableHeader>
                 <div>Estabelecimento</div>
-                <SortableHeader field="amount">Valor</SortableHeader>
-                <SortableHeader field="category">Categoria</SortableHeader>
+                <SortableHeader field="amount" sortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Valor</SortableHeader>
+                <SortableHeader field="category" sortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Categoria</SortableHeader>
                 <div>Cat 1 / Cat 2</div>
-                <SortableHeader field="confidence">AI %</SortableHeader>
+                <SortableHeader field="confidence" sortField={sortField} sortDirection={sortDirection} onSort={handleSort}>AI %</SortableHeader>
                 <div className="text-center">Ações</div>
             </div>
 

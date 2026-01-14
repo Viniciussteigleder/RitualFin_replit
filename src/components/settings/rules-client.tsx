@@ -336,7 +336,7 @@ export default function RulesClient({ initialRules }: RulesClientProps) {
               <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Filtros ativos:</span>
               {searchQuery && (
                 <Badge variant="secondary" className="gap-1">
-                  Busca: "{searchQuery}"
+                  Busca: &quot;{searchQuery}&quot;
                   <X className="h-3 w-3 cursor-pointer" onClick={() => setSearchQuery("")} />
                 </Badge>
               )}

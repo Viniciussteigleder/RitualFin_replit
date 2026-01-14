@@ -1,9 +1,19 @@
+import { auth } from "@/auth";
 import { diagnoseAppCategoryIssues } from "@/lib/actions/diagnose";
 import FixButton from "./fix-button";
 import { DebugRuleSection } from "./debug-rule-section";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function DiagnosePage() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <p className="text-muted-foreground font-bold">Por favor, faça login para acessar diagnósticos.</p>
+      </div>
+    );
+  }
+
   const diagnosis = await diagnoseAppCategoryIssues();
 
   return (
@@ -38,25 +48,27 @@ export default async function DiagnosePage() {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Specific IDs</h2>
-        
-        <div className="space-y-6">
+      {process.env.NODE_ENV === "development" && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Specific IDs (dev-only)</h2>
+
+          <div className="space-y-6">
             <div>
-                <h3 className="font-semibold">ID: e4c24e3f (without app category)</h3>
-                <pre className="bg-slate-100 p-4 rounded text-xs overflow-auto mt-2">
-                    {JSON.stringify(diagnosis.specificIds.e4c24e3f, null, 2)}
-                </pre>
+              <h3 className="font-semibold">ID: e4c24e3f (without app category)</h3>
+              <pre className="bg-slate-100 p-4 rounded text-xs overflow-auto mt-2">
+                {JSON.stringify(diagnosis.specificIds.e4c24e3f, null, 2)}
+              </pre>
             </div>
 
             <div>
-                <h3 className="font-semibold">ID: ba583849 (with app category)</h3>
-                <pre className="bg-slate-100 p-4 rounded text-xs overflow-auto mt-2">
-                    {JSON.stringify(diagnosis.specificIds.ba583849, null, 2)}
-                </pre>
+              <h3 className="font-semibold">ID: ba583849 (with app category)</h3>
+              <pre className="bg-slate-100 p-4 rounded text-xs overflow-auto mt-2">
+                {JSON.stringify(diagnosis.specificIds.ba583849, null, 2)}
+              </pre>
             </div>
+          </div>
         </div>
-      </div>
+      )}
 
        {diagnosis.sampleWithoutAppCat.length > 0 && (
         <div className="space-y-4 pt-8">

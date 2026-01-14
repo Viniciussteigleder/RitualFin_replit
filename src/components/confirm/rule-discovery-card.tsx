@@ -129,7 +129,7 @@ export function RuleDiscoveryCard({ candidate, taxonomyOptions }: RuleDiscoveryC
           <div>
             <h3 className="font-bold text-emerald-800 dark:text-emerald-200">Regra aplicada com sucesso!</h3>
             <p className="text-sm text-emerald-600 dark:text-emerald-400">
-              {candidate.count} transações similares a "{candidate.description}" foram categorizadas.
+              {candidate.count} transações similares a &quot;{candidate.description}&quot; foram categorizadas.
             </p>
           </div>
         </div>
@@ -327,7 +327,7 @@ export function RuleDiscoveryCard({ candidate, taxonomyOptions }: RuleDiscoveryC
             <div className="max-h-48 overflow-y-auto rounded-lg border border-border bg-background">
               {filteredOptions.length === 0 ? (
                 <div className="p-4 text-center text-sm text-muted-foreground">
-                  Nenhuma categoria encontrada para "{categorySearch}"
+                  Nenhuma categoria encontrada para &quot;{categorySearch}&quot;
                 </div>
               ) : (
                 filteredOptions.slice(0, 20).map((opt) => {

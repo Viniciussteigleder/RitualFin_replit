@@ -29,17 +29,17 @@ export default function AIKeywordsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+              <div className="space-y-4">
               <div className="p-4 border bg-white rounded-xl flex items-center justify-between group">
                 <div className="space-y-1">
-                  <div className="font-semibold">"REWE" → Mercado</div>
+                  <div className="font-semibold">&quot;REWE&quot; → Mercado</div>
                   <div className="text-xs text-muted-foreground">Found in 12 unclassified transactions.</div>
                 </div>
                 <Button size="sm" variant="outline">Create Rule</Button>
               </div>
               <div className="p-4 border bg-white rounded-xl flex items-center justify-between">
                 <div className="space-y-1">
-                  <div className="font-semibold">"NETFLIX" → Streaming</div>
+                  <div className="font-semibold">&quot;NETFLIX&quot; → Streaming</div>
                   <div className="text-xs text-muted-foreground">Found in 1 recurring transaction.</div>
                 </div>
                 <Button size="sm" variant="outline">Create Rule</Button>

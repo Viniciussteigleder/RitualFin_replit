@@ -1,0 +1,1 @@
+Invalid project directory provided, no such directory: /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/lint
