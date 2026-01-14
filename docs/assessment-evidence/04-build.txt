@@ -1,0 +1,53 @@
+
+> rest-express@1.0.1 build
+> next build
+
+▲ Next.js 16.1.1 (Turbopack)
+- Environments: .env.production.local, .env.local
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 8.2s
+  Running TypeScript ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/24) ...
+  Generating static pages using 7 workers (6/24) 
+  Generating static pages using 7 workers (12/24) 
+  Generating static pages using 7 workers (18/24) 
+✓ Generating static pages using 7 workers (24/24) in 539.8ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /accounts
+├ ○ /admin/import
+├ ○ /admin/rules
+├ ○ /ai-keywords
+├ ○ /analytics
+├ ƒ /api/auth/[...nextauth]
+├ ƒ /api/auth/debug
+├ ƒ /budgets
+├ ƒ /calendar
+├ ƒ /calendar/events/[id]
+├ ƒ /confirm
+├ ƒ /diagnose
+├ ƒ /goals
+├ ○ /icon.png
+├ ƒ /imports/[batchId]/preview
+├ ○ /login
+├ ƒ /rituals
+├ ƒ /rules
+├ ○ /settings
+├ ƒ /settings/exclusions
+├ ƒ /settings/rules
+├ ƒ /settings/taxonomy
+├ ○ /signup
+├ ƒ /transactions
+└ ƒ /uploads
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
