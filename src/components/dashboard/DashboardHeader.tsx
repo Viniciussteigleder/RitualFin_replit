@@ -23,19 +23,19 @@ export function DashboardHeader() {
   };
 
   return (
-    <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 px-1">
+    <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 px-1 animate-fade-in-up">
         <div className="flex flex-col gap-2">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight font-display">Dashboard</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight font-display">Painel</h2>
           <p className="text-muted-foreground font-medium">Controle total do seu fluxo financeiro em tempo real.</p>
         </div>
-        
+
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full xl:w-auto">
           <ReRunRulesButton />
-          
-          <div className="flex items-center bg-card rounded-2xl shadow-sm p-1.5 border border-border w-full sm:w-auto justify-between sm:justify-start">
-            <button 
+
+          <div className="flex items-center bg-card rounded-2xl shadow-sm p-1.5 border border-border w-full sm:w-auto justify-between sm:justify-start transition-all duration-300 hover:shadow-md">
+            <button
                 onClick={() => handleMonthChange('prev')}
-                className="p-2 hover:bg-secondary rounded-xl text-muted-foreground transition-colors"
+                className="p-2 hover:bg-secondary rounded-xl text-muted-foreground transition-all duration-200 hover:scale-110 active:scale-95"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
@@ -45,9 +45,9 @@ export function DashboardHeader() {
                 {format(currentDate, "MMMM yyyy", { locale: pt })}
               </span>
             </div>
-            <button 
+            <button
                 onClick={() => handleMonthChange('next')}
-                className="p-2 hover:bg-secondary rounded-xl text-muted-foreground transition-colors"
+                className="p-2 hover:bg-secondary rounded-xl text-muted-foreground transition-all duration-200 hover:scale-110 active:scale-95"
             >
               <ChevronRight className="h-5 w-5" />
             </button>

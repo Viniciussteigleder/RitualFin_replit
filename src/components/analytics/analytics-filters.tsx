@@ -207,8 +207,8 @@ export function AnalyticsFiltersPanel({
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300 bg-white font-medium appearance-none cursor-pointer"
               >
                 <option value="">Todos</option>
-                <option value="Despesa">💸 Despesa</option>
-                <option value="Receita">💰 Receita</option>
+                <option value="Despesa">Despesa</option>
+                <option value="Receita">Receita</option>
               </select>
             </div>
 
@@ -223,8 +223,8 @@ export function AnalyticsFiltersPanel({
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300 bg-white font-medium appearance-none cursor-pointer"
               >
                 <option value="">Todos</option>
-                <option value="Fixo">📌 Fixo</option>
-                <option value="Variável">🔄 Variável</option>
+                <option value="Fixo">Fixo</option>
+                <option value="Variável">Variável</option>
               </select>
             </div>
 
@@ -251,8 +251,8 @@ export function AnalyticsFiltersPanel({
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300 bg-white font-medium appearance-none cursor-pointer"
               >
                 <option value="">Todos</option>
-                <option value="true">✓ Sim</option>
-                <option value="false">✗ Não</option>
+                <option value="true">Sim</option>
+                <option value="false">Não</option>
               </select>
             </div>
           </div>

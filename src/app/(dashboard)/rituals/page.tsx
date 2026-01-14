@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { Zap } from "lucide-react";
+import { Zap, Flame } from "lucide-react";
 import { getRituals, getDailyRitualTasks, getWeeklyRitualTasks, getMonthlyRitualTasks } from "@/lib/actions/rituals";
 import { RitualsClient } from "@/components/rituals/rituals-client";
 
@@ -52,7 +52,7 @@ export default async function RitualsPage() {
               <span className="text-2xl font-bold text-amber-500 tracking-tighter">
                 {maxStreak} {maxStreak === 1 ? "Dia" : "Dias"}
               </span>
-              {maxStreak > 0 && <span className="text-xs">🔥</span>}
+              {maxStreak > 0 && <Flame className="h-4 w-4 text-orange-500" />}
             </div>
           </div>
         </div>

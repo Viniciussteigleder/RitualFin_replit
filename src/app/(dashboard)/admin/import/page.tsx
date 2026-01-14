@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { importCSVData } from "@/lib/actions/import-data";
 import { applyCategorization } from "@/lib/actions/categorization";
-import { Loader2, Upload, CheckCircle2, XCircle, Tags } from "lucide-react";
+import { Loader2, Upload, CheckCircle2, XCircle, Tags, Check } from "lucide-react";
 
 export default function AdminImportPage() {
   const [loading, setLoading] = useState(false);
@@ -101,11 +101,11 @@ export default function AdminImportPage() {
                   </h3>
                   
                   {result.success && (
-                    <div className="space-y-1 text-sm text-green-800">
-                      <p>✓ Arquivos processados: {result.filesProcessed}/3</p>
-                      <p>✓ Contas criadas: {result.accountsCreated}</p>
-                      <p>✓ Transações importadas: {result.transactionsImported}</p>
-                      <p>✓ Duplicadas ignoradas: {result.transactionsSkipped}</p>
+                    <div className="space-y-1.5 text-sm text-green-800">
+                      <p className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5" /> Arquivos processados: {result.filesProcessed}/3</p>
+                      <p className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5" /> Contas criadas: {result.accountsCreated}</p>
+                      <p className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5" /> Transações importadas: {result.transactionsImported}</p>
+                      <p className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5" /> Duplicadas ignoradas: {result.transactionsSkipped}</p>
                     </div>
                   )}
 
@@ -173,10 +173,10 @@ export default function AdminImportPage() {
                   </h3>
                   
                   {categorizationResult.success && (
-                    <div className="space-y-1 text-sm text-green-800">
-                      <p>✓ Total de transações: {categorizationResult.total}</p>
-                      <p>✓ Categorizadas automaticamente: {categorizationResult.categorized}</p>
-                      <p>✓ Requerem revisão: {categorizationResult.needsReview}</p>
+                    <div className="space-y-1.5 text-sm text-green-800">
+                      <p className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5" /> Total de transações: {categorizationResult.total}</p>
+                      <p className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5" /> Categorizadas automaticamente: {categorizationResult.categorized}</p>
+                      <p className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5" /> Requerem revisão: {categorizationResult.needsReview}</p>
                     </div>
                   )}
 
