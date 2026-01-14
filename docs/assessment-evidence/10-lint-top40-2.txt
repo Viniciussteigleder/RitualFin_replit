@@ -1,0 +1,18 @@
+
+> rest-express@1.0.1 lint
+> npm run check && npm run lint:eslint
+
+
+> rest-express@1.0.1 check
+> tsc
+
+
+> rest-express@1.0.1 lint:eslint
+> eslint src next.config.ts drizzle.config.ts playwright.config.ts
+
+
+/Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/src/app/(dashboard)/analytics/analytics-content.tsx
+  35:6  warning  React Hook useEffect has a missing dependency: 'loadInitialData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+✖ 1 problem (0 errors, 1 warning)
+
