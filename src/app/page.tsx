@@ -305,7 +305,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                       "text-[10px] font-bold uppercase tracking-widest",
                       pendingTransactions.length > 0 ? "text-emerald-100" : "text-muted-foreground"
                     )}>
-                      Sincronizado: <SyncStatus lastSync={dashboardData.lastSync} />
+                      Sincronizado: <SyncStatus lastSync={dashboardData?.lastSync || null} />
                     </span>
                   </div>
                 </div>
