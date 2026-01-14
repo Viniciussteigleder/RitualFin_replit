@@ -357,14 +357,35 @@ export function BudgetsClient({ budgets, currentMonth }: BudgetsClientProps) {
                               </span>
                             </div>
 
-                            <div className="relative h-2.5 w-full bg-secondary rounded-full overflow-hidden">
-                              <div
-                                className={cn(
-                                  "absolute top-0 left-0 h-full rounded-full transition-all duration-700 ease-out",
-                                  isOverBudget ? "bg-destructive" : isNearLimit ? "bg-orange-400" : "bg-emerald-500"
+                            {/* MTD vs Budget Bar Chart */}
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                                <span>MTD vs Orçamento</span>
+                                <span>{limit - spent > 0 ? "Disponível" : "Excedido"}</span>
+                              </div>
+                              <div className="relative h-8 w-full bg-secondary rounded-xl overflow-hidden border border-border">
+                                {/* Budget background (full width) */}
+                                <div className="absolute inset-0 bg-secondary/50" />
+                                
+                                {/* Spent amount */}
+                                <div
+                                  className={cn(
+                                    "absolute top-0 left-0 h-full transition-all duration-700 ease-out flex items-center justify-end pr-2",
+                                    isOverBudget ? "bg-destructive" : isNearLimit ? "bg-orange-400" : "bg-emerald-500"
+                                  )}
+                                  style={{ width: `${Math.min(percentage, 100)}%` }}
+                                >
+                                  <span className="text-[10px] font-bold text-white">{formatCurrency(spent)}</span>
+                                </div>
+
+                                {/* Budget marker line */}
+                                {percentage < 100 && (
+                                  <div 
+                                    className="absolute top-0 bottom-0 w-0.5 bg-border z-10"
+                                    style={{ left: '100%' }}
+                                  />
                                 )}
-                                style={{ width: `${Math.min(percentage, 100)}%` }}
-                              />
+                              </div>
                             </div>
 
                             <div className="flex justify-between items-center text-xs font-medium text-muted-foreground">

@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { rituals, transactions } from "@/lib/db/schema";
+import { rituals, ritualGoals, transactions } from "@/lib/db/schema";
 import { eq, and, sql, desc, gte, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
@@ -374,4 +374,106 @@ export async function getMonthlyRitualTasks() {
       },
     ],
   };
+}
+
+// Ritual Goals Actions
+export async function createRitualGoal(data: {
+  ritualId?: string;
+  ritualType: string;
+  goalText: string;
+  targetDate?: Date;
+}) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "Não autenticado" };
+  }
+
+  try {
+    const [goal] = await db
+      .insert(ritualGoals)
+      .values({
+        userId: session.user.id,
+        ritualId: data.ritualId,
+        ritualType: data.ritualType,
+        goalText: data.goalText,
+        targetDate: data.targetDate,
+      })
+      .returning();
+
+    revalidatePath("/rituals");
+    return { success: true, goal };
+  } catch (error) {
+    console.error("[createRitualGoal] Error:", error);
+    return { success: false, error: "Erro ao criar meta" };
+  }
+}
+
+export async function getRitualGoals(ritualType?: string) {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+
+  const whereConditions = [eq(ritualGoals.userId, session.user.id)];
+  if (ritualType) {
+    whereConditions.push(eq(ritualGoals.ritualType, ritualType));
+  }
+
+  return await db.query.ritualGoals.findMany({
+    where: and(...whereConditions),
+    orderBy: (ritualGoals, { desc }) => [desc(ritualGoals.createdAt)],
+  });
+}
+
+export async function updateRitualGoal(
+  id: string,
+  data: {
+    goalText?: string;
+    completed?: boolean;
+    targetDate?: Date;
+  }
+) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "Não autenticado" };
+  }
+
+  try {
+    const updates: any = { ...data };
+    if (data.completed !== undefined && data.completed) {
+      updates.completedAt = new Date();
+    }
+
+    await db
+      .update(ritualGoals)
+      .set(updates)
+      .where(
+        and(eq(ritualGoals.id, id), eq(ritualGoals.userId, session.user.id))
+      );
+
+    revalidatePath("/rituals");
+    return { success: true };
+  } catch (error) {
+    console.error("[updateRitualGoal] Error:", error);
+    return { success: false, error: "Erro ao atualizar meta" };
+  }
+}
+
+export async function deleteRitualGoal(id: string) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "Não autenticado" };
+  }
+
+  try {
+    await db
+      .delete(ritualGoals)
+      .where(
+        and(eq(ritualGoals.id, id), eq(ritualGoals.userId, session.user.id))
+      );
+
+    revalidatePath("/rituals");
+    return { success: true };
+  } catch (error) {
+    console.error("[deleteRitualGoal] Error:", error);
+    return { success: false, error: "Erro ao excluir meta" };
+  }
 }
