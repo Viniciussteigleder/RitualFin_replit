@@ -741,6 +741,39 @@ export const exclusionRulesRelations = relations(exclusionRules, ({ one }) => ({
   user: one(users, { fields: [exclusionRules.userId], references: [users.id] }),
 }));
 
+// Assistant Settings: User-configurable AI assistant settings
+export const assistantSettings = pgTable("assistant_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
+
+  // Database Context - User can describe their financial setup
+  databaseContext: text("database_context"), // Description of accounts, financial goals, etc.
+
+  // Custom Prompts for different use cases
+  analysisPrompt: text("analysis_prompt"), // Custom prompt for analysis questions
+  advicePrompt: text("advice_prompt"), // Custom prompt for financial advice
+  summaryPrompt: text("summary_prompt"), // Custom prompt for summaries
+
+  // Behavior Settings
+  responseLanguage: text("response_language").default("pt-BR"), // Response language preference
+  responseStyle: text("response_style").default("professional"), // professional, casual, detailed
+  maxResponseLength: integer("max_response_length").default(500), // Max tokens for response
+  includeEmojis: boolean("include_emojis").default(false), // Whether to include emojis
+
+  // Feature Toggles
+  autoSuggestions: boolean("auto_suggestions").default(true), // Show automatic suggestions
+  contextAware: boolean("context_aware").default(true), // Use current screen context
+  includeRecentTransactions: boolean("include_recent_transactions").default(true),
+  includeCategoryBreakdown: boolean("include_category_breakdown").default(true),
+
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const assistantSettingsRelations = relations(assistantSettings, ({ one }) => ({
+  user: one(users, { fields: [assistantSettings.userId], references: [users.id] }),
+}));
+
 export type Transaction = typeof transactions.$inferSelect;
 export type NewTransaction = typeof transactions.$inferInsert;
 export type Rule = typeof rules.$inferSelect;
@@ -752,3 +785,5 @@ export type Account = typeof accounts.$inferSelect;
 export type NewAccount = typeof accounts.$inferInsert;
 export type ExclusionRule = typeof exclusionRules.$inferSelect;
 export type NewExclusionRule = typeof exclusionRules.$inferInsert;
+export type AssistantSettings = typeof assistantSettings.$inferSelect;
+export type NewAssistantSettings = typeof assistantSettings.$inferInsert;
