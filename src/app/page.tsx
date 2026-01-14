@@ -30,6 +30,7 @@ import { ForecastCard } from "@/components/dashboard/ForecastCard";
 import dynamicImport from "next/dynamic";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { RecentTransactionsList } from "@/components/dashboard/recent-transactions-list";
+import { DashboardError } from "@/components/dashboard/DashboardError";
 
 // Dynamic import for heavy chart component (reduces initial bundle)
 const CategoryChart = dynamicImport(
@@ -52,19 +53,82 @@ const ACCOUNT_FILTER_MAP: Record<string, string> = {
 };
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
-  const { month } = await searchParams;
-  const monthParam = month;
-  const targetDate = monthParam ? new Date(`${monthParam}-01T00:00:00`) : new Date();
+  try {
+    const { month } = await searchParams;
+    const monthParam = month;
+    const targetDate = monthParam ? new Date(`${monthParam}-01T00:00:00`) : new Date();
 
-  const dashboardData = await getDashboardData(targetDate);
-  const transactionsData = await getTransactions(5);
-  const pendingTransactions = await getPendingTransactions();
-  const accounts = await getAccounts();
-  const { totalBalance, metrics, categoryData } = dashboardData || {};
-  
-  if (!dashboardData || !metrics) return null;
+    // Fetch data with error handling
+    let dashboardData, transactionsData, pendingTransactions, accounts;
+    
+    try {
+      [dashboardData, transactionsData, pendingTransactions, accounts] = await Promise.all([
+        getDashboardData(targetDate).catch(err => {
+          console.error('[Dashboard] getDashboardData error:', err);
+          return null;
+        }),
+        getTransactions(5).catch(err => {
+          console.error('[Dashboard] getTransactions error:', err);
+          return [];
+        }),
+        getPendingTransactions().catch(err => {
+          console.error('[Dashboard] getPendingTransactions error:', err);
+          return [];
+        }),
+        getAccounts().catch(err => {
+          console.error('[Dashboard] getAccounts error:', err);
+          return [];
+        })
+      ]);
+    } catch (err) {
+      console.error('[Dashboard] Data fetching error:', err);
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen p-4">
+          <Card className="max-w-md">
+            <CardContent className="pt-6 text-center space-y-4">
+              <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
+              <h2 className="text-2xl font-bold">Erro ao Carregar Dashboard</h2>
+              <p className="text-muted-foreground">
+                Não foi possível carregar os dados. Por favor, tente novamente.
+              </p>
+              <Link href="/transactions">
+                <Button>Ver Transações</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
 
-  const { spentMonthToDate, projectedSpend, remainingBudget, monthlyGoal } = metrics;
+    // Provide fallback values if data is missing
+    const { totalBalance = 0, metrics, categoryData = [] } = dashboardData || {};
+    
+    if (!metrics) {
+      console.warn('[Dashboard] Missing metrics, using fallback values');
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen p-4">
+          <Card className="max-w-md">
+            <CardContent className="pt-6 text-center space-y-4">
+              <AlertCircle className="h-12 w-12 text-orange-500 mx-auto" />
+              <h2 className="text-2xl font-bold">Sem Dados Disponíveis</h2>
+              <p className="text-muted-foreground">
+                Parece que você ainda não tem dados suficientes. Comece importando suas transações.
+              </p>
+              <Link href="/uploads">
+                <Button>Importar Dados</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+
+    const { 
+      spentMonthToDate = 0, 
+      projectedSpend = 0, 
+      remainingBudget = 0, 
+      monthlyGoal = 0 
+    } = metrics;
   
   return (
     <div className="max-w-7xl mx-auto flex flex-col gap-8 pb-32 font-sans overflow-hidden">
@@ -373,4 +437,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </div>
     </div>
   );
+  } catch (error) {
+    console.error('[Dashboard] Unexpected error:', error);
+    return <DashboardError />;
+  }
 }
