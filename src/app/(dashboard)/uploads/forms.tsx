@@ -126,6 +126,7 @@ export function CSVForm({ onUploadSuccess }: { onUploadSuccess?: (batchId: strin
                 ref={fileInputRef} 
                 className="hidden" 
                 accept=".csv"
+                data-testid="csv-file-input"
                 onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) handleFile(file);

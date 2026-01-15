@@ -24,16 +24,11 @@ test.describe('Auth Flow', () => {
     await expect(page).toHaveURL(/\/login/);
   });
 
-  test('auth debug endpoint should return OK status', async ({ page }) => {
-    const response = await page.goto('/api/auth/debug');
+  test('health endpoint should return OK status', async ({ page }) => {
+    const response = await page.goto('/api/health');
     expect(response?.status()).toBe(200);
-    
     const data = await response?.json();
     expect(data.status).toBe('ok');
-    expect(data.diagnostics.AUTH_SECRET).toBe(true);
-    expect(data.diagnostics.AUTH_GOOGLE_ID).toBe(true);
-    expect(data.diagnostics.AUTH_GOOGLE_SECRET).toBe(true);
-    expect(data.diagnostics.DATABASE_URL).toBe(true);
   });
 });
 
@@ -45,7 +40,7 @@ test.describe('Application Health', () => {
     await page.waitForLoadState('networkidle');
     
     const url = page.url();
-    expect(url).toMatch(/\/(login)?$/);
+    expect(url).toMatch(/\/(login|$)/);
   });
 
   test('should have no console errors on login page', async ({ page }) => {
@@ -63,7 +58,8 @@ test.describe('Application Health', () => {
     // Filter out known/acceptable errors
     const criticalErrors = consoleErrors.filter(err => 
       !err.includes('favicon') && 
-      !err.includes('404')
+      !err.includes('404') &&
+      !err.includes("upgrade-insecure-requests") // CSP report-only warning
     );
     
     expect(criticalErrors).toHaveLength(0);

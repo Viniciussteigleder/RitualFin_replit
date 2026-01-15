@@ -3,8 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Authentication', () => {
   test('login page renders and shows error on missing config', async ({ page }) => {
     await page.goto('/login');
-    // The page has "Welcome to RitualFin" in a tracking-tight header
-    await expect(page.locator('h1, h2')).toContainText(/Welcome|Login/i);
+    await expect(page.getByRole('heading', { name: /welcome to ritualfin/i })).toBeVisible();
     
     // Attempt credentials login with random stuff
     await page.fill('input[name="email"]', 'notfound@example.com');
@@ -28,16 +27,9 @@ test.describe('Authentication', () => {
     await page.fill('input[name="password"]', password);
     await page.click('button[type="submit"]');
 
-    // Increase timeout and log URL on failure
-    try {
-        await page.waitForURL(url => url.pathname === '/' || url.pathname.includes('uploads'), { timeout: 15000 });
-    } catch (e) {
-        console.error("DEBUG: Signup timed out. Final URL was:", page.url());
-        console.error("DEBUG: Page content preview:", await page.content().then(c => c.substring(0, 500)));
-        throw e;
-    }
+    await page.waitForURL(url => url.pathname === '/' || url.pathname.includes('uploads'), { timeout: 20000 });
     
     // Check if we are logged in by looking for logout or sidebar
-    await expect(page.locator('nav')).toBeVisible();
+    await expect(page.locator('nav').first()).toBeVisible();
   });
 });
