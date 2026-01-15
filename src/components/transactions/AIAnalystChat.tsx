@@ -99,11 +99,12 @@ export function AIAnalystChat({ currentScreen = "transactions" }: AIAnalystChatP
             <SheetContent className="w-full sm:max-w-xl p-0 flex flex-col bg-card border-l border-border shadow-2xl">
                 <SheetHeader className="p-6 border-b border-border bg-secondary/20">
                     <div className="flex items-center gap-4">
-	                        <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center overflow-hidden shadow-lg shadow-primary/20 relative border border-primary/20">
+	                        <div className="w-12 h-12 rounded-2xl bg-transparent border border-border/50 flex items-center justify-center overflow-hidden shadow-lg shadow-primary/20 relative">
 	                            <Image
 	                                src="/RitualFin%20Logo.png"
 	                                alt="RitualFin"
 	                                fill
+	                                sizes="48px"
 	                                className="object-contain p-2"
 	                                priority
 	                            />
@@ -124,7 +125,7 @@ export function AIAnalystChat({ currentScreen = "transactions" }: AIAnalystChatP
                             )}>
                                 <div className={cn(
                                     "w-8 h-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden relative border",
-                                    msg.role === "user" ? "bg-slate-900 border-slate-700" : "bg-primary border-primary/20"
+                                msg.role === "user" ? "bg-slate-900 border-slate-700" : "bg-transparent border-border/50"
                                 )}>
                                     {msg.role === "user" ? (
                                         <User className="h-4 w-4 text-white" />
@@ -133,6 +134,7 @@ export function AIAnalystChat({ currentScreen = "transactions" }: AIAnalystChatP
                                             src="/RitualFin%20Logo.png"
                                             alt="R"
                                             fill
+                                            sizes="32px"
                                             className="object-contain p-1"
                                         />
                                     )}

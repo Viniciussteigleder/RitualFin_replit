@@ -110,11 +110,12 @@ export function Sidebar() {
         <div className="flex flex-col gap-8 h-full min-h-0">
           {/* Logo */}
           <div className="flex items-center gap-3 px-2 flex-shrink-0">
-	            <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 overflow-hidden relative">
+	            <div className="h-10 w-10 rounded-xl bg-transparent border border-border/50 flex items-center justify-center overflow-hidden relative">
 	              <Image 
 	                src="/RitualFin%20Logo.png" 
 	                alt="RitualFin Logo" 
 	                fill
+	                sizes="40px"
 	                className="object-contain p-1.5"
 	                priority
 	              />

@@ -229,7 +229,7 @@ export function FloatingAssistant() {
                     <span className="absolute inset-0 rounded-full bg-amber-400 animate-ping opacity-20" />
 
                     {/* Logo */}
-	                    <div className="relative z-10 w-10 h-10 rounded-full overflow-hidden bg-white/10 flex items-center justify-center">
+	                    <div className="relative z-10 w-10 h-10 rounded-full overflow-hidden bg-transparent border border-white/20 flex items-center justify-center">
 	                        <Image
 	                            src="/RitualFin%20Logo.png"
 	                            alt="RitualFin"
@@ -252,7 +252,7 @@ export function FloatingAssistant() {
                     <SheetHeader className="p-6 border-b border-border bg-gradient-to-r from-amber-500/5 to-orange-500/5">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
-	                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-100 to-amber-200 dark:from-amber-900/30 dark:to-amber-800/30 flex items-center justify-center overflow-hidden shadow-lg ring-2 ring-amber-500/20">
+	                                <div className="w-14 h-14 rounded-2xl bg-transparent border border-border/50 flex items-center justify-center overflow-hidden shadow-lg ring-2 ring-amber-500/20">
 	                                    <Image
 	                                        src="/RitualFin%20Logo.png"
 	                                        alt="RitualFin"
