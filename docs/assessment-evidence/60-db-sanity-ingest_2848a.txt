@@ -1,0 +1,7 @@
+[dotenv@17.2.3] injecting env (29) from .env.production.local -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔄 add secrets lifecycle management: https://dotenvx.com/ops
+{
+  "username": "ingest_2848a",
+  "found": false
+}

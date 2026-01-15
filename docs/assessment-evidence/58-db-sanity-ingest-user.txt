@@ -1,0 +1,21 @@
+[dotenv@17.2.3] injecting env (29) from .env.production.local -- tip: ⚙️  enable debug logging with { debug: true }
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+{
+  "username": "ingest_6h2knc",
+  "userCreatedAt": "2026-01-15T18:32:32.522Z",
+  "batches": [
+    {
+      "id": "9ab9dff0-e344-42d9-b8a9-03f3ac691510",
+      "status": "committed",
+      "createdAt": "2026-01-15T18:32:35.073Z"
+    }
+  ],
+  "transactionsCount": 1
+}
+{
+  "latestBatchItemCount": 1,
+  "latestBatchItemStatuses": [
+    "imported"
+  ]
+}

@@ -1,0 +1,9 @@
+  audit/e2e-assessment-v3             d34008a [origin/audit/e2e-assessment-v3] fix: harden debug route, stabilize lint, and tighten DB client
+  audit/release-blockers-v4           0936c39 fix(categories): align category1 pickers and validation to schema enum
+  audit/top-100-fixes                 99bcc3b docs(evidence): next80 gate outputs
+  audit/top-40-fixes                  c4471bf [origin/audit/top-40-fixes] docs: add top-40 gate run output
+  docs/complete-branch-cleanup-report b653e88 [origin/docs/complete-branch-cleanup-report: gone] docs: add executive summary for branch cleanup and deployment fix
+* main                                a9af2b5 [origin/main: ahead 46] test(e2e): commit from uploads batch list (avoid preview navigation)
+  redesign/ui-ux-v2                   2488f46 [origin/redesign/ui-ux-v2: gone] docs: Add V1 vs V2 comparison guide
+  redesign/v3                         a37b56b feat: Implement professional Lucide icon system across entire app
+  sync/merge-open-branches            74e75f1 [origin/sync/merge-open-branches: behind 9] Merge pull request #73 from Viniciussteigleder/audit/e2e-assessment-v3

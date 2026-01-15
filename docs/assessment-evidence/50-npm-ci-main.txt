@@ -1,0 +1,6 @@
+npm error code ENOTEMPTY
+npm error syscall rmdir
+npm error path /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/node_modules/@img
+npm error errno -66
+npm error ENOTEMPTY: directory not empty, rmdir '/Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/node_modules/@img'
+npm error A complete log of this run can be found in: /Users/viniciussteigleder/.npm/_logs/2026-01-15T18_28_06_663Z-debug-0.log
