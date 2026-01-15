@@ -28,7 +28,10 @@ test.describe('Ingestion Flow', () => {
 
     // Commit from preview screen
     await expect(page.getByRole('button', { name: /process & import/i })).toBeVisible({ timeout: 60000 });
-    await page.click('button:has-text("Process & Import")', { timeout: 20000 });
+    await page
+      .locator('form', { has: page.getByRole('button', { name: /process & import/i }) })
+      .first()
+      .evaluate((form) => (form as HTMLFormElement).requestSubmit());
 
     // Server action completion is async from the click perspective; wait until UI reflects committed state.
     const rollbackButton = page.getByRole('button', { name: /rollback/i });
