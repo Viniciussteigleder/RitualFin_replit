@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { ingestionBatches, ingestionItems, attachments, ocrExtractions } from "@/lib/db/schema";
+import { ingestionBatches, ingestionItems, attachments, ocrExtractions, transactions, transactionEvidenceLink } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { parseOCRText } from "@/lib/ingest/ocr-parser";
@@ -34,22 +34,36 @@ export async function uploadScreenshot(formData: FormData) {
     
     // 3. Create Ingestion Item
     // We construct a pseudo-transaction from the OCR result
+    const now = new Date();
+    const txDate = ocrResult.date ?? now;
+    const merchant = ocrResult.merchant || "Unknown Merchant";
+    const amount = ocrResult.amount || 0;
+    const txKey = `OCR-${batch.id}-${Date.now()}`;
+
+    const fingerprintTx = {
+      source: "Screenshot",
+      key: txKey,
+      amount,
+      date: txDate,
+      description: merchant,
+      rawDescription: merchant,
+    };
+
     const txData = {
-        source: "Screenshot",
-        paymentDate: ocrResult.date || new Date(),
-        bookingDate: ocrResult.date || new Date(),
-        amount: ocrResult.amount || 0,
-        currency: "EUR",
-        descRaw: ocrResult.merchant || "Unknown Merchant",
-        descNorm: (ocrResult.merchant || "").toUpperCase(),
-        key: `OCR-${batch.id}-${Date.now()}`, // Temporary key
-        accountSource: "Screenshot Upload",
-        keyDesc: ocrResult.merchant || "Unknown",
-        simpleDesc: ocrResult.merchant || "Unknown",
+      source: "Screenshot",
+      paymentDate: txDate,
+      bookingDate: txDate,
+      amount,
+      currency: "EUR",
+      descRaw: merchant,
+      descNorm: merchant.toUpperCase(),
+      key: txKey,
+      keyDesc: merchant,
+      simpleDesc: merchant,
     };
 
     // Fingerprint (Weak for OCR, but useful)
-    const fingerprint = generateFingerprint(txData as any); 
+    const fingerprint = generateFingerprint(fingerprintTx as any); 
 
     const [item] = await db.insert(ingestionItems).values({
         batchId: batch.id,
@@ -76,14 +90,40 @@ export async function uploadScreenshot(formData: FormData) {
         blocksJson: ocrResult as any,
     });
 
-    // 6. Complete Batch
+    // 6. Create transaction immediately (screenshot flow does not have a preview screen yet)
+    const [createdTx] = await db
+      .insert(transactions)
+      .values({
+        userId: session.user.id,
+        paymentDate: txDate,
+        descRaw: merchant,
+        descNorm: merchant.toUpperCase(),
+        amount: -Math.abs(amount),
+        currency: "EUR",
+        key: txKey,
+        source: null,
+        keyDesc: merchant,
+        simpleDesc: merchant,
+        type: "Despesa",
+        fixVar: "Variável",
+        needsReview: true,
+      })
+      .returning();
+
+    await db.insert(transactionEvidenceLink).values({
+      transactionId: createdTx.id,
+      ingestionItemId: item.id,
+      matchConfidence: Math.round(ocrResult.confidence * 100),
+      isPrimary: true,
+    });
+
+    // 7. Complete Batch
     await db.update(ingestionBatches)
-        .set({ 
-            status: "committed", // Or a suitable status from enum
-        })
-        .where(eq(ingestionBatches.id, batch.id));
+      .set({ status: "committed" })
+      .where(eq(ingestionBatches.id, batch.id));
 
     revalidatePath("/uploads");
+    revalidatePath("/transactions");
     return { success: true, newItemId: item.id };
 
   } catch (error: any) {
