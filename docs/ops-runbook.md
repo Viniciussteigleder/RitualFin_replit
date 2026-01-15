@@ -55,7 +55,9 @@ Optional:
 ### Preview deploy checks failing (Neon branch workflow)
 - Workflow: `.github/workflows/neon_workflow.yml`
 - Expected behavior: PR Neon branch jobs run only when `NEON_PROJECT_ID` and `NEON_API_KEY` are configured in GitHub Actions.
-- If you see **“Neon branching: Branch limit exceeded”** in Vercel/GitHub checks: the workflow should fall back and **not fail the PR**; delete stale Neon branches or increase limits if per-PR branching is required.
+- If you see **“Neon branching: Branch limit exceeded”**:
+  - **Vercel Deployment Check**: this comes from the Vercel↔Neon integration (not GitHub Actions). Fix by deleting stale Neon branches or disabling per-preview branching in Vercel’s Neon integration for this project.
+  - **GitHub Actions**: `.github/workflows/neon_workflow.yml` is configured to fall back and should not block PRs even if Neon rejects branch creation.
 
 ## Operational Guardrails
 
