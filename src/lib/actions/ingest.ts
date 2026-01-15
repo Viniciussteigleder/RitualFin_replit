@@ -2,10 +2,10 @@
 
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { ingestionBatches, ingestionItems, transactions, rules, accounts, aliasAssets, sourceCsvSparkasse, sourceCsvMm, sourceCsvAmex } from "@/lib/db/schema";
+import { ingestionBatches, ingestionItems, transactions, rules, accounts, aliasAssets, sourceCsvSparkasse, sourceCsvMm, sourceCsvAmex, transactionEvidenceLink } from "@/lib/db/schema";
 import { parseIngestionFile } from "@/lib/ingest";
 import { generateFingerprint } from "@/lib/ingest/fingerprint";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { categorizeTransaction, AI_SEED_RULES, matchAlias } from "@/lib/rules/engine";
 
@@ -34,15 +34,50 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
     }
 
     // 3. Process Items & Deduplicate with Source CSV Tables
-    let dupCount = 0;
-    let newCount = 0;
-    const itemsToInsert: any[] = [];
-    const sourceTable = result.format === "sparkasse" ? sourceCsvSparkasse : 
-                       result.format === "miles_and_more" ? sourceCsvMm : 
-                       sourceCsvAmex;
+    if (result.transactions.length === 0) {
+      await db.update(ingestionBatches)
+        .set({
+          status: "preview",
+          diagnosticsJson: {
+            rowsTotal: result.rowsTotal,
+            newCount: 0,
+            duplicates: 0,
+            diagnostics: result.diagnostics
+          } as any
+        })
+        .where(eq(ingestionBatches.id, batch.id));
 
-    for (const tx of result.transactions) {
-      const fingerprint = generateFingerprint(tx);
+      return { success: true, batchId: batch.id, newItems: 0, duplicates: 0 };
+    }
+
+    const txWithFingerprint = result.transactions.map((tx) => ({ tx, fingerprint: generateFingerprint(tx) }));
+    const fingerprints = txWithFingerprint.map((t) => t.fingerprint);
+    let existingUniqueFingerprints = new Set<string>();
+    if (result.format === "sparkasse") {
+      const existing = await db.query.sourceCsvSparkasse.findMany({
+        where: (t, { and, eq }) => and(inArray(t.rowFingerprint, fingerprints), eq(t.uniqueRow, true)),
+        columns: { rowFingerprint: true },
+      });
+      existingUniqueFingerprints = new Set(existing.map((row) => row.rowFingerprint));
+    } else if (result.format === "miles_and_more") {
+      const existing = await db.query.sourceCsvMm.findMany({
+        where: (t, { and, eq }) => and(inArray(t.rowFingerprint, fingerprints), eq(t.uniqueRow, true)),
+        columns: { rowFingerprint: true },
+      });
+      existingUniqueFingerprints = new Set(existing.map((row) => row.rowFingerprint));
+    } else if (result.format === "amex") {
+      const existing = await db.query.sourceCsvAmex.findMany({
+        where: (t, { and, eq }) => and(inArray(t.rowFingerprint, fingerprints), eq(t.uniqueRow, true)),
+        columns: { rowFingerprint: true },
+      });
+      existingUniqueFingerprints = new Set(existing.map((row) => row.rowFingerprint));
+    }
+
+    const counts = await db.transaction(async (txDb) => {
+      let dupCount = 0;
+      let newCount = 0;
+
+      for (const { tx, fingerprint } of txWithFingerprint) {
 
       // Check for existing item with unique_row = true in the specific source table
       // We check ACROSS ALL BATCHES for this user/account to find global duplicates
@@ -60,34 +95,18 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
       // Use existing `db.query` is hard with dynamic table selection without raw SQL or 'any'.
       // Lets use a helper or switch.
       
-      let isUnique = true;
-      if (result.format === "sparkasse") {
-          const existing = await db.query.sourceCsvSparkasse.findFirst({
-              where: (t, { eq, and }) => and(eq(t.rowFingerprint, fingerprint), eq(t.uniqueRow, true)) // Check global uniqueness
-          });
-          if (existing) isUnique = false;
-      } else if (result.format === "miles_and_more") {
-          const existing = await db.query.sourceCsvMm.findFirst({
-              where: (t, { eq, and }) => and(eq(t.rowFingerprint, fingerprint), eq(t.uniqueRow, true))
-          });
-          if (existing) isUnique = false;
-      } else if (result.format === "amex") {
-          const existing = await db.query.sourceCsvAmex.findFirst({
-              where: (t, { eq, and }) => and(eq(t.rowFingerprint, fingerprint), eq(t.uniqueRow, true))
-          });
-          if (existing) isUnique = false;
-      }
+        const isUnique = !existingUniqueFingerprints.has(fingerprint);
 
-      if (!isUnique) {
-        dupCount++;
-      } else {
-        newCount++;
-      }
+        if (!isUnique) {
+          dupCount++;
+        } else {
+          newCount++;
+        }
 
       // Create Ingestion Item (Parent)
       // Note: We still use ingestionItems as a handle, but data lives in source_csv_* too?
       // Schema says source_csv_* references ingestionItems. So we must create item first.
-      const [item] = await db.insert(ingestionItems).values({
+        const [item] = await txDb.insert(ingestionItems).values({
         batchId: batch.id,
         itemFingerprint: fingerprint,
         rawPayload: tx,
@@ -108,8 +127,8 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
           importedAt: new Date()
       };
 
-      if (result.format === "sparkasse") {
-          await db.insert(sourceCsvSparkasse).values({
+        if (result.format === "sparkasse") {
+          await txDb.insert(sourceCsvSparkasse).values({
               ...commonFields,
               auftragskonto: tx.auftragskonto,
               buchungstag: tx.buchungstag ? new Date(tx.buchungstag) : null,
@@ -129,8 +148,8 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
               waehrung: tx.waehrung,
               info: tx.info
           });
-      } else if (result.format === "miles_and_more") {
-           await db.insert(sourceCsvMm).values({
+        } else if (result.format === "miles_and_more") {
+           await txDb.insert(sourceCsvMm).values({
               ...commonFields,
               authorisedOn: tx.authorisedOn ? new Date(tx.authorisedOn) : null,
               processedOn: tx.processedOn ? new Date(tx.processedOn) : null,
@@ -140,8 +159,8 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
               currency: tx.currency,
               description: tx.description
            });
-      } else if (result.format === "amex") {
-           await db.insert(sourceCsvAmex).values({
+        } else if (result.format === "amex") {
+           await txDb.insert(sourceCsvAmex).values({
               ...commonFields,
               datum: tx.datum ? new Date(tx.datum) : null,
               beschreibung: tx.beschreibung,
@@ -152,23 +171,25 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
               ort: tx.ort,
               staat: tx.staat
            });
+        }
       }
-    }
 
-    // 4. Update Batch Status
-    await db.update(ingestionBatches)
-      .set({ 
-        status: "preview", 
-        diagnosticsJson: {
+      await txDb.update(ingestionBatches)
+        .set({
+          status: "preview",
+          diagnosticsJson: {
             rowsTotal: result.rowsTotal,
             newCount,
             duplicates: dupCount,
             diagnostics: result.diagnostics
-        } as any
-      })
-      .where(eq(ingestionBatches.id, batch.id));
+          } as any
+        })
+        .where(eq(ingestionBatches.id, batch.id));
 
-    return { success: true, batchId: batch.id, newItems: newCount, duplicates: dupCount };
+      return { dupCount, newCount };
+    });
+
+    return { success: true, batchId: batch.id, newItems: counts.newCount, duplicates: counts.dupCount };
 
   } catch (error: any) {
     console.error("Ingestion error:", error);
@@ -201,7 +222,7 @@ export async function getIngestionBatches() {
     const session = await auth();
     if (!session?.user?.id) return [];
 
-    return await db.query.ingestionBatches.findMany({
+  return await db.query.ingestionBatches.findMany({
         where: eq(ingestionBatches.userId, session.user.id),
         orderBy: (batches, { desc }) => [desc(batches.createdAt)],
         with: {
@@ -432,9 +453,6 @@ export async function commitBatch(batchId: string) {
     }
     return result;
 }
-
-import { transactionEvidenceLink } from "@/lib/db/schema";
-import { inArray } from "drizzle-orm";
 
 export async function rollbackBatch(batchId: string) {
     const session = await auth();
