@@ -30,6 +30,7 @@ jobs:
       github.event.action == 'synchronize'
       || github.event.action == 'opened'
       || github.event.action == 'reopened') &&
+      vars.NEON_GITHUB_BRANCHING_ENABLED == 'true' &&
       vars.NEON_PROJECT_ID != '' &&
       secrets.NEON_API_KEY != ''
     runs-on: ubuntu-latest
@@ -59,6 +60,7 @@ jobs:
     if: |
       github.event_name == 'pull_request' &&
       github.event.action == 'closed' &&
+      vars.NEON_GITHUB_BRANCHING_ENABLED == 'true' &&
       vars.NEON_PROJECT_ID != '' &&
       secrets.NEON_API_KEY != ''
     runs-on: ubuntu-latest
