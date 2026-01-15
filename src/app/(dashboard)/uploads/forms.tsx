@@ -100,6 +100,10 @@ export function CSVForm({ onUploadSuccess }: { onUploadSuccess?: (batchId: strin
                 isDragging ? "border-primary bg-primary/5 scale-[0.99]" : "border-slate-200 hover:border-slate-300 hover:bg-slate-50",
                 isUploading && "opacity-50 pointer-events-none"
             )}
+            role="button"
+            tabIndex={0}
+            aria-disabled={isUploading}
+            aria-busy={isUploading}
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
             onDrop={(e) => {
@@ -109,6 +113,13 @@ export function CSVForm({ onUploadSuccess }: { onUploadSuccess?: (batchId: strin
                 if (file) handleFile(file);
             }}
             onClick={() => fileInputRef.current?.click()}
+            onKeyDown={(e) => {
+                if (isUploading) return;
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    fileInputRef.current?.click();
+                }
+            }}
         >
             <input 
                 type="file" 
