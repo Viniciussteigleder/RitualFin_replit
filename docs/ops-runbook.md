@@ -10,6 +10,22 @@
 - Build: `npm run build`
 - Start (prod server): `npm run start`
 - E2E tests (Playwright): `npm run test:e2e`
+- Release gate (recommended before PR): `npm run release:gate`
+
+## Git / Release Workflow (Protected `main`)
+
+This repo blocks direct pushes to `main` (GitHub error `GH006`). Use PRs.
+
+**Sync + ship (happy path)**
+1. `git checkout main && git fetch origin --prune`
+2. `git pull --rebase origin main`
+3. `git checkout -b release/<short-desc>`
+4. Make changes, commit, run `npm run release:gate`
+5. `git push -u origin HEAD`
+6. Open PR → merge → Vercel deploy triggers from `main`
+
+**If you see “Can’t push… Try running Pull first”**
+- Run `git fetch origin --prune` then `git pull --rebase origin main`, resolve conflicts if any, and push from a PR branch (never force-push `main`).
 
 ## Environment Variables (names only)
 
