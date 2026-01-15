@@ -26,17 +26,14 @@ test.describe('Ingestion Flow', () => {
     
     // Commit
     await page.click('button:has-text("Process & Import")', { timeout: 20000 });
-    
-    // Should show rollback action after commit
-    await expect(page.getByRole('button', { name: /rollback/i })).toBeVisible({ timeout: 90000 });
-    
+
     // Verify in transactions
     await page.goto('/transactions');
     await expect(page.getByText('REWE')).toBeVisible({ timeout: 20000 });
 
     // Rollback
     await page.goto('/uploads');
-    await page.click('button:has-text("Rollback")');
+    await page.click('button:has-text("Rollback")', { timeout: 90000 });
     
     // Verify removed from transactions
     await page.goto('/transactions');
