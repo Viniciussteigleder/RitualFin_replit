@@ -22,9 +22,12 @@ test.describe('Ingestion Flow', () => {
     await page.waitForSelector('[data-testid="csv-file-input"]', { state: 'attached' });
     await page.setInputFiles('[data-testid="csv-file-input"]', filePath);
 
+    // Wait for explicit upload confirmation, then proceed to preview/import
+    await expect(page.getByRole('status')).toContainText('Upload confirmado', { timeout: 90000 });
+    await page.click('button:has-text("Revisar e importar")', { timeout: 20000 });
+
+    // Commit from preview screen
     await expect(page.getByRole('button', { name: /process & import/i })).toBeVisible({ timeout: 60000 });
-    
-    // Commit
     await page.click('button:has-text("Process & Import")', { timeout: 20000 });
 
     // Verify in transactions
