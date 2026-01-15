@@ -10,7 +10,7 @@ import {
   DEFAULT_ANALYSIS_PROMPT,
   DEFAULT_ADVICE_PROMPT,
   DEFAULT_SUMMARY_PROMPT,
-} from "./assistant-settings";
+} from "@/lib/assistant/default-prompts";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || "sk-placeholder-for-build",
@@ -65,30 +65,32 @@ async function buildFinancialContext(
   const totalBalance = Number(balanceRes?.total || 0);
 
   // Get this month's spending (excluding internal transfers)
-  const [thisMonthSpend] = await db
-    .select({ total: sql<number>`COALESCE(SUM(amount), 0)` })
-    .from(transactions)
-    .where(and(
-      eq(transactions.userId, userId),
-      eq(transactions.type, "Despesa"),
-      gte(transactions.paymentDate, startOfMonth),
-      sql`${transactions.category1} NOT IN ('Interno', 'Transferências')`,
-      ne(transactions.display, "no")
-    ));
+	  const [thisMonthSpend] = await db
+	    .select({ total: sql<number>`COALESCE(SUM(amount), 0)` })
+	    .from(transactions)
+	    .where(and(
+	      eq(transactions.userId, userId),
+	      eq(transactions.type, "Despesa"),
+	      gte(transactions.paymentDate, startOfMonth),
+	      eq(transactions.internalTransfer, false),
+	      sql`(${transactions.category1} IS NULL OR ${transactions.category1} <> 'Interno')`,
+	      ne(transactions.display, "no")
+	    ));
   const monthSpending = Math.abs(Number(thisMonthSpend?.total || 0));
 
   // Get last month's spending for comparison
-  const [lastMonthSpend] = await db
-    .select({ total: sql<number>`COALESCE(SUM(amount), 0)` })
-    .from(transactions)
-    .where(and(
-      eq(transactions.userId, userId),
-      eq(transactions.type, "Despesa"),
-      gte(transactions.paymentDate, startOfLastMonth),
-      sql`${transactions.paymentDate} <= ${endOfLastMonth}`,
-      sql`${transactions.category1} NOT IN ('Interno', 'Transferências')`,
-      ne(transactions.display, "no")
-    ));
+	  const [lastMonthSpend] = await db
+	    .select({ total: sql<number>`COALESCE(SUM(amount), 0)` })
+	    .from(transactions)
+	    .where(and(
+	      eq(transactions.userId, userId),
+	      eq(transactions.type, "Despesa"),
+	      gte(transactions.paymentDate, startOfLastMonth),
+	      sql`${transactions.paymentDate} <= ${endOfLastMonth}`,
+	      eq(transactions.internalTransfer, false),
+	      sql`(${transactions.category1} IS NULL OR ${transactions.category1} <> 'Interno')`,
+	      ne(transactions.display, "no")
+	    ));
   const lastMonthSpending = Math.abs(Number(lastMonthSpend?.total || 0));
 
   // Get this month's income
@@ -114,13 +116,14 @@ async function buildFinancialContext(
         count: sql<number>`COUNT(*)`,
       })
       .from(transactions)
-      .where(and(
-        eq(transactions.userId, userId),
-        eq(transactions.type, "Despesa"),
-        gte(transactions.paymentDate, startOfMonth),
-        sql`${transactions.category1} NOT IN ('Interno', 'Transferências')`,
-        ne(transactions.display, "no")
-      ))
+	      .where(and(
+	        eq(transactions.userId, userId),
+	        eq(transactions.type, "Despesa"),
+	        gte(transactions.paymentDate, startOfMonth),
+	        eq(transactions.internalTransfer, false),
+	        sql`(${transactions.category1} IS NULL OR ${transactions.category1} <> 'Interno')`,
+	        ne(transactions.display, "no")
+	      ))
       .groupBy(transactions.appCategoryName, transactions.category1)
       .orderBy(sql`SUM(amount) ASC`)
       .limit(10);
