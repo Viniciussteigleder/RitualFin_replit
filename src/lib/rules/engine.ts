@@ -1,7 +1,7 @@
 // Rules Engine for AI-powered transaction categorization with confidence levels
 
 import type { Rule, Transaction, AliasAssets } from "@/lib/db/schema";
-import { evaluateRuleMatch } from "./classification-utils";
+import { evaluateRuleMatch, normalizeForMatch } from "./classification-utils";
 
 export interface RuleMatch {
   ruleId: string;
@@ -25,15 +25,6 @@ export interface CategorizationResult {
   reason?: string;
 }
 
-function normalizeForMatch(text: string): string {
-  return text
-    .toUpperCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 export interface UserSettings {
   autoConfirmHighConfidence?: boolean;
   confidenceThreshold?: number;
@@ -51,17 +42,11 @@ export function matchRules(descNorm: string, rules: Rule[], settings: UserSettin
   const sortedRules = [...rules].sort((a, b) => (b.priority || 500) - (a.priority || 500));
 
   for (const rule of sortedRules) {
+    if (rule.active === false) continue;
     if (!rule.keyWords) continue; // Skip rules without key_words (legacy keywords removed)
 
-    const keywordString = rule.keyWords || "";
-    const keywords = keywordString
-      .split(";")
-      .map((k: string) => normalizeForMatch(k))
-      .filter((k: string) => k.length > 0);
-
-    const matchedKeyword = keywords.find((keyword: string) => haystack.includes(keyword));
-
-    if (matchedKeyword) {
+    const evalResult = evaluateRuleMatch(haystack, rule);
+    if (evalResult.isMatch && evalResult.positiveMatch) {
       const match: RuleMatch = {
         ruleId: rule.id,
         type: rule.type || "Despesa",
@@ -72,7 +57,8 @@ export function matchRules(descNorm: string, rules: Rule[], settings: UserSettin
         priority: rule.priority || 500,
         strict: rule.strict || false,
         isSystem: rule.isSystem || false,
-        matchedKeyword
+        matchedKeyword: evalResult.positiveMatch,
+        leafId: rule.leafId ?? null,
       };
 
       if (rule.strict) {
