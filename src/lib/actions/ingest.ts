@@ -357,14 +357,12 @@ export async function commitBatchCore(userId: string, batchId: string) {
                  categorization.fixVar = mapping.level2.fixoVariavelDefault as any || categorization.fixVar;
              }
         } else if (categorization.ruleIdApplied && !categorization.leafId) {
+            // Preserve categories provided by the rule/engine; only fall back leafId if available.
             categorization.leafId = openLeafId;
-            categorization.category1 = null as any;
-            categorization.category2 = null;
-            categorization.category3 = null;
         }
 
         // 3. AI Fallback (only if no rules match - and leafId is OPEN)
-        if (openLeafId && categorization.leafId === openLeafId && process.env.OPENAI_API_KEY) {
+        if (openLeafId && !categorization.ruleIdApplied && categorization.leafId === openLeafId && process.env.OPENAI_API_KEY) {
              // ... AI logic ...
              // Keeping existing logic but mapping back to leafId if AI returns it
              aiResult = await getAICategorization(keyDesc, taxonomyContext);
@@ -421,7 +419,7 @@ export async function commitBatchCore(userId: string, batchId: string) {
             aliasDesc: aliasMatch ? aliasMatch.aliasDesc : null,
             amount: amountNum,
             currency: data.currency || "EUR",
-            category1: (categorization.category1 || "Outros") as any,
+            category1: categorization.category1 as any,
             category2: categorization.category2,
             category3: categorization.category3,
             needsReview: categorization.needsReview,
