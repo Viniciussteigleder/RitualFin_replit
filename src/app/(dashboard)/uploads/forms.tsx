@@ -5,7 +5,7 @@ import { uploadIngestionFile } from "@/lib/actions/ingest";
 import { uploadScreenshot } from "@/lib/actions/screenshots";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { UploadCloud, Camera } from "lucide-react";
+import { UploadCloud, Camera, CheckCircle2, ArrowRight } from "lucide-react";
 import { createWorker } from "tesseract.js";
 import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
@@ -15,39 +15,85 @@ import { useRouter } from "next/navigation";
 export function CSVForm({ onUploadSuccess }: { onUploadSuccess?: (batchId: string) => void }) {
     const [isDragging, setIsDragging] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
+    const [lastUpload, setLastUpload] = useState<null | { batchId: string; newItems: number; duplicates: number }>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const router = useRouter();
 
     async function handleFile(file: File) {
         if (!file.name.endsWith(".csv")) {
-            toast.error("Please select a CSV file");
+            toast.error("Selecione um arquivo CSV (.csv)");
             return;
         }
 
         setIsUploading(true);
+        setLastUpload(null);
         const formData = new FormData();
         formData.append("file", file);
 
         try {
             const result = await uploadIngestionFile(formData);
-            if (result.success && result.batchId) {
-                toast.success("File uploaded and parsed successfully!");
-                
-                // Redirect to preview page
-                router.push(`/imports/${result.batchId}/preview`);
-                
+            if ("success" in result && result.success && "batchId" in result && result.batchId) {
+                const uploadSummary = {
+                    batchId: result.batchId,
+                    newItems: "newItems" in result ? (result.newItems ?? 0) : 0,
+                    duplicates: "duplicates" in result ? (result.duplicates ?? 0) : 0,
+                };
+                setLastUpload(uploadSummary);
+                toast.success("Upload concluído. Arquivo processado com sucesso.");
+                router.refresh();
                 onUploadSuccess?.(result.batchId);
             } else {
-                toast.error(result.error || "Upload failed");
+                toast.error(("error" in result && result.error) ? result.error : "Falha no upload");
             }
         } catch (e) {
-            toast.error("An unexpected error occurred");
+            toast.error("Erro inesperado durante o upload");
         } finally {
             setIsUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = "";
         }
     }
 
     return (
+        <div className="space-y-4">
+            {lastUpload && (
+                <div
+                    className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-left"
+                    role="status"
+                    aria-live="polite"
+                >
+                    <div className="flex items-start gap-3">
+                        <CheckCircle2 className="h-5 w-5 text-emerald-700 mt-0.5 shrink-0" />
+                        <div className="min-w-0 flex-1">
+                            <div className="text-sm font-extrabold text-emerald-900">Upload confirmado</div>
+                            <div className="mt-1 text-xs font-semibold text-emerald-900/80">
+                                Lote: <span className="font-mono">{lastUpload.batchId}</span>
+                            </div>
+                            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-bold text-emerald-900/80">
+                                <span>{lastUpload.newItems} novas linhas</span>
+                                <span>{lastUpload.duplicates} duplicadas</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                        <Button
+                            type="button"
+                            className="rounded-xl font-extrabold"
+                            onClick={() => router.push(`/imports/${lastUpload.batchId}/preview`)}
+                        >
+                            Revisar e importar <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="rounded-xl font-extrabold"
+                            onClick={() => setLastUpload(null)}
+                        >
+                            Fazer outro upload
+                        </Button>
+                    </div>
+                </div>
+            )}
+
         <div 
             className={cn(
                 "border-2 border-dashed rounded-2xl p-12 text-center transition-all cursor-pointer group",
@@ -88,18 +134,19 @@ export function CSVForm({ onUploadSuccess }: { onUploadSuccess?: (batchId: strin
                 </div>
                 <div>
                     <h3 className="text-lg font-bold text-slate-900">
-                        {isUploading ? "Uploading statement..." : "Click or drag your CSV statement"}
+                        {isUploading ? "Enviando e processando..." : "Clique ou arraste seu extrato CSV"}
                     </h3>
                     <p className="text-slate-500 text-sm mt-1 max-w-[280px] mx-auto leading-relaxed">
-                        Supports Miles & More, Amex, and Sparkasse formats. (Max 10MB)
+                        Suporta Miles & More, Amex e Sparkasse. (Máx. 10MB)
                     </p>
                 </div>
                 {!isUploading && (
                     <Button variant="outline" className="mt-2 rounded-xl border-slate-200 font-bold px-8 shadow-sm group-hover:bg-white group-hover:border-primary group-hover:text-primary transition-all">
-                        Select File
+                        Selecionar arquivo
                     </Button>
                 )}
             </div>
+        </div>
         </div>
     );
 }
