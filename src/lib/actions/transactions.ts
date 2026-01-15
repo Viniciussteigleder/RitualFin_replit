@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { transactions, accounts, ingestionBatches, aliasAssets, rules } from "@/lib/db/schema";
+import { transactions, accounts, ingestionBatches, aliasAssets, rules, budgets } from "@/lib/db/schema";
 import { eq, desc, sql, and, gte, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { 
@@ -106,7 +106,13 @@ export async function getDashboardData(date?: Date) {
   }
 
   // 7. Budget / Remaining
-  const monthlyGoal = 5000; 
+  const monthKey = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, "0")}`;
+  const [budgetRes] = await db
+    .select({ total: sql<number>`COALESCE(SUM(${budgets.amount}), 0)` })
+    .from(budgets)
+    .where(and(eq(budgets.userId, userId), eq(budgets.month, monthKey)));
+
+  const monthlyGoal = Number(budgetRes?.total || 0);
   const remainingBudget = monthlyGoal - spentMonthToDate;
 
   // 8. Category Breakdown
