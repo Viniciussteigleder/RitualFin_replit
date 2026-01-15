@@ -1,0 +1,228 @@
+
+> rest-express@1.0.1 release:gate
+> npx tsx scripts/pre-deploy-check.ts
+
+
+
+╔════════════════════════════════════════════════════════════╗
+║                                                            ║
+║           PRE-DEPLOYMENT CHECK SUITE                       ║
+║           RitualFin Next.js Application                    ║
+║                                                            ║
+╚════════════════════════════════════════════════════════════╝
+
+
+============================================================
+🔍 Running: TypeScript Compilation
+   Ensures no TypeScript errors
+============================================================
+
+
+> rest-express@1.0.1 check
+> tsc
+
+
+✅ TypeScript Compilation PASSED (4305ms)
+
+
+============================================================
+🔍 Running: Production Build
+   Verifies Next.js build succeeds
+============================================================
+
+
+> rest-express@1.0.1 build
+> next build
+
+▲ Next.js 16.1.1 (Turbopack)
+- Environments: .env.production.local, .env.local
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 6.7s
+  Running TypeScript ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/25) ...
+  Generating static pages using 7 workers (6/25) 
+  Generating static pages using 7 workers (12/25) 
+  Generating static pages using 7 workers (18/25) 
+✓ Generating static pages using 7 workers (25/25) in 397.7ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /accounts
+├ ƒ /admin/import
+├ ƒ /admin/rules
+├ ƒ /ai-keywords
+├ ƒ /analytics
+├ ƒ /api/auth/[...nextauth]
+├ ƒ /api/auth/debug
+├ ƒ /api/health
+├ ƒ /budgets
+├ ƒ /calendar
+├ ƒ /calendar/events/[id]
+├ ƒ /confirm
+├ ƒ /diagnose
+├ ƒ /goals
+├ ○ /icon.png
+├ ƒ /imports/[batchId]/preview
+├ ○ /login
+├ ƒ /rituals
+├ ƒ /rules
+├ ƒ /settings
+├ ƒ /settings/exclusions
+├ ƒ /settings/rules
+├ ƒ /settings/taxonomy
+├ ○ /signup
+├ ƒ /transactions
+└ ƒ /uploads
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+✅ Production Build PASSED (18940ms)
+
+
+============================================================
+🔍 Running: Rules Engine Unit Tests
+   Validates core business logic
+============================================================
+
+
+========================================
+Rules Engine Unit Tests
+Logic Contract: docs/LOGIC_CONTRACT.md
+========================================
+
+TC-001: Testing determinism...
+  ✓ TC-001 passed: Deterministic output
+TC-002: Testing strict rule short-circuit...
+  ✓ TC-002 passed: Strict rule short-circuits correctly
+TC-003: Testing priority order...
+  ✓ TC-003 passed: Higher priority wins
+TC-004: Testing negative keywords...
+  ✓ TC-004 passed: Negative keywords exclude correctly
+TC-005: Testing Interno auto-flagging...
+  ✓ TC-005 passed: Interno auto-flags correctly
+TC-006: Manual override preservation...
+  ⚠ Note: Full test requires database integration
+  ✓ TC-006 skipped: Tested at integration level
+TC-007: Testing conflict detection...
+  ✓ TC-007 passed: Conflict detection works
+TC-008: Testing confidence threshold...
+  ✓ TC-008 passed: Confidence threshold respected
+TC-009: Testing inactive rule handling...
+  ✓ TC-009 passed: Inactive rules ignored
+TC-010: Testing negative keyword exclusion in matchRules...
+  ✓ TC-010 passed: matchRules respects negative keywords
+EC-001: Testing empty keywords handling...
+  ✓ EC-001 passed: Empty keywords handled
+EC-002: Testing special characters...
+  ✓ EC-002 passed: Special characters work
+EC-003: Testing unicode normalization...
+  ✓ EC-003 passed: Unicode normalization works
+EC-004: Testing case insensitivity...
+  ✓ EC-004 passed: Case insensitivity works
+
+========================================
+Results: 14 passed, 0 failed
+========================================
+
+
+✅ Rules Engine Unit Tests PASSED (678ms)
+
+
+============================================================
+🔍 Running: Database Parity Check
+   Compares DB with Excel Oracle (requires network)
+============================================================
+
+[dotenv@17.2.3] injecting env (9) from .env.local -- tip: 🔑 add access controls to secrets: https://dotenvx.com/ops
+============================================================
+Database Parity Verification
+============================================================
+DATABASE_URL: SET (****uire&sslmode=require)
+
+Loading Oracle data...
+  Categories: 108
+  Aliases: 64
+  Keyword Rules: 224
+  Alias Mapping: 112
+
+--- Verifying Taxonomy ---
+
+DB Taxonomy Status:
+  Level 1: 20 records
+  Level 2: 60 records
+  Leaves: 110 records
+
+--- Verifying Rules ---
+
+DB Rules: 187 records
+Oracle Keywords: 205
+DB Keywords: 208
+
+--- Verifying Aliases ---
+
+DB Aliases: 64 records
+Oracle Alias Keywords: 110
+DB Alias Keywords: 110
+
+============================================================
+PARITY REPORT
+============================================================
+
+Summary:
+  Missing in DB: 0
+  Extra in DB: 2
+  Mismatches: 0
+  Enum Mismatches: 11
+
+Verdict: FAIL
+Total Issues: 13
+
+Report saved to: docs/rules-parity-report.json
+Markdown report: docs/rules-parity-report.md
+
+❌ Database Parity Check FAILED (1857ms)
+
+
+
+
+============================================================
+📊 PRE-DEPLOYMENT CHECK REPORT
+============================================================
+Timestamp: 2026-01-15T19:06:25.973Z
+
+Summary:
+  Total Checks: 4
+  ✅ Passed: 3
+  ❌ Failed: 1
+  🚨 Critical Failed: 0
+
+Failed Checks:
+  ⚠️ Database Parity Check (WARNING)
+
+Detailed Results:
+
+| Check | Status | Duration | Critical |
+|-------|--------|----------|----------|
+| TypeScript Compilation | ✅ PASS | 4305ms | Yes |
+| Production Build | ✅ PASS | 18940ms | Yes |
+| Rules Engine Unit Tests | ✅ PASS | 678ms | Yes |
+| Database Parity Check | ❌ FAIL | 1857ms | No |
+
+============================================================
+⚠️  VERDICT: PROCEED WITH CAUTION
+============================================================
+
+Non-critical checks failed. Review before deploying:
+  • Database Parity Check
+
+📄 Report saved to: /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/docs/pre-deploy-report.json
+

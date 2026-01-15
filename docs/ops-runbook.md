@@ -55,8 +55,13 @@ Optional:
 ### Preview deploy checks failing (Neon branch workflow)
 - Workflow: `.github/workflows/neon_workflow.yml`
 - Expected behavior: PR Neon branch jobs run only when `NEON_PROJECT_ID` and `NEON_API_KEY` are configured in GitHub Actions.
+- If you see **“Neon branching: Branch limit exceeded”** in Vercel/GitHub checks: the workflow should fall back and **not fail the PR**; delete stale Neon branches or increase limits if per-PR branching is required.
 
 ## Operational Guardrails
 
 - Do not log secrets (DB URLs, OAuth secrets, tokens). Prefer boolean presence checks and redacted summaries.
 - Treat categorization behavior as immutable per `docs/LOGIC_CONTRACT.md` and `rules/oracle/*`.
+
+## Generated Reports (Don’t Commit)
+
+Some scripts generate local reports like `docs/pre-deploy-report.json` and `docs/rules-parity-report.md` for troubleshooting. Treat them as build artifacts unless a PR explicitly calls for committing them.
