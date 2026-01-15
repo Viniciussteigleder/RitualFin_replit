@@ -78,9 +78,9 @@ export async function applyCategorization() {
          if ((tx.classifiedBy as string) !== 'MANUAL' && (!tx.category1 || tx.category1 === 'Outros')) {
              await db.update(transactions)
                 .set({
-                    category1: "OPEN" as any, // Cast because we runtime-migrated the enum
-                    category2: "OPEN",
-                    category3: "OPEN", 
+                    category1: null,
+                    category2: null,
+                    category3: null,
                     leafId: openLeafId,
                     ruleIdApplied: null,
                     confidence: 0,
