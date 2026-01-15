@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { ingestionBatches, ingestionItems } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Info, AlertCircle, CheckCircle2, ChevronLeft, FileText, Sparkles, Datab
 import { commitBatch } from "@/lib/actions/ingest";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { auth } from "@/auth";
 
 interface PreviewPageProps {
   params: {
@@ -17,8 +18,13 @@ interface PreviewPageProps {
 }
 
 export default async function ImportPreviewPage({ params }: PreviewPageProps) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    redirect("/login");
+  }
+
   const batch = await db.query.ingestionBatches.findFirst({
-    where: eq(ingestionBatches.id, params.batchId),
+    where: and(eq(ingestionBatches.id, params.batchId), eq(ingestionBatches.userId, session.user.id)),
     with: {
       items: {
         limit: 50,

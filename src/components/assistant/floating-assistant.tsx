@@ -177,24 +177,52 @@ export function FloatingAssistant() {
         return shuffled.slice(0, 4);
     });
 
-    // Format message content with basic markdown
+    function renderInlineMarkdown(text: string): React.ReactNode[] {
+        const nodes: React.ReactNode[] = [];
+        const boldRe = /\*\*(.+?)\*\*/g;
+        let lastIndex = 0;
+
+        for (let match = boldRe.exec(text); match; match = boldRe.exec(text)) {
+            if (match.index > lastIndex) {
+                nodes.push(text.slice(lastIndex, match.index));
+            }
+            nodes.push(
+                <strong key={`b-${match.index}`} className="font-bold">
+                    {match[1]}
+                </strong>
+            );
+            lastIndex = match.index + match[0].length;
+        }
+
+        if (lastIndex < text.length) {
+            nodes.push(text.slice(lastIndex));
+        }
+
+        return nodes;
+    }
+
+    // Format message content with basic markdown (safe: no HTML injection)
     const formatMessage = (content: string) => {
-        return content
-            .split('\n')
-            .map((line, i) => {
-                // Bold text
-                let formatted = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                // Bullet points
-                if (formatted.startsWith('- ')) {
-                    formatted = `<span class="flex gap-2"><span class="text-amber-500">•</span><span>${formatted.slice(2)}</span></span>`;
-                }
-                return <span key={i} dangerouslySetInnerHTML={{ __html: formatted }} />;
-            })
-            .reduce((acc: React.ReactNode[], curr, i, arr) => {
-                acc.push(curr);
-                if (i < arr.length - 1) acc.push(<br key={`br-${i}`} />);
-                return acc;
-            }, []);
+        const lines = content.split("\n");
+        return (
+            <div className="space-y-1">
+                {lines.map((rawLine, i) => {
+                    if (!rawLine.trim()) return <div key={`l-${i}`} className="h-2" />;
+
+                    const line = rawLine.replace(/\r/g, "");
+                    const trimmedStart = line.trimStart();
+                    const isBullet = trimmedStart.startsWith("- ");
+                    const body = isBullet ? trimmedStart.slice(2) : line;
+
+                    return (
+                        <div key={`l-${i}`} className={isBullet ? "flex gap-2" : undefined}>
+                            {isBullet ? <span className="text-amber-500">•</span> : null}
+                            <span>{renderInlineMarkdown(body)}</span>
+                        </div>
+                    );
+                })}
+            </div>
+        );
     };
 
     return (
