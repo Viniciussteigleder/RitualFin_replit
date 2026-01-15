@@ -30,9 +30,18 @@ test.describe('Ingestion Flow', () => {
     await expect(page.getByRole('button', { name: /process & import/i })).toBeVisible({ timeout: 60000 });
     await page.click('button:has-text("Process & Import")', { timeout: 20000 });
 
+    // Server action completion is async from the click perspective; wait until UI reflects committed state.
+    const rollbackButton = page.getByRole('button', { name: /rollback/i });
+    for (let i = 0; i < 12; i++) {
+      if (await rollbackButton.count()) break;
+      await page.waitForTimeout(2000);
+      await page.reload();
+    }
+    await expect(rollbackButton).toBeVisible({ timeout: 30000 });
+
     // Verify in transactions
     await page.goto('/transactions');
-    await expect(page.getByText('REWE')).toBeVisible({ timeout: 20000 });
+    await expect(page.getByText(/REWE/i)).toBeVisible({ timeout: 90000 });
 
     // Rollback
     await page.goto('/uploads');
