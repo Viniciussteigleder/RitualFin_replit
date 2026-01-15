@@ -99,15 +99,15 @@ export function AIAnalystChat({ currentScreen = "transactions" }: AIAnalystChatP
             <SheetContent className="w-full sm:max-w-xl p-0 flex flex-col bg-card border-l border-border shadow-2xl">
                 <SheetHeader className="p-6 border-b border-border bg-secondary/20">
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center overflow-hidden shadow-lg shadow-primary/20 relative border border-primary/20">
-                            <Image
-                                src="/logo-ritualfin-wax-seal.png"
-                                alt="RitualFin"
-                                fill
-                                className="object-contain p-2"
-                                priority
-                            />
-                        </div>
+	                        <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center overflow-hidden shadow-lg shadow-primary/20 relative border border-primary/20">
+	                            <Image
+	                                src="/RitualFin%20Logo.png"
+	                                alt="RitualFin"
+	                                fill
+	                                className="object-contain p-2"
+	                                priority
+	                            />
+	                        </div>
                         <div className="flex flex-col text-left">
                             <SheetTitle className="font-display text-xl font-bold tracking-tight">Analista Ritual</SheetTitle>
                             <SheetDescription className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400">Inteligência Financeira</SheetDescription>
@@ -130,7 +130,7 @@ export function AIAnalystChat({ currentScreen = "transactions" }: AIAnalystChatP
                                         <User className="h-4 w-4 text-white" />
                                     ) : (
                                         <Image
-                                            src="/logo-ritualfin-wax-seal.png"
+                                            src="/RitualFin%20Logo.png"
                                             alt="R"
                                             fill
                                             className="object-contain p-1"
@@ -174,7 +174,7 @@ export function AIAnalystChat({ currentScreen = "transactions" }: AIAnalystChatP
                             <div className="flex items-start gap-3 mr-auto max-w-[85%]">
                                 <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
                                     <Image
-                                        src="/logo-ritualfin-wax-seal.png"
+                                        src="/RitualFin%20Logo.png"
                                         alt="R"
                                         width={20}
                                         height={20}

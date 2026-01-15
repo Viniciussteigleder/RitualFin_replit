@@ -229,13 +229,13 @@ export function FloatingAssistant() {
                     <span className="absolute inset-0 rounded-full bg-amber-400 animate-ping opacity-20" />
 
                     {/* Logo */}
-                    <div className="relative z-10 w-10 h-10 rounded-full overflow-hidden bg-white/10 flex items-center justify-center">
-                        <Image
-                            src="/logo-ritualfin-wax-seal.png"
-                            alt="RitualFin"
-                            width={36}
-                            height={36}
-                            className="object-contain drop-shadow-lg"
+	                    <div className="relative z-10 w-10 h-10 rounded-full overflow-hidden bg-white/10 flex items-center justify-center">
+	                        <Image
+	                            src="/RitualFin%20Logo.png"
+	                            alt="RitualFin"
+	                            width={36}
+	                            height={36}
+	                            className="object-contain drop-shadow-lg"
                             onError={(e) => {
                                 e.currentTarget.style.display = 'none';
                                 e.currentTarget.parentElement!.innerHTML = '<svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>';
@@ -252,13 +252,13 @@ export function FloatingAssistant() {
                     <SheetHeader className="p-6 border-b border-border bg-gradient-to-r from-amber-500/5 to-orange-500/5">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-100 to-amber-200 dark:from-amber-900/30 dark:to-amber-800/30 flex items-center justify-center overflow-hidden shadow-lg ring-2 ring-amber-500/20">
-                                    <Image
-                                        src="/logo-ritualfin-wax-seal.png"
-                                        alt="RitualFin"
-                                        width={48}
-                                        height={48}
-                                        className="object-contain drop-shadow-md"
+	                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-100 to-amber-200 dark:from-amber-900/30 dark:to-amber-800/30 flex items-center justify-center overflow-hidden shadow-lg ring-2 ring-amber-500/20">
+	                                    <Image
+	                                        src="/RitualFin%20Logo.png"
+	                                        alt="RitualFin"
+	                                        width={48}
+	                                        height={48}
+	                                        className="object-contain drop-shadow-md"
                                         onError={(e) => {
                                             e.currentTarget.style.display = 'none';
                                         }}
@@ -345,7 +345,7 @@ export function FloatingAssistant() {
                                             <User className="h-4 w-4" />
                                         ) : (
                                             <Image
-                                                src="/logo-ritualfin-wax-seal.png"
+                                                src="/RitualFin%20Logo.png"
                                                 alt="R"
                                                 width={24}
                                                 height={24}
@@ -403,7 +403,7 @@ export function FloatingAssistant() {
                                 <div className="flex items-start gap-3 mr-auto max-w-[90%] animate-in fade-in duration-300">
                                     <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-100 to-amber-200 dark:from-amber-900/50 dark:to-amber-800/50 flex items-center justify-center shrink-0 shadow-sm">
                                         <Image
-                                            src="/logo-ritualfin-wax-seal.png"
+                                            src="/RitualFin%20Logo.png"
                                             alt="R"
                                             width={24}
                                             height={24}

@@ -137,14 +137,14 @@ export function TransactionDetailContent({ transaction, onClose, onConfirm }: Tr
                                 )}
                             </Badge>
                         </div>
-                        <div className="w-16 h-16 rounded-3xl bg-primary flex items-center justify-center shadow-2xl relative overflow-hidden">
-                            <Image 
-                                src="/logo-ritualfin-wax-seal.png" 
-                                alt="RitualFin" 
-                                fill 
-                                className="object-contain p-2"
-                            />
-                        </div>
+	                        <div className="w-16 h-16 rounded-3xl bg-primary flex items-center justify-center shadow-2xl relative overflow-hidden">
+	                            <Image 
+	                                src="/RitualFin%20Logo.png" 
+	                                alt="RitualFin" 
+	                                fill 
+	                                className="object-contain p-2"
+	                            />
+	                        </div>
                     </div>
                     
                     {/* Main Info */}
