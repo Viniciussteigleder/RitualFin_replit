@@ -38,9 +38,8 @@ import { updateTransactionCategory, confirmTransaction, createRuleAndApply } fro
 import { getCategoryConfig } from "@/lib/constants/categories";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Use the robust categories list from the config
-import { CATEGORY_CONFIGS } from "@/lib/constants/categories";
-const CATEGORIES = Object.keys(CATEGORY_CONFIGS);
+import { CATEGORY1_VALUES } from "@/lib/constants/category1";
+const CATEGORIES = CATEGORY1_VALUES;
 
 interface TransactionDetailContentProps {
   transaction: any;

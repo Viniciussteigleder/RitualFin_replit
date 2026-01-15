@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import { calendarEvents } from "@/lib/db/schema";
 import { eq, and, gte, lte, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { CATEGORY1_VALUES } from "@/lib/constants/category1";
 
 export type CalendarEvent = typeof calendarEvents.$inferSelect;
 
@@ -17,6 +19,16 @@ export interface CreateCalendarEventData {
   nextDueDate: string;
   accountId?: string;
 }
+
+const CreateCalendarEventSchema = z.object({
+  name: z.string().min(1),
+  amount: z.number().finite(),
+  category1: z.enum(CATEGORY1_VALUES),
+  category2: z.string().optional(),
+  recurrence: z.string().min(1),
+  nextDueDate: z.string().min(1),
+  accountId: z.string().uuid().optional(),
+});
 
 export async function getCalendarEvents(startDate?: Date, endDate?: Date) {
   const session = await auth();
@@ -56,17 +68,27 @@ export async function createCalendarEvent(data: CreateCalendarEventData) {
   }
 
   try {
+    const parsed = CreateCalendarEventSchema.safeParse(data);
+    if (!parsed.success) {
+      return { success: false, error: "Dados inválidos" };
+    }
+
+    const nextDueDate = new Date(parsed.data.nextDueDate);
+    if (Number.isNaN(nextDueDate.getTime())) {
+      return { success: false, error: "Data inválida" };
+    }
+
     const [event] = await db
       .insert(calendarEvents)
       .values({
         userId: session.user.id,
-        name: data.name,
-        amount: data.amount,
-        category1: data.category1 as any,
-        category2: data.category2,
-        recurrence: data.recurrence,
-        nextDueDate: new Date(data.nextDueDate),
-        accountId: data.accountId,
+        name: parsed.data.name,
+        amount: parsed.data.amount,
+        category1: parsed.data.category1 as any,
+        category2: parsed.data.category2,
+        recurrence: parsed.data.recurrence,
+        nextDueDate,
+        accountId: parsed.data.accountId,
         isActive: true,
       })
       .returning();
@@ -92,11 +114,22 @@ export async function updateCalendarEvent(
     const updateData: any = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.amount !== undefined) updateData.amount = data.amount;
-    if (data.category1 !== undefined) updateData.category1 = data.category1;
+    if (data.category1 !== undefined) {
+      const parsedCategory = z.enum(CATEGORY1_VALUES).safeParse(data.category1);
+      if (!parsedCategory.success) {
+        return { success: false, error: "Categoria inválida" };
+      }
+      updateData.category1 = parsedCategory.data;
+    }
     if (data.category2 !== undefined) updateData.category2 = data.category2;
     if (data.recurrence !== undefined) updateData.recurrence = data.recurrence;
-    if (data.nextDueDate !== undefined)
-      updateData.nextDueDate = new Date(data.nextDueDate);
+    if (data.nextDueDate !== undefined) {
+      const nextDueDate = new Date(data.nextDueDate);
+      if (Number.isNaN(nextDueDate.getTime())) {
+        return { success: false, error: "Data inválida" };
+      }
+      updateData.nextDueDate = nextDueDate;
+    }
     if (data.accountId !== undefined) updateData.accountId = data.accountId;
 
     const [event] = await db

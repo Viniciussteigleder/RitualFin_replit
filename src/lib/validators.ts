@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CATEGORY1_VALUES } from "@/lib/constants/category1";
 
 /**
  * Shared validation schemas and result types for server actions
@@ -26,7 +27,7 @@ export function error(message: string, errorId?: string, code?: string): Result<
 
 export const TransactionUpdateSchema = z.object({
   transactionId: z.string().uuid('Invalid transaction ID'),
-  category1: z.string().min(1, 'Category 1 is required'),
+  category1: z.enum(CATEGORY1_VALUES),
   category2: z.string().optional(),
   category3: z.string().optional(),
 });
@@ -50,7 +51,7 @@ export const BulkConfirmSchema = z.object({
 export const RuleCreateSchema = z.object({
   keyWords: z.string().min(1, 'Keywords are required'),
   keyWordsNegative: z.string().optional(),
-  category1: z.string().min(1, 'Category 1 is required'),
+  category1: z.enum(CATEGORY1_VALUES),
   category2: z.string().optional(),
   category3: z.string().optional(),
   type: z.enum(['Despesa', 'Receita']),
