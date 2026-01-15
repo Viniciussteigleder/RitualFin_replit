@@ -22,16 +22,11 @@ test.describe('Ingestion Flow', () => {
     await page.waitForSelector('[data-testid="csv-file-input"]', { state: 'attached' });
     await page.setInputFiles('[data-testid="csv-file-input"]', filePath);
 
-    // Wait for explicit upload confirmation, then proceed to preview/import
+    // Wait for explicit upload confirmation, then commit from the batch list
     await expect(page.getByRole('status')).toContainText('Upload confirmado', { timeout: 90000 });
-    await page.click('button:has-text("Revisar e importar")', { timeout: 20000 });
 
-    // Commit from preview screen
     await expect(page.getByRole('button', { name: /process & import/i })).toBeVisible({ timeout: 60000 });
-    await page
-      .locator('form', { has: page.getByRole('button', { name: /process & import/i }) })
-      .first()
-      .evaluate((form) => (form as HTMLFormElement).requestSubmit());
+    await page.getByRole('button', { name: /process & import/i }).click({ timeout: 20000, noWaitAfter: true });
 
     // Server action completion is async from the click perspective; wait until UI reflects committed state.
     const rollbackButton = page.getByRole('button', { name: /rollback/i });
