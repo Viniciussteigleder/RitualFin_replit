@@ -1,7 +1,7 @@
 # Repository Assessment (E2E) — RitualFin
 
 **Date**: 2026-01-15  
-**Assessed commit**: `a9af2b5` (local `main`)  
+**Assessed commit**: `e5e316e` (local `main`)  
 **Role**: Next.js Principal Architect + Release Owner  
 
 ## Constraints (Honored)
