@@ -55,6 +55,12 @@ export default async function AccountsPage() {
     }).format(value);
   };
 
+  const knownBalances = accounts
+    .map((a) => a.balance)
+    .filter((b): b is number => typeof b === "number" && Number.isFinite(b));
+  const totalKnownBalance = knownBalances.reduce((acc, v) => acc + v, 0);
+  const hasAnyKnownBalance = knownBalances.length > 0;
+
   return (
     <div className="flex flex-col gap-10 pb-32 max-w-7xl mx-auto px-1">
       {/* Page Header Area */}
@@ -75,7 +81,9 @@ export default async function AccountsPage() {
         <div className="flex items-center gap-6">
            <div className="hidden lg:flex flex-col items-end mr-2 bg-secondary/30 p-4 rounded-3xl border border-border px-6">
                 <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Total em Contas</span>
-                <span className="text-lg font-bold text-foreground">{formatCurrency(accounts.reduce((acc, curr) => acc + (curr.type !== 'credit_card' ? curr.balance : 0), 0))}</span>
+                <span className="text-lg font-bold text-foreground">
+                  {hasAnyKnownBalance ? formatCurrency(totalKnownBalance) : "—"}
+                </span>
            </div>
 
            <Link href="/admin/import">
@@ -109,10 +117,7 @@ export default async function AccountsPage() {
           accounts.map((account) => {
             const Icon = ICON_MAP[account.type] || Wallet;
             const balance = account.balance;
-            // Simplified logic for V1 until limits are in schema
-            const limit = account.type === "credit_card" ? 5000 : 0;
-            const spent = account.type === "credit_card" ? (limit - balance) : 0; 
-            const percentageUsed = limit > 0 ? (Math.abs(balance) / limit) * 100 : 0;
+            const hasBalance = typeof balance === "number" && Number.isFinite(balance);
 
             return (
               <div key={account.id} className="group relative bg-card border border-border rounded-[2.5rem] p-10 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 overflow-hidden flex flex-col gap-10">
@@ -133,30 +138,13 @@ export default async function AccountsPage() {
                 </div>
 
                 <div className="flex flex-col gap-6">
-                  {account.type === "credit_card" && (
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest opacity-60">
-                        <span>Utilização do Limite</span>
-                        <span>{percentageUsed.toFixed(0)}%</span>
-                      </div>
-                      <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
-                        <div 
-                           className="h-full bg-primary flex items-center justify-end pr-2 rounded-full transition-all duration-1000" 
-                           style={{ width: `${percentageUsed}%` }}
-                        />
-                      </div>
-                      <div className="flex justify-between text-[11px] font-bold text-muted-foreground">
-                        <span>Gasto: {formatCurrency(spent)}</span>
-                        <span>Dispo: {formatCurrency(limit - spent)}</span>
-                      </div>
-                    </div>
-                  )}
-
                   <div className="flex items-center justify-between pt-2">
                     <div className="flex flex-col">
-                      <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1.5">{account.type === "credit_card" ? "Fatura Atual" : "Saldo em Caixa"}</span>
+                      <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1.5">
+                        {account.type === "credit_card" ? "Saldo (sem limite cadastrado)" : "Saldo em Caixa"}
+                      </span>
                       <span className="text-3xl font-bold text-foreground tracking-tighter">
-                        {formatCurrency(balance)}
+                        {hasBalance ? formatCurrency(balance) : "—"}
                       </span>
                     </div>
                     <Link href={`/transactions?accounts=${encodeURIComponent(ACCOUNT_FILTER_MAP[account.name] || account.name)}`}>

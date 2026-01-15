@@ -362,21 +362,15 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                         <div className="flex flex-col">
                           <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em] mb-1">Saldo</span>
                           <span className="text-2xl font-bold text-foreground font-display" suppressHydrationWarning>
-                             {formatCurrency(account.balance, { hideDecimals: true })}
+                             {typeof account.balance === "number"
+                               ? formatCurrency(account.balance, { hideDecimals: true })
+                               : "—"}
                           </span>
                         </div>
                         <div className="flex flex-col text-right">
                           <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em] mb-1">Instituição</span>
                           <span className="text-sm font-bold text-foreground/80">{account.institution || "Personal"}</span>
                         </div>
-                      </div>
-                      
-                      <div className="flex flex-col gap-2.5">
-                        <div className="flex justify-between text-[10px] font-black uppercase tracking-[0.2em] mb-1">
-                          <span className="text-muted-foreground/60">Utilização</span>
-                          <span className="text-primary">100% Ok</span>
-                        </div>
-                        <Progress value={100} className="h-2 bg-secondary" />
                       </div>
                     </div>
 

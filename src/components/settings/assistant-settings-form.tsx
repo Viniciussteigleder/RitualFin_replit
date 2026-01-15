@@ -13,11 +13,13 @@ import {
   getAssistantSettings,
   updateAssistantSettings,
   resetAssistantSettings,
+} from "@/lib/actions/assistant-settings";
+import {
   DEFAULT_DATABASE_CONTEXT,
   DEFAULT_ANALYSIS_PROMPT,
   DEFAULT_ADVICE_PROMPT,
   DEFAULT_SUMMARY_PROMPT,
-} from "@/lib/actions/assistant-settings";
+} from "@/lib/assistant/default-prompts";
 import type { AssistantSettings } from "@/lib/db/schema";
 
 export function AssistantSettingsForm() {

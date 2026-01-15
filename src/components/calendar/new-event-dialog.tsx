@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Calendar, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { CATEGORY_CONFIGS } from "@/lib/constants/categories";
+import { CATEGORY1_VALUES } from "@/lib/constants/category1";
 import { createCalendarEvent } from "@/lib/actions/calendar";
 import { useRouter } from "next/navigation";
 
@@ -29,7 +30,7 @@ export function NewEventDialog({ onEventCreated }: NewEventDialogProps) {
     nextDueDate: new Date().toISOString().split('T')[0],
   });
 
-  const categories = Object.keys(CATEGORY_CONFIGS);
+  const categories = CATEGORY1_VALUES;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,7 +154,7 @@ export function NewEventDialog({ onEventCreated }: NewEventDialogProps) {
                   {categories.map(cat => (
                     <SelectItem key={cat} value={cat}>
                       <div className="flex items-center gap-2">
-                        <span>{CATEGORY_CONFIGS[cat]?.icon}</span>
+                        <span>{CATEGORY_CONFIGS[cat]?.icon ?? "•"}</span>
                         <span>{cat}</span>
                       </div>
                     </SelectItem>

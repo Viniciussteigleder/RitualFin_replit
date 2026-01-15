@@ -30,7 +30,10 @@ export function parseOCRText(text: string): OCRResult {
 
   // 3. Merchant (Heuristic: First line or line with "GmbH" etc)
   const lines = text.split("\n").filter(l => l.trim().length > 0);
-  let merchant = lines[0]; // Fallback
+  const merchantLine = lines.find((line) => /^merchant\\s*:/i.test(line.trim()));
+  let merchant = merchantLine
+    ? merchantLine.split(":").slice(1).join(":").trim()
+    : lines[0]; // Fallback
   
   return {
     date,

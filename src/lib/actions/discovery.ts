@@ -44,9 +44,9 @@ export async function getDiscoveryCandidates(): Promise<DiscoveryCandidate[]> {
         .where(and(
             eq(transactions.userId, session.user.id),
             or(
-                eq(transactions.category1, 'OPEN' as any),
                 eq(transactions.category1, 'Outros'),
                 isNull(transactions.category1),
+                isNull(transactions.leafId),
                 lt(transactions.confidence, 80)
             )
         ))

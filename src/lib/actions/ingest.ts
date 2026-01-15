@@ -2,12 +2,37 @@
 
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { ingestionBatches, ingestionItems, transactions, rules, accounts, aliasAssets, sourceCsvSparkasse, sourceCsvMm, sourceCsvAmex } from "@/lib/db/schema";
+import { ingestionBatches, ingestionItems, transactions, rules, accounts, aliasAssets, sourceCsvSparkasse, sourceCsvMm, sourceCsvAmex, transactionEvidenceLink } from "@/lib/db/schema";
 import { parseIngestionFile } from "@/lib/ingest";
 import { generateFingerprint } from "@/lib/ingest/fingerprint";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { categorizeTransaction, AI_SEED_RULES, matchAlias } from "@/lib/rules/engine";
+
+function parseEuropeanNumber(input: unknown): number {
+  if (typeof input === "number") return input;
+  if (typeof input !== "string") return 0;
+
+  const raw = input.trim();
+  if (!raw) return 0;
+
+  // Normalize common currency formatting: spaces, currency symbols, non-breaking spaces.
+  let normalized = raw.replace(/\s|\u00A0/g, "");
+  normalized = normalized.replace(/[€$£]/g, "");
+
+  const hasDot = normalized.includes(".");
+  const hasComma = normalized.includes(",");
+
+  // If both separators exist, assume dot is thousands separator and comma is decimal separator.
+  if (hasDot && hasComma) {
+    normalized = normalized.replace(/\./g, "").replace(/,/g, ".");
+  } else if (hasComma && !hasDot) {
+    normalized = normalized.replace(/,/g, ".");
+  }
+
+  const parsed = Number.parseFloat(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
 
 // Core function for scripting/internal use
 export async function uploadIngestionFileCore(userId: string, buffer: Buffer, filename: string) {
@@ -34,15 +59,50 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
     }
 
     // 3. Process Items & Deduplicate with Source CSV Tables
-    let dupCount = 0;
-    let newCount = 0;
-    const itemsToInsert: any[] = [];
-    const sourceTable = result.format === "sparkasse" ? sourceCsvSparkasse : 
-                       result.format === "miles_and_more" ? sourceCsvMm : 
-                       sourceCsvAmex;
+    if (result.transactions.length === 0) {
+      await db.update(ingestionBatches)
+        .set({
+          status: "preview",
+          diagnosticsJson: {
+            rowsTotal: result.rowsTotal,
+            newCount: 0,
+            duplicates: 0,
+            diagnostics: result.diagnostics
+          } as any
+        })
+        .where(eq(ingestionBatches.id, batch.id));
 
-    for (const tx of result.transactions) {
-      const fingerprint = generateFingerprint(tx);
+      return { success: true, batchId: batch.id, newItems: 0, duplicates: 0 };
+    }
+
+    const txWithFingerprint = result.transactions.map((tx) => ({ tx, fingerprint: generateFingerprint(tx) }));
+    const fingerprints = txWithFingerprint.map((t) => t.fingerprint);
+    let existingUniqueFingerprints = new Set<string>();
+    if (result.format === "sparkasse") {
+      const existing = await db.query.sourceCsvSparkasse.findMany({
+        where: (t, { and, eq }) => and(eq(t.userId, userId), inArray(t.rowFingerprint, fingerprints), eq(t.uniqueRow, true)),
+        columns: { rowFingerprint: true },
+      });
+      existingUniqueFingerprints = new Set(existing.map((row) => row.rowFingerprint));
+    } else if (result.format === "miles_and_more") {
+      const existing = await db.query.sourceCsvMm.findMany({
+        where: (t, { and, eq }) => and(eq(t.userId, userId), inArray(t.rowFingerprint, fingerprints), eq(t.uniqueRow, true)),
+        columns: { rowFingerprint: true },
+      });
+      existingUniqueFingerprints = new Set(existing.map((row) => row.rowFingerprint));
+    } else if (result.format === "amex") {
+      const existing = await db.query.sourceCsvAmex.findMany({
+        where: (t, { and, eq }) => and(eq(t.userId, userId), inArray(t.rowFingerprint, fingerprints), eq(t.uniqueRow, true)),
+        columns: { rowFingerprint: true },
+      });
+      existingUniqueFingerprints = new Set(existing.map((row) => row.rowFingerprint));
+    }
+
+    const counts = await db.transaction(async (txDb) => {
+      let dupCount = 0;
+      let newCount = 0;
+
+      for (const { tx, fingerprint } of txWithFingerprint) {
 
       // Check for existing item with unique_row = true in the specific source table
       // We check ACROSS ALL BATCHES for this user/account to find global duplicates
@@ -60,34 +120,18 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
       // Use existing `db.query` is hard with dynamic table selection without raw SQL or 'any'.
       // Lets use a helper or switch.
       
-      let isUnique = true;
-      if (result.format === "sparkasse") {
-          const existing = await db.query.sourceCsvSparkasse.findFirst({
-              where: (t, { eq, and }) => and(eq(t.rowFingerprint, fingerprint), eq(t.uniqueRow, true)) // Check global uniqueness
-          });
-          if (existing) isUnique = false;
-      } else if (result.format === "miles_and_more") {
-          const existing = await db.query.sourceCsvMm.findFirst({
-              where: (t, { eq, and }) => and(eq(t.rowFingerprint, fingerprint), eq(t.uniqueRow, true))
-          });
-          if (existing) isUnique = false;
-      } else if (result.format === "amex") {
-          const existing = await db.query.sourceCsvAmex.findFirst({
-              where: (t, { eq, and }) => and(eq(t.rowFingerprint, fingerprint), eq(t.uniqueRow, true))
-          });
-          if (existing) isUnique = false;
-      }
+        const isUnique = !existingUniqueFingerprints.has(fingerprint);
 
-      if (!isUnique) {
-        dupCount++;
-      } else {
-        newCount++;
-      }
+        if (!isUnique) {
+          dupCount++;
+        } else {
+          newCount++;
+        }
 
       // Create Ingestion Item (Parent)
       // Note: We still use ingestionItems as a handle, but data lives in source_csv_* too?
       // Schema says source_csv_* references ingestionItems. So we must create item first.
-      const [item] = await db.insert(ingestionItems).values({
+        const [item] = await txDb.insert(ingestionItems).values({
         batchId: batch.id,
         itemFingerprint: fingerprint,
         rawPayload: tx,
@@ -108,8 +152,8 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
           importedAt: new Date()
       };
 
-      if (result.format === "sparkasse") {
-          await db.insert(sourceCsvSparkasse).values({
+        if (result.format === "sparkasse") {
+          await txDb.insert(sourceCsvSparkasse).values({
               ...commonFields,
               auftragskonto: tx.auftragskonto,
               buchungstag: tx.buchungstag ? new Date(tx.buchungstag) : null,
@@ -125,12 +169,12 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
               beguenstigterZahlungspflichtiger: tx.beguenstigterZahlungspflichtiger,
               iban: tx.iban,
               bic: tx.bic,
-              betrag: tx.betrag ? parseFloat(tx.betrag.replace(',', '.')) : 0, // Ensure number
+              betrag: parseEuropeanNumber(tx.betrag),
               waehrung: tx.waehrung,
               info: tx.info
           });
-      } else if (result.format === "miles_and_more") {
-           await db.insert(sourceCsvMm).values({
+        } else if (result.format === "miles_and_more") {
+           await txDb.insert(sourceCsvMm).values({
               ...commonFields,
               authorisedOn: tx.authorisedOn ? new Date(tx.authorisedOn) : null,
               processedOn: tx.processedOn ? new Date(tx.processedOn) : null,
@@ -140,35 +184,37 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
               currency: tx.currency,
               description: tx.description
            });
-      } else if (result.format === "amex") {
-           await db.insert(sourceCsvAmex).values({
+        } else if (result.format === "amex") {
+           await txDb.insert(sourceCsvAmex).values({
               ...commonFields,
               datum: tx.datum ? new Date(tx.datum) : null,
               beschreibung: tx.beschreibung,
-              betrag: tx.betrag ? parseFloat(tx.betrag.replace(',', '.')) : 0,
+              betrag: parseEuropeanNumber(tx.betrag),
               karteninhaber: tx.karteninhaber,
               kartennummer: tx.kartennummer,
               referenz: tx.referenz,
               ort: tx.ort,
               staat: tx.staat
            });
+        }
       }
-    }
 
-    // 4. Update Batch Status
-    await db.update(ingestionBatches)
-      .set({ 
-        status: "preview", 
-        diagnosticsJson: {
+      await txDb.update(ingestionBatches)
+        .set({
+          status: "preview",
+          diagnosticsJson: {
             rowsTotal: result.rowsTotal,
             newCount,
             duplicates: dupCount,
             diagnostics: result.diagnostics
-        } as any
-      })
-      .where(eq(ingestionBatches.id, batch.id));
+          } as any
+        })
+        .where(eq(ingestionBatches.id, batch.id));
 
-    return { success: true, batchId: batch.id, newItems: newCount, duplicates: dupCount };
+      return { dupCount, newCount };
+    });
+
+    return { success: true, batchId: batch.id, newItems: counts.newCount, duplicates: counts.dupCount };
 
   } catch (error: any) {
     console.error("Ingestion error:", error);
@@ -201,7 +247,7 @@ export async function getIngestionBatches() {
     const session = await auth();
     if (!session?.user?.id) return [];
 
-    return await db.query.ingestionBatches.findMany({
+  return await db.query.ingestionBatches.findMany({
         where: eq(ingestionBatches.userId, session.user.id),
         orderBy: (batches, { desc }) => [desc(batches.createdAt)],
         with: {
@@ -277,6 +323,8 @@ export async function commitBatchCore(userId: string, batchId: string) {
         });
     });
 
+    const openLeafId = taxonomyLeaves.find((leaf) => leaf.nivel3Pt === "OPEN")?.leafId ?? null;
+
     for (const item of batch.items) {
         // Skip duplicates or already imported
         if (item.status === "imported" || item.status === "duplicate") continue;
@@ -291,6 +339,13 @@ export async function commitBatchCore(userId: string, batchId: string) {
         let categorization = categorizeTransaction(keyDesc, effectiveRules);
         let aiResult = null;
 
+        if (!categorization.ruleIdApplied && openLeafId) {
+            categorization.leafId = openLeafId;
+            categorization.category1 = null as any;
+            categorization.category2 = null;
+            categorization.category3 = null;
+        }
+
         // Populate Categories from Leaf ID if Rule matched and has leafId
         if (categorization.ruleIdApplied && categorization.leafId) {
              const mapping = leafMap.get(categorization.leafId);
@@ -300,33 +355,16 @@ export async function commitBatchCore(userId: string, batchId: string) {
                  categorization.category3 = mapping.leaf.nivel3Pt;
                  categorization.type = mapping.level2.receitaDespesaDefault as any || categorization.type;
                  categorization.fixVar = mapping.level2.fixoVariavelDefault as any || categorization.fixVar;
-             } else if (categorization.leafId === 'open') {
-                 // "if leaf_id = open, then write open for type, fix_var, category_1, category_2, category_3"
-                 categorization.category1 = "open" as any;
-                 categorization.category2 = "open";
-                 categorization.category3 = "open";
-                 categorization.type = "open" as any;
-                 categorization.fixVar = "open" as any;
              }
         } else if (categorization.ruleIdApplied && !categorization.leafId) {
-            // "if not found; then write open for leaf_id"
-            // Wait, "Jobs inside table transactions: populate leaf_id based on key_words... if not found; then write open for leaf_id"
-            // This implies we should set leafId to 'open' if no rule matched? 
-            // Or if rule matched but has no leafId?
-            // "Based on leaf_id, populate type..."
-            // If rule matched but no leafId, we keep what rule says?
-            // The user says: "populate leaf_id based on key_words... if not found; then write open for leaf_if"
-            // If NO RULE MATCHES at all -> leafId = 'open'?
-            categorization.leafId = 'open';
-            categorization.category1 = "open" as any;
-            categorization.category2 = "open";
-            categorization.category3 = "open";
-            categorization.type = "open" as any;
-            categorization.fixVar = "open" as any;
+            categorization.leafId = openLeafId;
+            categorization.category1 = null as any;
+            categorization.category2 = null;
+            categorization.category3 = null;
         }
 
-        // 3. AI Fallback (only if no rules match - and leafId is 'open')
-        if (categorization.leafId === 'open' && process.env.OPENAI_API_KEY) {
+        // 3. AI Fallback (only if no rules match - and leafId is OPEN)
+        if (openLeafId && categorization.leafId === openLeafId && process.env.OPENAI_API_KEY) {
              // ... AI logic ...
              // Keeping existing logic but mapping back to leafId if AI returns it
              aiResult = await getAICategorization(keyDesc, taxonomyContext);
@@ -369,6 +407,8 @@ export async function commitBatchCore(userId: string, batchId: string) {
             display = "Casa Karlsruhe";
         }
 
+        const amountNum = Number.parseFloat(data.amount);
+
         // Prepare Transaction
         const newTx = {
             userId: userId,
@@ -379,14 +419,14 @@ export async function commitBatchCore(userId: string, batchId: string) {
             descNorm: keyDesc, 
             keyDesc: keyDesc, 
             aliasDesc: aliasMatch ? aliasMatch.aliasDesc : null,
-            amount: parseFloat(data.amount),
+            amount: amountNum,
             currency: data.currency || "EUR",
             category1: (categorization.category1 || "Outros") as any,
             category2: categorization.category2,
             category3: categorization.category3,
             needsReview: categorization.needsReview,
             manualOverride: false,
-            type: (categorization.type || (data.amount < 0 ? "Despesa" : "Receita")) as any,
+            type: (categorization.type || (amountNum < 0 ? "Despesa" : "Receita")) as any,
             fixVar: (categorization.fixVar || "Variável") as any,
             ruleIdApplied: categorization.ruleIdApplied && !categorization.ruleIdApplied.startsWith("seed-") ? categorization.ruleIdApplied : null,
             source: (["Sparkasse", "Amex", "M&M"].includes(data.source) ? data.source : null) as any,
@@ -432,9 +472,6 @@ export async function commitBatch(batchId: string) {
     }
     return result;
 }
-
-import { transactionEvidenceLink } from "@/lib/db/schema";
-import { inArray } from "drizzle-orm";
 
 export async function rollbackBatch(batchId: string) {
     const session = await auth();

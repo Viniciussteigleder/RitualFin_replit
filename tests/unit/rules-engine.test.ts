@@ -243,6 +243,42 @@ function test_TC008_confidence_threshold(): void {
 }
 
 // ============================================================================
+// TC-009: Inactive rules ignored
+// ============================================================================
+function test_TC009_inactive_rules_ignored(): void {
+  console.log('TC-009: Testing inactive rule handling...');
+
+  const rules: Rule[] = [
+    createRule({ id: 'inactive', keyWords: 'REWE', category1: 'Compras', priority: 900, active: false }),
+    createRule({ id: 'active', keyWords: 'REWE', category1: 'Mercados', priority: 600, active: true }),
+  ];
+
+  const result = matchRules('REWE SUPERMARKET', rules);
+  assertEqual(result.appliedRule?.ruleId, 'active', 'Inactive rule must not be applied');
+  assertEqual(result.appliedRule?.category1, 'Mercados', 'Active fallback should apply');
+
+  console.log('  ✓ TC-009 passed: Inactive rules ignored');
+}
+
+// ============================================================================
+// TC-010: Negative keywords exclude in matchRules
+// ============================================================================
+function test_TC010_negative_keywords_exclude_in_matchRules(): void {
+  console.log('TC-010: Testing negative keyword exclusion in matchRules...');
+
+  const rules: Rule[] = [
+    createRule({ id: 'rule-with-negative', keyWords: 'AMAZON', keyWordsNegative: 'PRIME', category1: 'Compras', priority: 800 }),
+    createRule({ id: 'fallback', keyWords: 'AMAZON', category1: 'Lazer / Esporte', priority: 600 }),
+  ];
+
+  const result = matchRules('AMAZON PRIME VIDEO', rules);
+  assertEqual(result.appliedRule?.ruleId, 'fallback', 'Rule with matching negative should not apply');
+  assertEqual(result.appliedRule?.category1, 'Lazer / Esporte', 'Fallback should apply');
+
+  console.log('  ✓ TC-010 passed: matchRules respects negative keywords');
+}
+
+// ============================================================================
 // EC-001: Empty keywords skipped
 // ============================================================================
 function test_EC001_empty_keywords(): void {
@@ -340,6 +376,8 @@ async function runTests(): Promise<void> {
     test_TC006_manual_override,
     test_TC007_conflict_detection,
     test_TC008_confidence_threshold,
+    test_TC009_inactive_rules_ignored,
+    test_TC010_negative_keywords_exclude_in_matchRules,
     test_EC001_empty_keywords,
     test_EC002_special_characters,
     test_EC003_unicode_normalization,

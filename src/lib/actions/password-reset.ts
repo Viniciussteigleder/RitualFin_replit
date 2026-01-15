@@ -17,24 +17,12 @@ export async function requestPasswordReset(email: string) {
         return { success: true, message: "If email exists, reset link sent." };
     }
 
-    const token = randomBytes(32).toString("hex");
-    
-    // In strict implementation, save token to 'verification_tokens' or similar table.
-    // For Release v1.0 Dev Mode: Log to console.
-    
-    if (process.env.NODE_ENV === "production") {
-        // In production, we must never log the token. 
-        // We will return success but no action will happen until an email provider (Resend) is integrated.
-        return { success: true, message: "If email exists, reset link sent." };
-    }
-    
-    console.log("------------------------------------------");
-    console.log(`🔐 PASSWORD RESET REQUEST FOR: ${email}`);
-    console.log(`🔗 RESET LINK: http://localhost:3000/reset-password?token=${token}`);
-    console.log("------------------------------------------");
-
-    // TODO: Send via Resend/SendGrid
-    // await resend.emails.send({ ... })
+    // NOTE: This is intentionally a no-op until a real delivery mechanism exists.
+    // Never log or return reset tokens. Implement by persisting a hashed token in DB
+    // and sending via a provider (e.g., Resend/SendGrid).
+    //
+    // We still keep the "success" response to prevent user enumeration.
+    void randomBytes(32).toString("hex");
 
     return { success: true, message: "If email exists, reset link sent." };
 }

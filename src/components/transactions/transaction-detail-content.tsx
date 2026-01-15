@@ -38,9 +38,8 @@ import { updateTransactionCategory, confirmTransaction, createRuleAndApply } fro
 import { getCategoryConfig } from "@/lib/constants/categories";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Use the robust categories list from the config
-import { CATEGORY_CONFIGS } from "@/lib/constants/categories";
-const CATEGORIES = Object.keys(CATEGORY_CONFIGS);
+import { CATEGORY1_VALUES } from "@/lib/constants/category1";
+const CATEGORIES = CATEGORY1_VALUES;
 
 interface TransactionDetailContentProps {
   transaction: any;
@@ -137,14 +136,15 @@ export function TransactionDetailContent({ transaction, onClose, onConfirm }: Tr
                                 )}
                             </Badge>
                         </div>
-                        <div className="w-16 h-16 rounded-3xl bg-primary flex items-center justify-center shadow-2xl relative overflow-hidden">
-                            <Image 
-                                src="/logo-ritualfin-wax-seal.png" 
-                                alt="RitualFin" 
-                                fill 
-                                className="object-contain p-2"
-                            />
-                        </div>
+	                        <div className="w-16 h-16 rounded-3xl bg-transparent border border-border/50 flex items-center justify-center shadow-2xl relative overflow-hidden">
+	                            <Image 
+	                                src="/RitualFin%20Logo.png" 
+	                                alt="RitualFin" 
+	                                fill 
+	                                sizes="64px"
+	                                className="object-contain p-2"
+	                            />
+	                        </div>
                     </div>
                     
                     {/* Main Info */}

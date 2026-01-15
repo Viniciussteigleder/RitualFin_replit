@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { transactions, accounts, ingestionBatches, aliasAssets, rules } from "@/lib/db/schema";
+import { transactions, accounts, ingestionBatches, aliasAssets, rules, budgets } from "@/lib/db/schema";
 import { eq, desc, sql, and, gte, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { 
@@ -86,13 +86,8 @@ export async function getDashboardData(date?: Date) {
       eq(transactions.type, "Despesa"),
       gte(transactions.paymentDate, startOfMonth),
       sql`${transactions.paymentDate} <= ${endOfMonth}`, // Use endOfMonth to support past months fully
-      // Exclude Internal/Transferências from main spend metrics too? 
-      // User said "categoria interno nao é contabilizado pois sao transacoes internas". 
-      // I should probably apply this broadly.
-      // Assuming 'Interno' and 'Transferências' are the names.
-      // Drizzle doesn't export notInArray by default in all versions, checking imports.
-      // If not available, use sql.
-      sql`${transactions.category1} NOT IN ('Interno', 'Transferências')`,
+      eq(transactions.internalTransfer, false),
+      sql`(${transactions.category1} IS NULL OR ${transactions.category1} <> 'Interno')`,
       ne(transactions.display, "no")
     ));
 
@@ -111,13 +106,21 @@ export async function getDashboardData(date?: Date) {
   }
 
   // 7. Budget / Remaining
-  const monthlyGoal = 5000; 
+  const monthKey = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, "0")}`;
+  const [budgetRes] = await db
+    .select({ total: sql<number>`COALESCE(SUM(${budgets.amount}), 0)` })
+    .from(budgets)
+    .where(and(eq(budgets.userId, userId), eq(budgets.month, monthKey)));
+
+  const monthlyGoal = Number(budgetRes?.total || 0);
   const remainingBudget = monthlyGoal - spentMonthToDate;
 
   // 8. Category Breakdown
+  const categoryLabel = sql<string>`COALESCE(${transactions.appCategoryName}, CAST(${transactions.category1} AS text), 'Outros')`;
+
   const categoryData = await db
     .select({ 
-      name: sql<string>`COALESCE(${transactions.appCategoryName}, ${transactions.category1}, 'Outros')`, 
+      name: categoryLabel, 
       value: sql<number>`ABS(SUM(${transactions.amount}))`
     })
     .from(transactions)
@@ -126,10 +129,11 @@ export async function getDashboardData(date?: Date) {
        eq(transactions.type, "Despesa"),
        gte(transactions.paymentDate, startOfMonth),
        sql`${transactions.paymentDate} <= ${endOfMonth}`,
-       sql`${transactions.category1} NOT IN ('Interno', 'Transferências')`,
+       eq(transactions.internalTransfer, false),
+       sql`(${transactions.category1} IS NULL OR ${transactions.category1} <> 'Interno')`,
        ne(transactions.display, "no")
     ))
-    .groupBy(sql`COALESCE(${transactions.appCategoryName}, ${transactions.category1}, 'Outros')`)
+    .groupBy(categoryLabel)
     .orderBy(desc(sql`ABS(SUM(${transactions.amount}))`))
     .limit(20);
 
