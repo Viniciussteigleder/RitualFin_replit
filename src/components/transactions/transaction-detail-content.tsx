@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import {
   DrawerContent,
@@ -37,10 +37,8 @@ import { toast } from "sonner";
 import { updateTransactionCategory, confirmTransaction, createRuleAndApply } from "@/lib/actions/transactions";
 import { getCategoryConfig } from "@/lib/constants/categories";
 import { motion, AnimatePresence } from "framer-motion";
-
-// Use the robust categories list from the config
-import { CATEGORY_CONFIGS } from "@/lib/constants/categories";
-const CATEGORIES = Object.keys(CATEGORY_CONFIGS);
+import { CategoryIcon } from "@/components/ui/category-icon";
+import { getTaxonomyOptions, type TaxonomyOption } from "@/lib/actions/discovery";
 
 interface TransactionDetailContentProps {
   transaction: any;
@@ -49,15 +47,33 @@ interface TransactionDetailContentProps {
 }
 
 export function TransactionDetailContent({ transaction, onClose, onConfirm }: TransactionDetailContentProps) {
-    const [keyword, setKeyword] = useState(transaction?.simpleDesc || transaction?.descNorm || "");
+    const tx = transaction;
+
+    const [keyword, setKeyword] = useState(tx?.simpleDesc || tx?.descNorm || "");
     const [negativeKeyword, setNegativeKeyword] = useState("");
-    const [selectedCategory, setSelectedCategory] = useState(transaction?.category1 || "Outros");
+    const [taxonomyOptions, setTaxonomyOptions] = useState<TaxonomyOption[]>([]);
+    const [selectedLeafId, setSelectedLeafId] = useState<string>(tx?.leafId || "");
     const [copiedId, setCopiedId] = useState(false);
     const [copiedRaw, setCopiedRaw] = useState(false);
-    
-    if (!transaction) return null;
 
-    const config = getCategoryConfig(transaction.category1);
+    useEffect(() => {
+        let mounted = true;
+        getTaxonomyOptions()
+            .then((opts) => {
+                if (mounted) setTaxonomyOptions(opts);
+            })
+            .catch(() => {
+                // silent; selection will still show current value
+            });
+        return () => {
+            mounted = false;
+        };
+    }, []);
+
+    if (!tx) return null;
+
+    const selectedOption = taxonomyOptions.find((o) => o.leafId === selectedLeafId);
+    const config = getCategoryConfig(selectedOption?.category1 || tx.category1 || "OPEN");
 
     const copyToClipboard = async (text: string, type: 'id' | 'raw') => {
         await navigator.clipboard.writeText(text);
@@ -71,13 +87,13 @@ export function TransactionDetailContent({ transaction, onClose, onConfirm }: Tr
         toast.success("Copiado para a área de transferência");
     };
 
-    const handleCategoryUpdate = async (id: string, category: string) => {
+    const handleLeafUpdate = async (id: string, leafId: string) => {
         try {
-            await updateTransactionCategory(id, { category1: category });
-            setSelectedCategory(category);
-            toast.success("Categoria atualizada");
+            await updateTransactionCategory(id, { leafId });
+            setSelectedLeafId(leafId);
+            toast.success("Classificação atualizada");
         } catch (error) {
-            toast.error("Erro ao atualizar categoria");
+            toast.error("Erro ao atualizar classificação");
         }
     };
 
@@ -94,15 +110,16 @@ export function TransactionDetailContent({ transaction, onClose, onConfirm }: Tr
 
     const handleCreateRule = async () => {
         if (!keyword.trim()) return;
+        if (!selectedLeafId) {
+            toast.error("Selecione uma categoria (leaf) para criar a regra.");
+            return;
+        }
         try {
-            // Updated to handle negative keyword via the existing action if possible, 
-            // but for now let's keep it simple as the DB schema supports it but the action might need update.
-            // If action doesn't support it, we just send keyword for now.
-            const result = await createRuleAndApply(transaction.id, keyword, selectedCategory);
+            const result = await createRuleAndApply(tx.id, keyword, selectedLeafId, negativeKeyword || undefined);
             if (result.success) {
                 toast.success("Regra inteligente criada!");
                 setKeyword("");
-                if (onConfirm) onConfirm(transaction.id);
+                if (onConfirm) onConfirm(tx.id);
                 onClose();
             } else {
                 toast.error("Erro ao criar regra: " + result.error);
@@ -112,7 +129,7 @@ export function TransactionDetailContent({ transaction, onClose, onConfirm }: Tr
         }
     };
 
-    const isExpense = Number(transaction.amount) < 0;
+    const isExpense = Number(tx.amount) < 0;
 
     return (
         <DrawerContent className="bg-card border-none p-0 overflow-hidden rounded-t-[3.5rem] shadow-[0_-25px_50px_-12px_rgba(0,0,0,0.25)]">
@@ -128,35 +145,36 @@ export function TransactionDetailContent({ transaction, onClose, onConfirm }: Tr
                         <div className="absolute top-0 left-0">
                             <Badge variant="outline" className={cn(
                                 "flex items-center gap-1.5 py-1 px-3 rounded-full border-none font-black text-[9px] uppercase tracking-widest",
-                                transaction.needsReview ? "bg-amber-500/10 text-amber-600" : "bg-emerald-500/10 text-emerald-600"
+                                tx.needsReview ? "bg-amber-500/10 text-amber-600" : "bg-emerald-500/10 text-emerald-600"
                             )}>
-                                {transaction.needsReview ? (
+                                {tx.needsReview ? (
                                     <><ShieldAlert className="w-3 h-3" /> Pendente</>
                                 ) : (
                                     <><CheckCircle2 className="w-3 h-3" /> Confirmado</>
                                 )}
                             </Badge>
                         </div>
-                        <div className="w-16 h-16 rounded-3xl bg-primary flex items-center justify-center shadow-2xl relative overflow-hidden">
-                            <Image 
-                                src="/logo-ritualfin-wax-seal.png" 
-                                alt="RitualFin" 
-                                fill 
-                                className="object-contain p-2"
-                            />
-                        </div>
+	                        <div className="w-16 h-16 rounded-3xl bg-transparent border border-border/50 flex items-center justify-center shadow-2xl relative overflow-hidden">
+	                            <Image 
+	                                src="/RitualFin%20Logo.png" 
+	                                alt="RitualFin" 
+	                                fill 
+	                                sizes="64px"
+	                                className="object-contain p-2"
+	                            />
+	                        </div>
                     </div>
                     
                     {/* Main Info */}
                     <div className="flex flex-col items-center text-center max-w-md w-full mb-10">
                         <h2 className="text-3xl font-bold text-foreground tracking-tight leading-tight mb-3 font-display">
-                            {transaction.description}
-                        </h2>
+	                            {tx.description}
+	                        </h2>
                         <div className="flex items-center gap-3 text-xs font-bold text-muted-foreground uppercase tracking-widest bg-secondary/30 px-4 py-2 rounded-2xl">
-                            <span>{transaction.source}</span>
-                            <span className="opacity-30">•</span>
-                            <span>{new Date(transaction.date).toLocaleDateString('pt-PT', { day: '2-digit', month: 'long' })}</span>
-                        </div>
+	                            <span>{tx.source}</span>
+	                            <span className="opacity-30">•</span>
+	                            <span>{new Date(tx.date).toLocaleDateString('pt-PT', { day: '2-digit', month: 'long' })}</span>
+	                        </div>
                     </div>
                     
                     {/* Amount Display */}
@@ -165,8 +183,8 @@ export function TransactionDetailContent({ transaction, onClose, onConfirm }: Tr
                         isExpense ? "text-foreground" : "text-emerald-500"
                     )}>
                         <span className="text-3xl opacity-40 font-bold">{isExpense ? '-' : '+'}</span>
-                        {new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(Math.abs(Number(transaction.amount)))}
-                    </div>
+	                        {new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(Math.abs(Number(tx.amount)))}
+	                    </div>
 
                     {/* Category & Confidence Grid */}
                     <div className="w-full grid grid-cols-2 gap-5 mb-10">
@@ -174,27 +192,24 @@ export function TransactionDetailContent({ transaction, onClose, onConfirm }: Tr
                             <p className={cn("text-[9px] font-black uppercase tracking-[0.2em] mb-3 relative z-10", config.textColor)}>Categoria de Fluxo</p>
                             <div className="relative z-10">
                                 <Select 
-                                    defaultValue={transaction.category1} 
-                                    onValueChange={(val) => handleCategoryUpdate(transaction.id, val)}
-                                >
+                                    value={selectedLeafId}
+	                                    onValueChange={(val) => handleLeafUpdate(tx.id, val)}
+	                                >
                                     <SelectTrigger className="w-full h-auto bg-transparent border-none p-0 focus:ring-0 text-xl font-bold text-foreground text-left shadow-none ring-offset-0">
                                         <div className="flex items-center gap-3">
-                                            <config.lucideIcon className={cn("w-6 h-6", config.textColor)} />
-                                            <SelectValue placeholder="Selecionar..." />
+                                            <CategoryIcon category={selectedOption?.category1 || "OPEN"} size="sm" />
+                                            <SelectValue placeholder="Selecionar categoria..." />
                                         </div>
                                     </SelectTrigger>
                                     <SelectContent className="rounded-2xl border-none shadow-2xl">
-                                        {CATEGORIES.map(cat => {
-                                            const catConfig = getCategoryConfig(cat);
-                                            return (
-                                                <SelectItem key={cat} value={cat} className="py-3 focus:bg-primary/5 rounded-xl">
-                                                    <div className="flex items-center gap-3">
-                                                        <catConfig.lucideIcon className={cn("w-4 h-4", catConfig.textColor)} />
-                                                        <span className="font-bold">{cat}</span>
-                                                    </div>
-                                                </SelectItem>
-                                            );
-                                        })}
+                                        {taxonomyOptions.map(opt => (
+                                            <SelectItem key={opt.leafId} value={opt.leafId} className="py-3 focus:bg-primary/5 rounded-xl">
+                                                <div className="flex items-center gap-3">
+                                                    <CategoryIcon category={opt.appCategory || opt.category1 || "OPEN"} size="sm" />
+                                                    <span className="font-bold truncate max-w-[280px]">{opt.label}</span>
+                                                </div>
+                                            </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -212,8 +227,8 @@ export function TransactionDetailContent({ transaction, onClose, onConfirm }: Tr
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="text-xl font-bold text-white tracking-tight">
-                                        {transaction.confidence ? `${transaction.confidence}%` : "Manual"}
-                                    </span>
+	                                        {tx.confidence ? `${tx.confidence}%` : "Manual"}
+	                                    </span>
                                     <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Confiança IA</span>
                                 </div>
                             </div>
@@ -237,13 +252,13 @@ export function TransactionDetailContent({ transaction, onClose, onConfirm }: Tr
                                     <div className="flex flex-col gap-1">
                                         <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Original Desc (Raw)</span>
                                         <p className="text-sm font-mono text-foreground/80 break-all leading-relaxed">
-                                            {transaction.descRaw}
-                                        </p>
-                                    </div>
-                                    <Button variant="ghost" size="icon" className="shrink-0 hover:bg-primary/5 hover:text-primary rounded-xl" onClick={() => copyToClipboard(transaction.descRaw, 'raw')}>
-                                        {copiedRaw ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                                    </Button>
-                                </div>
+	                                            {tx.descRaw}
+	                                        </p>
+	                                    </div>
+	                                    <Button variant="ghost" size="icon" className="shrink-0 hover:bg-primary/5 hover:text-primary rounded-xl" onClick={() => copyToClipboard(tx.descRaw, 'raw')}>
+	                                        {copiedRaw ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+	                                    </Button>
+	                                </div>
                             </div>
 
                             {/* ID Technical */}
@@ -251,13 +266,13 @@ export function TransactionDetailContent({ transaction, onClose, onConfirm }: Tr
                                 <div className="flex flex-col gap-1">
                                     <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Unique Track ID</span>
                                     <p className="text-[10px] font-mono text-muted-foreground/60">
-                                        {transaction.id}
-                                    </p>
-                                </div>
-                                <Button variant="ghost" size="icon" className="shrink-0 hover:bg-primary/5 hover:text-primary rounded-xl" onClick={() => copyToClipboard(transaction.id, 'id')}>
-                                    {copiedId ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                                </Button>
-                            </div>
+	                                        {tx.id}
+	                                    </p>
+	                                </div>
+	                                <Button variant="ghost" size="icon" className="shrink-0 hover:bg-primary/5 hover:text-primary rounded-xl" onClick={() => copyToClipboard(tx.id, 'id')}>
+	                                    {copiedId ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+	                                </Button>
+	                            </div>
                         </div>
 
                         {/* Smart Rule Creator Page-style */}
@@ -319,8 +334,8 @@ export function TransactionDetailContent({ transaction, onClose, onConfirm }: Tr
                     <div className="w-full grid grid-cols-1 gap-4 mt-12 shrink-0">
                         <Button 
                             className="w-full h-20 bg-primary text-white hover:opacity-95 rounded-[2rem] font-black uppercase tracking-[0.2em] shadow-2xl shadow-primary/20 gap-4 text-base transition-all active:scale-95 group"
-                            onClick={() => handleConfirm(transaction.id)}
-                        >
+	                            onClick={() => handleConfirm(tx.id)}
+	                        >
                             <CheckCircle2 className="h-7 w-7 transition-transform group-hover:scale-110" />
                             Confirmar Transação
                         </Button>

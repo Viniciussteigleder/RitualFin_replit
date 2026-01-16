@@ -70,6 +70,7 @@ export function FloatingAssistant() {
     const [isPending, startTransition] = useTransition();
     const [messages, setMessages] = useState<Message[]>([]);
     const [showSuggestions, setShowSuggestions] = useState(true);
+    const [logoError, setLogoError] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const pathname = usePathname();
@@ -177,24 +178,52 @@ export function FloatingAssistant() {
         return shuffled.slice(0, 4);
     });
 
-    // Format message content with basic markdown
+    function renderInlineMarkdown(text: string): React.ReactNode[] {
+        const nodes: React.ReactNode[] = [];
+        const boldRe = /\*\*(.+?)\*\*/g;
+        let lastIndex = 0;
+
+        for (let match = boldRe.exec(text); match; match = boldRe.exec(text)) {
+            if (match.index > lastIndex) {
+                nodes.push(text.slice(lastIndex, match.index));
+            }
+            nodes.push(
+                <strong key={`b-${match.index}`} className="font-bold">
+                    {match[1]}
+                </strong>
+            );
+            lastIndex = match.index + match[0].length;
+        }
+
+        if (lastIndex < text.length) {
+            nodes.push(text.slice(lastIndex));
+        }
+
+        return nodes;
+    }
+
+    // Format message content with basic markdown (safe: no HTML injection)
     const formatMessage = (content: string) => {
-        return content
-            .split('\n')
-            .map((line, i) => {
-                // Bold text
-                let formatted = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                // Bullet points
-                if (formatted.startsWith('- ')) {
-                    formatted = `<span class="flex gap-2"><span class="text-amber-500">•</span><span>${formatted.slice(2)}</span></span>`;
-                }
-                return <span key={i} dangerouslySetInnerHTML={{ __html: formatted }} />;
-            })
-            .reduce((acc: React.ReactNode[], curr, i, arr) => {
-                acc.push(curr);
-                if (i < arr.length - 1) acc.push(<br key={`br-${i}`} />);
-                return acc;
-            }, []);
+        const lines = content.split("\n");
+        return (
+            <div className="space-y-1">
+                {lines.map((rawLine, i) => {
+                    if (!rawLine.trim()) return <div key={`l-${i}`} className="h-2" />;
+
+                    const line = rawLine.replace(/\r/g, "");
+                    const trimmedStart = line.trimStart();
+                    const isBullet = trimmedStart.startsWith("- ");
+                    const body = isBullet ? trimmedStart.slice(2) : line;
+
+                    return (
+                        <div key={`l-${i}`} className={isBullet ? "flex gap-2" : undefined}>
+                            {isBullet ? <span className="text-amber-500">•</span> : null}
+                            <span>{renderInlineMarkdown(body)}</span>
+                        </div>
+                    );
+                })}
+            </div>
+        );
     };
 
     return (
@@ -219,28 +248,25 @@ export function FloatingAssistant() {
                     onClick={() => setOpen(true)}
                     className={cn(
                         "h-16 w-16 rounded-full shadow-2xl relative overflow-hidden group",
-                        "bg-gradient-to-br from-amber-500 via-amber-600 to-orange-600",
-                        "hover:from-amber-600 hover:via-amber-700 hover:to-orange-700",
-                        "transition-all duration-300 hover:scale-110 hover:shadow-amber-500/25",
-                        "ring-4 ring-amber-500/20 hover:ring-amber-500/40"
+                        "bg-card/90 backdrop-blur-sm border border-border",
+                        "transition-all duration-300 hover:scale-110 hover:shadow-xl",
+                        "hover:bg-card"
                     )}
                 >
-                    {/* Pulse animation */}
-                    <span className="absolute inset-0 rounded-full bg-amber-400 animate-ping opacity-20" />
-
                     {/* Logo */}
-                    <div className="relative z-10 w-10 h-10 rounded-full overflow-hidden bg-white/10 flex items-center justify-center">
-                        <Image
-                            src="/logo-ritualfin-wax-seal.png"
-                            alt="RitualFin"
-                            width={36}
-                            height={36}
-                            className="object-contain drop-shadow-lg"
-                            onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                                e.currentTarget.parentElement!.innerHTML = '<svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>';
-                            }}
-                        />
+                    <div className="relative z-10 w-12 h-12 flex items-center justify-center">
+                        {logoError ? (
+                            <Sparkles className="h-8 w-8 text-amber-600 dark:text-amber-400" />
+                        ) : (
+                            <Image
+                                src="/RitualFin%20Logo.png"
+                                alt="RitualFin"
+                                width={48}
+                                height={48}
+                                className="object-contain"
+                                onError={() => setLogoError(true)}
+                            />
+                        )}
                     </div>
                 </Button>
             </div>
@@ -252,18 +278,18 @@ export function FloatingAssistant() {
                     <SheetHeader className="p-6 border-b border-border bg-gradient-to-r from-amber-500/5 to-orange-500/5">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-100 to-amber-200 dark:from-amber-900/30 dark:to-amber-800/30 flex items-center justify-center overflow-hidden shadow-lg ring-2 ring-amber-500/20">
-                                    <Image
-                                        src="/logo-ritualfin-wax-seal.png"
-                                        alt="RitualFin"
-                                        width={48}
-                                        height={48}
-                                        className="object-contain drop-shadow-md"
+	                                <div className="w-14 h-14 rounded-2xl bg-transparent border border-border/50 flex items-center justify-center overflow-hidden shadow-lg ring-2 ring-amber-500/20">
+	                                    <Image
+	                                        src="/RitualFin%20Logo.png"
+	                                        alt="RitualFin"
+	                                        width={48}
+	                                        height={48}
+	                                        className="object-contain drop-shadow-md"
                                         onError={(e) => {
                                             e.currentTarget.style.display = 'none';
                                         }}
                                     />
-                                </div>
+	                                </div>
                                 <div>
                                     <SheetTitle className="font-display text-2xl tracking-tight flex items-center gap-2">
                                         Analista Ritual
@@ -345,7 +371,7 @@ export function FloatingAssistant() {
                                             <User className="h-4 w-4" />
                                         ) : (
                                             <Image
-                                                src="/logo-ritualfin-wax-seal.png"
+                                                src="/RitualFin%20Logo.png"
                                                 alt="R"
                                                 width={24}
                                                 height={24}
@@ -403,7 +429,7 @@ export function FloatingAssistant() {
                                 <div className="flex items-start gap-3 mr-auto max-w-[90%] animate-in fade-in duration-300">
                                     <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-100 to-amber-200 dark:from-amber-900/50 dark:to-amber-800/50 flex items-center justify-center shrink-0 shadow-sm">
                                         <Image
-                                            src="/logo-ritualfin-wax-seal.png"
+                                            src="/RitualFin%20Logo.png"
                                             alt="R"
                                             width={24}
                                             height={24}

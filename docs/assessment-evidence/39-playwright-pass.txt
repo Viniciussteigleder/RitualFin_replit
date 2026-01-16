@@ -1,0 +1,169 @@
+
+> rest-express@1.0.1 test:e2e
+> playwright test
+
+
+========================================
+Rules Engine Unit Tests
+Logic Contract: docs/LOGIC_CONTRACT.md
+========================================
+
+TC-001: Testing determinism...
+  ✓ TC-001 passed: Deterministic output
+TC-002: Testing strict rule short-circuit...
+  ✓ TC-002 passed: Strict rule short-circuits correctly
+TC-003: Testing priority order...
+  ✓ TC-003 passed: Higher priority wins
+TC-004: Testing negative keywords...
+  ✓ TC-004 passed: Negative keywords exclude correctly
+TC-005: Testing Interno auto-flagging...
+  ✓ TC-005 passed: Interno auto-flags correctly
+TC-006: Manual override preservation...
+  ⚠ Note: Full test requires database integration
+  ✓ TC-006 skipped: Tested at integration level
+TC-007: Testing conflict detection...
+  ✓ TC-007 passed: Conflict detection works
+TC-008: Testing confidence threshold...
+  ✓ TC-008 passed: Confidence threshold respected
+TC-009: Testing inactive rule handling...
+  ✓ TC-009 passed: Inactive rules ignored
+TC-010: Testing negative keyword exclusion in matchRules...
+  ✓ TC-010 passed: matchRules respects negative keywords
+EC-001: Testing empty keywords handling...
+  ✓ EC-001 passed: Empty keywords handled
+EC-002: Testing special characters...
+  ✓ EC-002 passed: Special characters work
+EC-003: Testing unicode normalization...
+  ✓ EC-003 passed: Unicode normalization works
+EC-004: Testing case insensitivity...
+  ✓ EC-004 passed: Case insensitivity works
+
+========================================
+Results: 14 passed, 0 failed
+========================================
+
+
+Running 14 tests using 4 workers
+
+[1A[2K[1/14] [chromium] › tests/auth_harden.spec.ts:2:1 › Auth debug endpoint is not exposed in production
+[1A[2K[2/14] [chromium] › tests/auth_harden.spec.ts:8:1 › Auth route does not immediately error
+[1A[2K[3/14] [chromium] › tests/auth-flow.spec.ts:3:3 › Auth Flow › should load login page and show Google sign-in button
+[1A[2K[4/14] [chromium] › tests/auth-flow.spec.ts:21:3 › Auth Flow › should redirect to login when accessing protected route while logged out
+[1A[2K[5/14] [chromium] › tests/auth-flow.spec.ts:30:3 › Auth Flow › health endpoint should return OK status
+[1A[2K[6/14] [chromium] › tests/auth-flow.spec.ts:40:3 › Application Health › homepage should load
+[1A[2K[7/14] [chromium] › tests/auth-flow.spec.ts:50:3 › Application Health › should have no console errors on login page
+[1A[2K[8/14] [chromium] › tests/auth.spec.ts:3:3 › Authentication › login page renders and shows error on missing config
+[1A[2K[9/14] [chromium] › tests/auth.spec.ts:20:3 › Authentication › signup and login flow
+[1A[2K[10/14] [chromium] › tests/ingestion.spec.ts:19:3 › Ingestion Flow › upload CSV, preview, commit and rollback
+[1A[2K[WebServer] [31m[auth][error][0m CredentialsSignin: Read more at https://errors.authjs.dev#credentialssignin
+
+[1A[2K[WebServer]     at ad (/Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/.next/server/chunks/_2500f2ad._.js:404:40935)
+[WebServer]     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+[WebServer]     at async ax (/Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/.next/server/chunks/_2500f2ad._.js:404:50360)
+[WebServer]     at async aw (/Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/.next/server/chunks/_2500f2ad._.js:404:54610)
+[WebServer]     at async rU.do (/Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.prod.js:5:20169)
+[WebServer]     at async rU.handle (/Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.prod.js:5:24949)
+[WebServer]     at async u (/Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/.next/server/chunks/[root-of-the-server]__6ea5f74b._.js:1:4815)
+[WebServer]     at async rU.handleResponse (/Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.prod.js:1:101467)
+[WebServer]     at async d (/Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/.next/server/chunks/[root-of-the-server]__6ea5f74b._.js:1:5856)
+[WebServer]     at async Module.C (/Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/.next/server/chunks/[root-of-the-server]__6ea5f74b._.js:1:6934)
+
+[1A[2K[11/14] [chromium] › tests/screens.spec.ts:3:1 › Routes: protected screens redirect when logged out
+[1A[2K[12/14] [chromium] › tests/screens.spec.ts:15:1 › Routes: authenticated screens load without server errors
+[1A[2K[13/14] [chromium] › tests/screenshot.spec.ts:19:3 › Screenshot Ingestion › upload screenshot with mocked OCR and verify enrichment
+[1A[2K[WebServer] OpenAI Categorization Error: TypeError: Cannot read properties of undefined (reading 'completions')
+[WebServer]     at bV (.next/server/chunks/ssr/_31f7cb5e._.js:5:11700)
+[WebServer]     at u (.next/server/chunks/ssr/_31f7cb5e._.js:8:10875)
+[WebServer]     at async v (.next/server/chunks/ssr/_31f7cb5e._.js:8:12675)
+[WebServer]     at async u (.next/server/chunks/ssr/_f0af07a0._.js:1:5213)
+[WebServer]     at async m (.next/server/chunks/ssr/_e3a8dd3d._.js:1:7509)
+
+[1A[2K[WebServer] [31m[1m⨯[22m[39m error: invalid input value for enum transaction_type: "open"
+[WebServer]     at async u (.next/server/chunks/ssr/_31f7cb5e._.js:8:12260)
+[WebServer]     at async v (.next/server/chunks/ssr/_31f7cb5e._.js:8:12675)
+[WebServer]     at async u (.next/server/chunks/ssr/_f0af07a0._.js:1:5213)
+[WebServer]     at async m (.next/server/chunks/ssr/_e3a8dd3d._.js:1:7509) {
+[WebServer]   length: [33m141[39m,
+[WebServer]   severity: [32m'ERROR'[39m,
+[WebServer]   code: [32m'22P02'[39m,
+[WebServer]   detail: [90mundefined[39m,
+[WebServer]   hint: [90mundefined[39m,
+[WebServer]   position: [90mundefined[39m,
+[WebServer]   internalPosition: [90mundefined[39m,
+[WebServer]   internalQuery: [90mundefined[39m,
+[WebServer]   where: [32m"unnamed portal parameter $13 = '...'"[39m,
+[WebServer]   schema: [90mundefined[39m,
+[WebServer]   table: [90mundefined[39m,
+[WebServer]   column: [90mundefined[39m,
+[WebServer]   dataType: [90mundefined[39m,
+[WebServer]   constraint: [90mundefined[39m,
+[WebServer]   file: [32m'enum.c'[39m,
+[WebServer]   line: [32m'129'[39m,
+[WebServer]   routine: [32m'enum_in'[39m,
+[WebServer]   digest: [32m'1815325352'[39m
+[WebServer] }
+
+[1A[2K[14/14] [chromium] › tests/smoke-test.spec.ts:2:1 › app loads without runtime errors
+[1A[2K[chromium] › tests/smoke-test.spec.ts:2:1 › app loads without runtime errors
+✅ Login page loads successfully
+
+[1A[2KFinal URL: http://localhost:3001/
+
+[1A[2K✅ No schema errors detected
+
+[1A[2K  1) [chromium] › tests/screenshot.spec.ts:19:3 › Screenshot Ingestion › upload screenshot with mocked OCR and verify enrichment 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByText(/starbucks/i)
+    Expected: visible
+    Timeout: 20000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 20000ms[22m
+    [2m  - waiting for getByText(/starbucks/i)[22m
+
+
+      38 |     // Verify in transactions
+      39 |     await page.goto('/transactions');
+    > 40 |     await expect(page.getByText(/starbucks/i)).toBeVisible({ timeout: 20000 });
+         |                                                ^
+      41 |   });
+      42 | });
+      43 |
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/screenshot.spec.ts:40:48
+
+    Error Context: test-results/screenshot-Screenshot-Inge-d82c2-d-OCR-and-verify-enrichment-chromium/error-context.md
+
+
+[1A[2K  2) [chromium] › tests/ingestion.spec.ts:19:3 › Ingestion Flow › upload CSV, preview, commit and rollback 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByRole('button', { name: /rollback/i })
+    Expected: visible
+    Timeout: 90000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 90000ms[22m
+    [2m  - waiting for getByRole('button', { name: /rollback/i })[22m
+
+
+      28 |     
+      29 |     // Should show rollback action after commit
+    > 30 |     await expect(page.getByRole('button', { name: /rollback/i })).toBeVisible({ timeout: 90000 });
+         |                                                                   ^
+      31 |     
+      32 |     // Verify in transactions
+      33 |     await page.goto('/transactions');
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/ingestion.spec.ts:30:67
+
+    Error Context: test-results/ingestion-Ingestion-Flow-u-2848a-preview-commit-and-rollback-chromium/error-context.md
+
+
+[1A[2K  2 failed
+    [chromium] › tests/ingestion.spec.ts:19:3 › Ingestion Flow › upload CSV, preview, commit and rollback 
+    [chromium] › tests/screenshot.spec.ts:19:3 › Screenshot Ingestion › upload screenshot with mocked OCR and verify enrichment 
+  12 passed (1.9m)

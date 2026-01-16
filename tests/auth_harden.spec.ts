@@ -1,11 +1,8 @@
 import { test, expect } from '@playwright/test';
 
-test('Auth debug endpoint returns correctly', async ({ request }) => {
+test('Auth debug endpoint is not exposed in production', async ({ request }) => {
   const response = await request.get('/api/auth/debug');
-  expect(response.ok()).toBeTruthy();
-  const data = await response.json();
-  expect(data.status).toBe('ok');
-  expect(data.diagnostics).toBeDefined();
+  expect(response.status()).toBe(404);
 });
 
 test('Auth route does not immediately error', async ({ request }) => {

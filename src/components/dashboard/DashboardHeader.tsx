@@ -25,7 +25,7 @@ export function DashboardHeader() {
   return (
     <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 px-1 animate-fade-in-up">
         <div className="flex flex-col gap-2">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight font-display">Painel</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight font-display">Dashboard</h2>
           <p className="text-muted-foreground font-medium">Controle total do seu fluxo financeiro em tempo real.</p>
         </div>
 

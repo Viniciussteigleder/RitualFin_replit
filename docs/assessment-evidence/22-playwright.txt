@@ -1,0 +1,1374 @@
+
+> rest-express@1.0.1 test:e2e
+> playwright test
+
+
+========================================
+Rules Engine Unit Tests
+Logic Contract: docs/LOGIC_CONTRACT.md
+========================================
+
+TC-001: Testing determinism...
+  ✓ TC-001 passed: Deterministic output
+TC-002: Testing strict rule short-circuit...
+  ✓ TC-002 passed: Strict rule short-circuits correctly
+TC-003: Testing priority order...
+  ✓ TC-003 passed: Higher priority wins
+TC-004: Testing negative keywords...
+  ✓ TC-004 passed: Negative keywords exclude correctly
+TC-005: Testing Interno auto-flagging...
+  ✓ TC-005 passed: Interno auto-flags correctly
+TC-006: Manual override preservation...
+  ⚠ Note: Full test requires database integration
+  ✓ TC-006 skipped: Tested at integration level
+TC-007: Testing conflict detection...
+  ✓ TC-007 passed: Conflict detection works
+TC-008: Testing confidence threshold...
+  ✓ TC-008 passed: Confidence threshold respected
+TC-009: Testing inactive rule handling...
+  ✓ TC-009 passed: Inactive rules ignored
+TC-010: Testing negative keyword exclusion in matchRules...
+  ✓ TC-010 passed: matchRules respects negative keywords
+EC-001: Testing empty keywords handling...
+  ✓ EC-001 passed: Empty keywords handled
+EC-002: Testing special characters...
+  ✓ EC-002 passed: Special characters work
+EC-003: Testing unicode normalization...
+  ✓ EC-003 passed: Unicode normalization works
+EC-004: Testing case insensitivity...
+  ✓ EC-004 passed: Case insensitivity works
+
+========================================
+Results: 14 passed, 0 failed
+========================================
+
+
+Running 70 tests using 4 workers
+
+[1A[2K[1/70] [chromium] › tests/auth_harden.spec.ts:2:1 › Auth debug endpoint returns correctly
+[1A[2K[2/70] [chromium] › tests/auth-flow.spec.ts:3:3 › Auth Flow › should load login page and show Google sign-in button
+[1A[2K[3/70] [chromium] › tests/auth_harden.spec.ts:11:1 › Auth route does not immediately error
+[1A[2K[4/70] [chromium] › tests/auth-flow.spec.ts:21:3 › Auth Flow › should redirect to login when accessing protected route while logged out
+[1A[2K  1) [chromium] › tests/auth_harden.spec.ts:2:1 › Auth debug endpoint returns correctly ────────────
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
+
+    Received: [31mfalse[39m
+
+      3 | test('Auth debug endpoint returns correctly', async ({ request }) => {
+      4 |   const response = await request.get('/api/auth/debug');
+    > 5 |   expect(response.ok()).toBeTruthy();
+        |                         ^
+      6 |   const data = await response.json();
+      7 |   expect(data.status).toBe('ok');
+      8 |   expect(data.diagnostics).toBeDefined();
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/auth_harden.spec.ts:5:25
+
+
+[1A[2K[5/70] [chromium] › tests/auth-flow.spec.ts:44:3 › Application Health › homepage should load
+[1A[2K[6/70] [chromium] › tests/auth-flow.spec.ts:30:3 › Auth Flow › auth debug endpoint should return OK status
+[1A[2K  2) [chromium] › tests/auth-flow.spec.ts:30:3 › Auth Flow › auth debug endpoint should return OK status 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32m200[39m
+    Received: [31m404[39m
+
+      27 |   test('auth debug endpoint should return OK status', async ({ page }) => {
+      28 |     const response = await page.goto('/api/auth/debug');
+    > 29 |     expect(response?.status()).toBe(200);
+         |                                ^
+      30 |     
+      31 |     const data = await response?.json();
+      32 |     expect(data.status).toBe('ok');
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/auth-flow.spec.ts:29:32
+
+    Error Context: test-results/auth-flow-Auth-Flow-auth-d-02730-int-should-return-OK-status-chromium/error-context.md
+
+
+[1A[2K[7/70] [chromium] › tests/auth.spec.ts:3:3 › Authentication › login page renders and shows error on missing config
+[1A[2K[8/70] [chromium] › tests/auth.spec.ts:19:3 › Authentication › signup and login flow
+[1A[2K  3) [chromium] › tests/auth.spec.ts:3:3 › Authentication › login page renders and shows error on missing config 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('h1, h2')
+    Expected pattern: [32m/Welcome|Login/i[39m
+    Error: strict mode violation: locator('h1, h2') resolved to 2 elements:
+        1) <h1 class="text-foreground text-xl font-bold tracking-tight font-display">RitualFin</h1> aka getByRole('heading', { name: 'RitualFin', exact: true })
+        2) <h1 class="text-2xl font-bold tracking-tight">Welcome to RitualFin</h1> aka getByRole('heading', { name: 'Welcome to RitualFin' })
+
+    Call log:
+    [2m  - Expect "toContainText" with timeout 5000ms[22m
+    [2m  - waiting for locator('h1, h2')[22m
+
+
+       5 |     await page.goto('/login');
+       6 |     // The page has "Welcome to RitualFin" in a tracking-tight header
+    >  7 |     await expect(page.locator('h1, h2')).toContainText(/Welcome|Login/i);
+         |                                          ^
+       8 |     
+       9 |     // Attempt credentials login with random stuff
+      10 |     await page.fill('input[name="email"]', 'notfound@example.com');
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/auth.spec.ts:7:42
+
+    Error Context: test-results/auth-Authentication-login--0e671-ows-error-on-missing-config-chromium/error-context.md
+
+
+[1A[2K  4) [chromium] › tests/auth-flow.spec.ts:44:3 › Application Health › homepage should load ─────────
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoMatch[2m([22m[32mexpected[39m[2m)[22m
+
+    Expected pattern: [32m/\/(login)?$/[39m
+    Received string:  [31m"http://localhost:3001/login?callbackUrl=http%3A%2F%2Flocalhost%3A3001%2F"[39m
+
+      46 |     
+      47 |     const url = page.url();
+    > 48 |     expect(url).toMatch(/\/(login)?$/);
+         |                 ^
+      49 |   });
+      50 |
+      51 |   test('should have no console errors on login page', async ({ page }) => {
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/auth-flow.spec.ts:48:17
+
+    Error Context: test-results/auth-flow-Application-Health-homepage-should-load-chromium/error-context.md
+
+
+[1A[2K[9/70] [chromium] › tests/auth-flow.spec.ts:54:3 › Application Health › should have no console errors on login page
+[1A[2K[WebServer] [31m[1m⨯[22m[39m Error: A "use server" file can only export async functions, found string.
+[WebServer] Read more: https://nextjs.org/docs/messages/invalid-use-server-value
+[WebServer]     at d (.next/server/chunks/ssr/[root-of-the-server]__bcb2caa7._.js:1:531)
+[WebServer]     at <unknown> (.next/server/chunks/ssr/src_lib_actions_47cfa072._.js:67:1847) {
+[WebServer]   digest: [32m'1424098591@E352'[39m
+[WebServer] }
+
+[1A[2K[10/70] [chromium] › tests/e2e/ai-ui.spec.ts:3:1 › AI-UI-01 AI assistant modal opens and responds
+[1A[2K[11/70] [chromium] › tests/e2e/auth.spec.ts:3:1 › AUTH-01 demo login redirects to dashboard
+[1A[2K  5) [chromium] › tests/auth-flow.spec.ts:54:3 › Application Health › should have no console errors on login page 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoHaveLength[2m([22m[32mexpected[39m[2m)[22m
+
+    Expected length: [32m0[39m
+    Received length: [31m1[39m
+    Received array:  [31m["The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy."][39m
+
+      67 |     );
+      68 |     
+    > 69 |     expect(criticalErrors).toHaveLength(0);
+         |                            ^
+      70 |   });
+      71 | });
+      72 |
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/auth-flow.spec.ts:69:28
+
+    Error Context: test-results/auth-flow-Application-Heal-c861c-onsole-errors-on-login-page-chromium/error-context.md
+
+
+[1A[2K[12/70] [chromium] › tests/e2e/calendar.spec.ts:3:1 › CAL-01 calendar month view loads
+[1A[2K  6) [chromium] › tests/e2e/calendar.spec.ts:3:1 › CAL-01 calendar month view loads ────────────────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByRole('heading', { name: 'Calendário' })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for getByRole('heading', { name: 'Calendário' })[22m
+
+
+       5 |   await mockApi(page);
+       6 |   await page.goto("/calendar");
+    >  7 |   await expect(page.getByRole("heading", { name: "Calendário" })).toBeVisible();
+         |                                                                   ^
+       8 |   await expect(page.getByRole("tab", { name: "Mês" })).toBeVisible();
+       9 | });
+      10 |
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/calendar.spec.ts:7:67
+
+    Error Context: test-results/e2e-calendar-CAL-01-calendar-month-view-loads-chromium/error-context.md
+
+
+[1A[2K[13/70] [chromium] › tests/e2e/csv-import.spec.ts:16:8 › CSV Import - Miles & More › should upload Miles & More CSV and create transactions
+[1A[2K[14/70] [chromium] › tests/e2e/csv-import.spec.ts:42:8 › CSV Import - Miles & More › should detect and skip duplicate Miles & More uploads
+[1A[2K[15/70] [chromium] › tests/e2e/csv-import.spec.ts:67:8 › CSV Import - Amex › should upload Amex CSV with correct format detection
+[1A[2K[16/70] [chromium] › tests/e2e/csv-import.spec.ts:90:8 › CSV Import - Sparkasse › should upload Sparkasse CSV with diagnostic reporting
+[1A[2K[17/70] [chromium] › tests/e2e/csv-import.spec.ts:121:3 › Import Error Handling › should show error for invalid CSV format
+[1A[2K  7) [chromium] › tests/e2e/csv-import.spec.ts:121:3 › Import Error Handling › should show error for invalid CSV format 
+
+    ReferenceError: __dirname is not defined
+
+      125 |
+      126 |     // Create a temporary invalid CSV file
+    > 127 |     const invalidCsvPath = path.join(__dirname, '../../tests/e2e/fixtures/invalid.csv');
+          |                                      ^
+      128 |     const fixturesDir = path.join(__dirname, 'fixtures');
+      129 |
+      130 |     if (!fs.existsSync(fixturesDir)) {
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/csv-import.spec.ts:127:38
+
+    Error Context: test-results/e2e-csv-import-Import-Erro-167fe-rror-for-invalid-CSV-format-chromium/error-context.md
+
+
+[1A[2K[18/70] [chromium] › tests/e2e/csv-import.spec.ts:147:3 › Import Error Handling › should show error for empty CSV file
+[1A[2K  8) [chromium] › tests/e2e/csv-import.spec.ts:147:3 › Import Error Handling › should show error for empty CSV file 
+
+    ReferenceError: __dirname is not defined
+
+      148 |     await page.goto('/uploads');
+      149 |
+    > 150 |     const emptyCsvPath = path.join(__dirname, '../../tests/e2e/fixtures/empty.csv');
+          |                                    ^
+      151 |     const fixturesDir = path.join(__dirname, 'fixtures');
+      152 |
+      153 |     if (!fs.existsSync(fixturesDir)) {
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/csv-import.spec.ts:150:36
+
+    Error Context: test-results/e2e-csv-import-Import-Erro-2cdc5-ow-error-for-empty-CSV-file-chromium/error-context.md
+
+
+[1A[2K[19/70] [chromium] › tests/e2e/deployment.spec.ts:3:1 › DEP-05 version endpoints return metadata
+[1A[2K[20/70] [chromium] › tests/e2e/features.spec.ts:11:5 › RitualFin Feature Tests › Calendar Features › should display month/year navigation prominently
+[1A[2K[chromium] › tests/auth.spec.ts:19:3 › Authentication › signup and login flow
+DEBUG: Signup timed out. Final URL was: http://localhost:3001/signup
+
+[1A[2KDEBUG: Page content preview: <!DOCTYPE html><html id="__next_error__"><head><link rel="preload" href="/_next/static/media/a343f882a40d2cc9-s.p.71e1367e.woff2" as="font" crossorigin="" type="font/woff2"><link rel="preload" href="/_next/static/media/dc6d2a64e9dbf3bc-s.p.4b9eb7a1.woff2" as="font" crossorigin="" type="font/woff2"><link rel="preload" as="image" imagesrcset="/_next/image?url=%2FRitualFin%2520Logo.png&amp;w=32&amp;q=75 32w, /_next/image?url=%2FRitualFin%2520Logo.png&amp;w=48&amp;q=75 48w, /_next/image?url=%2FRitua
+
+[1A[2K  9) [chromium] › tests/auth.spec.ts:19:3 › Authentication › signup and login flow ─────────────────
+
+    TimeoutError: page.waitForURL: Timeout 15000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation until "load"
+    ============================================================
+
+      31 |     // Increase timeout and log URL on failure
+      32 |     try {
+    > 33 |         await page.waitForURL(url => url.pathname === '/' || url.pathname.includes('uploads'), { timeout: 15000 });
+         |                    ^
+      34 |     } catch (e) {
+      35 |         console.error("DEBUG: Signup timed out. Final URL was:", page.url());
+      36 |         console.error("DEBUG: Page content preview:", await page.content().then(c => c.substring(0, 500)));
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/auth.spec.ts:33:20
+
+    Error Context: test-results/auth-Authentication-signup-and-login-flow-chromium/error-context.md
+
+
+[1A[2K[21/70] [chromium] › tests/e2e/features.spec.ts:26:5 › RitualFin Feature Tests › Calendar Features › should navigate between months
+[1A[2K  10) [chromium] › tests/e2e/features.spec.ts:11:5 › RitualFin Feature Tests › Calendar Features › should display month/year navigation prominently 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=/janeiro|fevereiro|março|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro/i')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=/janeiro|fevereiro|março|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro/i')[22m
+
+
+      14 |       // Check that the month/year navigation is visible
+      15 |       const monthNav = page.locator('text=/janeiro|fevereiro|março|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro/i');
+    > 16 |       await expect(monthNav).toBeVisible();
+         |                              ^
+      17 |       
+      18 |       // Check navigation buttons exist
+      19 |       const prevButton = page.locator('a[href*="calendar?month="]').first();
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/features.spec.ts:16:30
+
+    Error Context: test-results/e2e-features-RitualFin-Fea-7a558-year-navigation-prominently-chromium/error-context.md
+
+
+[1A[2K[22/70] [chromium] › tests/e2e/features.spec.ts:44:5 › RitualFin Feature Tests › Rituals Features › should display ritual tabs
+[1A[2K  11) [chromium] › tests/e2e/features.spec.ts:44:5 › RitualFin Feature Tests › Rituals Features › should display ritual tabs 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=Diário')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=Diário')[22m
+
+
+      44 |       
+      45 |       // Check that ritual tabs are visible
+    > 46 |       await expect(page.locator('text=Diário')).toBeVisible();
+         |                                                 ^
+      47 |       await expect(page.locator('text=Semanal')).toBeVisible();
+      48 |       await expect(page.locator('text=Mensal')).toBeVisible();
+      49 |     });
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/features.spec.ts:46:49
+
+    Error Context: test-results/e2e-features-RitualFin-Fea-12ce0--should-display-ritual-tabs-chromium/error-context.md
+
+
+[1A[2K[23/70] [chromium] › tests/e2e/features.spec.ts:54:5 › RitualFin Feature Tests › Rituals Features › should show ritual tasks
+[1A[2K  12) [chromium] › tests/e2e/features.spec.ts:54:5 › RitualFin Feature Tests › Rituals Features › should show ritual tasks 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBeGreaterThan[2m([22m[32mexpected[39m[2m)[22m
+
+    Expected: > [32m0[39m
+    Received:   [31m0[39m
+
+      55 |       const tasks = page.locator('[class*="rounded-xl"]').filter({ hasText: /revisar|categorizar|verificar/i });
+      56 |       const taskCount = await tasks.count();
+    > 57 |       expect(taskCount).toBeGreaterThan(0);
+         |                         ^
+      58 |     });
+      59 |
+      60 |     test('should allow completing a ritual', async ({ page }) => {
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/features.spec.ts:57:25
+
+    Error Context: test-results/e2e-features-RitualFin-Fea-742aa-es-should-show-ritual-tasks-chromium/error-context.md
+
+
+[1A[2K[24/70] [chromium] › tests/e2e/features.spec.ts:66:5 › RitualFin Feature Tests › Rituals Features › should allow completing a ritual
+[1A[2K[25/70] [chromium] › tests/e2e/features.spec.ts:82:5 › RitualFin Feature Tests › Budget Features › should display budget tabs
+[1A[2K  13) [chromium] › tests/e2e/ai-ui.spec.ts:3:1 › AI-UI-01 AI assistant modal opens and responds ────
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: 'Assistente IA' })[22m
+
+
+       7 |   await dismissOnboarding(page);
+       8 |
+    >  9 |   await page.getByRole("button", { name: "Assistente IA" }).click();
+         |                                                             ^
+      10 |   await expect(page.getByRole("dialog")).toBeVisible();
+      11 |   await expect(page.getByText("Ações Rápidas")).toBeVisible();
+      12 |
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/ai-ui.spec.ts:9:61
+
+    Error Context: test-results/e2e-ai-ui-AI-UI-01-AI-assistant-modal-opens-and-responds-chromium/error-context.md
+
+
+[1A[2K  14) [chromium] › tests/e2e/auth.spec.ts:3:1 › AUTH-01 demo login redirects to dashboard ──────────
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByTestId('btn-google-login')[22m
+
+
+       5 |   await mockApi(page);
+       6 |   await page.goto("/login");
+    >  7 |   await page.getByTestId("btn-google-login").click();
+         |                                              ^
+       8 |   await page.waitForURL("**/dashboard");
+       9 |   await expect(page).toHaveURL(/\/dashboard/);
+      10 | });
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/auth.spec.ts:7:46
+
+    Error Context: test-results/e2e-auth-AUTH-01-demo-login-redirects-to-dashboard-chromium/error-context.md
+
+
+[1A[2K[26/70] [chromium] › tests/e2e/features.spec.ts:92:5 › RitualFin Feature Tests › Budget Features › should show MTD vs Budget visualization
+[1A[2K[27/70] [chromium] › tests/e2e/features.spec.ts:103:5 › RitualFin Feature Tests › Budget Features › should display budget proposals
+[1A[2K[28/70] [chromium] › tests/e2e/features.spec.ts:116:5 › RitualFin Feature Tests › Budget Features › should allow copying budgets to next month
+[1A[2K[29/70] [chromium] › tests/e2e/features.spec.ts:128:5 › RitualFin Feature Tests › Budget Features › should show budget comparison data
+[1A[2K  15) [chromium] › tests/e2e/features.spec.ts:82:5 › RitualFin Feature Tests › Budget Features › should display budget tabs 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=Comparativo')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=Comparativo')[22m
+
+
+      79 |       await expect(page.locator('text=Orçamentos')).toBeVisible();
+      80 |       await expect(page.locator('text=Sugestões IA')).toBeVisible();
+    > 81 |       await expect(page.locator('text=Comparativo')).toBeVisible();
+         |                                                      ^
+      82 |     });
+      83 |
+      84 |     test('should show MTD vs Budget visualization', async ({ page }) => {
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/features.spec.ts:81:54
+
+    Error Context: test-results/e2e-features-RitualFin-Fea-95c39--should-display-budget-tabs-chromium/error-context.md
+
+
+[1A[2K[30/70] [chromium] › tests/e2e/features.spec.ts:141:5 › RitualFin Feature Tests › Budget Features › should allow editing budget amounts
+[1A[2K  16) [chromium] › tests/e2e/features.spec.ts:103:5 › RitualFin Feature Tests › Budget Features › should display budget proposals 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
+
+    Received: [31mfalse[39m
+
+      101 |       // Check if proposals are shown or if there's a message about insufficient data
+      102 |       const hasProposals = await page.locator('text=/orçamentos sugeridos|sem dados suficientes/i').isVisible();
+    > 103 |       expect(hasProposals).toBeTruthy();
+          |                            ^
+      104 |     });
+      105 |
+      106 |     test('should allow copying budgets to next month', async ({ page }) => {
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/features.spec.ts:103:28
+
+    Error Context: test-results/e2e-features-RitualFin-Fea-428d6-ld-display-budget-proposals-chromium/error-context.md
+
+
+[1A[2K[31/70] [chromium] › tests/e2e/features.spec.ts:173:5 › RitualFin Feature Tests › Navigation › should navigate to all main pages
+[1A[2K[32/70] [chromium] › tests/e2e/features.spec.ts:159:5 › RitualFin Feature Tests › Navigation › should have working sidebar navigation
+[1A[2K[33/70] [chromium] › tests/e2e/features.spec.ts:188:5 › RitualFin Feature Tests › Data Integrity › should load without console errors
+[1A[2K  17) [chromium] › tests/e2e/features.spec.ts:188:5 › RitualFin Feature Tests › Data Integrity › should load without console errors 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32m0[39m
+    Received: [31m1[39m
+
+      206 |       );
+      207 |       
+    > 208 |       expect(criticalErrors.length).toBe(0);
+          |                                     ^
+      209 |     });
+      210 |
+      211 |     test('should handle month navigation without errors', async ({ page }) => {
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/features.spec.ts:208:37
+
+    Error Context: test-results/e2e-features-RitualFin-Fea-4b1a9-load-without-console-errors-chromium/error-context.md
+
+
+[1A[2K[34/70] [chromium] › tests/e2e/features.spec.ts:204:5 › RitualFin Feature Tests › Data Integrity › should handle month navigation without errors
+[1A[2K  18) [chromium] › tests/e2e/features.spec.ts:159:5 › RitualFin Feature Tests › Navigation › should have working sidebar navigation 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator:  locator('a:has-text("Transações")').first()
+    Expected: visible
+    Received: hidden
+    Timeout:  5000ms
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('a:has-text("Transações")').first()[22m
+    [2m    9 × locator resolved to <a href="/transactions" class="flex flex-col items-center gap-1 p-2 transition-colors text-gray-500 dark:text-gray-400">…</a>[22m
+    [2m      - unexpected value "hidden"[22m
+
+
+      161 |         const link = page.locator(`a:has-text("${linkText}")`);
+      162 |         if (await link.count() > 0) {
+    > 163 |           await expect(link.first()).toBeVisible();
+          |                                      ^
+      164 |         }
+      165 |       }
+      166 |     });
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/features.spec.ts:163:38
+
+    Error Context: test-results/e2e-features-RitualFin-Fea-4bfef--working-sidebar-navigation-chromium/error-context.md
+
+
+[1A[2K  19) [chromium] › tests/e2e/features.spec.ts:26:5 › RitualFin Feature Tests › Calendar Features › should navigate between months 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.textContent: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('text=/janeiro|fevereiro|março|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro/i').first()[22m
+
+
+      27 |       
+      28 |       // Get current month text
+    > 29 |       const currentMonth = await page.locator('text=/janeiro|fevereiro|março|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro/i').first().textContent();
+         |                                                                                                                                                           ^
+      30 |       
+      31 |       // Click next month
+      32 |       await page.locator('a[href*="calendar?month="]').last().click();
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/features.spec.ts:29:155
+
+    Error Context: test-results/e2e-features-RitualFin-Fea-7e9fc-uld-navigate-between-months-chromium/error-context.md
+
+
+[1A[2K[35/70] [chromium] › tests/e2e/legacy-routes.spec.ts:3:1 › LEG-01 legacy routes load
+[1A[2K[36/70] [chromium] › tests/e2e/navigation.spec.ts:19:3 › Navigation › should load dashboard
+[1A[2K  20) [chromium] › tests/e2e/legacy-routes.spec.ts:3:1 › LEG-01 legacy routes load ─────────────────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByRole('heading', { name: 'Fila de Confirmação' })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for getByRole('heading', { name: 'Fila de Confirmação' })[22m
+
+
+       6 |
+       7 |   await page.goto("/confirm");
+    >  8 |   await expect(page.getByRole("heading", { name: "Fila de Confirmação" })).toBeVisible();
+         |                                                                            ^
+       9 |
+      10 |   await page.goto("/rules");
+      11 |   await expect(page.getByRole("button", { name: "Nova Regra" })).toBeVisible();
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/legacy-routes.spec.ts:8:76
+
+    Error Context: test-results/e2e-legacy-routes-LEG-01-legacy-routes-load-chromium/error-context.md
+
+
+[1A[2K  21) [chromium] › tests/e2e/navigation.spec.ts:19:3 › Navigation › should load dashboard ──────────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByRole('heading', { name: /dashboard/i })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for getByRole('heading', { name: /dashboard/i })[22m
+
+
+      17 |   test('should load dashboard', async ({ page }) => {
+      18 |     await page.goto('/dashboard');
+    > 19 |     await expect(page.getByRole('heading', { name: /dashboard/i })).toBeVisible();
+         |                                                                     ^
+      20 |     // Check no console errors
+      21 |     const errors: string[] = [];
+      22 |     page.on('console', (msg) => {
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/navigation.spec.ts:19:69
+
+    Error Context: test-results/e2e-navigation-Navigation-should-load-dashboard-chromium/error-context.md
+
+
+[1A[2K[37/70] [chromium] › tests/e2e/navigation.spec.ts:36:3 › Navigation › should load calendar
+[1A[2K[38/70] [chromium] › tests/e2e/navigation.spec.ts:44:3 › Navigation › should load notifications
+[1A[2K  22) [chromium] › tests/e2e/navigation.spec.ts:36:3 › Navigation › should load calendar ───────────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('h1')
+    Expected pattern: [32m/calend/i[39m
+    Error: strict mode violation: locator('h1') resolved to 2 elements:
+        1) <h1 class="text-foreground text-xl font-bold tracking-tight font-display">RitualFin</h1> aka getByRole('heading', { name: 'RitualFin', exact: true })
+        2) <h1 class="text-2xl font-bold tracking-tight">Welcome to RitualFin</h1> aka getByRole('heading', { name: 'Welcome to RitualFin' })
+
+    Call log:
+    [2m  - Expect "toContainText" with timeout 5000ms[22m
+    [2m  - waiting for locator('h1')[22m
+
+
+      30 |   test('should load calendar', async ({ page }) => {
+      31 |     await page.goto('/calendar');
+    > 32 |     await expect(page.locator('h1')).toContainText(/calend/i);
+         |                                      ^
+      33 |   });
+      34 |
+      35 |   // NAV-003: Notifications
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/navigation.spec.ts:32:38
+
+    Error Context: test-results/e2e-navigation-Navigation-should-load-calendar-chromium/error-context.md
+
+
+[1A[2K  23) [chromium] › tests/e2e/navigation.spec.ts:44:3 › Navigation › should load notifications ──────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('h1')
+    Expected pattern: [32m/notifica/i[39m
+    Error: strict mode violation: locator('h1') resolved to 2 elements:
+        1) <h1 class="text-foreground text-xl font-bold tracking-tight font-display">RitualFin</h1> aka getByRole('heading', { name: 'RitualFin', exact: true })
+        2) <h1 class="text-2xl font-bold tracking-tight">Welcome to RitualFin</h1> aka getByRole('heading', { name: 'Welcome to RitualFin' })
+
+    Call log:
+    [2m  - Expect "toContainText" with timeout 5000ms[22m
+    [2m  - waiting for locator('h1')[22m
+
+
+      36 |   test('should load notifications', async ({ page }) => {
+      37 |     await page.goto('/notifications');
+    > 38 |     await expect(page.locator('h1')).toContainText(/notifica/i);
+         |                                      ^
+      39 |   });
+      40 |
+      41 |   // NAV-004: Budgets
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/navigation.spec.ts:38:38
+
+    Error Context: test-results/e2e-navigation-Navigation-should-load-notifications-chromium/error-context.md
+
+
+[1A[2K[39/70] [chromium] › tests/e2e/navigation.spec.ts:52:3 › Navigation › should load budgets
+[1A[2K[40/70] [chromium] › tests/e2e/navigation.spec.ts:60:3 › Navigation › should load goals
+[1A[2K  24) [chromium] › tests/e2e/navigation.spec.ts:52:3 › Navigation › should load budgets ────────────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('h1')
+    Expected pattern: [32m/budget/i[39m
+    Error: strict mode violation: locator('h1') resolved to 2 elements:
+        1) <h1 class="text-foreground text-xl font-bold tracking-tight font-display">RitualFin</h1> aka getByRole('heading', { name: 'RitualFin', exact: true })
+        2) <h1 class="text-2xl font-bold tracking-tight">Welcome to RitualFin</h1> aka getByRole('heading', { name: 'Welcome to RitualFin' })
+
+    Call log:
+    [2m  - Expect "toContainText" with timeout 5000ms[22m
+    [2m  - waiting for locator('h1')[22m
+
+
+      42 |   test('should load budgets', async ({ page }) => {
+      43 |     await page.goto('/budgets');
+    > 44 |     await expect(page.locator('h1')).toContainText(/budget/i);
+         |                                      ^
+      45 |   });
+      46 |
+      47 |   // NAV-005: Goals
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/navigation.spec.ts:44:38
+
+    Error Context: test-results/e2e-navigation-Navigation-should-load-budgets-chromium/error-context.md
+
+
+[1A[2K  25) [chromium] › tests/e2e/navigation.spec.ts:60:3 › Navigation › should load goals ──────────────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('h1')
+    Expected pattern: [32m/meta|goal/i[39m
+    Error: strict mode violation: locator('h1') resolved to 2 elements:
+        1) <h1 class="text-foreground text-xl font-bold tracking-tight font-display">RitualFin</h1> aka getByRole('heading', { name: 'RitualFin', exact: true })
+        2) <h1 class="text-2xl font-bold tracking-tight">Welcome to RitualFin</h1> aka getByRole('heading', { name: 'Welcome to RitualFin' })
+
+    Call log:
+    [2m  - Expect "toContainText" with timeout 5000ms[22m
+    [2m  - waiting for locator('h1')[22m
+
+
+      48 |   test('should load goals', async ({ page }) => {
+      49 |     await page.goto('/goals');
+    > 50 |     await expect(page.locator('h1')).toContainText(/meta|goal/i);
+         |                                      ^
+      51 |   });
+      52 |
+      53 |   // NAV-006: Confirmation queue (Review Queue / Fila de Revisão)
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/navigation.spec.ts:50:38
+
+    Error Context: test-results/e2e-navigation-Navigation-should-load-goals-chromium/error-context.md
+
+
+[1A[2K[41/70] [chromium] › tests/e2e/navigation.spec.ts:68:3 › Navigation › should load confirmation queue
+[1A[2K  26) [chromium] › tests/e2e/navigation.spec.ts:68:3 › Navigation › should load confirmation queue ─
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('h1')
+    Expected pattern: [32m/revis|confirm|fila/i[39m
+    Error: strict mode violation: locator('h1') resolved to 2 elements:
+        1) <h1 class="text-foreground text-xl font-bold tracking-tight font-display">RitualFin</h1> aka getByRole('heading', { name: 'RitualFin', exact: true })
+        2) <h1 class="text-2xl font-bold tracking-tight">Welcome to RitualFin</h1> aka getByRole('heading', { name: 'Welcome to RitualFin' })
+
+    Call log:
+    [2m  - Expect "toContainText" with timeout 5000ms[22m
+    [2m  - waiting for locator('h1')[22m
+
+
+      54 |   test('should load confirmation queue', async ({ page }) => {
+      55 |     await page.goto('/confirm');
+    > 56 |     await expect(page.locator('h1')).toContainText(/revis|confirm|fila/i);
+         |                                      ^
+      57 |   });
+      58 |
+      59 |   // NAV-007: Transactions
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/navigation.spec.ts:56:38
+
+    Error Context: test-results/e2e-navigation-Navigation-should-load-confirmation-queue-chromium/error-context.md
+
+
+[1A[2K[42/70] [chromium] › tests/e2e/navigation.spec.ts:76:3 › Navigation › should load transactions
+[1A[2K  27) [chromium] › tests/e2e/navigation.spec.ts:76:3 › Navigation › should load transactions ───────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('h1')
+    Expected pattern: [32m/transa/i[39m
+    Error: strict mode violation: locator('h1') resolved to 2 elements:
+        1) <h1 class="text-foreground text-xl font-bold tracking-tight font-display">RitualFin</h1> aka getByRole('heading', { name: 'RitualFin', exact: true })
+        2) <h1 class="text-2xl font-bold tracking-tight">Welcome to RitualFin</h1> aka getByRole('heading', { name: 'Welcome to RitualFin' })
+
+    Call log:
+    [2m  - Expect "toContainText" with timeout 5000ms[22m
+    [2m  - waiting for locator('h1')[22m
+
+
+      60 |   test('should load transactions', async ({ page }) => {
+      61 |     await page.goto('/transactions');
+    > 62 |     await expect(page.locator('h1')).toContainText(/transa/i);
+         |                                      ^
+      63 |   });
+      64 |
+      65 |   // NAV-008: Rules
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/navigation.spec.ts:62:38
+
+    Error Context: test-results/e2e-navigation-Navigation-should-load-transactions-chromium/error-context.md
+
+
+[1A[2K[43/70] [chromium] › tests/e2e/navigation.spec.ts:84:3 › Navigation › should load rules
+[1A[2K  28) [chromium] › tests/e2e/navigation.spec.ts:84:3 › Navigation › should load rules ──────────────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('h1')
+    Expected pattern: [32m/regra|motor/i[39m
+    Error: strict mode violation: locator('h1') resolved to 2 elements:
+        1) <h1 class="text-foreground text-xl font-bold tracking-tight font-display">RitualFin</h1> aka getByRole('heading', { name: 'RitualFin', exact: true })
+        2) <h1 class="text-2xl font-bold tracking-tight">Welcome to RitualFin</h1> aka getByRole('heading', { name: 'Welcome to RitualFin' })
+
+    Call log:
+    [2m  - Expect "toContainText" with timeout 5000ms[22m
+    [2m  - waiting for locator('h1')[22m
+
+
+      66 |   test('should load rules', async ({ page }) => {
+      67 |     await page.goto('/rules');
+    > 68 |     await expect(page.locator('h1')).toContainText(/regra|motor/i);
+         |                                      ^
+      69 |   });
+      70 |
+      71 |   // NAV-009: Merchant Dictionary
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/navigation.spec.ts:68:38
+
+    Error Context: test-results/e2e-navigation-Navigation-should-load-rules-chromium/error-context.md
+
+
+[1A[2K[44/70] [chromium] › tests/e2e/navigation.spec.ts:92:3 › Navigation › should load merchant dictionary
+[1A[2K  29) [chromium] › tests/e2e/navigation.spec.ts:92:3 › Navigation › should load merchant dictionary 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('h1')
+    Expected pattern: [32m/dicion|merchant/i[39m
+    Error: strict mode violation: locator('h1') resolved to 2 elements:
+        1) <h1 class="text-foreground text-xl font-bold tracking-tight font-display">RitualFin</h1> aka getByRole('heading', { name: 'RitualFin', exact: true })
+        2) <h1 class="text-2xl font-bold tracking-tight">Welcome to RitualFin</h1> aka getByRole('heading', { name: 'Welcome to RitualFin' })
+
+    Call log:
+    [2m  - Expect "toContainText" with timeout 5000ms[22m
+    [2m  - waiting for locator('h1')[22m
+
+
+      72 |   test('should load merchant dictionary', async ({ page }) => {
+      73 |     await page.goto('/merchant-dictionary');
+    > 74 |     await expect(page.locator('h1')).toContainText(/dicion|merchant/i);
+         |                                      ^
+      75 |   });
+      76 |
+      77 |   // NAV-010: AI Keywords
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/navigation.spec.ts:74:38
+
+    Error Context: test-results/e2e-navigation-Navigation-should-load-merchant-dictionary-chromium/error-context.md
+
+
+[1A[2K[45/70] [chromium] › tests/e2e/navigation.spec.ts:100:3 › Navigation › should load AI keywords
+[1A[2K  30) [chromium] › tests/e2e/navigation.spec.ts:100:3 › Navigation › should load AI keywords ───────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('h1')
+    Expected pattern: [32m/palavra|keyword|ia|ai/i[39m
+    Error: strict mode violation: locator('h1') resolved to 2 elements:
+        1) <h1 class="text-foreground text-xl font-bold tracking-tight font-display">RitualFin</h1> aka getByRole('heading', { name: 'RitualFin', exact: true })
+        2) <h1 class="text-2xl font-bold tracking-tight">Welcome to RitualFin</h1> aka getByRole('heading', { name: 'Welcome to RitualFin' })
+
+    Call log:
+    [2m  - Expect "toContainText" with timeout 5000ms[22m
+    [2m  - waiting for locator('h1')[22m
+
+
+      78 |   test('should load AI keywords', async ({ page }) => {
+      79 |     await page.goto('/ai-keywords');
+    > 80 |     await expect(page.locator('h1')).toContainText(/palavra|keyword|ia|ai/i);
+         |                                      ^
+      81 |   });
+      82 |
+      83 |   // NAV-011: Uploads
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/navigation.spec.ts:80:38
+
+    Error Context: test-results/e2e-navigation-Navigation-should-load-AI-keywords-chromium/error-context.md
+
+
+[1A[2K[46/70] [chromium] › tests/e2e/navigation.spec.ts:108:3 › Navigation › should load uploads
+[1A[2K  31) [chromium] › tests/e2e/navigation.spec.ts:108:3 › Navigation › should load uploads ───────────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('h1')
+    Expected pattern: [32m/upload|import/i[39m
+    Error: strict mode violation: locator('h1') resolved to 2 elements:
+        1) <h1 class="text-foreground text-xl font-bold tracking-tight font-display">RitualFin</h1> aka getByRole('heading', { name: 'RitualFin', exact: true })
+        2) <h1 class="text-2xl font-bold tracking-tight">Welcome to RitualFin</h1> aka getByRole('heading', { name: 'Welcome to RitualFin' })
+
+    Call log:
+    [2m  - Expect "toContainText" with timeout 5000ms[22m
+    [2m  - waiting for locator('h1')[22m
+
+
+      84 |   test('should load uploads', async ({ page }) => {
+      85 |     await page.goto('/uploads');
+    > 86 |     await expect(page.locator('h1')).toContainText(/upload|import/i);
+         |                                      ^
+      87 |   });
+      88 |
+      89 |   // NAV-012: Accounts
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/navigation.spec.ts:86:38
+
+    Error Context: test-results/e2e-navigation-Navigation-should-load-uploads-chromium/error-context.md
+
+
+[1A[2K[47/70] [chromium] › tests/e2e/navigation.spec.ts:116:3 › Navigation › should load accounts
+[1A[2K  32) [chromium] › tests/e2e/navigation.spec.ts:116:3 › Navigation › should load accounts ──────────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('h1')
+    Expected pattern: [32m/conta|account/i[39m
+    Error: strict mode violation: locator('h1') resolved to 2 elements:
+        1) <h1 class="text-foreground text-xl font-bold tracking-tight font-display">RitualFin</h1> aka getByRole('heading', { name: 'RitualFin', exact: true })
+        2) <h1 class="text-2xl font-bold tracking-tight">Welcome to RitualFin</h1> aka getByRole('heading', { name: 'Welcome to RitualFin' })
+
+    Call log:
+    [2m  - Expect "toContainText" with timeout 5000ms[22m
+    [2m  - waiting for locator('h1')[22m
+
+
+      90 |   test('should load accounts', async ({ page }) => {
+      91 |     await page.goto('/accounts');
+    > 92 |     await expect(page.locator('h1')).toContainText(/conta|account/i);
+         |                                      ^
+      93 |   });
+      94 |
+      95 |   // NAV-013: Rituals
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/navigation.spec.ts:92:38
+
+    Error Context: test-results/e2e-navigation-Navigation-should-load-accounts-chromium/error-context.md
+
+
+[1A[2K[48/70] [chromium] › tests/e2e/navigation.spec.ts:124:3 › Navigation › should load rituals
+[1A[2K  33) [chromium] › tests/e2e/navigation.spec.ts:124:3 › Navigation › should load rituals ───────────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('h1')
+    Expected pattern: [32m/ritual/i[39m
+    Error: strict mode violation: locator('h1') resolved to 2 elements:
+        1) <h1 class="text-foreground text-xl font-bold tracking-tight font-display">RitualFin</h1> aka getByRole('heading', { name: 'RitualFin', exact: true })
+        2) <h1 class="text-2xl font-bold tracking-tight">Welcome to RitualFin</h1> aka getByRole('heading', { name: 'Welcome to RitualFin' })
+
+    Call log:
+    [2m  - Expect "toContainText" with timeout 5000ms[22m
+    [2m  - waiting for locator('h1')[22m
+
+
+       96 |   test('should load rituals', async ({ page }) => {
+       97 |     await page.goto('/rituals');
+    >  98 |     await expect(page.locator('h1')).toContainText(/ritual/i);
+          |                                      ^
+       99 |   });
+      100 |
+      101 |   // NAV-014: Settings (P0 fix - IAL-001)
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/navigation.spec.ts:98:38
+
+    Error Context: test-results/e2e-navigation-Navigation-should-load-rituals-chromium/error-context.md
+
+
+[1A[2K[49/70] [chromium] › tests/e2e/navigation.spec.ts:132:3 › Navigation › should load settings from sidebar link
+[1A[2K  34) [chromium] › tests/e2e/navigation.spec.ts:132:3 › Navigation › should load settings from sidebar link 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('h1')
+    Expected pattern: [32m/config|setting/i[39m
+    Error: strict mode violation: locator('h1') resolved to 2 elements:
+        1) <h1 class="text-foreground text-xl font-bold tracking-tight font-display">RitualFin</h1> aka getByRole('heading', { name: 'RitualFin', exact: true })
+        2) <h1 class="text-2xl font-bold tracking-tight">Welcome to RitualFin</h1> aka getByRole('heading', { name: 'Welcome to RitualFin' })
+
+    Call log:
+    [2m  - Expect "toContainText" with timeout 5000ms[22m
+    [2m  - waiting for locator('h1')[22m
+
+
+      102 |   test('should load settings from sidebar link', async ({ page }) => {
+      103 |     await page.goto('/settings');
+    > 104 |     await expect(page.locator('h1')).toContainText(/config|setting/i);
+          |                                      ^
+      105 |
+      106 |     // Verify settings tabs load (SET-001 through SET-005)
+      107 |     const tabs = ['Conta', 'Preferências', 'Dicionários', 'Integrações', 'Segurança'];
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/navigation.spec.ts:104:38
+
+    Error Context: test-results/e2e-navigation-Navigation--a7ed6--settings-from-sidebar-link-chromium/error-context.md
+
+
+[1A[2K[50/70] [chromium] › tests/e2e/navigation.spec.ts:155:3 › Sidebar UX › should display RitualFin logo without distortion
+[1A[2K[51/70] [chromium] › tests/e2e/navigation.spec.ts:181:3 › Sidebar UX › should have logout button in sidebar
+[1A[2K[52/70] [chromium] › tests/e2e/rules-engine.spec.ts:18:3 › Rules Engine - Keyword Matching › should create rule with simple keyword
+[1A[2K[53/70] [chromium] › tests/e2e/navigation.spec.ts:172:3 › Sidebar UX › should have Settings link in sidebar
+[1A[2K[54/70] [chromium] › tests/e2e/rules-engine.spec.ts:33:3 › Rules Engine - Keyword Matching › should preserve multi-word expressions without tokenization
+[1A[2K  35) [chromium] › tests/e2e/features.spec.ts:128:5 › RitualFin Feature Tests › Budget Features › should show budget comparison data 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('text=Comparativo')[22m
+
+
+      119 |       
+      120 |       // Click on Comparativo tab
+    > 121 |       await page.locator('text=Comparativo').click();
+          |                                              ^
+      122 |       await page.waitForTimeout(2000); // Wait for data to load
+      123 |       
+      124 |       // Check if comparison table or empty state is shown
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/features.spec.ts:121:46
+
+    Error Context: test-results/e2e-features-RitualFin-Fea-3b383-show-budget-comparison-data-chromium/error-context.md
+
+
+[1A[2K[55/70] [chromium] › tests/e2e/rules-engine.spec.ts:49:3 › Rules Engine - Keyword Matching › should handle multiple expressions separated by semicolon
+[1A[2K  36) [chromium] › tests/e2e/features.spec.ts:204:5 › RitualFin Feature Tests › Data Integrity › should handle month navigation without errors 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('a[href*="calendar?month="]').last()[22m
+
+
+      214 |       // Navigate forward 3 months
+      215 |       for (let i = 0; i < 3; i++) {
+    > 216 |         await page.locator('a[href*="calendar?month="]').last().click();
+          |                                                                 ^
+      217 |         await page.waitForLoadState('networkidle');
+      218 |       }
+      219 |       
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/features.spec.ts:216:65
+
+    Error Context: test-results/e2e-features-RitualFin-Fea-ce34e-h-navigation-without-errors-chromium/error-context.md
+
+
+[1A[2K[56/70] [chromium] › tests/e2e/rules-engine.spec.ts:64:3 › Rules Engine - Keyword Matching › should display keywords in uppercase
+[1A[2K  37) [chromium] › tests/e2e/rules-engine.spec.ts:18:3 › Rules Engine - Keyword Matching › should create rule with simple keyword 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByTestId('btn-new-rule')[22m
+
+
+      15 |   // RULE-001: Simple keyword match
+      16 |   test('should create rule with simple keyword', async ({ page }) => {
+    > 17 |     await page.getByTestId('btn-new-rule').click();
+         |                                            ^
+      18 |
+      19 |     await page.getByTestId('input-rule-name').fill('Test Rule - LIDL');
+      20 |     await page.getByTestId('input-rule-keywords').fill('LIDL');
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/rules-engine.spec.ts:17:44
+
+    Error Context: test-results/e2e-rules-engine-Rules-Eng-24f2b-te-rule-with-simple-keyword-chromium/error-context.md
+
+
+[1A[2K  38) [chromium] › tests/e2e/rules-engine.spec.ts:33:3 › Rules Engine - Keyword Matching › should preserve multi-word expressions without tokenization 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByTestId('btn-new-rule')[22m
+
+
+      30 |   // RULE-002: Multi-word expression (CRITICAL - IAL-004 verification)
+      31 |   test('should preserve multi-word expressions without tokenization', async ({ page }) => {
+    > 32 |     await page.getByTestId('btn-new-rule').click();
+         |                                            ^
+      33 |
+      34 |     await page.getByTestId('input-rule-name').fill('Test - Complex Expression');
+      35 |
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/rules-engine.spec.ts:32:44
+
+    Error Context: test-results/e2e-rules-engine-Rules-Eng-c864e-ssions-without-tokenization-chromium/error-context.md
+
+
+[1A[2K[57/70] [chromium] › tests/e2e/rules-engine.spec.ts:82:3 › Rules Management › should search rules by keyword
+[1A[2K[58/70] [chromium] › tests/e2e/rules-engine.spec.ts:101:3 › Rules Management › should delete non-system rule
+[1A[2K  39) [chromium] › tests/e2e/rules-engine.spec.ts:49:3 › Rules Engine - Keyword Matching › should handle multiple expressions separated by semicolon 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByTestId('btn-new-rule')[22m
+
+
+      46 |   // RULE-003: Multiple expressions with semicolon separator
+      47 |   test('should handle multiple expressions separated by semicolon', async ({ page }) => {
+    > 48 |     await page.getByTestId('btn-new-rule').click();
+         |                                            ^
+      49 |
+      50 |     await page.getByTestId('input-rule-name').fill('Test - Multiple Keywords');
+      51 |     await page.getByTestId('input-rule-keywords').fill('LIDL;REWE;EDEKA');
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/rules-engine.spec.ts:48:44
+
+    Error Context: test-results/e2e-rules-engine-Rules-Eng-5fd95-ions-separated-by-semicolon-chromium/error-context.md
+
+
+[1A[2K[59/70] [chromium] › tests/e2e/rules-engine.spec.ts:130:3 › Rules Management › should reapply rules to transactions
+[1A[2K[60/70] [chromium] › tests/e2e/rules-engine.spec.ts:154:3 › Interno Category Auto-Flagging › should create Interno rule with auto-flagging
+[1A[2K  40) [chromium] › tests/e2e/rules-engine.spec.ts:64:3 › Rules Engine - Keyword Matching › should display keywords in uppercase 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByTestId('btn-new-rule')[22m
+
+
+      61 |   // RULE-005: Case insensitive matching (implicit - just verify keywords are uppercased in display)
+      62 |   test('should display keywords in uppercase', async ({ page }) => {
+    > 63 |     await page.getByTestId('btn-new-rule').click();
+         |                                            ^
+      64 |
+      65 |     await page.getByTestId('input-rule-name').fill('Test - Case Insensitive');
+      66 |     await page.getByTestId('input-rule-keywords').fill('netflix');
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/rules-engine.spec.ts:63:44
+
+    Error Context: test-results/e2e-rules-engine-Rules-Eng-edc36-splay-keywords-in-uppercase-chromium/error-context.md
+
+
+[1A[2K[61/70] [chromium] › tests/e2e/rules-engine.spec.ts:181:3 › Manual Override Protection › should preserve manual edits when reapplying rules
+[1A[2K[62/70] [chromium] › tests/e2e/settings-classification.spec.ts:3:1 › SET-06 classification import preview
+[1A[2K  41) [chromium] › tests/e2e/rules-engine.spec.ts:82:3 › Rules Management › should search rules by keyword 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByTestId('input-search-rules')[22m
+
+
+      79 |
+      80 |   test('should search rules by keyword', async ({ page }) => {
+    > 81 |     await page.getByTestId('input-search-rules').fill('LIDL');
+         |                                                  ^
+      82 |
+      83 |     // Results should filter
+      84 |     await page.waitForTimeout(500);
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/rules-engine.spec.ts:81:50
+
+    Error Context: test-results/e2e-rules-engine-Rules-Man-90302-uld-search-rules-by-keyword-chromium/error-context.md
+
+
+[1A[2K  42) [chromium] › tests/e2e/rules-engine.spec.ts:101:3 › Rules Management › should delete non-system rule 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByTestId('btn-new-rule')[22m
+
+
+       98 |   test('should delete non-system rule', async ({ page }) => {
+       99 |     // First create a test rule to delete
+    > 100 |     await page.getByTestId('btn-new-rule').click();
+          |                                            ^
+      101 |     await page.getByTestId('input-rule-name').fill('Rule to Delete');
+      102 |     await page.getByTestId('input-rule-keywords').fill('DELETEME');
+      103 |     await page.getByTestId('btn-save-rule').click();
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/rules-engine.spec.ts:100:44
+
+    Error Context: test-results/e2e-rules-engine-Rules-Man-ab6db-ould-delete-non-system-rule-chromium/error-context.md
+
+
+[1A[2K[63/70] [chromium] › tests/e2e/settings-classification.spec.ts:15:1 › SET-11 CSV mapping modal opens
+[1A[2K[64/70] [chromium] › tests/e2e/transactions.spec.ts:3:1 › TX-06 edit transaction sets manualOverride
+[1A[2K  43) [chromium] › tests/e2e/rules-engine.spec.ts:154:3 › Interno Category Auto-Flagging › should create Interno rule with auto-flagging 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByTestId('btn-new-rule')[22m
+
+
+      143 |   // INT-001: Creating Interno rule should auto-flag internal transfer
+      144 |   test('should create Interno rule with auto-flagging', async ({ page }) => {
+    > 145 |     await page.getByTestId('btn-new-rule').click();
+          |                                            ^
+      146 |
+      147 |     await page.getByTestId('input-rule-name').fill('Test - Interno Transfer');
+      148 |     await page.getByTestId('input-rule-keywords').fill('TRANSFERENCIA INTERNA');
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/rules-engine.spec.ts:145:44
+
+    Error Context: test-results/e2e-rules-engine-Interno-C-adf55-rno-rule-with-auto-flagging-chromium/error-context.md
+
+
+[1A[2K[65/70] [chromium] › tests/e2e/transactions.spec.ts:51:1 › RULE-07 Interno flags are reflected in edit form
+[1A[2K  44) [chromium] › tests/e2e/settings-classification.spec.ts:3:1 › SET-06 classification import preview 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: 'Classificação & Dados' })[22m
+
+
+       6 |   await page.goto("/settings");
+       7 |
+    >  8 |   await page.getByRole("button", { name: "Classificação & Dados" }).click();
+         |                                                                     ^
+       9 |   const fileInput = page.locator("input[type=\"file\"][accept=\".csv\"]").first();
+      10 |   await fileInput.setInputFiles("test-new-categories.csv");
+      11 |
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/settings-classification.spec.ts:8:69
+
+    Error Context: test-results/e2e-settings-classificatio-f7753-assification-import-preview-chromium/error-context.md
+
+
+[1A[2K[66/70] [chromium] › tests/e2e/uploads.spec.ts:4:1 › UP-01 upload preview renders for CSV
+[1A[2K  45) [chromium] › tests/e2e/settings-classification.spec.ts:15:1 › SET-11 CSV mapping modal opens ─
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: 'Integrações' })[22m
+
+
+      17 |   await page.goto("/settings");
+      18 |
+    > 19 |   await page.getByRole("button", { name: "Integrações" }).click();
+         |                                                           ^
+      20 |   await page.getByRole("button", { name: "Ver mapeamento CSV" }).first().click();
+      21 |
+      22 |   await expect(page.getByText("Mapeamento CSV · Miles & More")).toBeVisible();
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/settings-classification.spec.ts:19:59
+
+    Error Context: test-results/e2e-settings-classification-SET-11-CSV-mapping-modal-opens-chromium/error-context.md
+
+
+[1A[2K  46) [chromium] › tests/e2e/transactions.spec.ts:3:1 › TX-06 edit transaction sets manualOverride ─
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: 'Editar' }).first()[22m
+
+
+      34 |
+      35 |   await page.goto("/transactions");
+    > 36 |   await page.getByRole("button", { name: "Editar" }).first().click();
+         |                                                              ^
+      37 |
+      38 |   const dialog = page.getByRole("dialog");
+      39 |   await expect(dialog).toBeVisible();
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/transactions.spec.ts:36:62
+
+    Error Context: test-results/e2e-transactions-TX-06-edit-transaction-sets-manualOverride-chromium/error-context.md
+
+
+[1A[2K[67/70] [chromium] › tests/e2e/uploads.spec.ts:13:1 › UP-02 re-upload shows duplicates summary
+[1A[2K[68/70] [chromium] › tests/ingestion.spec.ts:23:3 › Ingestion Flow › upload CSV, preview, commit and rollback
+[1A[2K[WebServer] [31m[1m⨯[22m[39m Error: A "use server" file can only export async functions, found string.
+[WebServer] Read more: https://nextjs.org/docs/messages/invalid-use-server-value
+[WebServer]     at d (.next/server/chunks/ssr/[root-of-the-server]__bcb2caa7._.js:1:531)
+[WebServer]     at <unknown> (.next/server/chunks/ssr/src_lib_actions_47cfa072._.js:67:1847) {
+[WebServer]   digest: [32m'1424098591@E352'[39m
+[WebServer] }
+
+[1A[2K  47) [chromium] › tests/e2e/transactions.spec.ts:51:1 › RULE-07 Interno flags are reflected in edit form 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: 'Editar' }).first()[22m
+
+
+      71 |
+      72 |   await page.goto("/transactions");
+    > 73 |   await page.getByRole("button", { name: "Editar" }).first().click();
+         |                                                              ^
+      74 |
+      75 |   await expect(page.locator("#excludeFromBudget")).toHaveAttribute("data-state", "checked");
+      76 |   await expect(page.locator("#internalTransfer")).toHaveAttribute("data-state", "checked");
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/transactions.spec.ts:73:62
+
+    Error Context: test-results/e2e-transactions-RULE-07-I-c32bb--are-reflected-in-edit-form-chromium/error-context.md
+
+
+[1A[2K[69/70] [chromium] › tests/screenshot.spec.ts:18:3 › Screenshot Ingestion › upload screenshot with mocked OCR and verify enrichment
+[1A[2K[WebServer] [31m[1m⨯[22m[39m Error: A "use server" file can only export async functions, found string.
+[WebServer] Read more: https://nextjs.org/docs/messages/invalid-use-server-value
+[WebServer]     at d (.next/server/chunks/ssr/[root-of-the-server]__bcb2caa7._.js:1:531)
+[WebServer]     at <unknown> (.next/server/chunks/ssr/src_lib_actions_47cfa072._.js:67:1847) {
+[WebServer]   digest: [32m'1424098591@E352'[39m
+[WebServer] }
+
+[1A[2K  48) [chromium] › tests/e2e/uploads.spec.ts:4:1 › UP-01 upload preview renders for CSV ────────────
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.setInputFiles: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('input[type="file"][accept=".csv"]').first()[22m
+
+
+       8 |   await page.goto("/uploads");
+       9 |
+    > 10 |   await page.locator("input[type=\"file\"][accept=\".csv\"]").first().setInputFiles(sampleCsv);
+         |   ^
+      11 |
+      12 |   await expect(page.getByText("Pré-visualização & Importação")).toBeVisible();
+      13 |   await expect(page.getByText("miles_and_more").first()).toBeVisible();
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/uploads.spec.ts:10:3
+
+    Error Context: test-results/e2e-uploads-UP-01-upload-preview-renders-for-CSV-chromium/error-context.md
+
+
+[1A[2K[70/70] [chromium] › tests/smoke-test.spec.ts:2:1 › app loads without runtime errors
+[1A[2K[chromium] › tests/smoke-test.spec.ts:2:1 › app loads without runtime errors
+✅ Login page loads successfully
+
+[1A[2K[WebServer] [31m[1m⨯[22m[39m Error: A "use server" file can only export async functions, found string.
+[WebServer] Read more: https://nextjs.org/docs/messages/invalid-use-server-value
+[WebServer]     at d (.next/server/chunks/ssr/[root-of-the-server]__bcb2caa7._.js:1:531)
+[WebServer]     at <unknown> (.next/server/chunks/ssr/src_lib_actions_47cfa072._.js:67:1847) {
+[WebServer]   digest: [32m'1424098591@E352'[39m
+[WebServer] }
+
+[1A[2K[chromium] › tests/ingestion.spec.ts:23:3 › Ingestion Flow › upload CSV, preview, commit and rollback
+DEBUG (Ingest): Signup timed out. Final URL was: http://localhost:3001/signup
+
+[1A[2K  49) [chromium] › tests/ingestion.spec.ts:23:3 › Ingestion Flow › upload CSV, preview, commit and rollback 
+
+    TimeoutError: page.waitForURL: Timeout 15000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation until "load"
+    ============================================================
+
+      12 |     await page.click('button:has-text("Sign Up")');
+      13 |     try {
+    > 14 |         await page.waitForURL(url => url.pathname === '/' || url.pathname.includes('uploads'), { timeout: 15000 });
+         |                    ^
+      15 |     } catch (e) {
+      16 |         console.error("DEBUG (Ingest): Signup timed out. Final URL was:", page.url());
+      17 |         throw e;
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/ingestion.spec.ts:14:20
+
+    Error Context: test-results/ingestion-Ingestion-Flow-u-2848a-preview-commit-and-rollback-chromium/error-context.md
+
+
+[1A[2K[chromium] › tests/smoke-test.spec.ts:2:1 › app loads without runtime errors
+Final URL: http://localhost:3001/signup
+
+[1A[2K✅ No schema errors detected
+
+[1A[2K  50) [chromium] › tests/screenshot.spec.ts:18:3 › Screenshot Ingestion › upload screenshot with mocked OCR and verify enrichment 
+
+    TimeoutError: page.waitForURL: Timeout 15000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation until "load"
+    ============================================================
+
+      11 |     await page.fill('input[name="password"]', 'Password123!');
+      12 |     await page.click('button:has-text("Sign Up")');
+    > 13 |     await page.waitForURL(url => url.pathname === '/' || url.pathname.includes('uploads'), { timeout: 15000 });
+         |                ^
+      14 |   });
+      15 |
+      16 |   test('upload screenshot with mocked OCR and verify enrichment', async ({ page }) => {
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/screenshot.spec.ts:13:16
+
+    Error Context: test-results/screenshot-Screenshot-Inge-d82c2-d-OCR-and-verify-enrichment-chromium/error-context.md
+
+
+[1A[2K  51) [chromium] › tests/e2e/uploads.spec.ts:13:1 › UP-02 re-upload shows duplicates summary ───────
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.setInputFiles: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('input[type="file"][accept=".csv"]').first()[22m
+
+
+      27 |   await page.goto("/uploads");
+      28 |
+    > 29 |   await page.locator("input[type=\"file\"][accept=\".csv\"]").first().setInputFiles(sampleCsv);
+         |   ^
+      30 |   await expect(page.getByText("Pré-visualização & Importação")).toBeVisible();
+      31 |
+      32 |   await page.getByText("Confirmo que revisei a pré-visualização e desejo importar.").click();
+        at /Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/tests/e2e/uploads.spec.ts:29:3
+
+    Error Context: test-results/e2e-uploads-UP-02-re-upload-shows-duplicates-summary-chromium/error-context.md
+
+
+[1A[2K  51 failed
+    [chromium] › tests/auth_harden.spec.ts:2:1 › Auth debug endpoint returns correctly ─────────────
+    [chromium] › tests/auth-flow.spec.ts:30:3 › Auth Flow › auth debug endpoint should return OK status 
+    [chromium] › tests/auth-flow.spec.ts:44:3 › Application Health › homepage should load ──────────
+    [chromium] › tests/auth-flow.spec.ts:54:3 › Application Health › should have no console errors on login page 
+    [chromium] › tests/auth.spec.ts:3:3 › Authentication › login page renders and shows error on missing config 
+    [chromium] › tests/auth.spec.ts:19:3 › Authentication › signup and login flow ──────────────────
+    [chromium] › tests/e2e/ai-ui.spec.ts:3:1 › AI-UI-01 AI assistant modal opens and responds ──────
+    [chromium] › tests/e2e/auth.spec.ts:3:1 › AUTH-01 demo login redirects to dashboard ────────────
+    [chromium] › tests/e2e/calendar.spec.ts:3:1 › CAL-01 calendar month view loads ─────────────────
+    [chromium] › tests/e2e/csv-import.spec.ts:121:3 › Import Error Handling › should show error for invalid CSV format 
+    [chromium] › tests/e2e/csv-import.spec.ts:147:3 › Import Error Handling › should show error for empty CSV file 
+    [chromium] › tests/e2e/features.spec.ts:11:5 › RitualFin Feature Tests › Calendar Features › should display month/year navigation prominently 
+    [chromium] › tests/e2e/features.spec.ts:26:5 › RitualFin Feature Tests › Calendar Features › should navigate between months 
+    [chromium] › tests/e2e/features.spec.ts:44:5 › RitualFin Feature Tests › Rituals Features › should display ritual tabs 
+    [chromium] › tests/e2e/features.spec.ts:54:5 › RitualFin Feature Tests › Rituals Features › should show ritual tasks 
+    [chromium] › tests/e2e/features.spec.ts:82:5 › RitualFin Feature Tests › Budget Features › should display budget tabs 
+    [chromium] › tests/e2e/features.spec.ts:103:5 › RitualFin Feature Tests › Budget Features › should display budget proposals 
+    [chromium] › tests/e2e/features.spec.ts:128:5 › RitualFin Feature Tests › Budget Features › should show budget comparison data 
+    [chromium] › tests/e2e/features.spec.ts:159:5 › RitualFin Feature Tests › Navigation › should have working sidebar navigation 
+    [chromium] › tests/e2e/features.spec.ts:188:5 › RitualFin Feature Tests › Data Integrity › should load without console errors 
+    [chromium] › tests/e2e/features.spec.ts:204:5 › RitualFin Feature Tests › Data Integrity › should handle month navigation without errors 
+    [chromium] › tests/e2e/legacy-routes.spec.ts:3:1 › LEG-01 legacy routes load ───────────────────
+    [chromium] › tests/e2e/navigation.spec.ts:19:3 › Navigation › should load dashboard ────────────
+    [chromium] › tests/e2e/navigation.spec.ts:36:3 › Navigation › should load calendar ─────────────
+    [chromium] › tests/e2e/navigation.spec.ts:44:3 › Navigation › should load notifications ────────
+    [chromium] › tests/e2e/navigation.spec.ts:52:3 › Navigation › should load budgets ──────────────
+    [chromium] › tests/e2e/navigation.spec.ts:60:3 › Navigation › should load goals ────────────────
+    [chromium] › tests/e2e/navigation.spec.ts:68:3 › Navigation › should load confirmation queue ───
+    [chromium] › tests/e2e/navigation.spec.ts:76:3 › Navigation › should load transactions ─────────
+    [chromium] › tests/e2e/navigation.spec.ts:84:3 › Navigation › should load rules ────────────────
+    [chromium] › tests/e2e/navigation.spec.ts:92:3 › Navigation › should load merchant dictionary ──
+    [chromium] › tests/e2e/navigation.spec.ts:100:3 › Navigation › should load AI keywords ─────────
+    [chromium] › tests/e2e/navigation.spec.ts:108:3 › Navigation › should load uploads ─────────────
+    [chromium] › tests/e2e/navigation.spec.ts:116:3 › Navigation › should load accounts ────────────
+    [chromium] › tests/e2e/navigation.spec.ts:124:3 › Navigation › should load rituals ─────────────
+    [chromium] › tests/e2e/navigation.spec.ts:132:3 › Navigation › should load settings from sidebar link 
+    [chromium] › tests/e2e/rules-engine.spec.ts:18:3 › Rules Engine - Keyword Matching › should create rule with simple keyword 
+    [chromium] › tests/e2e/rules-engine.spec.ts:33:3 › Rules Engine - Keyword Matching › should preserve multi-word expressions without tokenization 
+    [chromium] › tests/e2e/rules-engine.spec.ts:49:3 › Rules Engine - Keyword Matching › should handle multiple expressions separated by semicolon 
+    [chromium] › tests/e2e/rules-engine.spec.ts:64:3 › Rules Engine - Keyword Matching › should display keywords in uppercase 
+    [chromium] › tests/e2e/rules-engine.spec.ts:82:3 › Rules Management › should search rules by keyword 
+    [chromium] › tests/e2e/rules-engine.spec.ts:101:3 › Rules Management › should delete non-system rule 
+    [chromium] › tests/e2e/rules-engine.spec.ts:154:3 › Interno Category Auto-Flagging › should create Interno rule with auto-flagging 
+    [chromium] › tests/e2e/settings-classification.spec.ts:3:1 › SET-06 classification import preview 
+    [chromium] › tests/e2e/settings-classification.spec.ts:15:1 › SET-11 CSV mapping modal opens ───
+    [chromium] › tests/e2e/transactions.spec.ts:3:1 › TX-06 edit transaction sets manualOverride ───
+    [chromium] › tests/e2e/transactions.spec.ts:51:1 › RULE-07 Interno flags are reflected in edit form 
+    [chromium] › tests/e2e/uploads.spec.ts:4:1 › UP-01 upload preview renders for CSV ──────────────
+    [chromium] › tests/e2e/uploads.spec.ts:13:1 › UP-02 re-upload shows duplicates summary ─────────
+    [chromium] › tests/ingestion.spec.ts:23:3 › Ingestion Flow › upload CSV, preview, commit and rollback 
+    [chromium] › tests/screenshot.spec.ts:18:3 › Screenshot Ingestion › upload screenshot with mocked OCR and verify enrichment 
+  5 skipped
+  14 passed (3.2m)

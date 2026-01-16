@@ -5,29 +5,37 @@ import { db } from "@/lib/db";
 import { appCategory, taxonomyLevel1, taxonomyLevel2, taxonomyLeaf, appCategoryLeaf } from "@/lib/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 
-export async function ensureOpenCategory() {
-  const session = await auth();
-  if (!session?.user?.id) throw new Error("Unauthorized");
-  const userId = session.user.id;
+async function ensureCategory1EnumValue(value: string, log: string[]) {
+  const escaped = value.replace(/'/g, "''");
+  try {
+    await db.execute(sql.raw(`ALTER TYPE category_1 ADD VALUE IF NOT EXISTS '${escaped}'`));
+    log.push(`Ensured '${value}' in category_1 ENUM.`);
+  } catch (e: any) {
+    if (String(e?.message || "").includes("already exists")) {
+      log.push(`'${value}' already in category_1 ENUM.`);
+      return;
+    }
+    // Postgres < 12 doesn't support IF NOT EXISTS for enum values
+    try {
+      await db.execute(sql.raw(`ALTER TYPE category_1 ADD VALUE '${escaped}'`));
+      log.push(`Ensured '${value}' in category_1 ENUM (no IF NOT EXISTS).`);
+    } catch (e2: any) {
+      if (String(e2?.message || "").includes("already exists")) {
+        log.push(`'${value}' already in category_1 ENUM.`);
+      } else {
+        console.error("Failed to alter enum:", e2);
+        log.push(`Warning: Could not add '${value}' to enum. ${String(e2?.message || e2)}`);
+      }
+    }
+  }
+}
 
-  const log = [];
+export async function ensureOpenCategoryCore(userId: string) {
+  const log: string[] = [];
 
   try {
-    // 0. Ensure 'OPEN' exists in category_1 ENUM
-    // This is a runtime migration to support the user request
-    try {
-        await db.execute(sql`ALTER TYPE category_1 ADD VALUE IF NOT EXISTS 'OPEN'`);
-        log.push("Ensured 'OPEN' in category_1 ENUM.");
-    } catch (e: any) {
-        // Postgres < 12 doesn't support IF NOT EXISTS for enum values, so catch error if it exists
-        if (e.message.includes('already exists')) {
-             log.push("'OPEN' already in category_1 ENUM.");
-        } else {
-             // It might be that we can't alter type inside a transaction or permission issue
-             console.error("Failed to alter enum:", e);
-             log.push("Warning: Could not add 'OPEN' to enum. " + e.message);
-        }
-    }
+    // 0. Ensure 'OPEN' exists in category_1 ENUM (and keep enum aligned with taxonomy level 1 names).
+    await ensureCategory1EnumValue("OPEN", log);
 
     // 1. Ensure App Category "OPEN"
     let openAppCat = await db.query.appCategory.findFirst({
@@ -112,6 +120,16 @@ export async function ensureOpenCategory() {
         log.push("Link already exists.");
     }
 
+    // 6. Ensure category_1 ENUM covers ALL taxonomy level 1 names for this user
+    const l1Names = await db.query.taxonomyLevel1.findMany({
+      where: eq(taxonomyLevel1.userId, userId),
+      columns: { nivel1Pt: true },
+    });
+    for (const row of l1Names) {
+      if (!row.nivel1Pt) continue;
+      await ensureCategory1EnumValue(row.nivel1Pt, log);
+    }
+
     return { 
         success: true, 
         log,
@@ -122,4 +140,10 @@ export async function ensureOpenCategory() {
     console.error(error);
     return { success: false, error: error.message, log };
   }
+}
+
+export async function ensureOpenCategory() {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  return ensureOpenCategoryCore(session.user.id);
 }

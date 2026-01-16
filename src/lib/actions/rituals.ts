@@ -266,7 +266,8 @@ export async function getWeeklyRitualTasks() {
         eq(transactions.userId, session.user.id),
         eq(transactions.type, "Despesa"),
         gte(transactions.paymentDate, startOfWeek),
-        sql`${transactions.category1} NOT IN ('Interno', 'Transferências')`,
+        eq(transactions.internalTransfer, false),
+        sql`(${transactions.category1} IS NULL OR ${transactions.category1} <> 'Interno')`,
         ne(transactions.display, "no")
       )
     )
@@ -322,7 +323,8 @@ export async function getMonthlyRitualTasks() {
         eq(transactions.type, "Despesa"),
         gte(transactions.paymentDate, startOfMonth),
         sql`${transactions.paymentDate} <= ${endOfMonth}`,
-        sql`${transactions.category1} NOT IN ('Interno', 'Transferências')`,
+        eq(transactions.internalTransfer, false),
+        sql`(${transactions.category1} IS NULL OR ${transactions.category1} <> 'Interno')`,
         ne(transactions.display, "no")
       )
     );

@@ -2,10 +2,12 @@
 
 **Goal**: reduce docs sprawl, clarify ownership, keep immutable contracts stable, and enable fast onboarding.
 
+**Evidence (markdown inventory)**: `docs/assessment-evidence/66-md-inventory-2026-01-15.txt`
+
 ## Proposed Folder Taxonomy
 
 - `docs/architecture/`: system diagrams, boundaries, data flow
-- `docs/contracts/`: behavior/data contracts (incl. immutable `LOGIC_CONTRACT.md`)
+- `docs/contracts/`: behavior/data contracts (**do not move** immutable `docs/LOGIC_CONTRACT.md`; keep it at the root of `docs/` to avoid breaking tooling/links)
 - `docs/process/`: QA, testing, release process, governance
 - `docs/runbooks/`: deploy + ops runbooks
 - `docs/security/`: security posture, audits, incident notes
@@ -73,7 +75,7 @@
 | `docs/IMPLEMENTATION_USER_FEEDBACK_2026-01-03.md` | Project documentation | REVIEW | `docs/reference/IMPLEMENTATION_USER_FEEDBACK_2026-01-03.md` |
 | `docs/IMPORT_CONTRACT.md` | Behavior/data contract | KEEP | `docs/contracts/IMPORT_CONTRACT.md` |
 | `docs/IMPORT_LOGIC.md` | Historical report / snapshot | ARCHIVE | `docs/archive/IMPORT_LOGIC.md` |
-| `docs/LOGIC_CONTRACT.md` | Business logic contract (immutable) | KEEP | `docs/contracts/LOGIC_CONTRACT.md` |
+| `docs/LOGIC_CONTRACT.md` | Business logic contract (immutable) | KEEP | `docs/LOGIC_CONTRACT.md` |
 | `docs/MERCHANT_DICTIONARY_IMPLEMENTATION.md` | Project documentation | REVIEW | `docs/reference/MERCHANT_DICTIONARY_IMPLEMENTATION.md` |
 | `docs/MERCHANT_DICTIONARY_PHASE_3_4_SPEC.md` | Project documentation | REVIEW | `docs/reference/MERCHANT_DICTIONARY_PHASE_3_4_SPEC.md` |
 | `docs/NEXT_STEPS_CODEX_HANDOFF.md` | Project documentation | REVIEW | `docs/reference/NEXT_STEPS_CODEX_HANDOFF.md` |

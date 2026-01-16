@@ -81,3 +81,47 @@ export async function getAIInsights(data: any): Promise<string | null> {
     return null;
   }
 }
+
+export const RuleSuggestionSchema = z.object({
+  suggested_leaf_id: z.string().describe("The UUID (preferred) or name of the taxonomy leaf"),
+  confidence: z.number().describe("Confidence score between 0 and 1"),
+  proposed_key_words: z.string().describe("Semicolon-separated key_words proposal"),
+  proposed_key_words_negative: z.string().nullable().describe("Semicolon-separated key_words_negative proposal"),
+  rationale: z.string().describe("Short explanation for this proposal"),
+});
+
+export type RuleSuggestionResult = z.infer<typeof RuleSuggestionSchema>;
+
+export async function getAIRuleSuggestion(description: string, taxonomyContext: string): Promise<RuleSuggestionResult | null> {
+  if (!process.env.OPENAI_API_KEY) {
+    console.warn("AI rule suggestion skipped: OPENAI_API_KEY not found.");
+    return null;
+  }
+
+  try {
+    const response = await (openai.beta as any).chat.completions.parse({
+      model: AI_DESIGN.model,
+      messages: [
+        {
+          role: "system",
+          content: `You help create deterministic keyword rules for a personal finance app.
+Return a taxonomy leaf and propose key_words / key_words_negative for a rule that would match similar transactions.
+Use ONLY the provided taxonomy context; prefer returning the leaf UUID.
+Strictly follow the output schema.
+Context: ${taxonomyContext}`,
+        },
+        {
+          role: "user",
+          content: `Transaction description: "${description}"`,
+        },
+      ],
+      response_format: zodResponseFormat(RuleSuggestionSchema, "rule_suggestion"),
+      temperature: AI_DESIGN.temperature,
+    });
+
+    return response.choices[0].message.parsed;
+  } catch (error) {
+    console.error("OpenAI Rule Suggestion Error:", error);
+    return null;
+  }
+}

@@ -1,4 +1,4 @@
-import { getTransactions, getPendingTransactions, getDashboardData } from "@/lib/actions/transactions";
+import { getTransactions, getDashboardData, getSpendAveragesLastMonths } from "@/lib/actions/transactions";
 import { getAccounts } from "@/lib/actions/accounts";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
@@ -9,13 +9,9 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Calendar,
-  RefreshCw,
-  SearchCheck,
-  Lightbulb,
   ArrowRight,
   MoreHorizontal,
   Wallet,
-  Sparkles,
   CreditCard,
   Banknote,
   AlertCircle
@@ -25,16 +21,27 @@ import { Badge } from "@/components/ui/badge";
 import { cn, formatCurrency } from "@/lib/utils";
 import Link from "next/link";
 import { Progress } from "@/components/ui/progress";
-import { SyncStatus } from "@/components/dashboard/SyncStatus";
 import { ForecastCard } from "@/components/dashboard/ForecastCard";
 import dynamicImport from "next/dynamic";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { RecentTransactionsList } from "@/components/dashboard/recent-transactions-list";
-import { DashboardError } from "@/components/dashboard/DashboardError";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AppIcon } from "@/components/ui/app-icon";
 
 // Dynamic import for heavy chart component (reduces initial bundle)
 const CategoryChart = dynamicImport(
   () => import("@/components/dashboard/CategoryChart").then(mod => ({ default: mod.CategoryChart })),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+);
+
+const SpendAveragesChart = dynamicImport(
+  () => import("@/components/dashboard/SpendAveragesChart").then(mod => ({ default: mod.SpendAveragesChart })),
   {
     loading: () => (
       <div className="flex items-center justify-center h-64">
@@ -53,81 +60,96 @@ const ACCOUNT_FILTER_MAP: Record<string, string> = {
 };
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
+  const { month } = await searchParams;
+  const targetDate = month ? new Date(`${month}-01T00:00:00`) : new Date();
+
+  // Fetch data with per-call error isolation
+  let dashboardData: any = null;
+  let transactionsData: any[] = [];
+  let accounts: any[] = [];
+  let spendAverages: any = null;
+  let fetchError: unknown = null;
+
   try {
-    const { month } = await searchParams;
-    const targetDate = month ? new Date(`${month}-01T00:00:00`) : new Date();
+    const [dashboardDataRes, transactionsRes, accountsRes, avg3, avg6, avg12] = await Promise.all([
+      getDashboardData(targetDate).catch((err) => {
+        console.error("[Dashboard] getDashboardData error:", err);
+        return null;
+      }),
+      getTransactions(5).catch((err) => {
+        console.error("[Dashboard] getTransactions error:", err);
+        return [];
+      }),
+      getAccounts().catch((err) => {
+        console.error("[Dashboard] getAccounts error:", err);
+        return [];
+      }),
+      getSpendAveragesLastMonths(targetDate, 3).catch((err) => {
+        console.error("[Dashboard] getSpendAveragesLastMonths(3) error:", err);
+        return null;
+      }),
+      getSpendAveragesLastMonths(targetDate, 6).catch((err) => {
+        console.error("[Dashboard] getSpendAveragesLastMonths(6) error:", err);
+        return null;
+      }),
+      getSpendAveragesLastMonths(targetDate, 12).catch((err) => {
+        console.error("[Dashboard] getSpendAveragesLastMonths(12) error:", err);
+        return null;
+      }),
+    ]);
 
-    // Fetch data with error handling
-    let dashboardData, transactionsData, pendingTransactions, accounts;
+    dashboardData = dashboardDataRes;
+    transactionsData = transactionsRes;
+    accounts = accountsRes;
+
+    const anyAverages = Boolean(avg3 || avg6 || avg12);
+    spendAverages = anyAverages ? ({ 3: avg3, 6: avg6, 12: avg12 } as const) : null;
+  } catch (err) {
+    fetchError = err;
+    console.error("[Dashboard] Data fetching error:", err);
+  }
+
+  if (fetchError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <Card className="max-w-md">
+          <CardContent className="pt-6 text-center space-y-4">
+            <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
+            <h2 className="text-2xl font-bold">Erro ao Carregar Dashboard</h2>
+            <p className="text-muted-foreground">Não foi possível carregar os dados. Por favor, tente novamente.</p>
+            <Link href="/transactions">
+              <Button>Ver Transações</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Provide fallback values if data is missing
+  const { totalBalance = 0, metrics, categoryData = [] } = dashboardData || {};
     
-    try {
-      [dashboardData, transactionsData, pendingTransactions, accounts] = await Promise.all([
-        getDashboardData(targetDate).catch(err => {
-          console.error('[Dashboard] getDashboardData error:', err);
-          return null;
-        }),
-        getTransactions(5).catch(err => {
-          console.error('[Dashboard] getTransactions error:', err);
-          return [];
-        }),
-        getPendingTransactions().catch(err => {
-          console.error('[Dashboard] getPendingTransactions error:', err);
-          return [];
-        }),
-        getAccounts().catch(err => {
-          console.error('[Dashboard] getAccounts error:', err);
-          return [];
-        })
-      ]);
-    } catch (err) {
-      console.error('[Dashboard] Data fetching error:', err);
-      return (
-        <div className="flex flex-col items-center justify-center min-h-screen p-4">
-          <Card className="max-w-md">
-            <CardContent className="pt-6 text-center space-y-4">
-              <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
-              <h2 className="text-2xl font-bold">Erro ao Carregar Dashboard</h2>
-              <p className="text-muted-foreground">
-                Não foi possível carregar os dados. Por favor, tente novamente.
-              </p>
-              <Link href="/transactions">
-                <Button>Ver Transações</Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
-      );
-    }
+  if (!metrics) {
+    console.warn("[Dashboard] Missing metrics, using fallback values");
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <Card className="max-w-md">
+          <CardContent className="pt-6 text-center space-y-4">
+            <AlertCircle className="h-12 w-12 text-orange-500 mx-auto" />
+            <h2 className="text-2xl font-bold">Sem Dados Disponíveis</h2>
+            <p className="text-muted-foreground">
+              Parece que você ainda não tem dados suficientes. Comece importando suas transações.
+            </p>
+            <Link href="/uploads">
+              <Button>Importar Dados</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-    // Provide fallback values if data is missing
-    const { totalBalance = 0, metrics, categoryData = [] } = dashboardData || {};
-    
-    if (!metrics) {
-      console.warn('[Dashboard] Missing metrics, using fallback values');
-      return (
-        <div className="flex flex-col items-center justify-center min-h-screen p-4">
-          <Card className="max-w-md">
-            <CardContent className="pt-6 text-center space-y-4">
-              <AlertCircle className="h-12 w-12 text-orange-500 mx-auto" />
-              <h2 className="text-2xl font-bold">Sem Dados Disponíveis</h2>
-              <p className="text-muted-foreground">
-                Parece que você ainda não tem dados suficientes. Comece importando suas transações.
-              </p>
-              <Link href="/uploads">
-                <Button>Importar Dados</Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
-      );
-    }
-
-    const { 
-      spentMonthToDate = 0, 
-      projectedSpend = 0, 
-      remainingBudget = 0, 
-      monthlyGoal = 0 
-    } = metrics;
+  const { spentMonthToDate = 0, projectedSpend = 0, remainingBudget = 0, monthlyGoal = 0 } = metrics;
   
   return (
     <div className="max-w-7xl mx-auto flex flex-col gap-8 pb-32 font-sans overflow-hidden">
@@ -141,11 +163,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <Card className="md:col-span-2 rounded-2xl border-primary/20 bg-emerald-50/50 dark:bg-emerald-950/10 shadow-sm transition-all group relative overflow-hidden ring-1 ring-emerald-500/10">
            <div className={`absolute inset-0 opacity-10 ${remainingBudget > 0 ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
           <CardContent className="p-8 flex flex-col justify-between h-full gap-5 relative z-10">
-             <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className={`p-3 rounded-xl ${remainingBudget > 0 ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-400/10 dark:text-red-400 shadow-lg shadow-red-500/20'}`}>
-                        <Wallet className="h-5 w-5" />
-                    </div>
+                    <AppIcon icon={Wallet} tone={remainingBudget > 0 ? "emerald" : "rose"} size="md" active={remainingBudget > 0} />
                     <div className="flex flex-col">
                         <span className="text-xs font-black text-muted-foreground uppercase tracking-[0.15em]">Saldo Livre</span>
                         <span className="text-[10px] text-muted-foreground/60 font-bold uppercase tracking-wider">Para o resto do mês</span>
@@ -188,9 +208,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                 <Card className="rounded-2xl border-border bg-white dark:bg-card shadow-sm hover:shadow-md transition-all group relative overflow-hidden cursor-pointer border-l-4 border-l-orange-500/50">
                 <CardContent className="p-8 flex flex-col justify-between h-full gap-4">
                     <div className="flex items-center gap-3">
-                        <div className="p-3 rounded-xl bg-orange-100 text-orange-600 dark:bg-orange-400/10 dark:text-orange-400">
-                            <TrendingUp className="h-5 w-5" />
-                        </div>
+                        <AppIcon icon={TrendingUp} tone="amber" size="md" />
                         <div className="flex flex-col">
                             <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Gasto Acumulado</span>
                             <span className="text-[10px] text-muted-foreground/60 font-bold uppercase">Realizado até hoje</span>
@@ -214,9 +232,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                 <div className="absolute right-0 top-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl"></div>
                 <CardContent className="p-8 flex flex-col justify-between h-full gap-4 relative z-10">
                     <div className="flex items-center gap-3">
-                        <div className="p-3 rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-400/10 dark:text-blue-400">
-                            <Activity className="h-5 w-5" />
-                        </div>
+                        <AppIcon icon={Activity} tone="blue" size="md" />
                         <div className="flex flex-col">
                             <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Projeção Final</span>
                             <span className="text-[10px] text-muted-foreground/60 font-bold uppercase">Baseado no perfil IA</span>
@@ -238,78 +254,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </div>
       </div>
 
-      {/* Row 2: Category Chart & Sync Status */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
-        {/* Category Chart Section */}
-        <Card className="lg:col-span-2 rounded-2xl border-border bg-card shadow-sm p-2">
+      {/* Row 2: Category Chart */}
+      <div className="grid grid-cols-1 gap-6 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+        <Card className="rounded-2xl border-border bg-card shadow-sm p-2">
             <CardContent className="p-8">
                 {/* Passing full data to Client Component to handle filtering/drilldown */}
                 <CategoryChart data={categoryData || []} total={spentMonthToDate} />
             </CardContent>
         </Card>
-
-        {/* AI Action Center Side Card */}
-        <div className="flex flex-col gap-6">
-             <div className={cn(
-               "flex flex-col gap-6 items-start justify-between p-8 rounded-2xl border transition-all h-full",
-               pendingTransactions.length > 0 
-                ? "bg-gradient-to-br from-emerald-600 to-green-700 border-none shadow-xl shadow-emerald-500/20 text-white" 
-                : "bg-card border-border shadow-sm"
-             )}>
-                <div className="flex flex-col gap-4 w-full">
-                  <div className={cn(
-                    "w-14 h-14 rounded-xl flex items-center justify-center mb-2",
-                    pendingTransactions.length > 0 ? "bg-white/20 backdrop-blur-md" : "bg-primary/10 text-primary"
-                  )}>
-                      <Sparkles className={cn("h-6 w-6", pendingTransactions.length > 0 ? "text-white" : "text-primary")} />
-                  </div>
-                  
-                  <div className="flex flex-col gap-2">
-                      <h4 className={cn(
-                        "text-2xl font-bold font-display tracking-tight leading-none",
-                        pendingTransactions.length > 0 ? "text-white" : "text-foreground"
-                      )}>
-                        {pendingTransactions.length > 0 ? "Ação Necessária" : "IA em Operação"}
-                      </h4>
-                      <p className={cn(
-                        "text-sm font-medium leading-relaxed",
-                        pendingTransactions.length > 0 ? "text-emerald-50" : "text-muted-foreground"
-                      )}>
-                        {pendingTransactions.length > 0 
-                          ? `Existem ${pendingTransactions.length} lançamentos aguardando sua validação.` 
-                          : "Tudo em ordem! Sua IA está categorizando novos gastos em tempo real."}
-                      </p>
-                  </div>
-                </div>
-
-                <div className="w-full space-y-4">
-                  <Link href="/confirm" className="w-full block transform active:scale-[0.98] transition-all">
-                      <Button className={cn(
-                        "w-full py-7 h-auto rounded-2xl font-black uppercase tracking-widest text-xs transition-all border-0",
-                        pendingTransactions.length > 0 
-                          ? "bg-white text-emerald-700 hover:bg-emerald-50 shadow-lg" 
-                          : "bg-emerald-500 text-white hover:bg-emerald-600"
-                      )}>
-                          {pendingTransactions.length > 0 ? "Começar Revisão" : "Ver Sugestões"}
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
-                  </Link>
-                  
-                  <div className={cn(
-                    "flex items-center justify-center gap-2 pt-4 border-t",
-                    pendingTransactions.length > 0 ? "border-white/10" : "border-border"
-                  )}>
-                    <RefreshCw className={cn("h-3 w-3", pendingTransactions.length > 0 ? "text-emerald-200" : "text-muted-foreground")} />
-                    <span className={cn(
-                      "text-[10px] font-bold uppercase tracking-widest",
-                      pendingTransactions.length > 0 ? "text-emerald-100" : "text-muted-foreground"
-                    )}>
-                      Sincronizado: <SyncStatus lastSync={dashboardData?.lastSync || null} />
-                    </span>
-                  </div>
-                </div>
-            </div>
-        </div>
       </div>
 
       {/* AccountCardsGrid - Kept mostly same but hide decimals */}
@@ -319,9 +271,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           <Link href="/accounts" className="text-sm font-bold text-primary hover:underline">Ver todas</Link>
         </div>
         
-        <div className="flex flex-wrap gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {accounts.length === 0 ? (
-            <Card className="w-full border-dashed border-2 py-20 flex flex-col items-center justify-center text-muted-foreground bg-secondary/5 rounded-2xl">
+            <Card className="md:col-span-3 w-full border-dashed border-2 py-20 flex flex-col items-center justify-center text-muted-foreground bg-secondary/5 rounded-2xl">
               <Wallet className="h-10 w-10 mb-4 opacity-20" />
               <p className="font-medium">Nenhuma conta conectada</p>
               <Link href="/uploads">
@@ -330,74 +282,95 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             </Card>
           ) : (
             accounts.map((account) => {
-              // Simulated due date for credit cards
-              const dueDate = account.type === "credit_card" ? "Vence dia 15" : null;
+              const sourceFilter =
+                account.inferredSource ||
+                ACCOUNT_FILTER_MAP[account.name] ||
+                account.name;
+
+              const institution =
+                account.inferredSource ||
+                ACCOUNT_FILTER_MAP[account.name] ||
+                account.institution ||
+                "Personal";
+
+              const mark =
+                institution === "Sparkasse"
+                  ? { label: "Sparkasse", bg: "bg-red-600", fg: "text-white", initials: "S" }
+                  : institution === "Amex"
+                    ? { label: "Amex", bg: "bg-blue-600", fg: "text-white", initials: "AE" }
+                    : institution === "M&M"
+                      ? { label: "Miles & More", bg: "bg-amber-500", fg: "text-slate-900", initials: "M&M" }
+                      : { label: String(institution), bg: "bg-slate-900", fg: "text-white", initials: "RF" };
+
+              const lastUploadLabel = account.lastUploadAt
+                ? new Date(account.lastUploadAt).toLocaleDateString("pt-PT", { day: "2-digit", month: "short" })
+                : "—";
+
+              const lastTxLabel = account.lastTransactionAt
+                ? new Date(account.lastTransactionAt).toLocaleDateString("pt-PT", { day: "2-digit", month: "short" })
+                : "—";
               
               return (
-                <Card key={account.id} className="flex-1 min-w-[300px] max-w-[400px] rounded-2xl bg-card border-border shadow-sm hover:shadow-lg transition-all group overflow-hidden">
-                  <CardContent className="p-8 flex flex-col gap-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center group-hover:bg-primary transition-all duration-500">
-                          {account.type === "credit_card" ? (
-                            <CreditCard className="h-6 w-6 text-foreground group-hover:text-white transition-colors" />
-                          ) : (
-                            <Banknote className="h-6 w-6 text-foreground group-hover:text-white transition-colors" />
-                          )}
+                <Card key={account.id} className="rounded-2xl bg-card border-border shadow-sm hover:shadow-lg transition-all group overflow-hidden">
+                  <CardContent className="p-5 flex flex-col gap-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={cn("h-11 w-11 rounded-2xl flex items-center justify-center font-black text-[10px] tracking-widest shadow-sm", mark.bg, mark.fg)}>
+                          {mark.initials}
                         </div>
-                        <div className="flex flex-col">
-                          <span className="text-base font-bold text-foreground font-display">{account.name}</span>
-                          <span className="text-xs font-medium text-muted-foreground capitalize">
-                            {account.type.replace('_', ' ')}
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-sm font-black text-foreground font-display truncate">{account.name}</span>
+                          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.18em] truncate">
+                            {account.type.replace("_", " ")} • {mark.label}
                           </span>
                         </div>
                       </div>
-                      <Link href="/accounts" className="p-2 hover:bg-secondary rounded-xl text-muted-foreground transition-colors">
-                          <MoreHorizontal className="h-5 w-5" />
-                      </Link>
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-muted-foreground/80 hover:bg-secondary font-normal">
+                            <MoreHorizontal className="h-5 w-5" strokeWidth={1.6} />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="rounded-2xl">
+                          <DropdownMenuItem asChild className="rounded-xl font-medium cursor-pointer">
+                            <Link href={`/transactions?accounts=${encodeURIComponent(sourceFilter)}`}>
+                              Ver extrato
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild className="rounded-xl font-medium cursor-pointer">
+                            <Link href="/accounts">Abrir Contas</Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild className="rounded-xl font-medium cursor-pointer">
+                            <Link href="/uploads">Importar novo arquivo</Link>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
 
-                    <div className="flex flex-col gap-5">
-                      <div className="flex justify-between items-end">
-                        <div className="flex flex-col">
-                          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em] mb-1">Saldo</span>
-                          <span className="text-2xl font-bold text-foreground font-display" suppressHydrationWarning>
-                             {formatCurrency(account.balance, { hideDecimals: true })}
-                          </span>
-                        </div>
-                        <div className="flex flex-col text-right">
-                          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em] mb-1">Instituição</span>
-                          <span className="text-sm font-bold text-foreground/80">{account.institution || "Personal"}</span>
-                        </div>
+                    <div className="flex items-end justify-between gap-4">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em] mb-1">Saldo</span>
+                        <span className="text-2xl font-bold text-foreground font-display tracking-tight tabular-nums" suppressHydrationWarning>
+                          {typeof account.balance === "number" ? formatCurrency(account.balance, { hideDecimals: true }) : "—"}
+                        </span>
                       </div>
-                      
-                      <div className="flex flex-col gap-2.5">
-                        <div className="flex justify-between text-[10px] font-black uppercase tracking-[0.2em] mb-1">
-                          <span className="text-muted-foreground/60">Utilização</span>
-                          <span className="text-primary">100% Ok</span>
-                        </div>
-                        <Progress value={100} className="h-2 bg-secondary" />
-                      </div>
+                      <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-none px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tighter">
+                        Ativa
+                      </Badge>
                     </div>
 
-                    <div className="flex gap-2 flex-wrap h-8">
-                      <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-none px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter">Ativa</Badge>
-                      {account.type === "credit_card" && (
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-500/10 text-orange-600 rounded-lg text-[10px] font-black uppercase tracking-tighter border border-orange-200/50">
-                           <Calendar className="h-3 w-3" />
-                           {dueDate}
-                        </div>
-                      )}
+                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground">
+                      <span>Último upload: <span className="text-foreground/80">{lastUploadLabel}</span></span>
+                      <span>Última trans.: <span className="text-foreground/80">{lastTxLabel}</span></span>
                     </div>
 
-                    <div className="flex items-center justify-between pt-5 border-t border-border/50 mt-2">
-                       <Link href={`/transactions?accounts=${encodeURIComponent(ACCOUNT_FILTER_MAP[account.name] || account.name)}`} className="w-full">
-                            <Button variant="ghost" className="w-full text-xs font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-primary hover:bg-primary/5 p-0 h-10 group/btn">
-                                Detalhes do Extrato
-                                <ArrowRight className="h-3.5 w-3.5 ml-2 group-hover/btn:translate-x-1 transition-transform" />
-                            </Button>
-                       </Link>
-                    </div>
+                    <Link href={`/transactions?accounts=${encodeURIComponent(sourceFilter)}`} className="w-full pt-3 border-t border-border/50">
+                      <Button variant="ghost" className="w-full text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-primary hover:bg-primary/5 p-0 h-10 group/btn">
+                        Detalhes do Extrato
+                        <ArrowRight className="h-3.5 w-3.5 ml-2 group-hover/btn:translate-x-1 transition-transform" />
+                      </Button>
+                    </Link>
                   </CardContent>
                 </Card>
               );
@@ -406,45 +379,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </div>
       </div>
 
-      {/* Quick Review Queue & Discovery */}
-      <div className="bg-card rounded-2xl p-8 border border-border shadow-sm flex flex-col group animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-2xl font-bold text-foreground font-display tracking-tight">Fila de Revisão</h3>
-            <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center">
-              <Sparkles className="h-5 w-5 text-primary" />
-            </div>
-          </div>
-          
-          <div className="flex flex-col gap-6 ">
-            {/* Quick Link to Discovery if pending > 0 (assuming pending often correlates with discovery needs) */}
-            <Link href="/confirm">
-              <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/50 p-4 rounded-xl flex items-center justify-between group/discovery cursor-pointer hover:bg-emerald-100/50 transition-colors">
-                  <div className="flex items-center gap-3">
-                      <div className="bg-white dark:bg-emerald-900/40 p-2 rounded-lg text-emerald-600">
-                          <SearchCheck className="h-4 w-4" />
-                      </div>
-                      <div className="flex flex-col">
-                          <span className="text-xs font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-wide">Discovery de Regras</span>
-                          <span className="text-[10px] text-emerald-600/70 font-medium">Encontrar padrões em {pendingTransactions.length} itens</span>
-                      </div>
-                  </div>
-                  <ArrowRight className="h-4 w-4 text-emerald-600 group-hover/discovery:translate-x-1 transition-transform" />
-              </div>
-            </Link>
-
-
-            <RecentTransactionsList transactions={pendingTransactions.slice(0, 5)} />
-          </div>
-          <Link href="/confirm" className="mt-8">
-            <Button variant="outline" className="w-full py-6 text-[10px] font-black text-foreground border-border hover:bg-secondary rounded-2xl transition-all uppercase tracking-widest">
-              Revisar Tudo ({pendingTransactions.length})
-            </Button>
-          </Link>
+      {/* Spend Averages (replaces review queue) */}
+      {spendAverages ? (
+        <div className="bg-card rounded-2xl p-8 border border-border shadow-sm flex flex-col animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+          <SpendAveragesChart data={spendAverages as any} />
         </div>
+      ) : null}
     </div>
   );
-  } catch (error) {
-    console.error('[Dashboard] Unexpected error:', error);
-    return <DashboardError />;
-  }
 }

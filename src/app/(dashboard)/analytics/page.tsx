@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { auth } from "@/auth";
 import { AnalyticsContent } from "./analytics-content";
 import type { Metadata } from "next";
-import { BarChart3, Sparkles } from "lucide-react";
+import { BarChart3 } from "lucide-react";
 import { ReRunRulesButton } from "@/components/transactions/re-run-rules-button";
 
 export const metadata: Metadata = {
@@ -41,15 +41,7 @@ export default async function AnalyticsPage() {
 
           {/* Stats Preview - Premium badges */}
           <div className="flex items-center gap-3">
-             <ReRunRulesButton />
-             <div className="hidden md:flex bg-secondary/30 border border-border rounded-3xl p-3 items-center gap-3 shadow-inner px-5 transition-all duration-300 hover:shadow-md hover:scale-105">
-                <Sparkles className="w-4 h-4 text-emerald-500" />
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Multi-nível</span>
-             </div>
-             <div className="hidden md:flex bg-secondary/30 border border-border rounded-3xl p-3 items-center gap-3 shadow-inner px-5 transition-all duration-300 hover:shadow-md hover:scale-105">
-                <BarChart3 className="w-4 h-4 text-emerald-500" />
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">4 Níveis</span>
-             </div>
+            <ReRunRulesButton />
           </div>
         </div>
 

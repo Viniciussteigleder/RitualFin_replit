@@ -40,7 +40,7 @@ export default async function ConfirmPage() {
             <h1 className="text-4xl font-bold text-foreground tracking-tight font-display">Discovery de Regras</h1>
           </div>
           <p className="text-muted-foreground font-medium max-w-xl leading-relaxed">
-            Identifique padrões em transações não categorizadas (OPEN ou Outros) e crie regras inteligentes para o futuro.
+            Identifique padrões em transações não categorizadas (OPEN) e crie regras inteligentes para o futuro.
           </p>
         </div>
         
@@ -109,7 +109,7 @@ export default async function ConfirmPage() {
               Não encontramos padrões não categorizados nem revisões pendentes. Seu sistema está otimizado.
             </p>
             <Button className="mt-12 h-16 px-12 bg-foreground text-background rounded-2xl font-bold transition-all shadow-xl hover:opacity-90 active:scale-95 text-base" asChild>
-              <Link href="/">Voltar ao Painel</Link>
+              <Link href="/">Voltar ao Dashboard</Link>
             </Button>
           </div>
         </div>

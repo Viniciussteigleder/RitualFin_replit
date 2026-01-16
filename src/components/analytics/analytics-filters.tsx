@@ -14,6 +14,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, subMonths, startOfYear } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface AnalyticsFiltersProps {
   filters: AnalyticsFilters;
@@ -74,7 +75,7 @@ export function AnalyticsFiltersPanel({
   };
 
   const activeFilterCount = Object.keys(filters).filter(
-    (k) => !["category", "level1", "level2", "level3", "startDate", "endDate"].includes(k)
+    (k) => !["appCategory", "category1", "category2", "category3", "startDate", "endDate"].includes(k)
   ).length;
 
   return (
@@ -201,15 +202,27 @@ export function AnalyticsFiltersPanel({
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Tipo de Transação
               </label>
-              <select
-                value={filters.type || ""}
-                onChange={(e) => updateFilter("type", e.target.value || null)}
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300 bg-white font-medium appearance-none cursor-pointer"
-              >
-                <option value="">Todos</option>
-                <option value="Despesa">Despesa</option>
-                <option value="Receita">Receita</option>
-              </select>
+              <div className="flex bg-white border border-gray-200 rounded-xl p-1">
+                {([
+                  { label: "Todos", value: "" },
+                  { label: "Despesa", value: "Despesa" as const },
+                  { label: "Receita", value: "Receita" as const },
+                ] as const).map((opt) => (
+                  <button
+                    key={opt.label}
+                    type="button"
+                    onClick={() => updateFilter("type", opt.value || null)}
+                    className={cn(
+                      "flex-1 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200",
+                      (filters.type || "") === opt.value
+                        ? "bg-emerald-50 text-emerald-800 shadow-sm"
+                        : "text-gray-600 hover:bg-gray-50"
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Fix/Var */}
@@ -217,15 +230,27 @@ export function AnalyticsFiltersPanel({
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Fixo / Variável
               </label>
-              <select
-                value={filters.fixVar || ""}
-                onChange={(e) => updateFilter("fixVar", e.target.value || null)}
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300 bg-white font-medium appearance-none cursor-pointer"
-              >
-                <option value="">Todos</option>
-                <option value="Fixo">Fixo</option>
-                <option value="Variável">Variável</option>
-              </select>
+              <div className="flex bg-white border border-gray-200 rounded-xl p-1">
+                {([
+                  { label: "Todos", value: "" },
+                  { label: "Fixo", value: "Fixo" as const },
+                  { label: "Variável", value: "Variável" as const },
+                ] as const).map((opt) => (
+                  <button
+                    key={opt.label}
+                    type="button"
+                    onClick={() => updateFilter("fixVar", opt.value || null)}
+                    className={cn(
+                      "flex-1 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200",
+                      (filters.fixVar || "") === opt.value
+                        ? "bg-emerald-50 text-emerald-800 shadow-sm"
+                        : "text-gray-600 hover:bg-gray-50"
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Recurring */}

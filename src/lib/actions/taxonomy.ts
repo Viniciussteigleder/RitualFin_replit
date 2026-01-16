@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { taxonomyLevel1, taxonomyLevel2, taxonomyLeaf } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { auth } from "@/auth";
+import { ensureOpenCategoryCore } from "@/lib/actions/setup-open";
 
 export async function getTaxonomyTreeCore(userId: string) {
   const level1 = await db.query.taxonomyLevel1.findMany({
@@ -36,6 +37,8 @@ export async function createLevel1(name: string) {
     nivel1Pt: name,
   }).returning();
 
+  await ensureOpenCategoryCore(session.user.id);
+
   return { success: true, data: result[0] };
 }
 
@@ -46,6 +49,8 @@ export async function updateLevel1(id: string, name: string) {
   await db.update(taxonomyLevel1)
     .set({ nivel1Pt: name })
     .where(eq(taxonomyLevel1.level1Id, id));
+
+  await ensureOpenCategoryCore(session.user.id);
 
   return { success: true };
 }

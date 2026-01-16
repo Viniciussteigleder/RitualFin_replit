@@ -1,6 +1,6 @@
 # Rules Parity Report
 
-**Generated**: 2026-01-12T14:09:33.604Z
+**Generated**: 2026-01-16T14:41:27.372Z
 **Verdict**: FAIL
 
 ## Summary
@@ -8,10 +8,10 @@
 | Issue Type | Count |
 |------------|-------|
 | Missing in DB | 0 |
-| Extra in DB | 1 |
+| Extra in DB | 2 |
 | Field Mismatches | 0 |
 | Enum Mismatches | 11 |
-| **Total** | **12** |
+| **Total** | **13** |
 
 ## Issues
 
@@ -36,6 +36,7 @@
 | Type | Key | Details |
 |------|-----|---------|
 | extra_in_db | Mercados | DB Level 1 "Mercados" not found in Excel Oracle |
+| extra_in_db | OPEN | DB Level 1 "OPEN" not found in Excel Oracle |
 
 ## Resolution Steps
 

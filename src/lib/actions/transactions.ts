@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { transactions, accounts, ingestionBatches, aliasAssets, rules } from "@/lib/db/schema";
+import { transactions, accounts, ingestionBatches, aliasAssets, rules, budgets } from "@/lib/db/schema";
 import { eq, desc, sql, and, gte, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { 
@@ -16,6 +16,9 @@ import {
   validate 
 } from "@/lib/validators";
 import { Errors, logError, sanitizeError } from "@/lib/errors";
+import { ensureOpenCategory } from "@/lib/actions/setup-open";
+import { buildLeafHierarchyMaps } from "@/lib/taxonomy/hierarchy";
+import { applyCategorization } from "@/lib/actions/categorization";
 
 export async function getDashboardData(date?: Date) {
   const session = await auth();
@@ -86,13 +89,8 @@ export async function getDashboardData(date?: Date) {
       eq(transactions.type, "Despesa"),
       gte(transactions.paymentDate, startOfMonth),
       sql`${transactions.paymentDate} <= ${endOfMonth}`, // Use endOfMonth to support past months fully
-      // Exclude Internal/Transferências from main spend metrics too? 
-      // User said "categoria interno nao é contabilizado pois sao transacoes internas". 
-      // I should probably apply this broadly.
-      // Assuming 'Interno' and 'Transferências' are the names.
-      // Drizzle doesn't export notInArray by default in all versions, checking imports.
-      // If not available, use sql.
-      sql`${transactions.category1} NOT IN ('Interno', 'Transferências')`,
+      eq(transactions.internalTransfer, false),
+      sql`(${transactions.category1} IS NULL OR ${transactions.category1} <> 'Interno')`,
       ne(transactions.display, "no")
     ));
 
@@ -111,13 +109,21 @@ export async function getDashboardData(date?: Date) {
   }
 
   // 7. Budget / Remaining
-  const monthlyGoal = 5000; 
+  const monthKey = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, "0")}`;
+  const [budgetRes] = await db
+    .select({ total: sql<number>`COALESCE(SUM(${budgets.amount}), 0)` })
+    .from(budgets)
+    .where(and(eq(budgets.userId, userId), eq(budgets.month, monthKey)));
+
+  const monthlyGoal = Number(budgetRes?.total || 0);
   const remainingBudget = monthlyGoal - spentMonthToDate;
 
   // 8. Category Breakdown
+  const categoryLabel = sql<string>`COALESCE(${transactions.appCategoryName}, CAST(${transactions.category1} AS text), 'OPEN')`;
+
   const categoryData = await db
     .select({ 
-      name: sql<string>`COALESCE(${transactions.appCategoryName}, ${transactions.category1}, 'Outros')`, 
+      name: categoryLabel, 
       value: sql<number>`ABS(SUM(${transactions.amount}))`
     })
     .from(transactions)
@@ -126,10 +132,11 @@ export async function getDashboardData(date?: Date) {
        eq(transactions.type, "Despesa"),
        gte(transactions.paymentDate, startOfMonth),
        sql`${transactions.paymentDate} <= ${endOfMonth}`,
-       sql`${transactions.category1} NOT IN ('Interno', 'Transferências')`,
+       eq(transactions.internalTransfer, false),
+       sql`(${transactions.category1} IS NULL OR ${transactions.category1} <> 'Interno')`,
        ne(transactions.display, "no")
     ))
-    .groupBy(sql`COALESCE(${transactions.appCategoryName}, ${transactions.category1}, 'Outros')`)
+    .groupBy(categoryLabel)
     .orderBy(desc(sql`ABS(SUM(${transactions.amount}))`))
     .limit(20);
 
@@ -145,6 +152,67 @@ export async function getDashboardData(date?: Date) {
         monthlyGoal
     },
     categoryData: categoryData.map(c => ({ name: c.name, value: Number(c.value) }))
+  };
+}
+
+export async function getSpendAveragesLastMonths(date?: Date, months: number = 3) {
+  const session = await auth();
+  if (!session?.user?.id) return null;
+  const userId = session.user.id;
+
+  const safeMonths = Math.max(1, Math.min(12, Math.floor(months)));
+  const target = date || new Date();
+  const start = new Date(target.getFullYear(), target.getMonth() - (safeMonths - 1), 1);
+  const end = new Date(target.getFullYear(), target.getMonth() + 1, 0, 23, 59, 59, 999);
+
+  const baseWhere = and(
+    eq(transactions.userId, userId),
+    eq(transactions.type, "Despesa"),
+    gte(transactions.paymentDate, start),
+    sql`${transactions.paymentDate} <= ${end}`,
+    eq(transactions.internalTransfer, false),
+    sql`(${transactions.category1} IS NULL OR ${transactions.category1} <> 'Interno')`,
+    ne(transactions.display, "no")
+  );
+
+  const queryFor = async (label: any) => {
+    const rows = await db
+      .select({
+        name: label,
+        total: sql<number>`ABS(SUM(${transactions.amount}))`,
+      })
+      .from(transactions)
+      .where(baseWhere)
+      .groupBy(label)
+      .orderBy(desc(sql`ABS(SUM(${transactions.amount}))`))
+      .limit(50);
+
+    return rows.map((r) => ({
+      name: String(r.name),
+      average: Number(r.total) / safeMonths,
+      total: Number(r.total),
+    }));
+  };
+
+  const appCategoryLabel = sql<string>`COALESCE(${transactions.appCategoryName}, 'OPEN')`;
+  const category1Label = sql<string>`COALESCE(CAST(${transactions.category1} AS text), 'OPEN')`;
+  const category2Label = sql<string>`COALESCE(${transactions.category2}, 'OPEN')`;
+  const category3Label = sql<string>`COALESCE(${transactions.category3}, 'OPEN')`;
+
+  const [appCategory, category1, category2, category3] = await Promise.all([
+    queryFor(appCategoryLabel),
+    queryFor(category1Label),
+    queryFor(category2Label),
+    queryFor(category3Label),
+  ]);
+
+  return {
+    months: safeMonths,
+    range: { start, end },
+    appCategory,
+    category1,
+    category2,
+    category3,
   };
 }
 
@@ -173,11 +241,18 @@ export async function getPendingTransactions() {
   });
 }
 
-export async function getTransactions(limit = 50) {
+export async function getTransactions(
+  input: number | { limit?: number; sources?: string[] } = 50
+) {
   const session = await auth();
   if (!session?.user?.id) return [];
 
   const userId = session.user.id;
+  const limit = typeof input === "number" ? input : (input.limit ?? 50);
+  const sources = typeof input === "number" ? undefined : input.sources;
+  const sourceClause = sources?.length
+    ? sql`AND t.source IN (${sql.join(sources.map((s) => sql`${s}`), sql`, `)})`
+    : sql``;
 
   // Use raw SQL to get transactions with taxonomy data
   const result = await db.execute(sql`
@@ -199,6 +274,7 @@ export async function getTransactions(limit = 50) {
     LEFT JOIN rules r ON t.rule_id_applied = r.id
     WHERE t.user_id = ${userId}
     AND t.display != 'no'
+    ${sourceClause}
     ORDER BY t.payment_date DESC
     LIMIT ${limit}
   `);
@@ -250,7 +326,7 @@ export async function getTransactions(limit = 50) {
 
 export async function updateTransactionCategory(
   transactionId: string, 
-  data: { category1: string; category2?: string; category3?: string }
+  data: { leafId: string }
 ): Promise<Result<void>> {
   try {
     const session = await auth();
@@ -259,16 +335,39 @@ export async function updateTransactionCategory(
     // Validate input
     const validated = validate(TransactionUpdateSchema, { transactionId, ...data });
 
-    await db.update(transactions)
-      .set({
-        category1: validated.category1 as any,
-        category2: validated.category2,
-        category3: validated.category3,
-        needsReview: false,
-        manualOverride: true,
-        conflictFlag: false
-      })
-      .where(eq(transactions.id, validated.transactionId));
+    const ensured = await ensureOpenCategory();
+    if (!ensured.openLeafId) throw new Error("OPEN taxonomy not initialized");
+
+    const { byLeafId } = await buildLeafHierarchyMaps(session.user.id);
+    const hierarchy = byLeafId.get(validated.leafId);
+    if (!hierarchy) throw new Error("Invalid leafId (not found in taxonomy)");
+
+    const isInterno = hierarchy.category1 === "Interno";
+    const display = isInterno ? "no" : hierarchy.category2 === "Karlsruhe" ? "Casa Karlsruhe" : "yes";
+
+    const update: any = {
+      leafId: validated.leafId,
+      category1: hierarchy.category1 as any,
+      category2: hierarchy.category2,
+      category3: hierarchy.category3,
+      appCategoryId: hierarchy.appCategoryId,
+      appCategoryName: hierarchy.appCategoryName ?? "OPEN",
+      matchedKeyword: null,
+      ruleIdApplied: null,
+      confidence: null,
+      needsReview: false,
+      manualOverride: true,
+      conflictFlag: false,
+      classificationCandidates: null,
+      classifiedBy: "MANUAL",
+      internalTransfer: isInterno,
+      excludeFromBudget: isInterno,
+      display,
+    };
+    if (hierarchy.typeDefault) update.type = hierarchy.typeDefault;
+    if (hierarchy.fixVarDefault) update.fixVar = hierarchy.fixVarDefault;
+
+    await db.update(transactions).set(update).where(eq(transactions.id, validated.transactionId));
 
     revalidatePath("/transactions");
     revalidatePath("/");
@@ -286,6 +385,13 @@ export async function confirmTransaction(transactionId: string): Promise<Result<
     if (!session?.user?.id) throw Errors.authRequired();
 
     const validated = validate(TransactionConfirmSchema, { transactionId });
+
+    const existing = await db.query.transactions.findFirst({
+      where: and(eq(transactions.id, validated.transactionId), eq(transactions.userId, session.user.id)),
+      columns: { conflictFlag: true },
+    });
+    if (!existing) throw new Error("Transaction not found");
+    if (existing.conflictFlag) throw new Error("Resolva o conflito de regras antes de confirmar.");
 
     await db.update(transactions)
       .set({ needsReview: false, conflictFlag: false })
@@ -313,6 +419,7 @@ export async function confirmHighConfidenceTransactions(threshold = 80): Promise
       .where(and(
         eq(transactions.userId, session.user.id),
         eq(transactions.needsReview, true),
+        eq(transactions.conflictFlag, false),
         sql`${transactions.confidence} >= ${validated.threshold}`
       ));
 
@@ -360,38 +467,77 @@ export async function getAliases() {
 export async function createRuleAndApply(
   transactionId: string,
   keyword: string,
-  category: string
+  leafId: string,
+  keyWordsNegative?: string
 ) {
   const session = await auth();
   if (!session?.user?.id) return { error: "Unauthorized" };
 
   try {
-    // 1. Create Rule
-    const [insertedRule] = await db.insert(rules).values({
-      userId: session.user.id,
-      keyWords: keyword,
-      category1: category as any,
-      active: true,
-      priority: 999, 
-      leafId: "open" 
-    }).returning();
+    const ensured = await ensureOpenCategory();
+    if (!ensured.openLeafId) throw new Error("OPEN taxonomy not initialized");
 
-    if (!insertedRule) throw new Error("Failed to create rule");
+    const { byLeafId } = await buildLeafHierarchyMaps(session.user.id);
+    const hierarchy = byLeafId.get(leafId);
+    if (!hierarchy) throw new Error("Invalid leafId (not found in taxonomy)");
 
-    // 2. Update Transaction
-    await db.update(transactions)
-      .set({
-        category1: category as any,
-        needsReview: false,
-        ruleIdApplied: insertedRule.id,
-        manualOverride: false // It's rule based now, effectively
-      })
-      .where(eq(transactions.id, transactionId));
+    // 1) Create or merge rule (one rule per leafId)
+    const existingRule = await db.query.rules.findFirst({
+      where: and(eq(rules.userId, session.user.id), eq(rules.leafId, leafId), eq(rules.active, true)),
+    });
+
+    const normalizedKeywords = keyword
+      .split(";")
+      .map((k) => k.trim().toUpperCase())
+      .filter(Boolean);
+
+    if (existingRule) {
+      const existingKeywords =
+        existingRule.keyWords?.split(";").map((k) => k.trim().toUpperCase()).filter(Boolean) || [];
+      const combined = [...new Set([...existingKeywords, ...normalizedKeywords])].join("; ");
+
+      let combinedNegative: string | null = existingRule.keyWordsNegative || null;
+      if (keyWordsNegative) {
+        const existingNeg =
+          existingRule.keyWordsNegative?.split(";").map((k) => k.trim().toUpperCase()).filter(Boolean) || [];
+        const nextNeg = keyWordsNegative.split(";").map((k) => k.trim().toUpperCase()).filter(Boolean);
+        combinedNegative = [...new Set([...existingNeg, ...nextNeg])].join("; ") || null;
+      }
+
+      await db.update(rules)
+        .set({
+          keyWords: combined,
+          keyWordsNegative: combinedNegative,
+          category1: hierarchy.category1 as any,
+          category2: hierarchy.category2,
+          category3: hierarchy.category3,
+          leafId,
+          priority: Math.max(existingRule.priority ?? 950, 950),
+        })
+        .where(eq(rules.id, existingRule.id));
+    } else {
+      await db.insert(rules).values({
+        userId: session.user.id,
+        keyWords: normalizedKeywords.join("; "),
+        keyWordsNegative: keyWordsNegative ? keyWordsNegative.toUpperCase() : null,
+        category1: hierarchy.category1 as any,
+        category2: hierarchy.category2,
+        category3: hierarchy.category3,
+        type: hierarchy.typeDefault || "Despesa",
+        fixVar: hierarchy.fixVarDefault || "Variável",
+        active: true,
+        priority: 950,
+        leafId,
+      });
+    }
+
+    // 2) Apply categorization across transactions (respects manualOverride)
+    await applyCategorization();
 
     revalidatePath("/transactions");
     revalidatePath("/");
     
-    return { success: true, ruleId: insertedRule.id };
+    return { success: true };
   } catch (error: any) {
     console.error("Quick Rule Error:", error);
     return { success: false, error: error.message };

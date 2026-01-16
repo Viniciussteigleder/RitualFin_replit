@@ -1,7 +1,7 @@
 // Rules Engine for AI-powered transaction categorization with confidence levels
 
 import type { Rule, Transaction, AliasAssets } from "@/lib/db/schema";
-import { evaluateRuleMatch } from "./classification-utils";
+import { evaluateRuleMatch, normalizeForMatch } from "./classification-utils";
 
 export interface RuleMatch {
   ruleId: string;
@@ -25,15 +25,6 @@ export interface CategorizationResult {
   reason?: string;
 }
 
-function normalizeForMatch(text: string): string {
-  return text
-    .toUpperCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 export interface UserSettings {
   autoConfirmHighConfidence?: boolean;
   confidenceThreshold?: number;
@@ -51,17 +42,11 @@ export function matchRules(descNorm: string, rules: Rule[], settings: UserSettin
   const sortedRules = [...rules].sort((a, b) => (b.priority || 500) - (a.priority || 500));
 
   for (const rule of sortedRules) {
+    if (rule.active === false) continue;
     if (!rule.keyWords) continue; // Skip rules without key_words (legacy keywords removed)
 
-    const keywordString = rule.keyWords || "";
-    const keywords = keywordString
-      .split(";")
-      .map((k: string) => normalizeForMatch(k))
-      .filter((k: string) => k.length > 0);
-
-    const matchedKeyword = keywords.find((keyword: string) => haystack.includes(keyword));
-
-    if (matchedKeyword) {
+    const evalResult = evaluateRuleMatch(haystack, rule);
+    if (evalResult.isMatch && evalResult.positiveMatch) {
       const match: RuleMatch = {
         ruleId: rule.id,
         type: rule.type || "Despesa",
@@ -72,18 +57,9 @@ export function matchRules(descNorm: string, rules: Rule[], settings: UserSettin
         priority: rule.priority || 500,
         strict: rule.strict || false,
         isSystem: rule.isSystem || false,
-        matchedKeyword
+        matchedKeyword: evalResult.positiveMatch,
+        leafId: rule.leafId ?? null,
       };
-
-      if (rule.strict) {
-        return {
-          needsReview: false,
-          matches: [match],
-          appliedRule: match,
-          confidence: 100,
-          reason: "Regra estrita aplicada automaticamente"
-        };
-      }
 
       matches.push(match);
     }
@@ -98,52 +74,47 @@ export function matchRules(descNorm: string, rules: Rule[], settings: UserSettin
     };
   }
 
-  if (matches.length === 1) {
-    const match = matches[0];
-    const confidence = calculateConfidence(match);
-    const meetsThreshold = confidence >= confidenceThreshold;
-    const autoApply = autoConfirmHighConfidence && meetsThreshold;
+  const keyFor = (m: RuleMatch) =>
+    m.leafId ? `leaf:${m.leafId}` : `cats:${m.category1}|${m.category2 || ""}|${m.category3 || ""}`;
 
+  const uniqueKeys = new Set(matches.map(keyFor));
+
+  // STRICT LOGIC: if we match multiple different category targets, do not auto-pick.
+  if (uniqueKeys.size > 1) {
     return {
-      needsReview: !autoApply,
+      needsReview: true,
       matches,
-      appliedRule: match,
-      confidence,
-      reason: autoApply
-        ? `Alta confianca (${confidence}%) - aplicado automaticamente`
-        : meetsThreshold
-          ? `Alta confianca (${confidence}%) - revisar (auto-confirm desativado)`
-          : `Confianca media (${confidence}%) - revisar`
+      confidence: 0,
+      reason: `Conflito: ${uniqueKeys.size} classificações possíveis`,
     };
   }
 
-  const topMatches = matches.filter(m => m.priority === matches[0].priority);
+  const applied = matches.find((m) => m.strict) ?? matches[0];
+  const confidence = calculateConfidence(applied);
 
-  if (topMatches.length === 1) {
-    const match = topMatches[0];
-    const confidence = Math.min(calculateConfidence(match) - 10, 85);
-    const meetsThreshold = confidence >= confidenceThreshold;
-    const autoApply = autoConfirmHighConfidence && meetsThreshold;
-
+  if (applied.strict) {
     return {
-      needsReview: !autoApply,
+      needsReview: false,
       matches,
-      appliedRule: match,
+      appliedRule: applied,
       confidence,
-      reason: autoApply
-        ? `Multiplas regras mas prioridade clara (${confidence}%)`
-        : meetsThreshold
-          ? `Alta confianca (${confidence}%) - revisar (auto-confirm desativado)`
-          : `Multiplas regras (${confidence}%) - revisar`
+      reason: "Regra estrita aplicada automaticamente",
     };
   }
+
+  const meetsThreshold = confidence >= confidenceThreshold;
+  const autoApply = autoConfirmHighConfidence && meetsThreshold;
 
   return {
-    needsReview: true,
+    needsReview: !autoApply,
     matches,
-    appliedRule: matches[0],
-    confidence: 50,
-    reason: `Conflito: ${matches.length} regras com mesma prioridade`
+    appliedRule: applied,
+    confidence,
+    reason: autoApply
+      ? `Alta confianca (${confidence}%) - aplicado automaticamente`
+      : meetsThreshold
+        ? `Alta confianca (${confidence}%) - revisar (auto-confirm desativado)`
+        : `Confianca media (${confidence}%) - revisar`,
   };
 }
 
@@ -167,7 +138,7 @@ export function categorizeTransaction(
 ): Partial<Transaction> & { confidence?: number; matches?: RuleMatch[] } {
   const result = matchRules(descNorm, rules, settings);
   
-  if (result.appliedRule && !result.needsReview) {
+  if (result.appliedRule) {
     const rule = result.appliedRule;
     const isInterno = rule.category1 === "Interno";
     
@@ -177,35 +148,14 @@ export function categorizeTransaction(
       category1: rule.category1 as any,
       category2: rule.category2,
       category3: rule.category3,
-      needsReview: false,
+      needsReview: result.needsReview,
       ruleIdApplied: rule.ruleId,
       leafId: rule.leafId, // Added leafId
+      matchedKeyword: rule.matchedKeyword,
       internalTransfer: isInterno,
       excludeFromBudget: isInterno,
       confidence: result.confidence,
       matches: result.matches // Return all candidates
-    };
-  }
-
-  if (result.appliedRule && result.needsReview) {
-    const rule = result.appliedRule;
-    const isInterno = rule.category1 === "Interno";
-    const isConflict = result.matches.length > 1; // Basic conflict detection logic
-
-    return {
-      type: rule.type,
-      fixVar: rule.fixVar,
-      category1: rule.category1 as any,
-      category2: rule.category2,
-      category3: rule.category3,
-      needsReview: true,
-      ruleIdApplied: rule.ruleId,
-      leafId: rule.leafId, // Added leafId
-      internalTransfer: isInterno,
-      excludeFromBudget: isInterno,
-      confidence: result.confidence,
-      matches: result.matches,
-      // We can interpret this in ingest.ts to set conflictFlag
     };
   }
 
@@ -272,6 +222,7 @@ export const AI_SEED_RULES = [
     fixVar: "Fixo" as const,
     category1: "Interno" as const,
     category2: "Transferencias",
+    category3: "Transferencias",
     priority: 1000,
     strict: true,
     isSystem: true

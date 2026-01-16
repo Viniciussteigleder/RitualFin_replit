@@ -67,7 +67,8 @@ export async function getGoalWithActuals(month: string) {
         eq(transactions.type, "Despesa"),
         gte(transactions.paymentDate, startDate),
         lte(transactions.paymentDate, endDate),
-        sql`${transactions.category1} NOT IN ('Interno', 'Transferências')`,
+        eq(transactions.internalTransfer, false),
+        sql`(${transactions.category1} IS NULL OR ${transactions.category1} <> 'Interno')`,
         ne(transactions.display, "no")
       )
     )
@@ -272,7 +273,8 @@ export async function getMonthlyProjection() {
         eq(transactions.type, "Despesa"),
         gte(transactions.paymentDate, startOfMonth),
         lte(transactions.paymentDate, now),
-        sql`${transactions.category1} NOT IN ('Interno', 'Transferências')`,
+        eq(transactions.internalTransfer, false),
+        sql`(${transactions.category1} IS NULL OR ${transactions.category1} <> 'Interno')`,
         ne(transactions.display, "no")
       )
     );

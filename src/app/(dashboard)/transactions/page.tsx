@@ -4,6 +4,7 @@ import { TransactionList } from "./transaction-list";
 import { AIAnalystChat } from "@/components/transactions/AIAnalystChat";
 import { ReRunRulesButton } from "@/components/transactions/re-run-rules-button";
 import { Wallet } from "lucide-react";
+import { AppIcon } from "@/components/ui/app-icon";
 
 export default async function TransactionsPage({
   searchParams
@@ -20,7 +21,8 @@ export default async function TransactionsPage({
   }
 
   const params = await searchParams;
-  const transactions = await getTransactions(2000);
+  const sources = params.accounts ? (Array.isArray(params.accounts) ? params.accounts : [params.accounts]) : undefined;
+  const transactions = await getTransactions({ limit: sources?.length ? 1200 : 2000, sources });
   const aliases = await getAliases();
 
   const aliasMap = aliases.reduce((acc, alias) => {
@@ -30,7 +32,7 @@ export default async function TransactionsPage({
 
   const initialFilters = {
     categories: params.category ? [params.category] : undefined,
-    accounts: params.accounts ? (Array.isArray(params.accounts) ? params.accounts : [params.accounts]) : undefined,
+    accounts: sources,
   };
 
   return (
@@ -39,9 +41,7 @@ export default async function TransactionsPage({
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8 bg-card p-10 rounded-[3rem] border border-border shadow-sm animate-fade-in-up">
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-violet-500/10 rounded-2xl transition-transform duration-300 hover:scale-110">
-              <Wallet className="h-8 w-8 text-violet-600 dark:text-violet-400" />
-            </div>
+            <AppIcon icon={Wallet} tone="violet" size="lg" />
             <h1 className="text-4xl font-bold text-foreground tracking-tight font-display">Extrato</h1>
           </div>
           <p className="text-muted-foreground font-medium max-w-xl leading-relaxed">

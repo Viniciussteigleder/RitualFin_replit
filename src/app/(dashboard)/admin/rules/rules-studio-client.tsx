@@ -18,6 +18,8 @@ import {
   type SimulationResult,
 } from "@/lib/actions/rules";
 import { CATEGORY_CONFIGS } from "@/lib/constants/categories";
+import { CategoryIcon } from "@/components/ui/category-icon";
+import { CATEGORY1_VALUES } from "@/lib/constants/category1";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/utils";
@@ -36,7 +38,7 @@ export default function RulesStudioClient() {
   const [existingRules, setExistingRules] = useState<any[]>([]);
   const [loadingRules, setLoadingRules] = useState(false);
 
-  const categories = Object.keys(CATEGORY_CONFIGS);
+  const categories = CATEGORY1_VALUES;
 
   useEffect(() => {
     void loadSuggestions();
@@ -223,7 +225,7 @@ export default function RulesStudioClient() {
                           {categories.map((cat) => (
                             <SelectItem key={cat} value={cat}>
                               <div className="flex items-center gap-2">
-                                <span>{CATEGORY_CONFIGS[cat]?.icon}</span>
+                                <CategoryIcon category={cat} size="sm" />
                                 <span>{cat}</span>
                               </div>
                             </SelectItem>

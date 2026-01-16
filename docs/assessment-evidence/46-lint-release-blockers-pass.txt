@@ -1,0 +1,12 @@
+
+> rest-express@1.0.1 lint
+> npm run check && npm run lint:eslint
+
+
+> rest-express@1.0.1 check
+> tsc
+
+
+> rest-express@1.0.1 lint:eslint
+> eslint src next.config.ts drizzle.config.ts playwright.config.ts
+

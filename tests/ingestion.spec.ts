@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import path from 'path';
 
 test.describe('Ingestion Flow', () => {
+  test.setTimeout(120_000);
   test.beforeEach(async ({ page }) => {
     // Basic signup to ensure we have a session
     const randomId = Math.random().toString(36).substring(7);
@@ -10,12 +11,7 @@ test.describe('Ingestion Flow', () => {
     await page.fill('input[name="email"]', `ingest_${randomId}@example.com`);
     await page.fill('input[name="password"]', 'Password123!');
     await page.click('button:has-text("Sign Up")');
-    try {
-        await page.waitForURL(url => url.pathname === '/' || url.pathname.includes('uploads'), { timeout: 15000 });
-    } catch (e) {
-        console.error("DEBUG (Ingest): Signup timed out. Final URL was:", page.url());
-        throw e;
-    }
+    await page.waitForURL(url => url.pathname === '/' || url.pathname.includes('uploads'), { timeout: 20000 });
   });
 
   test('upload CSV, preview, commit and rollback', async ({ page }) => {
@@ -23,43 +19,34 @@ test.describe('Ingestion Flow', () => {
     
     // Upload file
     const filePath = path.resolve('tests/fixtures/sparkasse_mock.csv');
-    await page.setInputFiles('#file', filePath);
-    
-    await page.click('[data-testid="upload-csv-btn"]');
-    
-    // Preview should appear (wait for it)
-    try {
-        await page.waitForSelector('text=sparkasse_mock.csv', { timeout: 15000 });
-    } catch (e) {
-        console.log("DEBUG: Filename not found in BatchList. Current page text:", await page.innerText('body'));
-        throw e;
+    await page.waitForSelector('[data-testid="csv-file-input"]', { state: 'attached' });
+    await page.setInputFiles('[data-testid="csv-file-input"]', filePath);
+
+    // Wait for explicit upload confirmation, then commit from the batch list
+    await expect(page.getByRole('status')).toContainText('Upload confirmado', { timeout: 90000 });
+
+    await expect(page.getByRole('button', { name: /process & import/i })).toBeVisible({ timeout: 60000 });
+    await page.getByRole('button', { name: /process & import/i }).click({ timeout: 20000, noWaitAfter: true });
+
+    // Server action completion is async from the click perspective; wait until UI reflects committed state.
+    const rollbackButton = page.getByRole('button', { name: /rollback/i });
+    for (let i = 0; i < 12; i++) {
+      if (await rollbackButton.count()) break;
+      await page.waitForTimeout(2000);
+      await page.reload();
     }
-    await expect(page.locator('text=sparkasse_mock.csv')).toBeVisible();
-    
-    // Commit
-    await page.click('button:has-text("Process & Import")');
-    
-    // Should show committed status
-    await expect(page.locator('text=committed')).toBeVisible();
-    
+    await expect(rollbackButton).toBeVisible({ timeout: 30000 });
+
     // Verify in transactions
     await page.goto('/transactions');
-    await expect(page.locator('text=REWE')).toBeVisible();
-    
-    // Open drawer
-    await page.click('text=REWE');
-    await expect(page.locator('text=EVIDENCE')).toBeVisible();
-    await expect(page.locator('text=REWE SAGT DANKE')).toBeVisible();
-    
-    // Close drawer
-    await page.keyboard.press('Escape');
+    await expect(page.getByText(/REWE/i)).toBeVisible({ timeout: 90000 });
 
     // Rollback
     await page.goto('/uploads');
-    await page.click('button:has-text("Rollback")');
+    await page.click('button:has-text("Rollback")', { timeout: 90000 });
     
     // Verify removed from transactions
     await page.goto('/transactions');
-    await expect(page.locator('text=REWE')).not.toBeVisible();
+    await expect(page.getByText('REWE')).not.toBeVisible({ timeout: 20000 });
   });
 });

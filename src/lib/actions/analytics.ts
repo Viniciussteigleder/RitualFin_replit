@@ -12,10 +12,10 @@ export interface AnalyticsFilters {
   type?: "Despesa" | "Receita";
   fixVar?: "Fixo" | "Variável";
   recurring?: boolean;
-  category?: string;
-  level1?: string;
-  level2?: string;
-  level3?: string;
+  appCategory?: string;
+  category1?: string;
+  category2?: string;
+  category3?: string;
 }
 
 export interface CategoryAggregate {
@@ -27,24 +27,28 @@ export interface CategoryAggregate {
 }
 
 export interface DrillDownData {
-  currentLevel: "category" | "level1" | "level2" | "level3" | "transactions";
+  currentLevel: "appCategory" | "category1" | "category2" | "category3" | "transactions";
   breadcrumb: { label: string; value: string | null }[];
   aggregates: CategoryAggregate[];
   transactions?: any[];
   totalAmount: number;
 }
 
-export async function getAnalyticsData(
-  filters: AnalyticsFilters = {}
-): Promise<DrillDownData> {
-  const session = await auth();
-  if (!session?.user?.id) throw new Error("Unauthorized");
+export interface MonthByMonthRow {
+  month: string; // YYYY-MM
+  total: number;
+  count: number;
+}
 
-  const userId = session.user.id;
+export interface TopAggregateRow {
+  name: string;
+  total: number;
+  count: number;
+}
 
-  // Build WHERE conditions
+const buildBaseConditions = (userId: string, filters: AnalyticsFilters) => {
   const conditions = [eq(transactions.userId, userId)];
-  
+
   if (filters.startDate) {
     conditions.push(gte(transactions.paymentDate, filters.startDate));
   }
@@ -64,67 +68,70 @@ export async function getAnalyticsData(
     conditions.push(eq(transactions.recurringFlag, filters.recurring));
   }
 
-  // Exclude Internal transfers from analytics as per spec
-  conditions.push(sql`${transactions.category1} NOT IN ('Interno', 'Transferências')`);
+  // Drilldown filters
+  if (filters.appCategory) {
+    if (filters.appCategory === "OPEN") conditions.push(sql`${transactions.appCategoryName} IS NULL`);
+    else conditions.push(eq(transactions.appCategoryName, filters.appCategory));
+  }
+  if (filters.category1) {
+    if (filters.category1 === "OPEN") conditions.push(sql`${transactions.category1} IS NULL`);
+    else conditions.push(sql`CAST(${transactions.category1} AS text) = ${filters.category1}`);
+  }
+  if (filters.category2) {
+    if (filters.category2 === "OPEN") conditions.push(sql`${transactions.category2} IS NULL`);
+    else conditions.push(eq(transactions.category2, filters.category2));
+  }
+  if (filters.category3) {
+    if (filters.category3 === "OPEN") conditions.push(sql`${transactions.category3} IS NULL`);
+    else conditions.push(eq(transactions.category3, filters.category3));
+  }
+
+  // Exclude internal transfers from analytics as per contract
+  conditions.push(eq(transactions.internalTransfer, false));
+  conditions.push(sql`(${transactions.category1} IS NULL OR ${transactions.category1} <> 'Interno')`);
+  conditions.push(sql`${transactions.display} <> 'no'`);
+
+  return conditions;
+};
+
+export async function getAnalyticsData(
+  filters: AnalyticsFilters = {}
+): Promise<DrillDownData> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const userId = session.user.id;
+
+  const conditions = buildBaseConditions(userId, filters);
 
 
   // Determine current drill-down level and apply cumulative filters
-  let currentLevel: DrillDownData["currentLevel"] = "category";
+  let currentLevel: DrillDownData["currentLevel"] = "appCategory";
   const breadcrumb: DrillDownData["breadcrumb"] = [];
 
-  // Apply filters cumulatively based on taxonomy hierarchy
-  if (filters.category) {
-    if (filters.category === "OPEN") {
-      conditions.push(sql`${transactions.leafId} IS NULL`);
-    } else {
-      conditions.push(sql`EXISTS (
-        SELECT 1 FROM taxonomy_leaf tl
-        JOIN taxonomy_level_2 t2 ON tl.level_2_id = t2.level_2_id
-        JOIN taxonomy_level_1 t1 ON t2.level_1_id = t1.level_1_id
-        WHERE tl.leaf_id = ${transactions.leafId}
-        AND t1.nivel_1_pt = ${filters.category}
-      )`);
-    }
-    breadcrumb.push({ label: "Categoria", value: filters.category });
-    currentLevel = "level1";
+  // Apply filters cumulatively based on UI hierarchy:
+  // appCategory -> category1 -> category2 -> category3 -> transactions
+  if (filters.appCategory) {
+    // already applied in base conditions
+    breadcrumb.push({ label: "App", value: filters.appCategory });
+    currentLevel = "category1";
   }
 
-  if (filters.level1) {
-    if (filters.level1 === "OPEN") {
-      conditions.push(sql`${transactions.leafId} IS NULL`);
-    } else {
-      conditions.push(sql`EXISTS (
-        SELECT 1 FROM taxonomy_leaf tl
-        JOIN taxonomy_level_2 t2 ON tl.level_2_id = t2.level_2_id
-        WHERE tl.leaf_id = ${transactions.leafId}
-        AND t2.nivel_2_pt = ${filters.level1}
-      )`);
-    }
-    breadcrumb.push({ label: "Nível 1", value: filters.level1 });
-    currentLevel = "level2";
+  if (filters.category1) {
+    // already applied in base conditions
+    breadcrumb.push({ label: "Categoria 1", value: filters.category1 });
+    currentLevel = "category2";
   }
 
-  if (filters.level2) {
-    if (filters.level2 === "OPEN") {
-      conditions.push(sql`${transactions.leafId} IS NULL`);
-    } else {
-      conditions.push(sql`EXISTS (
-        SELECT 1 FROM taxonomy_leaf tl
-        WHERE tl.leaf_id = ${transactions.leafId}
-        AND tl.nivel_3_pt = ${filters.level2}
-      )`);
-    }
-    breadcrumb.push({ label: "Nível 2", value: filters.level2 });
-    currentLevel = "level3";
+  if (filters.category2) {
+    // already applied in base conditions
+    breadcrumb.push({ label: "Categoria 2", value: filters.category2 });
+    currentLevel = "category3";
   }
 
-  if (filters.level3) {
-    if (filters.level3 !== "ALL") {
-      conditions.push(
-        sql`COALESCE(${transactions.aliasDesc}, ${transactions.descNorm}) = ${filters.level3}`
-      );
-    }
-    breadcrumb.push({ label: "Nível 3", value: filters.level3 === "ALL" ? "Todas" : filters.level3 });
+  if (filters.category3) {
+    // already applied in base conditions
+    breadcrumb.push({ label: "Categoria 3", value: filters.category3 });
     currentLevel = "transactions";
   }
 
@@ -140,20 +147,17 @@ export async function getAnalyticsData(
   // Aggregate based on current level
   let aggregates: CategoryAggregate[] = [];
 
-  if (currentLevel === "category") {
-    // Group by Level 1 from taxonomy
+  if (currentLevel === "appCategory") {
+    // Group by App Category
     const results = await db
       .select({
-        category: sql<string>`COALESCE(t1.nivel_1_pt, 'OPEN')`,
+        category: sql<string>`COALESCE(${transactions.appCategoryName}, 'OPEN')`,
         total: sql<number>`COALESCE(ABS(SUM(${transactions.amount})), 0)`,
         count: sql<number>`COUNT(*)`,
       })
       .from(transactions)
-      .leftJoin(sql`taxonomy_leaf tl`, sql`${transactions.leafId} = tl.leaf_id`)
-      .leftJoin(sql`taxonomy_level_2 t2`, sql`tl.level_2_id = t2.level_2_id`)
-      .leftJoin(sql`taxonomy_level_1 t1`, sql`t2.level_1_id = t1.level_1_id`)
       .where(and(...conditions))
-      .groupBy(sql`COALESCE(t1.nivel_1_pt, 'OPEN')`)
+      .groupBy(sql`COALESCE(${transactions.appCategoryName}, 'OPEN')`)
       .orderBy(desc(sql`COALESCE(ABS(SUM(${transactions.amount})), 0)`));
 
     aggregates = results.map((r) => ({
@@ -162,20 +166,17 @@ export async function getAnalyticsData(
       count: Number(r.count),
       percentage: totalAmount > 0 ? (Number(r.total) / totalAmount) * 100 : 0,
     }));
-  } else if (currentLevel === "level1") {
-    // Group by Level 2 from taxonomy
+  } else if (currentLevel === "category1") {
+    // Group by Category 1
     const results = await db
       .select({
-        category: sql<string>`COALESCE(t2.nivel_2_pt, 'OPEN')`,
+        category: sql<string>`COALESCE(CAST(${transactions.category1} AS text), 'OPEN')`,
         total: sql<number>`COALESCE(ABS(SUM(${transactions.amount})), 0)`,
         count: sql<number>`COUNT(*)`,
       })
       .from(transactions)
-      .leftJoin(sql`taxonomy_leaf tl`, sql`${transactions.leafId} = tl.leaf_id`)
-      .leftJoin(sql`taxonomy_level_2 t2`, sql`tl.level_2_id = t2.level_2_id`)
-      .leftJoin(sql`taxonomy_level_1 t1`, sql`t2.level_1_id = t1.level_1_id`)
       .where(and(...conditions))
-      .groupBy(sql`COALESCE(t2.nivel_2_pt, 'OPEN')`)
+      .groupBy(sql`COALESCE(CAST(${transactions.category1} AS text), 'OPEN')`)
       .orderBy(desc(sql`COALESCE(ABS(SUM(${transactions.amount})), 0)`));
 
     aggregates = results.map((r) => ({
@@ -184,18 +185,17 @@ export async function getAnalyticsData(
       count: Number(r.count),
       percentage: totalAmount > 0 ? (Number(r.total) / totalAmount) * 100 : 0,
     }));
-  } else if (currentLevel === "level2") {
-    // Group by Leaf from taxonomy
+  } else if (currentLevel === "category2") {
+    // Group by Category 2
     const results = await db
       .select({
-        category: sql<string>`COALESCE(tl.nivel_3_pt, 'OPEN')`,
+        category: sql<string>`COALESCE(${transactions.category2}, 'OPEN')`,
         total: sql<number>`COALESCE(ABS(SUM(${transactions.amount})), 0)`,
         count: sql<number>`COUNT(*)`,
       })
       .from(transactions)
-      .leftJoin(sql`taxonomy_leaf tl`, sql`${transactions.leafId} = tl.leaf_id`)
       .where(and(...conditions))
-      .groupBy(sql`COALESCE(tl.nivel_3_pt, 'OPEN')`)
+      .groupBy(sql`COALESCE(${transactions.category2}, 'OPEN')`)
       .orderBy(desc(sql`COALESCE(ABS(SUM(${transactions.amount})), 0)`));
 
     aggregates = results.map((r) => ({
@@ -204,22 +204,22 @@ export async function getAnalyticsData(
       count: Number(r.count),
       percentage: totalAmount > 0 ? (Number(r.total) / totalAmount) * 100 : 0,
     }));
-  } else if (currentLevel === "level3") {
-    // Group by aliasDesc or descNorm (L3)
+  } else if (currentLevel === "category3") {
+    // Group by Category 3
     const results = await db
       .select({
-        category: sql<string>`COALESCE(${transactions.aliasDesc}, ${transactions.descNorm})`,
+        category: sql<string>`COALESCE(${transactions.category3}, 'OPEN')`,
         total: sql<number>`COALESCE(ABS(SUM(${transactions.amount})), 0)`,
         count: sql<number>`COUNT(*)`,
       })
       .from(transactions)
       .where(and(...conditions))
-      .groupBy(sql`COALESCE(${transactions.aliasDesc}, ${transactions.descNorm})`)
+      .groupBy(sql`COALESCE(${transactions.category3}, 'OPEN')`)
       .orderBy(desc(sql`COALESCE(ABS(SUM(${transactions.amount})), 0)`))
       .limit(50);
 
     aggregates = results.map((r) => ({
-      category: r.category || "Sem Descrição",
+      category: r.category || "OPEN",
       total: Number(r.total),
       count: Number(r.count),
       percentage: totalAmount > 0 ? (Number(r.total) / totalAmount) * 100 : 0,
@@ -244,6 +244,92 @@ export async function getAnalyticsData(
     transactions: transactionsList,
     totalAmount,
   };
+}
+
+export async function getAnalyticsMonthByMonth(filters: AnalyticsFilters = {}): Promise<MonthByMonthRow[]> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  const userId = session.user.id;
+
+  const conditions = buildBaseConditions(userId, filters);
+
+  const monthExpr = sql<string>`TO_CHAR(date_trunc('month', ${transactions.paymentDate}), 'YYYY-MM')`;
+  const rows = await db
+    .select({
+      month: monthExpr,
+      total: sql<number>`COALESCE(ABS(SUM(${transactions.amount})), 0)`,
+      count: sql<number>`COUNT(*)`,
+    })
+    .from(transactions)
+    .where(and(...conditions))
+    .groupBy(monthExpr)
+    .orderBy(monthExpr);
+
+  return rows.map((r) => ({
+    month: String(r.month),
+    total: Number(r.total),
+    count: Number(r.count),
+  }));
+}
+
+export async function getAnalyticsTopMerchants(
+  filters: AnalyticsFilters = {},
+  limit = 12
+): Promise<TopAggregateRow[]> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  const userId = session.user.id;
+
+  const conditions = buildBaseConditions(userId, filters);
+  const label = sql<string>`COALESCE(${transactions.aliasDesc}, ${transactions.descNorm})`;
+
+  const rows = await db
+    .select({
+      name: label,
+      total: sql<number>`COALESCE(ABS(SUM(${transactions.amount})), 0)`,
+      count: sql<number>`COUNT(*)`,
+    })
+    .from(transactions)
+    .where(and(...conditions))
+    .groupBy(label)
+    .orderBy(desc(sql`COALESCE(ABS(SUM(${transactions.amount})), 0)`))
+    .limit(Math.max(3, Math.min(50, Math.floor(limit))));
+
+  return rows.map((r) => ({
+    name: String(r.name || "Sem descrição"),
+    total: Number(r.total),
+    count: Number(r.count),
+  }));
+}
+
+export async function getAnalyticsRecurringSummary(
+  filters: AnalyticsFilters = {},
+  limit = 12
+): Promise<TopAggregateRow[]> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  const userId = session.user.id;
+
+  const conditions = buildBaseConditions(userId, { ...filters, recurring: true });
+  const label = sql<string>`COALESCE(${transactions.aliasDesc}, ${transactions.descNorm})`;
+
+  const rows = await db
+    .select({
+      name: label,
+      total: sql<number>`COALESCE(ABS(SUM(${transactions.amount})), 0)`,
+      count: sql<number>`COUNT(*)`,
+    })
+    .from(transactions)
+    .where(and(...conditions))
+    .groupBy(label)
+    .orderBy(desc(sql`COALESCE(ABS(SUM(${transactions.amount})), 0)`))
+    .limit(Math.max(3, Math.min(50, Math.floor(limit))));
+
+  return rows.map((r) => ({
+    name: String(r.name || "Sem descrição"),
+    total: Number(r.total),
+    count: Number(r.count),
+  }));
 }
 
 export async function getAccounts() {

@@ -1,0 +1,46 @@
+a9af2b5 (HEAD -> main) test(e2e): commit from uploads batch list (avoid preview navigation)
+8a9fc75 fix(ingest): keep rule categories and avoid AI fallback when rule matched
+2bbc518 test(e2e): submit import form to avoid detached click flake
+884582d test(e2e): wait for commit completion before asserting transactions
+f6e72dc test(e2e): follow upload confirmation flow before import
+bf23602 merge: release blockers v4
+0936c39 (audit/release-blockers-v4) fix(categories): align category1 pickers and validation to schema enum
+615525c ux(dashboard): avoid fake utilization and handle missing balances
+58e4d0f test(e2e): make ingestion rollback assertion robust
+ba18a0d ux: remove hardcoded credit limit and dashboard goal
+4344759 test(e2e): stabilize Playwright and upload selector
+ac32e5b fix(screenshots): create transaction and link OCR evidence
+4720995 fix(ingest): scope dedupe per user and use OPEN leaf fallback
+30a5e0d fix(server-actions): isolate assistant default prompts
+bbdd9d2 ux: remove dummy figures from accounts and ai-keywords
+dadb780 security: remove token logging and harden import preview
+99bcc3b (audit/top-100-fixes) docs(evidence): next80 gate outputs
+a4cee9a perf(reliability): bulk dedupe and transactional ingest
+cebe0dc a11y(uploads): keyboard support and busy state
+83ac073 ui(brand): remove logo background blocks
+bbfd297 docs(evidence): capture test/lint/build outputs
+1522af8 fix(rules): honor active and negative keywords
+ffb09d1 fix(calendar): remove dummy event figures
+f816e45 fix(uploads): show explicit upload confirmation
+138893d brand: consolidate RitualFin logo
+b208ff6 (origin/sync/merge-open-branches) Merge pull request #74 from Viniciussteigleder/audit/top-40-fixes
+c4471bf (origin/audit/top-40-fixes, audit/top-40-fixes) docs: add top-40 gate run output
+a95cf82 docs: capture top-40 fix evidence logs
+4c8fe03 docs: document pool tuning and ops notes
+c1c3b02 lint: suppress remote img warning and tidy effects
+f9eeeca perf: load fonts via next/font and optimize login logo
+b9ebe7a auth: require session for sensitive pages
+d2092cc security: add CSP report-only and health endpoint
+e8e8c6c ci: fix npm lock sync and add gate scripts
+74e75f1 (sync/merge-open-branches) Merge pull request #73 from Viniciussteigleder/audit/e2e-assessment-v3
+d34008a (origin/audit/e2e-assessment-v3, audit/e2e-assessment-v3) fix: harden debug route, stabilize lint, and tighten DB client
+c5155f0 docs: add assessment evidence and docs plan
+e6b8d7f ci: skip Neon preview branch when unconfigured
+b97e354 feat: merge calendar assistant features
+05ad0a0 docs: merge branch cleanup report
+ec0332d fix
+ca8d78e fix
+1ee917d (origin/claude/fix-calendar-assistant-features-9OoqD) feat: Enhanced AI assistant with premium features
+b653e88 (docs/complete-branch-cleanup-report) docs: add executive summary for branch cleanup and deployment fix
+cc9461b feat: Add comprehensive AI assistant prompts and context
+54c33aa docs: complete branch cleanup and deployment fix report

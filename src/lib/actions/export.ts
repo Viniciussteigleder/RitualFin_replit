@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { transactions } from "@/lib/db/schema";
-import { and, gte, lte, eq, desc, inArray } from "drizzle-orm";
+import { and, gte, lte, eq, desc, inArray, sql } from "drizzle-orm";
 import * as XLSX from "xlsx";
 import { AnalyticsFilters } from "@/lib/actions/analytics";
 
@@ -23,9 +23,22 @@ export async function exportFullDataset(filters: AnalyticsFilters) {
     }
     
     // Category Drilldown filters
-    if (filters.category) conditions.push(eq(transactions.category1 as any, filters.category));
-    if (filters.level1) conditions.push(eq(transactions.category2, filters.level1));
-    if (filters.level2) conditions.push(eq(transactions.category3, filters.level2));
+    if (filters.appCategory) {
+      if (filters.appCategory === "OPEN") conditions.push(sql`${transactions.appCategoryName} IS NULL`);
+      else conditions.push(eq(transactions.appCategoryName, filters.appCategory));
+    }
+    if (filters.category1) {
+      if (filters.category1 === "OPEN") conditions.push(sql`${transactions.category1} IS NULL`);
+      else conditions.push(eq(transactions.category1 as any, filters.category1));
+    }
+    if (filters.category2) {
+      if (filters.category2 === "OPEN") conditions.push(sql`${transactions.category2} IS NULL`);
+      else conditions.push(eq(transactions.category2, filters.category2));
+    }
+    if (filters.category3) {
+      if (filters.category3 === "OPEN") conditions.push(sql`${transactions.category3} IS NULL`);
+      else conditions.push(eq(transactions.category3, filters.category3));
+    }
 
     const data = await db.select({
         Data: transactions.paymentDate,

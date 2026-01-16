@@ -1,0 +1,21 @@
+[dotenv@17.2.3] injecting env (29) from .env.production.local -- tip: ✅ audit secrets and track compliance: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: ✅ audit secrets and track compliance: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
+{
+  "username": "ingest_6h2knc",
+  "latestBatch": {
+    "id": "9ab9dff0-e344-42d9-b8a9-03f3ac691510",
+    "status": "committed",
+    "createdAt": "2026-01-15T18:32:35.073Z"
+  },
+  "txTop5": [
+    {
+      "id": "873ed9f8-28da-43f2-9236-db812ce5486d",
+      "descNorm": "REWE SAGT DANKE -- Kartenzahlung -- DE987654321 -- Sparkasse -",
+      "amount": -42.42,
+      "category1": "Outros",
+      "internalTransfer": false,
+      "display": "yes"
+    }
+  ]
+}
