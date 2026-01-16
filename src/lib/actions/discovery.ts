@@ -281,6 +281,7 @@ export interface RecurringSuggestion {
   leafId: string;
   merchantKey: string;
   source: string | null;
+  direction: "Despesa" | "Receita";
   appCategoryName: string;
   category1: string;
   category2: string;
@@ -403,6 +404,7 @@ export async function getRecurringSuggestions(filters: RecurringFilters = {}): P
       id: true,
       paymentDate: true,
       amount: true,
+      type: true,
       leafId: true,
       source: true,
       keyDesc: true,
@@ -420,7 +422,8 @@ export async function getRecurringSuggestions(filters: RecurringFilters = {}): P
   const groupKeyFor = (tx: any) => {
     const merchant = (tx.aliasDesc || tx.simpleDesc || tx.descNorm || "").toString().slice(0, 50).toUpperCase();
     const abs = Math.round(Math.abs(Number(tx.amount)) * 100) / 100;
-    return `${tx.leafId}|${abs}|${merchant}`;
+    const direction = (tx.type || (Number(tx.amount) < 0 ? "Despesa" : "Receita")).toString();
+    return `${tx.leafId}|${direction}|${abs}|${merchant}`;
   };
 
   const groups = new Map<string, { meta: any; dates: Date[]; sources: string[] }>();
@@ -450,12 +453,14 @@ export async function getRecurringSuggestions(filters: RecurringFilters = {}): P
       .toUpperCase();
     const cadence = cadenceFromDates(g.dates);
     const sourceLabel = modeString(g.sources);
+    const direction = (g.meta.type || (Number(g.meta.amount) < 0 ? "Despesa" : "Receita")) as "Despesa" | "Receita";
 
     suggestions.push({
       key,
       leafId: String(g.meta.leafId),
       merchantKey,
       source: sourceLabel,
+      direction,
       appCategoryName: g.meta.appCategoryName || "OPEN",
       category1: g.meta.category1 || "OPEN",
       category2: g.meta.category2 || "OPEN",

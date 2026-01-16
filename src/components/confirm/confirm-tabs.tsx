@@ -90,6 +90,15 @@ function highlightText(text: string, marks: TokenMark[]) {
   return nodes;
 }
 
+function segmentedButtonClass(active: boolean, tone: "neutral" | "emerald" | "sky" | "amber" = "neutral") {
+  const base = "w-full rounded-xl font-bold";
+  if (!active) return cn(base, "bg-background hover:bg-secondary text-foreground border-border");
+  if (tone === "emerald") return cn(base, "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-200 border-emerald-200 dark:border-emerald-900");
+  if (tone === "sky") return cn(base, "bg-sky-50 dark:bg-sky-900/20 text-sky-800 dark:text-sky-200 border-sky-200 dark:border-sky-900");
+  if (tone === "amber") return cn(base, "bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-amber-900");
+  return cn(base, "bg-secondary text-foreground border-border");
+}
+
 export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) {
   const [taxonomyOptions, setTaxonomyOptions] = useState<TaxonomyOption[]>(initialTaxonomyOptions);
 
@@ -286,24 +295,24 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
             <ButtonGroup className="w-full">
               <Button
                 type="button"
-                variant={discoveryFilters.sortBy === "count" ? "default" : "outline"}
-                className="w-full rounded-xl font-bold"
+                variant="outline"
+                className={segmentedButtonClass(discoveryFilters.sortBy === "count", "emerald")}
                 onClick={() => setDiscoveryFilters((p) => ({ ...p, sortBy: "count" }))}
               >
                 Ocorr.
               </Button>
               <Button
                 type="button"
-                variant={discoveryFilters.sortBy === "totalAbsAmount" ? "default" : "outline"}
-                className="w-full rounded-xl font-bold"
+                variant="outline"
+                className={segmentedButtonClass(discoveryFilters.sortBy === "totalAbsAmount", "emerald")}
                 onClick={() => setDiscoveryFilters((p) => ({ ...p, sortBy: "totalAbsAmount" }))}
               >
                 €
               </Button>
               <Button
                 type="button"
-                variant={discoveryFilters.sortBy === "lastSeen" ? "default" : "outline"}
-                className="w-full rounded-xl font-bold"
+                variant="outline"
+                className={segmentedButtonClass(discoveryFilters.sortBy === "lastSeen", "emerald")}
                 onClick={() => setDiscoveryFilters((p) => ({ ...p, sortBy: "lastSeen" }))}
               >
                 Recente
@@ -312,16 +321,16 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
             <ButtonGroup className="w-full">
               <Button
                 type="button"
-                variant={(discoveryFilters.sortDir ?? "desc") === "desc" ? "default" : "outline"}
-                className="w-full rounded-xl font-bold"
+                variant="outline"
+                className={segmentedButtonClass((discoveryFilters.sortDir ?? "desc") === "desc", "emerald")}
                 onClick={() => setDiscoveryFilters((p) => ({ ...p, sortDir: "desc" }))}
               >
                 Desc
               </Button>
               <Button
                 type="button"
-                variant={(discoveryFilters.sortDir ?? "desc") === "asc" ? "default" : "outline"}
-                className="w-full rounded-xl font-bold"
+                variant="outline"
+                className={segmentedButtonClass((discoveryFilters.sortDir ?? "desc") === "asc", "emerald")}
                 onClick={() => setDiscoveryFilters((p) => ({ ...p, sortDir: "asc" }))}
               >
                 Asc
@@ -424,16 +433,16 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
             <ButtonGroup className="w-full">
               <Button
                 type="button"
-                variant={(recurringFilters.sortBy ?? "occurrences") === "occurrences" ? "default" : "outline"}
-                className="w-full rounded-xl font-bold"
+                variant="outline"
+                className={segmentedButtonClass((recurringFilters.sortBy ?? "occurrences") === "occurrences", "sky")}
                 onClick={() => setRecurringFilters((p) => ({ ...p, sortBy: "occurrences" }))}
               >
                 Ocorr.
               </Button>
               <Button
                 type="button"
-                variant={(recurringFilters.sortBy ?? "occurrences") === "absAmount" ? "default" : "outline"}
-                className="w-full rounded-xl font-bold"
+                variant="outline"
+                className={segmentedButtonClass((recurringFilters.sortBy ?? "occurrences") === "absAmount", "sky")}
                 onClick={() => setRecurringFilters((p) => ({ ...p, sortBy: "absAmount" }))}
               >
                 €
@@ -442,16 +451,16 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
             <ButtonGroup className="w-full">
               <Button
                 type="button"
-                variant={(recurringFilters.sortDir ?? "desc") === "desc" ? "default" : "outline"}
-                className="w-full rounded-xl font-bold"
+                variant="outline"
+                className={segmentedButtonClass((recurringFilters.sortDir ?? "desc") === "desc", "sky")}
                 onClick={() => setRecurringFilters((p) => ({ ...p, sortDir: "desc" }))}
               >
                 Desc
               </Button>
               <Button
                 type="button"
-                variant={(recurringFilters.sortDir ?? "desc") === "asc" ? "default" : "outline"}
-                className="w-full rounded-xl font-bold"
+                variant="outline"
+                className={segmentedButtonClass((recurringFilters.sortDir ?? "desc") === "asc", "sky")}
                 onClick={() => setRecurringFilters((p) => ({ ...p, sortDir: "asc" }))}
               >
                 Asc
@@ -540,16 +549,16 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
             <ButtonGroup className="w-full">
               <Button
                 type="button"
-                variant={(conflictFilters.sortBy ?? "date") === "date" ? "default" : "outline"}
-                className="w-full rounded-xl font-bold"
+                variant="outline"
+                className={segmentedButtonClass((conflictFilters.sortBy ?? "date") === "date", "amber")}
                 onClick={() => setConflictFilters((p) => ({ ...p, sortBy: "date" }))}
               >
                 Data
               </Button>
               <Button
                 type="button"
-                variant={(conflictFilters.sortBy ?? "date") === "absAmount" ? "default" : "outline"}
-                className="w-full rounded-xl font-bold"
+                variant="outline"
+                className={segmentedButtonClass((conflictFilters.sortBy ?? "date") === "absAmount", "amber")}
                 onClick={() => setConflictFilters((p) => ({ ...p, sortBy: "absAmount" }))}
               >
                 €
@@ -558,16 +567,16 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
             <ButtonGroup className="w-full">
               <Button
                 type="button"
-                variant={(conflictFilters.sortDir ?? "desc") === "desc" ? "default" : "outline"}
-                className="w-full rounded-xl font-bold"
+                variant="outline"
+                className={segmentedButtonClass((conflictFilters.sortDir ?? "desc") === "desc", "amber")}
                 onClick={() => setConflictFilters((p) => ({ ...p, sortDir: "desc" }))}
               >
                 Desc
               </Button>
               <Button
                 type="button"
-                variant={(conflictFilters.sortDir ?? "desc") === "asc" ? "default" : "outline"}
-                className="w-full rounded-xl font-bold"
+                variant="outline"
+                className={segmentedButtonClass((conflictFilters.sortDir ?? "desc") === "asc", "amber")}
                 onClick={() => setConflictFilters((p) => ({ ...p, sortDir: "asc" }))}
               >
                 Asc
@@ -925,6 +934,45 @@ function monthLabel(month: number) {
   return labels[month - 1] ?? String(month);
 }
 
+function nextExpectedDate(input: {
+  last: Date;
+  cadence: RecurringSuggestion["suggestedCadence"];
+  expectedDayOfMonth: number | null;
+  expectedMonths: number[];
+}) {
+  const last = new Date(input.last);
+  const y = last.getUTCFullYear();
+  const m = last.getUTCMonth() + 1; // 1..12
+  const clampDay = (yyyy: number, mm: number, dd: number) => {
+    const lastDay = new Date(Date.UTC(yyyy, mm, 0)).getUTCDate(); // mm is 1..12
+    return Math.max(1, Math.min(dd, lastDay));
+  };
+
+  if (input.cadence === "weekly") {
+    return new Date(last.getTime() + 7 * 24 * 60 * 60 * 1000);
+  }
+
+  if (input.cadence === "monthly") {
+    const day = input.expectedDayOfMonth ?? last.getUTCDate();
+    const nextMonth = m === 12 ? 1 : m + 1;
+    const nextYear = m === 12 ? y + 1 : y;
+    const dd = clampDay(nextYear, nextMonth, day);
+    return new Date(Date.UTC(nextYear, nextMonth - 1, dd));
+  }
+
+  if (input.cadence === "quarterly" || input.cadence === "yearly") {
+    const months = (input.expectedMonths ?? []).filter((x) => x >= 1 && x <= 12).sort((a, b) => a - b);
+    if (!months.length) return null;
+    const day = input.expectedDayOfMonth ?? last.getUTCDate();
+    const nextMonth = months.find((mm) => mm > m) ?? months[0]!;
+    const nextYear = nextMonth > m ? y : y + 1;
+    const dd = clampDay(nextYear, nextMonth, day);
+    return new Date(Date.UTC(nextYear, nextMonth - 1, dd));
+  }
+
+  return null;
+}
+
 function RecurringSuggestionCard(props: {
   suggestion: RecurringSuggestion;
   disabled: boolean;
@@ -953,6 +1001,15 @@ function RecurringSuggestionCard(props: {
           ? "Semanal"
           : "—";
 
+  const nextDate = useMemo(() => {
+    return nextExpectedDate({
+      last: suggestion.sampleDate,
+      cadence,
+      expectedDayOfMonth: cadence === "monthly" ? (expectedDay === "" ? null : Number(expectedDay)) : suggestion.expectedDayOfMonth,
+      expectedMonths,
+    });
+  }, [cadence, expectedDay, expectedMonths, suggestion.expectedDayOfMonth, suggestion.sampleDate]);
+
   const toggleMonth = (m: number) => {
     setExpectedMonths((prev) => (prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m].sort((a, b) => a - b)));
   };
@@ -964,6 +1021,14 @@ function RecurringSuggestionCard(props: {
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="secondary" className="font-mono">{suggestion.occurrences}x</Badge>
             <Badge variant="outline" className="font-mono text-xs">{suggestion.source ?? "Conta"}</Badge>
+            <Badge
+              className={cn(
+                "font-mono text-xs border-0",
+                suggestion.direction === "Despesa" ? "bg-red-100 text-red-800" : "bg-emerald-100 text-emerald-800"
+              )}
+            >
+              {suggestion.direction}
+            </Badge>
             <span className="font-black">{formatCurrency(suggestion.absAmount)}</span>
             <span className="text-xs text-muted-foreground">conf {Math.round(suggestion.confidence * 100)}%</span>
           </div>
@@ -980,32 +1045,32 @@ function RecurringSuggestionCard(props: {
             <ButtonGroup className="w-full">
               <Button
                 type="button"
-                className="w-full rounded-xl font-bold"
-                variant={cadence === "monthly" ? "default" : "outline"}
+                variant="outline"
+                className={segmentedButtonClass(cadence === "monthly", "sky")}
                 onClick={() => setCadence("monthly")}
               >
                 Mensal
               </Button>
               <Button
                 type="button"
-                className="w-full rounded-xl font-bold"
-                variant={cadence === "quarterly" ? "default" : "outline"}
+                variant="outline"
+                className={segmentedButtonClass(cadence === "quarterly", "sky")}
                 onClick={() => setCadence("quarterly")}
               >
                 Quartal
               </Button>
               <Button
                 type="button"
-                className="w-full rounded-xl font-bold"
-                variant={cadence === "yearly" ? "default" : "outline"}
+                variant="outline"
+                className={segmentedButtonClass(cadence === "yearly", "sky")}
                 onClick={() => setCadence("yearly")}
               >
                 Anual
               </Button>
               <Button
                 type="button"
-                className="w-full rounded-xl font-bold"
-                variant={cadence === "unknown" ? "default" : "outline"}
+                variant="outline"
+                className={segmentedButtonClass(cadence === "unknown", "sky")}
                 onClick={() => setCadence("unknown")}
               >
                 Outro
@@ -1013,6 +1078,12 @@ function RecurringSuggestionCard(props: {
             </ButtonGroup>
             <div className="mt-2 text-xs text-muted-foreground">
               Sugestão: <span className="font-bold">{cadenceLabel(suggestion.suggestedCadence)}</span> • {scheduleText}
+              {nextDate && (
+                <>
+                  {" "}
+                  • Próximo: <span className="font-bold">{new Date(nextDate).toLocaleDateString("pt-BR")}</span>
+                </>
+              )}
             </div>
           </div>
 
