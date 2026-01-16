@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { AlertTriangle, Filter, Loader2, Repeat, Search, Swords, Wand2 } from "lucide-react";
 import {
@@ -24,6 +25,9 @@ import { RuleDiscoveryCard } from "@/components/confirm/rule-discovery-card";
 import { markRecurringGroup } from "@/lib/actions/recurring";
 import { TransactionDrawer } from "@/components/transactions/transaction-drawer";
 import { updateTransactionCategory } from "@/lib/actions/transactions";
+import { suggestConflictResolution } from "@/lib/actions/ai-conflict-resolution";
+import { mergeRuleKeywordsById } from "@/lib/actions/rules";
+import { applyCategorization } from "@/lib/actions/categorization";
 import { formatCurrency } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -72,8 +76,15 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
   }));
   const [conflicts, setConflicts] = useState<ConflictTransaction[]>([]);
   const [isConflictsPending, startConflicts] = useTransition();
+  const [isConflictAiPending, startConflictAi] = useTransition();
+  const [isConflictAiApplyPending, startConflictAiApply] = useTransition();
 
   const [selectedConflict, setSelectedConflict] = useState<ConflictTransaction | null>(null);
+  const [aiConflictTx, setAiConflictTx] = useState<ConflictTransaction | null>(null);
+  const [aiConflictSuggestion, setAiConflictSuggestion] = useState<{
+    rationale: string;
+    suggestions: Array<{ rule_id: string; add_key_words: string | null; add_key_words_negative: string | null }>;
+  } | null>(null);
   const selectedDrawerTx = useMemo(() => {
     if (!selectedConflict) return null;
     return {
@@ -527,9 +538,30 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="text-sm font-bold text-amber-700">Candidatos ({tx.classificationCandidates.length})</div>
-                      <Button variant="outline" className="rounded-xl font-bold" onClick={() => setSelectedConflict(tx)}>
-                        Abrir
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          className="rounded-xl font-bold"
+                          disabled={isConflictAiPending}
+                          onClick={() =>
+                            startConflictAi(async () => {
+                              const res = await suggestConflictResolution(tx.id);
+                              if (!res.success) {
+                                toast.error("IA indisponível", { description: res.error });
+                                return;
+                              }
+                              setAiConflictTx(tx);
+                              setAiConflictSuggestion(res.suggestion);
+                            })
+                          }
+                        >
+                          {isConflictAiPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                          Sugestão IA
+                        </Button>
+                        <Button variant="outline" className="rounded-xl font-bold" onClick={() => setSelectedConflict(tx)}>
+                          Abrir
+                        </Button>
+                      </div>
                     </div>
                     <div className="grid gap-2">
                       {tx.classificationCandidates.map((c) => (
@@ -576,6 +608,92 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
             loadConflicts(conflictFilters);
           }}
         />
+
+        <Dialog
+          open={!!aiConflictSuggestion && !!aiConflictTx}
+          onOpenChange={(open) => {
+            if (!open) {
+              setAiConflictTx(null);
+              setAiConflictSuggestion(null);
+            }
+          }}
+        >
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Sugestão de resolução (IA)</DialogTitle>
+            </DialogHeader>
+            {aiConflictTx && aiConflictSuggestion && (
+              <div className="space-y-4">
+                <div className="text-sm text-muted-foreground">
+                  <span className="font-bold">Racional:</span> {aiConflictSuggestion.rationale}
+                </div>
+                <div className="grid gap-2">
+                  {aiConflictSuggestion.suggestions.length === 0 ? (
+                    <div className="text-sm text-muted-foreground">Nenhuma sugestão retornada.</div>
+                  ) : (
+                    aiConflictSuggestion.suggestions.map((s) => {
+                      const meta = aiConflictTx.classificationCandidates.find((c) => c.ruleId === s.rule_id);
+                      return (
+                        <div key={s.rule_id} className="border border-border rounded-xl p-4 bg-secondary/20">
+                          <div className="font-bold text-sm">
+                            {meta
+                              ? `${meta.appCategoryName ?? "OPEN"} > ${meta.category1} > ${meta.category2} > ${meta.category3}`
+                              : `Regra ${s.rule_id}`}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            add key_words: <span className="font-mono">{s.add_key_words ?? "-"}</span>
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            add key_words_negative: <span className="font-mono">{s.add_key_words_negative ?? "-"}</span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    className="rounded-xl"
+                    onClick={() => {
+                      setAiConflictTx(null);
+                      setAiConflictSuggestion(null);
+                    }}
+                  >
+                    Fechar
+                  </Button>
+                  <Button
+                    className="rounded-xl font-bold"
+                    disabled={isConflictAiApplyPending || aiConflictSuggestion.suggestions.length === 0}
+                    onClick={() =>
+                      startConflictAiApply(async () => {
+                        for (const s of aiConflictSuggestion.suggestions) {
+                          const res = await mergeRuleKeywordsById({
+                            ruleId: s.rule_id,
+                            addKeyWords: s.add_key_words,
+                            addKeyWordsNegative: s.add_key_words_negative,
+                          });
+                          if (!res.success) {
+                            toast.error("Falha ao atualizar regra", { description: res.error });
+                            return;
+                          }
+                        }
+                        await applyCategorization();
+                        toast.success("Sugestões aplicadas", { description: "Regras atualizadas e transações reprocessadas." });
+                        setAiConflictTx(null);
+                        setAiConflictSuggestion(null);
+                        loadConflicts(conflictFilters);
+                      })
+                    }
+                  >
+                    {isConflictAiApplyPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                    Aplicar
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </TabsContent>
     </Tabs>
   );
