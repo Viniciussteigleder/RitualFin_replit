@@ -20,17 +20,17 @@ export function MonthByMonthInsight({ rows }: { rows: MonthByMonthRow[] }) {
 
   const chartData = rows.map((r) => {
     const d = new Date(`${r.month}-01T00:00:00`);
-    const label = d.toLocaleDateString("pt-PT", { month: "short", year: "2-digit" });
+    const label = d.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" });
     return { ...r, label };
   });
 
   return (
-    <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-lg border border-gray-100/50 overflow-hidden">
-      <div className="p-6 border-b border-gray-100/50 flex items-center justify-between gap-6">
+    <div className="bg-card/80 backdrop-blur-xl rounded-3xl shadow-sm border border-border overflow-hidden">
+      <div className="p-6 border-b border-border flex items-center justify-between gap-6">
         <div className="flex flex-col gap-1">
-          <h3 className="text-lg font-semibold text-gray-900">Mês a mês</h3>
-          <p className="text-sm text-gray-500 font-medium">
-            Total no período: <span className="font-bold text-gray-900 tabular-nums">{formatCurrency(total, { hideDecimals: true })}</span>
+          <h3 className="text-lg font-black text-foreground">Mês a mês</h3>
+          <p className="text-sm text-muted-foreground font-semibold">
+            Total no período: <span className="font-black text-foreground tabular-nums">{formatCurrency(total, { hideDecimals: true })}</span>
           </p>
         </div>
       </div>
@@ -73,9 +73,9 @@ export function TopListInsight({
   const max = Math.max(0, ...rows.map((r) => r.total));
 
   return (
-    <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-lg border border-gray-100/50 overflow-hidden">
-      <div className="p-6 border-b border-gray-100/50">
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+    <div className="bg-card/80 backdrop-blur-xl rounded-3xl shadow-sm border border-border overflow-hidden">
+      <div className="p-6 border-b border-border">
+        <h3 className="text-lg font-black text-foreground">{title}</h3>
       </div>
 
       {rows.length === 0 ? (
@@ -86,21 +86,21 @@ export function TopListInsight({
             {rows.map((r) => (
               <div
                 key={r.name}
-                className="group flex items-center gap-4 p-3 rounded-2xl bg-white border border-gray-100 hover:border-emerald-100 hover:shadow-md transition-all duration-300"
+                className="group flex items-center gap-4 p-3 rounded-2xl bg-background/60 border border-border hover:border-emerald-200/60 hover:shadow-sm transition-all duration-300"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-3">
-                    <div className="font-semibold text-gray-900 truncate">{r.name}</div>
-                    <div className="text-sm font-bold text-gray-900 tabular-nums">{formatCurrency(r.total, { hideDecimals: true })}</div>
+                    <div className="font-black text-foreground truncate">{r.name}</div>
+                    <div className="text-sm font-black text-foreground tabular-nums">{formatCurrency(r.total, { hideDecimals: true })}</div>
                   </div>
-                  <div className="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="mt-2 h-2 bg-secondary/60 rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full bg-emerald-500/80 group-hover:bg-emerald-500 transition-colors"
                       style={{ width: `${max > 0 ? Math.max(2, (r.total / max) * 100) : 0}%` }}
                     />
                   </div>
                 </div>
-                <div className="text-xs font-semibold text-muted-foreground tabular-nums whitespace-nowrap">
+                <div className="text-xs font-black text-muted-foreground tabular-nums whitespace-nowrap">
                   {r.count} tx
                 </div>
               </div>
@@ -111,4 +111,3 @@ export function TopListInsight({
     </div>
   );
 }
-

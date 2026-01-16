@@ -99,19 +99,19 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
           {/* Main Bar */}
           <div className="flex-1">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="font-semibold text-gray-900 group-hover:text-emerald-700 transition-colors">
+              <span className="font-black text-foreground group-hover:text-emerald-700 transition-colors">
                 {item.category}
               </span>
               <div className="flex items-center gap-4">
-                <span className="font-bold text-gray-900 tabular-nums">
+                <span className="font-black text-foreground tabular-nums">
                   €{item.total.toFixed(0)}
                 </span>
-                <span className="text-sm text-gray-500 w-12 text-right tabular-nums">
+                <span className="text-sm text-muted-foreground w-12 text-right tabular-nums font-bold">
                   {item.percentage.toFixed(0)}%
                 </span>
               </div>
             </div>
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-2 bg-secondary/60 rounded-full overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-700 ease-out group-hover:opacity-80"
                 style={{
@@ -154,10 +154,10 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
     );
 
     return (
-      <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-lg border border-gray-100/50">
+      <div className="bg-card/80 backdrop-blur-xl rounded-3xl p-8 shadow-sm border border-border">
         <div className="flex items-center justify-between mb-8">
           <div className="space-y-1">
-            <h3 className="text-2xl font-semibold text-gray-900 tracking-tight">
+            <h3 className="text-2xl font-black text-foreground tracking-tight">
               {title}
             </h3>
             <p className="text-sm text-muted-foreground font-medium">
@@ -166,7 +166,7 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
           </div>
           <button
             onClick={handleExportExcel}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-100 transition-all duration-300 font-medium shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-800 rounded-xl hover:bg-emerald-100/80 transition-all duration-300 font-black shadow-sm"
           >
             <Download className="w-4 h-4" />
             Excel
@@ -178,7 +178,7 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
             <div key={dateKey} className="space-y-3">
               <div className="flex items-center gap-3">
                 <div className="h-px flex-1 bg-border/50"></div>
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider bg-white/50 px-3 py-1 rounded-full border border-border/50">
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider bg-background/60 px-3 py-1 rounded-full border border-border/50">
                   {format(new Date(dateKey), "dd 'de' MMMM, yyyy", { locale: pt })}
                 </span>
                 <div className="h-px flex-1 bg-border/50"></div>
@@ -188,27 +188,27 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
                 {groupedTransactions[dateKey].map((tx) => (
                   <div
                     key={tx.id}
-                    className="group relative flex items-center justify-between p-4 rounded-2xl bg-white border border-gray-100 hover:border-emerald-100 hover:shadow-md transition-all duration-300"
+                    className="group relative flex items-center justify-between p-4 rounded-2xl bg-background/60 border border-border hover:border-emerald-200/60 hover:shadow-sm transition-all duration-300"
                   >
                     <div className="flex items-center gap-4 flex-1">
                       {/* Date Box */}
-                      <div className="flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-gray-50 group-hover:bg-emerald-50 transition-colors border border-gray-100 group-hover:border-emerald-100">
-                        <span className="text-sm font-bold text-gray-700 group-hover:text-emerald-700">
+                      <div className="flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-secondary/40 group-hover:bg-emerald-50/60 transition-colors border border-border group-hover:border-emerald-200/60">
+                        <span className="text-sm font-black text-foreground group-hover:text-emerald-700">
                           {format(new Date(tx.paymentDate), "dd")}
                         </span>
-                        <span className="text-[10px] font-medium text-gray-500 uppercase">
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase">
                           {format(new Date(tx.paymentDate), "MMM", { locale: pt })}
                         </span>
                       </div>
 
                       {/* Info */}
                       <div className="space-y-0.5">
-                        <div className="font-semibold text-gray-900 group-hover:text-emerald-700 transition-colors line-clamp-1">
+                        <div className="font-black text-foreground group-hover:text-emerald-700 transition-colors line-clamp-1">
                           {tx.aliasDesc || tx.descNorm}
                         </div>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           {tx.category1 && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-600 font-medium">
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-secondary/60 text-muted-foreground font-bold">
                               {tx.category1}
                             </span>
                           )}
@@ -226,18 +226,18 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
                       <div className="text-right">
                         <div
                           className={`text-lg font-bold tabular-nums tracking-tight ${
-                            tx.amount < 0 ? "text-gray-900 group-hover:text-red-600 transition-colors" : "text-emerald-600"
+                            tx.amount < 0 ? "text-foreground group-hover:text-red-600 transition-colors" : "text-emerald-600"
                           }`}
                         >
                           {tx.amount < 0 ? "-" : "+"}€{Math.abs(tx.amount).toFixed(2)}
                         </div>
                       </div>
                       <div className={`p-2 rounded-full ${
-                          tx.amount < 0 ? "bg-gray-50 group-hover:bg-red-50" : "bg-emerald-50"
+                          tx.amount < 0 ? "bg-secondary/40 group-hover:bg-red-50/60" : "bg-emerald-50/60"
                         } transition-colors`}>
                         {tx.amount < 0 ? (
                             <TrendingDown className={`w-4 h-4 ${
-                                tx.amount < 0 ? "text-gray-400 group-hover:text-red-500 transition-colors" : "text-emerald-500"
+                                tx.amount < 0 ? "text-muted-foreground group-hover:text-red-500 transition-colors" : "text-emerald-500"
                             }`} />
                         ) : (
                             <TrendingUp className="w-4 h-4 text-emerald-500" />
@@ -257,7 +257,7 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
   // Show chart for category levels
   if (data.aggregates.length === 0) {
     return (
-      <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-lg border border-gray-100/50 text-center py-16">
+      <div className="bg-card/80 backdrop-blur-xl rounded-3xl p-8 shadow-sm border border-border text-center py-16">
         <p className="text-muted-foreground">Nenhum dado encontrado para este período.</p>
       </div>
     );
@@ -274,18 +274,18 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
   const hasChildren = level !== "category3"; // Category 3 goes to transactions
 
   return (
-    <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-lg border border-gray-100/50 hover:shadow-xl transition-all duration-500">
+    <div className="bg-card/80 backdrop-blur-xl rounded-3xl p-8 shadow-sm border border-border hover:shadow-md transition-all duration-500">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h3 className="text-2xl font-semibold text-gray-900 tracking-tight">{title}</h3>
-          <p className="text-gray-500 mt-1 font-medium">
+          <h3 className="text-2xl font-black text-foreground tracking-tight">{title}</h3>
+          <p className="text-muted-foreground mt-1 font-semibold">
             €{total.toFixed(2)} • {chartData.reduce((sum, d) => sum + d.count, 0)} transações
           </p>
         </div>
         <button
           onClick={handleExportExcel}
-          className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-100 transition-all duration-300 font-medium"
+          className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-800 rounded-xl hover:bg-emerald-100/80 transition-all duration-300 font-black"
         >
           <Download className="w-4 h-4" />
           Excel
@@ -327,13 +327,13 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
                   );
                 });
               })()}
-              <circle cx="100" cy="100" r="50" fill="white" />
+              <circle cx="100" cy="100" r="50" fill="hsl(var(--background))" />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <div className="text-3xl font-bold text-gray-900">
+              <div className="text-3xl font-black text-foreground">
                 €{total.toFixed(0)}
               </div>
-              <div className="text-sm text-gray-500 uppercase tracking-wider font-medium">
+              <div className="text-sm text-muted-foreground uppercase tracking-wider font-bold">
                 Total
               </div>
             </div>
@@ -352,10 +352,10 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
 
       {isPending && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-8 shadow-2xl">
+          <div className="bg-card rounded-2xl p-8 shadow-2xl border border-border">
             <div className="flex flex-col items-center gap-4">
               <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-600 border-t-transparent" />
-              <p className="text-gray-600 font-medium">Carregando...</p>
+              <p className="text-muted-foreground font-bold">Carregando...</p>
             </div>
           </div>
         </div>

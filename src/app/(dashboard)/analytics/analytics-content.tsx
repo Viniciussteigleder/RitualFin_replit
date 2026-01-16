@@ -17,7 +17,7 @@ import {
   TopAggregateRow,
 } from "@/lib/actions/analytics";
 import { startOfMonth, endOfMonth } from "date-fns";
-import { ArrowDown, ChevronRight, Home } from "lucide-react";
+import { ArrowDown, BarChart3, Calendar, ChevronRight, Home, Loader2, Repeat, Rows3 } from "lucide-react";
 
 interface LevelData {
   level: "appCategory" | "category1" | "category2" | "category3" | "transactions";
@@ -204,32 +204,33 @@ export function AnalyticsContent() {
   }
 
   // Extract unique categories from data for filter
-  const categories = Array.from(
-    new Set(levels[0]?.data.aggregates.map((a) => a.category).filter(Boolean) || [])
-  );
-
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <TabsList className="bg-white/70 border border-gray-100/80 rounded-2xl p-1 h-auto">
-            <TabsTrigger value="drilldown" className="rounded-xl px-4 py-2">
+          <TabsList className="bg-card/70 border border-border rounded-3xl p-2 h-auto shadow-sm">
+            <TabsTrigger value="drilldown" className="rounded-2xl px-4 py-2 font-black gap-2 data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
+              <Rows3 className="w-4 h-4" />
               Drill-down
             </TabsTrigger>
-            <TabsTrigger value="month" className="rounded-xl px-4 py-2">
+            <TabsTrigger value="month" className="rounded-2xl px-4 py-2 font-black gap-2 data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
+              <Calendar className="w-4 h-4" />
               Mês a mês
             </TabsTrigger>
-            <TabsTrigger value="top" className="rounded-xl px-4 py-2">
+            <TabsTrigger value="top" className="rounded-2xl px-4 py-2 font-black gap-2 data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
+              <BarChart3 className="w-4 h-4" />
               Top gastos
             </TabsTrigger>
-            <TabsTrigger value="recurring" className="rounded-xl px-4 py-2">
+            <TabsTrigger value="recurring" className="rounded-2xl px-4 py-2 font-black gap-2 data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
+              <Repeat className="w-4 h-4" />
               Recorrentes
             </TabsTrigger>
           </TabsList>
 
           {isPending && (
-            <div className="text-xs font-semibold text-muted-foreground tabular-nums">
-              Atualizando…
+            <div className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-secondary/40 border border-border text-xs font-bold text-muted-foreground tabular-nums">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Atualizando
             </div>
           )}
         </div>
@@ -237,12 +238,12 @@ export function AnalyticsContent() {
         <TabsContent value="drilldown" className="mt-0 space-y-6">
           {/* Breadcrumb Navigation */}
           {levels.length > 1 && (
-            <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-4 shadow-sm border border-gray-100/50">
+            <div className="bg-card/80 backdrop-blur-xl rounded-2xl p-4 shadow-sm border border-border">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-sm flex-wrap">
                   <button
                     onClick={() => handleBreadcrumbClick(-1)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-emerald-50 transition-all duration-300 text-gray-600 hover:text-emerald-700 font-medium"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-emerald-50/60 transition-all duration-300 text-muted-foreground hover:text-emerald-700 font-bold"
                   >
                     <Home className="w-4 h-4" />
                     <span>Início</span>
@@ -253,7 +254,7 @@ export function AnalyticsContent() {
                       <ChevronRight className="w-4 h-4 text-gray-300" />
                       <button
                         onClick={() => handleBreadcrumbClick(index + 1)}
-                        className="px-3 py-1.5 rounded-lg hover:bg-emerald-50 transition-all duration-300 text-gray-600 hover:text-emerald-700 font-semibold"
+                        className="px-3 py-1.5 rounded-lg hover:bg-emerald-50/60 transition-all duration-300 text-muted-foreground hover:text-emerald-700 font-black"
                       >
                         {level.parentValue}
                       </button>
@@ -263,7 +264,7 @@ export function AnalyticsContent() {
 
                 <button
                   onClick={() => scrollToLevel(levels.length - 1)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all duration-300 font-semibold shadow-sm"
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 text-emerald-800 hover:bg-emerald-100/80 transition-all duration-300 font-black shadow-sm"
                   title="Ir para o próximo nível"
                 >
                   Próximo nível
@@ -278,7 +279,6 @@ export function AnalyticsContent() {
             filters={filters}
             onFiltersChange={handleFiltersChange}
             accounts={accounts}
-            categories={categories}
           />
 
           {/* Cascading Drill-Down Visualization - All Levels Stacked */}

@@ -1,17 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
@@ -20,9 +12,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon, Filter, X } from "lucide-react";
+import { CalendarIcon, Filter, RotateCcw } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { ButtonGroup } from "@/components/ui/button-group";
 
 interface FilterPanelProps {
   onFilterChange: (filters: TransactionFilters) => void;
@@ -75,9 +68,9 @@ export function FilterPanel({ onFilterChange, categories = [], accounts = [] }: 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2 rounded-2xl h-14 px-6 font-bold">
           <Filter className="h-4 w-4" />
-          Filters
+          Filtros
           {activeFilterCount > 0 && (
             <Badge variant="secondary" className="ml-1 rounded-full px-2">
               {activeFilterCount}
@@ -85,19 +78,23 @@ export function FilterPanel({ onFilterChange, categories = [], accounts = [] }: 
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80" align="end">
+      <PopoverContent className="w-[420px] max-w-[calc(100vw-24px)]" align="end">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h4 className="font-semibold text-sm">Filters</h4>
-            <Button variant="ghost" size="sm" onClick={handleClear}>
-              Clear all
+            <div>
+              <h4 className="font-black text-sm">Filtros</h4>
+              <p className="text-xs text-muted-foreground">Aplique para atualizar a lista.</p>
+            </div>
+            <Button variant="outline" size="sm" className="rounded-xl font-bold" onClick={handleClear}>
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Limpar
             </Button>
           </div>
 
           {/* Date Range */}
           <div className="space-y-2">
-            <Label className="text-xs font-bold uppercase tracking-widest text-slate-700">
-              Date Range
+            <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">
+              Período
             </Label>
             <div className="grid grid-cols-2 gap-2">
               <Popover>
@@ -105,12 +102,12 @@ export function FilterPanel({ onFilterChange, categories = [], accounts = [] }: 
                   <Button
                     variant="outline"
                     className={cn(
-                      "justify-start text-left font-normal",
+                      "justify-start text-left font-semibold rounded-xl",
                       !filters.dateFrom && "text-muted-foreground"
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {filters.dateFrom ? format(filters.dateFrom, "PP") : "From"}
+                    {filters.dateFrom ? format(filters.dateFrom, "PP") : "Início"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -127,12 +124,12 @@ export function FilterPanel({ onFilterChange, categories = [], accounts = [] }: 
                   <Button
                     variant="outline"
                     className={cn(
-                      "justify-start text-left font-normal",
+                      "justify-start text-left font-semibold rounded-xl",
                       !filters.dateTo && "text-muted-foreground"
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {filters.dateTo ? format(filters.dateTo, "PP") : "To"}
+                    {filters.dateTo ? format(filters.dateTo, "PP") : "Fim"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -149,8 +146,8 @@ export function FilterPanel({ onFilterChange, categories = [], accounts = [] }: 
           {/* Categories */}
           {categories.length > 0 && (
             <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase tracking-widest text-slate-700">
-                Categories
+              <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">
+                Categorias
               </Label>
               <div className="space-y-2 max-h-40 overflow-y-auto">
                 {categories.map((category) => (
@@ -181,8 +178,8 @@ export function FilterPanel({ onFilterChange, categories = [], accounts = [] }: 
           {/* Accounts */}
           {accounts.length > 0 && (
             <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase tracking-widest text-slate-700">
-                Accounts
+              <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">
+                Contas
               </Label>
               <div className="space-y-2">
                 {accounts.map((account) => (
@@ -212,28 +209,30 @@ export function FilterPanel({ onFilterChange, categories = [], accounts = [] }: 
 
           {/* Amount Range */}
           <div className="space-y-2">
-            <Label className="text-xs font-bold uppercase tracking-widest text-slate-700">
-              Amount Range
+            <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">
+              Valor (abs)
             </Label>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Input
                   type="number"
-                  placeholder="Min"
+                  placeholder="Mín"
                   value={filters.minAmount || ""}
                   onChange={(e) =>
                     setFilters({ ...filters, minAmount: parseFloat(e.target.value) || undefined })
                   }
+                  className="rounded-xl"
                 />
               </div>
               <div>
                 <Input
                   type="number"
-                  placeholder="Max"
+                  placeholder="Máx"
                   value={filters.maxAmount || ""}
                   onChange={(e) =>
                     setFilters({ ...filters, maxAmount: parseFloat(e.target.value) || undefined })
                   }
+                  className="rounded-xl"
                 />
               </div>
             </div>
@@ -242,42 +241,72 @@ export function FilterPanel({ onFilterChange, categories = [], accounts = [] }: 
           {/* Type & Recurrence */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-widest text-slate-700">Type</Label>
-                <Select 
-                    value={filters.fixVar || "all"} 
-                    onValueChange={(val) => setFilters({ ...filters, fixVar: val === "all" ? undefined : val })}
+              <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">Fixo / Variável</Label>
+              <ButtonGroup className="w-full">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={cn("w-full rounded-xl font-bold", !filters.fixVar && "bg-secondary/40")}
+                  onClick={() => setFilters({ ...filters, fixVar: undefined })}
                 >
-                    <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">Fixo & Variável</SelectItem>
-                        <SelectItem value="Fixo">Fixo</SelectItem>
-                        <SelectItem value="Variável">Variável</SelectItem>
-                    </SelectContent>
-                </Select>
+                  Todos
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={cn("w-full rounded-xl font-bold", filters.fixVar === "Fixo" && "bg-secondary/40")}
+                  onClick={() => setFilters({ ...filters, fixVar: "Fixo" })}
+                >
+                  Fixo
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={cn("w-full rounded-xl font-bold", filters.fixVar === "Variável" && "bg-secondary/40")}
+                  onClick={() => setFilters({ ...filters, fixVar: "Variável" })}
+                >
+                  Variável
+                </Button>
+              </ButtonGroup>
             </div>
             <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-widest text-slate-700">Recurrence</Label>
-                <Select 
-                    value={filters.recurring === undefined ? "all" : filters.recurring ? "true" : "false"} 
-                    onValueChange={(val) => setFilters({ ...filters, recurring: val === "all" ? undefined : val === "true" })}
+              <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">Recorrente</Label>
+              <ButtonGroup className="w-full">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={cn("w-full rounded-xl font-bold", filters.recurring === undefined && "bg-secondary/40")}
+                  onClick={() => setFilters({ ...filters, recurring: undefined })}
                 >
-                    <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">Todas</SelectItem>
-                        <SelectItem value="true">Recorrentes</SelectItem>
-                        <SelectItem value="false">Únicas</SelectItem>
-                    </SelectContent>
-                </Select>
+                  Todos
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={cn("w-full rounded-xl font-bold", filters.recurring === true && "bg-secondary/40")}
+                  onClick={() => setFilters({ ...filters, recurring: true })}
+                >
+                  Sim
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={cn("w-full rounded-xl font-bold", filters.recurring === false && "bg-secondary/40")}
+                  onClick={() => setFilters({ ...filters, recurring: false })}
+                >
+                  Não
+                </Button>
+              </ButtonGroup>
             </div>
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2 pt-2">
-            <Button variant="outline" className="flex-1" onClick={() => setIsOpen(false)}>
-              Cancel
+          <div className="flex gap-2 pt-2 border-t border-border/50">
+            <Button variant="outline" className="flex-1 rounded-xl font-bold" onClick={() => setIsOpen(false)}>
+              Fechar
             </Button>
-            <Button className="flex-1 bg-slate-900 text-white" onClick={handleApply}>
-              Apply Filters
+            <Button className="flex-1 rounded-xl font-black" onClick={handleApply}>
+              Aplicar filtros
             </Button>
           </div>
         </div>
