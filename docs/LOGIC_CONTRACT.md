@@ -22,6 +22,10 @@ A `Rule` contains:
 - `leafId`: Optional taxonomy leaf reference
 - `active`: Boolean (only active rules are evaluated)
 
+**Invariant: One rule per `leafId`**
+- For user-created rules, there must be **at most one active row** per `leafId`.
+- Keyword maintenance adds new `keyWords` / `keyWordsNegative` by **merging into the existing row** (no duplicate rows for the same leaf target).
+
 ### 1.2 Keyword Matching (Deterministic)
 
 **Normalization** (applied to both description and keywords):

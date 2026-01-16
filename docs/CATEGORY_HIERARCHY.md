@@ -29,7 +29,9 @@ This app treats `leafId` (taxonomy leaf) as the single source of truth for trans
   - `conflictFlag=true`
   - `classificationCandidates` contains candidate leaves for the user to resolve
   - Stored hierarchy is **OPEN** until resolution
-- AI suggestions apply **only** when the rule engine resolves **OPEN**.
+- AI never auto-applies classification or rule changes without user action:
+  - **OPEN discovery**: AI may suggest a leaf + keywords to help the user create/extend a rule.
+  - **CONFLICT resolution** (optional): AI may suggest *keyword adjustments* (usually `key_words_negative`) to reduce ambiguity.
 
 ## Core implementation
 
@@ -50,3 +52,24 @@ Useful scripts:
 - `npm run db:backfill-categorization` (re-applies strict categorization for all users)
 - `npx tsx scripts/check-category1-enum-coverage.ts` (diagnostic)
 
+## App workflows (STRICT)
+
+### Rule discovery (`/confirm` → "Definição de regras")
+
+- Source: **only** transactions currently classified as the user’s **OPEN** leaf (`transactions.leaf_id = OPEN_LEAF_ID`).
+- Grouping: by normalized description (`descNorm`), surfaced as “padrões” with occurrence count.
+- Action: **Adicionar regra**:
+  - Creates a rule if none exists for the selected `leafId`.
+  - If a rule already exists for that `leafId`, it **merges** new `key_words`/`key_words_negative` into the existing row (one rule per leaf).
+
+### Conflict review (`/confirm` → "Conflitos")
+
+- Source: transactions with `conflictFlag=true` (stored as OPEN + `classificationCandidates`).
+- Resolution:
+  - Manual: select a candidate `leafId` (updates the transaction hierarchy and clears conflict).
+  - Optional AI: proposes minimal keyword edits to reduce future conflicts; user chooses whether to apply.
+
+### Recurring suggestions (`/confirm` → "Recorrentes")
+
+- Source: non-OPEN transactions grouped by `(leafId, abs(amount), merchantKey)`.
+- Action: "Marcar recorrente" sets recurring flags/group metadata on matching transactions.
