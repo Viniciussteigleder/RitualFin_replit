@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createRule } from "@/lib/actions/rules";
 import { applyCategorization } from "@/lib/actions/categorization";
-import { DiscoveryCandidate, TaxonomyOption } from "@/lib/actions/discovery";
+import type { DiscoveryCandidate, TaxonomyOption } from "@/lib/actions/discovery";
 import { suggestRuleForOpenCandidate } from "@/lib/actions/ai-rule-suggestion";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -19,22 +19,28 @@ import {
   Calendar,
   Repeat,
   ChevronRight,
-  Hash
+  Hash,
+  Plus
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { getCategoryConfig } from "@/lib/constants/categories";
 import { CategoryIcon } from "@/components/ui/category-icon";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { createClassificationPath } from "@/lib/actions/classification";
 
 interface RuleDiscoveryCardProps {
   candidate: DiscoveryCandidate;
   taxonomyOptions: TaxonomyOption[];
+  onApplied?: () => void;
+  onTaxonomyOptionCreated?: (option: TaxonomyOption) => void;
 }
 
-export function RuleDiscoveryCard({ candidate, taxonomyOptions }: RuleDiscoveryCardProps) {
+export function RuleDiscoveryCard({ candidate, taxonomyOptions, onApplied, onTaxonomyOptionCreated }: RuleDiscoveryCardProps) {
   const [isPending, startTransition] = useTransition();
   const [isAiPending, startAiTransition] = useTransition();
+  const [isCreateClassPending, startCreateClassTransition] = useTransition();
   const [isSuccess, setIsSuccess] = useState(false);
   const [keywords, setKeywords] = useState(candidate.description);
   const [negativeKeywords, setNegativeKeywords] = useState("");
@@ -45,6 +51,11 @@ export function RuleDiscoveryCard({ candidate, taxonomyOptions }: RuleDiscoveryC
   const [fixVar, setFixVar] = useState<"Fixo" | "Variável">("Variável");
   const [categorySearch, setCategorySearch] = useState("");
   const [aiRationale, setAiRationale] = useState<string>("");
+  const [createClassOpen, setCreateClassOpen] = useState(false);
+  const [newAppCategory, setNewAppCategory] = useState("");
+  const [newCategory1, setNewCategory1] = useState("");
+  const [newCategory2, setNewCategory2] = useState("");
+  const [newCategory3, setNewCategory3] = useState("");
 
   // Filter taxonomy options by search
   const filteredOptions = useMemo(() => {
@@ -59,6 +70,34 @@ export function RuleDiscoveryCard({ candidate, taxonomyOptions }: RuleDiscoveryC
   }, [taxonomyOptions, categorySearch]);
 
   const selectedOption = taxonomyOptions.find(o => o.leafId === selectedLeafId);
+
+  const appCategoryOptions = useMemo(() => {
+    return Array.from(new Set(taxonomyOptions.map((o) => o.appCategory).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+  }, [taxonomyOptions]);
+  const category1Options = useMemo(() => {
+    return Array.from(new Set(taxonomyOptions.map((o) => o.category1).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+  }, [taxonomyOptions]);
+  const category2Options = useMemo(() => {
+    return Array.from(
+      new Set(
+        taxonomyOptions
+          .filter((o) => (newCategory1 ? o.category1 === newCategory1 : true))
+          .map((o) => o.category2)
+          .filter(Boolean)
+      )
+    ).sort((a, b) => a.localeCompare(b));
+  }, [taxonomyOptions, newCategory1]);
+  const category3Options = useMemo(() => {
+    return Array.from(
+      new Set(
+        taxonomyOptions
+          .filter((o) => (newCategory1 ? o.category1 === newCategory1 : true))
+          .filter((o) => (newCategory2 ? o.category2 === newCategory2 : true))
+          .map((o) => o.category3)
+          .filter(Boolean)
+      )
+    ).sort((a, b) => a.localeCompare(b));
+  }, [taxonomyOptions, newCategory1, newCategory2]);
 
   const handleAiSuggest = () => {
     startAiTransition(async () => {
@@ -114,8 +153,8 @@ export function RuleDiscoveryCard({ candidate, taxonomyOptions }: RuleDiscoveryC
         if (res.success) {
           setIsSuccess(true);
           if (res.merged) {
-            toast.success("Keyword adicionada!", {
-              description: `Palavra-chave mesclada com regra existente (ID: ${res.ruleId?.slice(0, 8)})`
+            toast.success("Regra atualizada!", {
+              description: `As palavras-chave foram adicionadas à regra existente (ID: ${res.ruleId?.slice(0, 8)})`
             });
           } else {
             toast.success("Regra criada!", {
@@ -127,6 +166,7 @@ export function RuleDiscoveryCard({ candidate, taxonomyOptions }: RuleDiscoveryC
           toast.success("Transações atualizadas!", {
             description: `${candidate.count} transações podem ter sido categorizadas.`
           });
+          onApplied?.();
         } else {
           toast.error("Erro ao criar regra", { description: res.error });
         }
@@ -150,6 +190,35 @@ export function RuleDiscoveryCard({ candidate, taxonomyOptions }: RuleDiscoveryC
       }
     }
     setCategorySearch("");
+  };
+
+  const openCreateClassification = () => {
+    const opt = selectedOption;
+    setNewAppCategory(opt?.appCategory || "");
+    setNewCategory1(opt?.category1 || "");
+    setNewCategory2(opt?.category2 || "");
+    setNewCategory3(opt?.category3 || "");
+    setCreateClassOpen(true);
+  };
+
+  const handleCreateClassification = () => {
+    startCreateClassTransition(async () => {
+      const res = await createClassificationPath({
+        appCategoryName: newAppCategory,
+        category1Name: newCategory1,
+        category2Name: newCategory2,
+        category3Name: newCategory3,
+      });
+      if (!res.success) {
+        toast.error("Não foi possível criar classificação", { description: res.error });
+        return;
+      }
+      onTaxonomyOptionCreated?.(res.option);
+      setSelectedLeafId(res.option.leafId);
+      setCategorySearch("");
+      setCreateClassOpen(false);
+      toast.success("Classificação criada", { description: res.option.label });
+    });
   };
 
   // If success, show minimal card
@@ -351,6 +420,16 @@ export function RuleDiscoveryCard({ candidate, taxonomyOptions }: RuleDiscoveryC
               />
             </div>
 
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-muted-foreground">
+                Hierarquia: <span className="font-mono">App</span> &gt; <span className="font-mono">Cat 1</span> &gt; <span className="font-mono">Cat 2</span> &gt; <span className="font-mono">Cat 3</span>
+              </p>
+              <Button type="button" variant="outline" size="sm" className="h-8 rounded-xl font-bold" onClick={openCreateClassification}>
+                <Plus className="w-3.5 h-3.5 mr-1" />
+                Nova classificação
+              </Button>
+            </div>
+
             {/* Selected Category Display */}
             {selectedOption && (
               <div className="p-3 bg-violet-50 dark:bg-violet-900/20 rounded-lg border border-violet-200 dark:border-violet-800">
@@ -413,7 +492,7 @@ export function RuleDiscoveryCard({ candidate, taxonomyOptions }: RuleDiscoveryC
         {/* Action Button */}
         <div className="flex items-center justify-between pt-4 border-t border-border">
           <p className="text-xs text-muted-foreground">
-            Esta regra afetará <strong>{candidate.count}</strong> transações existentes.
+            Esta ação atualizará <strong>{candidate.count}</strong> transações semelhantes (se houver match).
           </p>
           <Button
             onClick={handleCreate}
@@ -435,12 +514,105 @@ export function RuleDiscoveryCard({ candidate, taxonomyOptions }: RuleDiscoveryC
             ) : (
               <>
                 <CheckCircle2 className="w-4 h-4 mr-2" />
-                Criar Regra e Aplicar
+                Adicionar regra
               </>
             )}
           </Button>
         </div>
       </div>
+
+      <Dialog open={createClassOpen} onOpenChange={setCreateClassOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Criar nova classificação</DialogTitle>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-xs uppercase font-bold text-muted-foreground">App Category</label>
+              <Input value={newAppCategory} onChange={(e) => setNewAppCategory(e.target.value)} placeholder="Ex: Alimentação" />
+              <div className="max-h-28 overflow-y-auto rounded-lg border border-border">
+                {appCategoryOptions.map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    className={cn("w-full px-3 py-2 text-left text-sm hover:bg-secondary border-b last:border-0", v === newAppCategory && "bg-secondary")}
+                    onClick={() => setNewAppCategory(v)}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs uppercase font-bold text-muted-foreground">Categoria 1</label>
+              <Input value={newCategory1} onChange={(e) => setNewCategory1(e.target.value)} placeholder="Ex: Alimentação" />
+              <div className="max-h-28 overflow-y-auto rounded-lg border border-border">
+                {category1Options.map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    className={cn("w-full px-3 py-2 text-left text-sm hover:bg-secondary border-b last:border-0", v === newCategory1 && "bg-secondary")}
+                    onClick={() => setNewCategory1(v)}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs uppercase font-bold text-muted-foreground">Categoria 2</label>
+              <Input value={newCategory2} onChange={(e) => setNewCategory2(e.target.value)} placeholder="Ex: Restaurantes" />
+              <div className="max-h-28 overflow-y-auto rounded-lg border border-border">
+                {category2Options.map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    className={cn("w-full px-3 py-2 text-left text-sm hover:bg-secondary border-b last:border-0", v === newCategory2 && "bg-secondary")}
+                    onClick={() => setNewCategory2(v)}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs uppercase font-bold text-muted-foreground">Categoria 3</label>
+              <Input value={newCategory3} onChange={(e) => setNewCategory3(e.target.value)} placeholder="Ex: Restaurante" />
+              <div className="max-h-28 overflow-y-auto rounded-lg border border-border">
+                {category3Options.map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    className={cn("w-full px-3 py-2 text-left text-sm hover:bg-secondary border-b last:border-0", v === newCategory3 && "bg-secondary")}
+                    onClick={() => setNewCategory3(v)}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" className="rounded-xl" onClick={() => setCreateClassOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              className="rounded-xl font-bold"
+              disabled={isCreateClassPending}
+              onClick={handleCreateClassification}
+            >
+              {isCreateClassPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Criar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

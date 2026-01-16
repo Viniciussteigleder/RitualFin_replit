@@ -1,14 +1,13 @@
 import { auth } from "@/auth";
 import { getPendingTransactions } from "@/lib/actions/transactions";
-import { getDiscoveryCandidates, getTaxonomyOptions } from "@/lib/actions/discovery";
+import { getTaxonomyOptions } from "@/lib/actions/discovery";
 import { TransactionList } from "../transactions/transaction-list";
-import { CheckCircle2, Sparkles, Zap, BrainCircuit, Search } from "lucide-react";
+import { CheckCircle2, Zap, BrainCircuit } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { BulkConfirmButton } from "@/components/transactions/bulk-confirm-button";
-import { RuleDiscoveryCard } from "@/components/confirm/rule-discovery-card";
 import { ReRunRulesButton } from "@/components/transactions/re-run-rules-button";
 import Link from "next/link";
+import { ConfirmTabs } from "@/components/confirm/confirm-tabs";
 
 export default async function ConfirmPage() {
   const session = await auth();
@@ -22,10 +21,6 @@ export default async function ConfirmPage() {
 
   const transactions = await getPendingTransactions();
   const highConfidenceCount = transactions.filter(tx => (tx.confidence || 0) >= 80).length;
-  
-  // New Discovery Data - sorted by count (highest first = more impact)
-  const rawCandidates = await getDiscoveryCandidates();
-  const candidates = rawCandidates.sort((a, b) => b.count - a.count);
   const taxonomyOptions = await getTaxonomyOptions();
 
   return (
@@ -49,28 +44,7 @@ export default async function ConfirmPage() {
         </div>
       </div>
 
-      {/* Discovery Section - The "Tinder for Rules" */}
-      {candidates.length > 0 && (
-          <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-5 duration-700">
-             <div className="flex items-center justify-between px-2">
-                 <h2 className="text-2xl font-bold font-display flex items-center gap-2">
-                    <Search className="w-5 h-5 text-emerald-500" />
-                    Oportunidades de Regra
-                    <span className="text-sm font-normal text-muted-foreground ml-2 bg-secondary px-2 py-1 rounded-md">{candidates.length} padrões encontrados</span>
-                 </h2>
-             </div>
-             
-             <div className="grid gap-4">
-                 {candidates.map((candidate, idx) => (
-                     <RuleDiscoveryCard 
-                        key={idx + candidate.description} 
-                        candidate={candidate} 
-                        taxonomyOptions={taxonomyOptions}
-                     />
-                 ))}
-             </div>
-          </div>
-      )}
+      <ConfirmTabs taxonomyOptions={taxonomyOptions} />
 
       {/* Legacy Review Section - High Confidence Matches */}
       {transactions.length > 0 && (
@@ -96,7 +70,7 @@ export default async function ConfirmPage() {
         </div>
       )}
 
-      {candidates.length === 0 && transactions.length === 0 && (
+      {transactions.length === 0 && (
         <div className="flex flex-col items-center justify-center py-32 text-center bg-card border border-border rounded-[3rem] shadow-sm overflow-hidden relative group">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-80 h-80 bg-primary/5 rounded-full blur-[100px] -mt-40 group-hover:bg-primary/10 transition-colors"></div>
           
@@ -106,7 +80,7 @@ export default async function ConfirmPage() {
             </div>
             <h3 className="text-2xl font-bold text-foreground mb-3 font-display">Tudo limpo!</h3>
             <p className="text-muted-foreground max-w-[360px] font-medium leading-relaxed px-6">
-              Não encontramos padrões não categorizados nem revisões pendentes. Seu sistema está otimizado.
+              Não há revisões pendentes no momento. Use as abas acima para regras (OPEN), recorrentes e conflitos.
             </p>
             <Button className="mt-12 h-16 px-12 bg-foreground text-background rounded-2xl font-bold transition-all shadow-xl hover:opacity-90 active:scale-95 text-base" asChild>
               <Link href="/">Voltar ao Dashboard</Link>

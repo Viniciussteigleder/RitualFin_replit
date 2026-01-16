@@ -105,8 +105,13 @@ export async function getAIRuleSuggestion(description: string, taxonomyContext: 
         {
           role: "system",
           content: `You help create deterministic keyword rules for a personal finance app.
-Return a taxonomy leaf and propose key_words / key_words_negative for a rule that would match similar transactions.
-Use ONLY the provided taxonomy context; prefer returning the leaf UUID.
+Goal: propose key_words/key_words_negative that match many similar transactions (not just this one).
+Rules:
+- Return the best taxonomy leaf using ONLY the provided taxonomy context (prefer returning the leaf UUID).
+- key_words: semicolon-separated, 2-6 items. Prefer stable merchant tokens, brand names, service names, or unique identifiers.
+- Avoid copying the full raw description; avoid dates, amounts, long free text, and one-off IDs.
+- key_words_negative: optional semicolon-separated exclusions to prevent common false-positives (e.g. similar merchants, unrelated terms).
+- Keep tokens concise (3-30 chars each) and uppercase-safe.
 Strictly follow the output schema.
 Context: ${taxonomyContext}`,
         },
@@ -122,6 +127,60 @@ Context: ${taxonomyContext}`,
     return response.choices[0].message.parsed;
   } catch (error) {
     console.error("OpenAI Rule Suggestion Error:", error);
+    return null;
+  }
+}
+
+export const ConflictResolutionSchema = z.object({
+  rationale: z.string().describe("Short explanation of the proposed fix"),
+  suggestions: z.array(
+    z.object({
+      rule_id: z.string().describe("The existing rule id to update"),
+      add_key_words: z.string().nullable().describe("Semicolon-separated key_words to add (optional)"),
+      add_key_words_negative: z
+        .string()
+        .nullable()
+        .describe("Semicolon-separated key_words_negative to add (preferred for disambiguation)"),
+    })
+  ),
+});
+
+export type ConflictResolutionResult = z.infer<typeof ConflictResolutionSchema>;
+
+export async function getAIConflictResolution(input: {
+  transaction_description: string;
+  candidates_context: string;
+}): Promise<ConflictResolutionResult | null> {
+  if (!process.env.OPENAI_API_KEY) {
+    console.warn("AI conflict resolution skipped: OPENAI_API_KEY not found.");
+    return null;
+  }
+
+  try {
+    const response = await (openai.beta as any).chat.completions.parse({
+      model: AI_DESIGN.model,
+      messages: [
+        {
+          role: "system",
+          content: `You help resolve conflicts between deterministic keyword rules.
+Input includes one transaction description and multiple candidate rules that matched.
+Goal: propose minimal additions (prefer key_words_negative) that reduce ambiguity for future transactions.
+Do NOT propose creating new rules; only suggest additions to existing rules by rule_id.
+Avoid overfitting to one transaction; prefer merchant/service tokens and generic exclusions.
+Strictly follow the output schema.`,
+        },
+        {
+          role: "user",
+          content: JSON.stringify(input),
+        },
+      ],
+      response_format: zodResponseFormat(ConflictResolutionSchema, "conflict_resolution"),
+      temperature: 0,
+    });
+
+    return response.choices[0].message.parsed;
+  } catch (error) {
+    console.error("OpenAI Conflict Resolution Error:", error);
     return null;
   }
 }

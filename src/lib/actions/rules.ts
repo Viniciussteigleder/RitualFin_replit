@@ -211,6 +211,57 @@ export async function createRule(data: {
 }
 
 /**
+ * Merge keyword additions into an existing rule by rule id (no new rows).
+ * Used for conflict-resolution workflows.
+ */
+export async function mergeRuleKeywordsById(input: {
+  ruleId: string;
+  addKeyWords?: string | null;
+  addKeyWordsNegative?: string | null;
+}) {
+  const session = await auth();
+  if (!session?.user?.id) return { success: false as const, error: "Not authenticated" };
+
+  const rule = await db.query.rules.findFirst({
+    where: and(eq(rules.userId, session.user.id), eq(rules.id, input.ruleId)),
+  });
+  if (!rule) return { success: false as const, error: "Rule not found" };
+
+  const merge = (existing: string | null, addition: string | null | undefined) => {
+    const a = addition
+      ? addition
+          .split(";")
+          .map((k) => k.trim().toUpperCase())
+          .filter(Boolean)
+      : [];
+    const e = existing
+      ? existing
+          .split(";")
+          .map((k) => k.trim().toUpperCase())
+          .filter(Boolean)
+      : [];
+    return [...new Set([...e, ...a])].join("; ") || null;
+  };
+
+  const nextKeyWords = merge(rule.keyWords ?? null, input.addKeyWords);
+  const nextNeg = merge(rule.keyWordsNegative ?? null, input.addKeyWordsNegative);
+
+  await db
+    .update(rules)
+    .set({
+      keyWords: nextKeyWords,
+      keyWordsNegative: nextNeg,
+    })
+    .where(eq(rules.id, rule.id));
+
+  revalidatePath("/settings/rules");
+  revalidatePath("/confirm");
+  revalidatePath("/transactions");
+
+  return { success: true as const };
+}
+
+/**
  * Get all rules for the current user with app category information
  */
 export async function getRules() {
