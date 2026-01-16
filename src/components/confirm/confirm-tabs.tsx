@@ -5,8 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ButtonGroup } from "@/components/ui/button-group";
 import { toast } from "sonner";
 import { AlertTriangle, Filter, Loader2, Repeat, Search, Swords, Wand2 } from "lucide-react";
 import {
@@ -35,11 +35,59 @@ type Props = {
   taxonomyOptions: TaxonomyOption[];
 };
 
+type TokenMark = { token: string; className: string };
+
 function toISODateInput(d: Date) {
   const yyyy = d.getUTCFullYear();
   const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
   const dd = String(d.getUTCDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function splitKeywords(value: string | null | undefined) {
+  if (!value) return [];
+  return value
+    .split(";")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function highlightText(text: string, marks: TokenMark[]) {
+  let nodes: Array<string | JSX.Element> = [text];
+  for (const mark of marks) {
+    const token = mark.token.trim();
+    if (!token) continue;
+    const re = new RegExp(`(${escapeRegExp(token)})`, "gi");
+    const next: Array<string | JSX.Element> = [];
+    for (const node of nodes) {
+      if (typeof node !== "string") {
+        next.push(node);
+        continue;
+      }
+      const parts = node.split(re);
+      for (let i = 0; i < parts.length; i++) {
+        const part = parts[i]!;
+        if (i % 2 === 1) {
+          next.push(
+            <mark
+              key={`${token}-${i}-${part}`}
+              className={cn("rounded px-1 py-0.5 font-mono text-[11px] font-bold", mark.className)}
+            >
+              {part}
+            </mark>
+          );
+        } else if (part) {
+          next.push(part);
+        }
+      }
+    }
+    nodes = next;
+  }
+  return nodes;
 }
 
 export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) {
@@ -154,14 +202,23 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
 
   return (
     <Tabs defaultValue="rules" className="w-full">
-      <TabsList className="w-full justify-start gap-1 rounded-2xl p-1.5 bg-secondary/50 border border-border">
-        <TabsTrigger value="rules" className="rounded-xl font-bold gap-2">
+      <TabsList className="w-full justify-start gap-2 rounded-3xl p-2 bg-gradient-to-r from-secondary/70 via-secondary/40 to-secondary/70 border border-border shadow-sm">
+        <TabsTrigger
+          value="rules"
+          className="rounded-2xl font-black gap-2 px-4 py-2 data-[state=active]:bg-emerald-600 data-[state=active]:text-white"
+        >
           <Search className="w-4 h-4" /> Definição de regras
         </TabsTrigger>
-        <TabsTrigger value="recurring" className="rounded-xl font-bold gap-2">
+        <TabsTrigger
+          value="recurring"
+          className="rounded-2xl font-black gap-2 px-4 py-2 data-[state=active]:bg-sky-600 data-[state=active]:text-white"
+        >
           <Repeat className="w-4 h-4" /> Recorrentes
         </TabsTrigger>
-        <TabsTrigger value="conflicts" className="rounded-xl font-bold gap-2">
+        <TabsTrigger
+          value="conflicts"
+          className="rounded-2xl font-black gap-2 px-4 py-2 data-[state=active]:bg-amber-600 data-[state=active]:text-white"
+        >
           <Swords className="w-4 h-4" /> Conflitos
         </TabsTrigger>
       </TabsList>
@@ -226,31 +283,50 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
               }
               className="rounded-xl"
             />
-            <Select
-              value={discoveryFilters.sortBy ?? "count"}
-              onValueChange={(v) => setDiscoveryFilters((p) => ({ ...p, sortBy: v as any }))}
-            >
-              <SelectTrigger className="rounded-xl">
-                <SelectValue placeholder="Ordenar por" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="count">Ocorrências</SelectItem>
-                <SelectItem value="totalAbsAmount">Impacto total</SelectItem>
-                <SelectItem value="lastSeen">Mais recente</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={discoveryFilters.sortDir ?? "desc"}
-              onValueChange={(v) => setDiscoveryFilters((p) => ({ ...p, sortDir: v as any }))}
-            >
-              <SelectTrigger className="rounded-xl">
-                <SelectValue placeholder="Direção" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="desc">Desc</SelectItem>
-                <SelectItem value="asc">Asc</SelectItem>
-              </SelectContent>
-            </Select>
+            <ButtonGroup className="w-full">
+              <Button
+                type="button"
+                variant={discoveryFilters.sortBy === "count" ? "default" : "outline"}
+                className="w-full rounded-xl font-bold"
+                onClick={() => setDiscoveryFilters((p) => ({ ...p, sortBy: "count" }))}
+              >
+                Ocorr.
+              </Button>
+              <Button
+                type="button"
+                variant={discoveryFilters.sortBy === "totalAbsAmount" ? "default" : "outline"}
+                className="w-full rounded-xl font-bold"
+                onClick={() => setDiscoveryFilters((p) => ({ ...p, sortBy: "totalAbsAmount" }))}
+              >
+                €
+              </Button>
+              <Button
+                type="button"
+                variant={discoveryFilters.sortBy === "lastSeen" ? "default" : "outline"}
+                className="w-full rounded-xl font-bold"
+                onClick={() => setDiscoveryFilters((p) => ({ ...p, sortBy: "lastSeen" }))}
+              >
+                Recente
+              </Button>
+            </ButtonGroup>
+            <ButtonGroup className="w-full">
+              <Button
+                type="button"
+                variant={(discoveryFilters.sortDir ?? "desc") === "desc" ? "default" : "outline"}
+                className="w-full rounded-xl font-bold"
+                onClick={() => setDiscoveryFilters((p) => ({ ...p, sortDir: "desc" }))}
+              >
+                Desc
+              </Button>
+              <Button
+                type="button"
+                variant={(discoveryFilters.sortDir ?? "desc") === "asc" ? "default" : "outline"}
+                className="w-full rounded-xl font-bold"
+                onClick={() => setDiscoveryFilters((p) => ({ ...p, sortDir: "asc" }))}
+              >
+                Asc
+              </Button>
+            </ButtonGroup>
           </div>
 
           <div className="flex items-center justify-between">
@@ -345,30 +421,42 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
               }
               className="rounded-xl"
             />
-            <Select
-              value={recurringFilters.sortBy ?? "occurrences"}
-              onValueChange={(v) => setRecurringFilters((p) => ({ ...p, sortBy: v as any }))}
-            >
-              <SelectTrigger className="rounded-xl">
-                <SelectValue placeholder="Ordenar por" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="occurrences">Ocorrências</SelectItem>
-                <SelectItem value="absAmount">Valor</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={recurringFilters.sortDir ?? "desc"}
-              onValueChange={(v) => setRecurringFilters((p) => ({ ...p, sortDir: v as any }))}
-            >
-              <SelectTrigger className="rounded-xl">
-                <SelectValue placeholder="Direção" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="desc">Desc</SelectItem>
-                <SelectItem value="asc">Asc</SelectItem>
-              </SelectContent>
-            </Select>
+            <ButtonGroup className="w-full">
+              <Button
+                type="button"
+                variant={(recurringFilters.sortBy ?? "occurrences") === "occurrences" ? "default" : "outline"}
+                className="w-full rounded-xl font-bold"
+                onClick={() => setRecurringFilters((p) => ({ ...p, sortBy: "occurrences" }))}
+              >
+                Ocorr.
+              </Button>
+              <Button
+                type="button"
+                variant={(recurringFilters.sortBy ?? "occurrences") === "absAmount" ? "default" : "outline"}
+                className="w-full rounded-xl font-bold"
+                onClick={() => setRecurringFilters((p) => ({ ...p, sortBy: "absAmount" }))}
+              >
+                €
+              </Button>
+            </ButtonGroup>
+            <ButtonGroup className="w-full">
+              <Button
+                type="button"
+                variant={(recurringFilters.sortDir ?? "desc") === "desc" ? "default" : "outline"}
+                className="w-full rounded-xl font-bold"
+                onClick={() => setRecurringFilters((p) => ({ ...p, sortDir: "desc" }))}
+              >
+                Desc
+              </Button>
+              <Button
+                type="button"
+                variant={(recurringFilters.sortDir ?? "desc") === "asc" ? "default" : "outline"}
+                className="w-full rounded-xl font-bold"
+                onClick={() => setRecurringFilters((p) => ({ ...p, sortDir: "asc" }))}
+              >
+                Asc
+              </Button>
+            </ButtonGroup>
             <Input
               inputMode="numeric"
               placeholder="Limite"
@@ -392,43 +480,22 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
         ) : (
           <div className="grid gap-3">
             {recurring.map((s) => (
-              <div key={s.key} className="bg-card border border-border rounded-2xl p-5 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="font-mono">{s.occurrences}x</Badge>
-                    <span className="font-bold">{formatCurrency(s.absAmount)}</span>
-                    <Badge variant="outline" className="font-mono text-xs">{s.suggestedCadence}</Badge>
-                    <span className="text-xs text-muted-foreground">conf {Math.round(s.confidence * 100)}%</span>
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {s.appCategoryName} &gt; {s.category1} &gt; {s.category2} &gt; {s.category3}
-                  </div>
-                  {s.sampleKeyDesc && <div className="text-xs text-muted-foreground font-mono">{s.sampleKeyDesc}</div>}
-                </div>
-                <Button
-                  className={cn("rounded-2xl font-bold", isRecurringApplyPending && "opacity-80")}
-                  disabled={isRecurringApplyPending}
-                  onClick={() =>
-                    startRecurringApply(async () => {
-                      const res = await markRecurringGroup({
-                        leafId: s.leafId,
-                        merchantKey: s.merchantKey,
-                        absAmount: s.absAmount,
-                        confidence: s.confidence,
-                      });
-                      if (!res.success) {
-                        toast.error("Não foi possível marcar como recorrente", { description: res.error });
-                        return;
-                      }
-                      toast.success("Recorrência aplicada", { description: `${res.updated} transações marcadas.` });
-                      loadRecurring(recurringFilters);
-                    })
-                  }
-                >
-                  {isRecurringApplyPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Wand2 className="w-4 h-4 mr-2" />}
-                  Marcar recorrente
-                </Button>
-              </div>
+              <RecurringSuggestionCard
+                key={s.key}
+                suggestion={s}
+                disabled={isRecurringApplyPending}
+                onApply={(payload) =>
+                  startRecurringApply(async () => {
+                    const res = await markRecurringGroup(payload);
+                    if (!res.success) {
+                      toast.error("Não foi possível marcar como recorrente", { description: res.error });
+                      return;
+                    }
+                    toast.success("Recorrência aplicada", { description: `${res.updated} transações marcadas.` });
+                    loadRecurring(recurringFilters);
+                  })
+                }
+              />
             ))}
           </div>
         )}
@@ -470,30 +537,42 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
               onChange={(e) => setConflictFilters((p) => ({ ...p, dateTo: e.target.value || undefined }))}
               className="rounded-xl"
             />
-            <Select
-              value={conflictFilters.sortBy ?? "date"}
-              onValueChange={(v) => setConflictFilters((p) => ({ ...p, sortBy: v as any }))}
-            >
-              <SelectTrigger className="rounded-xl">
-                <SelectValue placeholder="Ordenar por" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="date">Data</SelectItem>
-                <SelectItem value="absAmount">Valor (abs)</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={conflictFilters.sortDir ?? "desc"}
-              onValueChange={(v) => setConflictFilters((p) => ({ ...p, sortDir: v as any }))}
-            >
-              <SelectTrigger className="rounded-xl">
-                <SelectValue placeholder="Direção" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="desc">Desc</SelectItem>
-                <SelectItem value="asc">Asc</SelectItem>
-              </SelectContent>
-            </Select>
+            <ButtonGroup className="w-full">
+              <Button
+                type="button"
+                variant={(conflictFilters.sortBy ?? "date") === "date" ? "default" : "outline"}
+                className="w-full rounded-xl font-bold"
+                onClick={() => setConflictFilters((p) => ({ ...p, sortBy: "date" }))}
+              >
+                Data
+              </Button>
+              <Button
+                type="button"
+                variant={(conflictFilters.sortBy ?? "date") === "absAmount" ? "default" : "outline"}
+                className="w-full rounded-xl font-bold"
+                onClick={() => setConflictFilters((p) => ({ ...p, sortBy: "absAmount" }))}
+              >
+                €
+              </Button>
+            </ButtonGroup>
+            <ButtonGroup className="w-full">
+              <Button
+                type="button"
+                variant={(conflictFilters.sortDir ?? "desc") === "desc" ? "default" : "outline"}
+                className="w-full rounded-xl font-bold"
+                onClick={() => setConflictFilters((p) => ({ ...p, sortDir: "desc" }))}
+              >
+                Desc
+              </Button>
+              <Button
+                type="button"
+                variant={(conflictFilters.sortDir ?? "desc") === "asc" ? "default" : "outline"}
+                className="w-full rounded-xl font-bold"
+                onClick={() => setConflictFilters((p) => ({ ...p, sortDir: "asc" }))}
+              >
+                Asc
+              </Button>
+            </ButtonGroup>
             <Input
               inputMode="numeric"
               placeholder="Limite"
@@ -518,30 +597,50 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
           <div className="grid gap-3">
             {conflicts.map((tx) => {
               const display = tx.aliasDesc || tx.simpleDesc || tx.descNorm || tx.descRaw;
-              return (
-                <div key={tx.id} className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-3">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <div className="font-bold truncate">{display}</div>
-                      <div className="text-xs text-muted-foreground font-mono truncate">{tx.keyDesc ?? tx.descNorm}</div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <div className={cn("font-bold font-mono", tx.amount < 0 ? "text-red-600" : "text-emerald-600")}>
-                        {formatCurrency(tx.amount)}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(tx.paymentDate).toLocaleDateString("pt-BR")}
-                      </div>
-                    </div>
-                  </div>
+              const keyDesc = tx.keyDesc ?? tx.descNorm ?? tx.descRaw;
 
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm font-bold text-amber-700">Candidatos ({tx.classificationCandidates.length})</div>
+              return (
+                <div key={tx.id} className="bg-card border border-border rounded-3xl p-4 md:p-6 shadow-sm">
+                  <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1.9fr] gap-4 lg:gap-6">
+                    {/* Left: transaction context */}
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <div className="font-black text-base leading-tight truncate">{display}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {new Date(tx.paymentDate).toLocaleDateString("pt-BR")}
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <div className={cn("font-black font-mono", tx.amount < 0 ? "text-red-600" : "text-emerald-600")}>
+                            {formatCurrency(tx.amount)}
+                          </div>
+                          <Badge variant="outline" className="mt-1 font-mono text-[10px]">
+                            conflito
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div className="rounded-2xl border border-border bg-secondary/20 p-3">
+                        <div className="text-[11px] font-black text-muted-foreground uppercase tracking-wide mb-1">
+                          key_desc
+                        </div>
+                        <div className="text-sm font-mono leading-relaxed break-words">
+                          {keyDesc}
+                        </div>
+                      </div>
+
                       <div className="flex items-center gap-2">
                         <Button
                           variant="outline"
-                          className="rounded-xl font-bold"
+                          className="rounded-2xl font-bold"
+                          onClick={() => setSelectedConflict(tx)}
+                        >
+                          Abrir transação
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="rounded-2xl font-bold"
                           disabled={isConflictAiPending}
                           onClick={() =>
                             startConflictAi(async () => {
@@ -558,33 +657,51 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
                           {isConflictAiPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                           Sugestão IA
                         </Button>
-                        <Button variant="outline" className="rounded-xl font-bold" onClick={() => setSelectedConflict(tx)}>
-                          Abrir
-                        </Button>
                       </div>
                     </div>
-                    <div className="grid gap-2">
-                      {tx.classificationCandidates.map((c) => (
-                        <div key={c.ruleId} className="border border-amber-200/60 bg-amber-50/40 dark:bg-amber-950/20 rounded-xl p-3">
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="text-sm font-bold truncate">
-                              {c.appCategoryName ?? "OPEN"} &gt; {c.category1} &gt; {c.category2} &gt; {c.category3}
-                            </div>
-                            <Badge className="font-mono text-[10px] bg-amber-100 text-amber-800 border-0">
-                              {c.strict ? "STRICT" : `P${c.priority}`}
-                            </Badge>
-                          </div>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            Match: <span className="font-mono font-bold text-amber-700">{c.matchedKeyword ?? "-"}</span>
-                          </div>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            key_words: <span className="font-mono">{c.ruleKeyWords ?? "-"}</span>
-                          </div>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            key_words_negative: <span className="font-mono">{c.ruleKeyWordsNegative ?? "-"}</span>
-                          </div>
+
+                    {/* Right: candidates */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm font-black text-amber-700">
+                          Candidatos ({tx.classificationCandidates.length})
                         </div>
-                      ))}
+                        <div className="text-xs text-muted-foreground">
+                          Ajuste palavras-chave e confirme.
+                        </div>
+                      </div>
+
+                      <div className="grid gap-3">
+                        {tx.classificationCandidates.map((c) => {
+                          const marks: TokenMark[] = [
+                            ...splitKeywords(c.ruleKeyWords).map((t) => ({
+                              token: t,
+                              className: "bg-emerald-100 text-emerald-800",
+                            })),
+                            ...splitKeywords(c.ruleKeyWordsNegative).map((t) => ({
+                              token: t,
+                              className: "bg-red-100 text-red-800",
+                            })),
+                          ];
+                          if (c.matchedKeyword) {
+                            marks.unshift({ token: c.matchedKeyword, className: "bg-amber-100 text-amber-800" });
+                          }
+
+                          return (
+                            <ConflictCandidateEditor
+                              key={c.ruleId}
+                              txId={tx.id}
+                              keyDesc={keyDesc}
+                              candidate={c}
+                              marks={marks}
+                              onSaved={async () => {
+                                await applyCategorization();
+                                loadConflicts(conflictFilters);
+                              }}
+                            />
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -696,5 +813,279 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
         </Dialog>
       </TabsContent>
     </Tabs>
+  );
+}
+
+function ConflictCandidateEditor(props: {
+  txId: string;
+  keyDesc: string;
+  marks: TokenMark[];
+  candidate: ConflictTransaction["classificationCandidates"][number];
+  onSaved: () => Promise<void>;
+}) {
+  const { candidate, keyDesc, marks } = props;
+  const [isSaving, startSaving] = useTransition();
+  const [addKeyWords, setAddKeyWords] = useState("");
+  const [addKeyWordsNegative, setAddKeyWordsNegative] = useState("");
+
+  const chain = `${candidate.appCategoryName ?? "OPEN"} > ${candidate.category1} > ${candidate.category2} > ${candidate.category3}`;
+  const existingKW = candidate.ruleKeyWords ?? "";
+  const existingNeg = candidate.ruleKeyWordsNegative ?? "";
+
+  return (
+    <div className="rounded-2xl border border-amber-200/60 bg-amber-50/30 dark:bg-amber-950/20 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="font-black text-sm truncate">{chain}</div>
+          <div className="text-xs text-muted-foreground mt-0.5">
+            Match:{" "}
+            <span className="font-mono font-bold text-amber-700">
+              {candidate.matchedKeyword ?? "-"}
+            </span>
+          </div>
+        </div>
+        <Badge className="font-mono text-[10px] bg-amber-100 text-amber-800 border-0 shrink-0">
+          {candidate.strict ? "STRICT" : `P${candidate.priority}`}
+        </Badge>
+      </div>
+
+      <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="rounded-xl border border-border bg-background/60 p-3">
+          <div className="text-[10px] font-black text-muted-foreground uppercase tracking-wide mb-1">key_words</div>
+          <div className="text-xs font-mono break-words leading-relaxed">{highlightText(existingKW || "-", marks)}</div>
+          <div className="mt-2">
+            <Input
+              value={addKeyWords}
+              onChange={(e) => setAddKeyWords(e.target.value)}
+              placeholder="Adicionar (separar por ;)…"
+              className="h-9 rounded-xl font-mono text-xs"
+            />
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border bg-background/60 p-3">
+          <div className="text-[10px] font-black text-muted-foreground uppercase tracking-wide mb-1">key_words_negative</div>
+          <div className="text-xs font-mono break-words leading-relaxed">{highlightText(existingNeg || "-", marks)}</div>
+          <div className="mt-2">
+            <Input
+              value={addKeyWordsNegative}
+              onChange={(e) => setAddKeyWordsNegative(e.target.value)}
+              placeholder="Adicionar exclusões (separar por ;)…"
+              className="h-9 rounded-xl font-mono text-xs"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 rounded-xl border border-border bg-background/60 p-3">
+        <div className="text-[10px] font-black text-muted-foreground uppercase tracking-wide mb-1">key_desc (marcado)</div>
+        <div className="text-xs font-mono break-words leading-relaxed">{highlightText(keyDesc, marks)}</div>
+      </div>
+
+      <div className="mt-3 flex items-center justify-end">
+        <Button
+          className="rounded-2xl font-bold"
+          disabled={isSaving || (!addKeyWords.trim() && !addKeyWordsNegative.trim())}
+          onClick={() =>
+            startSaving(async () => {
+              const res = await mergeRuleKeywordsById({
+                ruleId: candidate.ruleId,
+                addKeyWords: addKeyWords.trim() || null,
+                addKeyWordsNegative: addKeyWordsNegative.trim() || null,
+              });
+              if (!res.success) {
+                toast.error("Erro ao salvar regra", { description: res.error });
+                return;
+              }
+              setAddKeyWords("");
+              setAddKeyWordsNegative("");
+              toast.success("Regra atualizada", { description: "Mudança confirmada e aplicada." });
+              await props.onSaved();
+            })
+          }
+        >
+          {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+          Confirmar mudança
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function cadenceLabel(cadence: RecurringSuggestion["suggestedCadence"]) {
+  if (cadence === "monthly") return "Mensal";
+  if (cadence === "quarterly") return "Quartal";
+  if (cadence === "yearly") return "Anual";
+  if (cadence === "weekly") return "Semanal";
+  return "Desconhecido";
+}
+
+function monthLabel(month: number) {
+  const labels = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+  return labels[month - 1] ?? String(month);
+}
+
+function RecurringSuggestionCard(props: {
+  suggestion: RecurringSuggestion;
+  disabled: boolean;
+  onApply: (payload: Parameters<typeof markRecurringGroup>[0]) => void;
+}) {
+  const { suggestion, disabled, onApply } = props;
+  const [cadence, setCadence] = useState<RecurringSuggestion["suggestedCadence"]>(suggestion.suggestedCadence);
+  const [expectedDay, setExpectedDay] = useState<number | "">(
+    suggestion.expectedDayOfMonth && suggestion.expectedDayOfMonth >= 1 && suggestion.expectedDayOfMonth <= 31
+      ? suggestion.expectedDayOfMonth
+      : ""
+  );
+  const [expectedMonths, setExpectedMonths] = useState<number[]>(suggestion.expectedMonths ?? []);
+
+  const chain = `${suggestion.appCategoryName} > ${suggestion.category1} > ${suggestion.category2} > ${suggestion.category3}`;
+  const scheduleText =
+    cadence === "monthly"
+      ? expectedDay
+        ? `Dia ${expectedDay}`
+        : "Dia do mês indefinido"
+      : cadence === "quarterly" || cadence === "yearly"
+        ? expectedMonths.length
+          ? expectedMonths.map(monthLabel).join(", ")
+          : "Meses indefinidos"
+        : cadence === "weekly"
+          ? "Semanal"
+          : "—";
+
+  const toggleMonth = (m: number) => {
+    setExpectedMonths((prev) => (prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m].sort((a, b) => a - b)));
+  };
+
+  return (
+    <div className="bg-card border border-border rounded-3xl p-5 shadow-sm">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4">
+        <div className="space-y-2 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="secondary" className="font-mono">{suggestion.occurrences}x</Badge>
+            <Badge variant="outline" className="font-mono text-xs">{suggestion.source ?? "Conta"}</Badge>
+            <span className="font-black">{formatCurrency(suggestion.absAmount)}</span>
+            <span className="text-xs text-muted-foreground">conf {Math.round(suggestion.confidence * 100)}%</span>
+          </div>
+          <div className="font-black truncate">{suggestion.merchantKey}</div>
+          <div className="text-sm text-muted-foreground truncate">{chain}</div>
+          {suggestion.sampleKeyDesc && (
+            <div className="text-xs text-muted-foreground font-mono truncate">{suggestion.sampleKeyDesc}</div>
+          )}
+        </div>
+
+        <div className="space-y-3">
+          <div className="rounded-2xl border border-border bg-secondary/20 p-3">
+            <div className="text-[10px] font-black text-muted-foreground uppercase tracking-wide mb-2">Frequência</div>
+            <ButtonGroup className="w-full">
+              <Button
+                type="button"
+                className="w-full rounded-xl font-bold"
+                variant={cadence === "monthly" ? "default" : "outline"}
+                onClick={() => setCadence("monthly")}
+              >
+                Mensal
+              </Button>
+              <Button
+                type="button"
+                className="w-full rounded-xl font-bold"
+                variant={cadence === "quarterly" ? "default" : "outline"}
+                onClick={() => setCadence("quarterly")}
+              >
+                Quartal
+              </Button>
+              <Button
+                type="button"
+                className="w-full rounded-xl font-bold"
+                variant={cadence === "yearly" ? "default" : "outline"}
+                onClick={() => setCadence("yearly")}
+              >
+                Anual
+              </Button>
+              <Button
+                type="button"
+                className="w-full rounded-xl font-bold"
+                variant={cadence === "unknown" ? "default" : "outline"}
+                onClick={() => setCadence("unknown")}
+              >
+                Outro
+              </Button>
+            </ButtonGroup>
+            <div className="mt-2 text-xs text-muted-foreground">
+              Sugestão: <span className="font-bold">{cadenceLabel(suggestion.suggestedCadence)}</span> • {scheduleText}
+            </div>
+          </div>
+
+          {cadence === "monthly" && (
+            <div className="rounded-2xl border border-border bg-secondary/20 p-3">
+              <div className="text-[10px] font-black text-muted-foreground uppercase tracking-wide mb-2">
+                Dia esperado (mensal)
+              </div>
+              <Input
+                inputMode="numeric"
+                value={expectedDay}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (!v) return setExpectedDay("");
+                  const n = Number(v);
+                  if (!Number.isFinite(n)) return;
+                  setExpectedDay(Math.max(1, Math.min(31, Math.floor(n))));
+                }}
+                placeholder="Ex: 15"
+                className="rounded-xl font-mono"
+              />
+            </div>
+          )}
+
+          {(cadence === "quarterly" || cadence === "yearly") && (
+            <div className="rounded-2xl border border-border bg-secondary/20 p-3">
+              <div className="text-[10px] font-black text-muted-foreground uppercase tracking-wide mb-2">
+                {cadence === "quarterly" ? "Meses esperados (quartal)" : "Mês esperado (anual)"}
+              </div>
+              <div className="grid grid-cols-6 gap-2">
+                {Array.from({ length: 12 }).map((_, idx) => {
+                  const m = idx + 1;
+                  const active = expectedMonths.includes(m);
+                  return (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => toggleMonth(m)}
+                      className={cn(
+                        "h-9 rounded-xl border text-xs font-bold",
+                        active
+                          ? "bg-sky-600 text-white border-sky-600"
+                          : "bg-background hover:bg-secondary border-border text-muted-foreground"
+                      )}
+                    >
+                      {monthLabel(m)}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <Button
+            className={cn("w-full rounded-2xl font-black", disabled && "opacity-80")}
+            disabled={disabled}
+            onClick={() =>
+              onApply({
+                leafId: suggestion.leafId,
+                merchantKey: suggestion.merchantKey,
+                absAmount: suggestion.absAmount,
+                confidence: suggestion.confidence,
+                cadence,
+                expectedDayOfMonth: expectedDay === "" ? null : Number(expectedDay),
+                expectedMonths,
+              })
+            }
+          >
+            <Wand2 className="w-4 h-4 mr-2" />
+            Marcar recorrente
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }

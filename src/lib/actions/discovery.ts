@@ -14,6 +14,7 @@ export interface DiscoveryCandidate {
     sampleAmount: number;
     totalAbsAmount: number;
     lastSeen: Date;
+    sampleKeyDesc: string | null;
     currentCategory1: string | null;
     currentAppCategory: string | null;
 }
@@ -67,6 +68,7 @@ export async function getDiscoveryCandidates(filters: DiscoveryFilters = {}): Pr
         id: transactions.id,
         date: transactions.paymentDate,
         amount: transactions.amount,
+        keyDesc: transactions.keyDesc,
         cat1: transactions.category1,
         leafId: transactions.leafId,
       })
@@ -100,6 +102,7 @@ export async function getDiscoveryCandidates(filters: DiscoveryFilters = {}): Pr
                 sampleAmount: Number(tx.amount),
                 totalAbsAmount: absAmount,
                 lastSeen: tx.date,
+                sampleKeyDesc: tx.keyDesc ?? null,
                 currentCategory1: tx.cat1,
                 currentAppCategory: null // Need join to get this, keeping simple for now
             });
@@ -277,6 +280,7 @@ export interface RecurringSuggestion {
   key: string;
   leafId: string;
   merchantKey: string;
+  source: string | null;
   appCategoryName: string;
   category1: string;
   category2: string;
@@ -285,28 +289,90 @@ export interface RecurringSuggestion {
   occurrences: number;
   sampleDate: Date;
   sampleKeyDesc: string | null;
-  suggestedCadence: "monthly" | "weekly" | "unknown";
+  suggestedCadence: "monthly" | "quarterly" | "yearly" | "weekly" | "unknown";
+  expectedDayOfMonth: number | null;
+  expectedMonths: number[]; // 1..12, used for quarterly/yearly
   confidence: number; // 0..1
 }
 
+function modeNumber(nums: number[]) {
+  const counts = new Map<number, number>();
+  for (const n of nums) counts.set(n, (counts.get(n) ?? 0) + 1);
+  let best = nums[0] ?? 0;
+  let bestCount = 0;
+  for (const [n, c] of counts.entries()) {
+    if (c > bestCount) {
+      best = n;
+      bestCount = c;
+    }
+  }
+  return best;
+}
+
+function modeString(values: string[]) {
+  const counts = new Map<string, number>();
+  for (const v of values) {
+    if (!v) continue;
+    counts.set(v, (counts.get(v) ?? 0) + 1);
+  }
+  let best: string | null = null;
+  let bestCount = 0;
+  for (const [v, c] of counts.entries()) {
+    if (c > bestCount) {
+      best = v;
+      bestCount = c;
+    }
+  }
+  return best;
+}
+
 function cadenceFromDates(dates: Date[]) {
-  if (dates.length < 3) return { cadence: "unknown" as const, confidence: 0 };
+  if (dates.length < 3) {
+    return { cadence: "unknown" as const, confidence: 0, expectedDayOfMonth: null as number | null, expectedMonths: [] as number[] };
+  }
+
   const sorted = [...dates].sort((a, b) => a.getTime() - b.getTime());
   const deltas = sorted.slice(1).map((d, i) => (d.getTime() - sorted[i]!.getTime()) / (1000 * 60 * 60 * 24));
   const avg = deltas.reduce((a, b) => a + b, 0) / deltas.length;
   const variance = deltas.reduce((acc, v) => acc + Math.pow(v - avg, 2), 0) / deltas.length;
   const stdev = Math.sqrt(variance);
 
+  const days = sorted.map((d) => d.getUTCDate()).filter((n) => n >= 1 && n <= 31);
+  const expectedDayOfMonth = days.length ? modeNumber(days) : null;
+
+  const months = sorted.map((d) => d.getUTCMonth() + 1).filter((n) => n >= 1 && n <= 12);
+  const uniqueMonths = Array.from(new Set(months)).sort((a, b) => a - b);
+
   const closeTo = (target: number, tolerance: number) => Math.abs(avg - target) <= tolerance;
-  if (closeTo(30, 6)) {
-    const confidence = Math.max(0, Math.min(1, 1 - stdev / 10));
-    return { cadence: "monthly" as const, confidence };
-  }
   if (closeTo(7, 2)) {
     const confidence = Math.max(0, Math.min(1, 1 - stdev / 4));
-    return { cadence: "weekly" as const, confidence };
+    return { cadence: "weekly" as const, confidence, expectedDayOfMonth: null, expectedMonths: [] };
   }
-  return { cadence: "unknown" as const, confidence: Math.max(0, Math.min(0.6, 1 - stdev / 30)) };
+  if (closeTo(30, 6)) {
+    const confidence = Math.max(0, Math.min(1, 1 - stdev / 10));
+    return { cadence: "monthly" as const, confidence, expectedDayOfMonth, expectedMonths: [] };
+  }
+  if (closeTo(91, 18)) {
+    // Quarterly: infer "anchor" months by month%3
+    const mods = months.map((m) => m % 3);
+    const anchorMod = modeNumber(mods);
+    const expectedMonths = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].filter((m) => m % 3 === anchorMod);
+    const confidence = Math.max(0, Math.min(1, 1 - stdev / 25));
+    return { cadence: "quarterly" as const, confidence, expectedDayOfMonth, expectedMonths };
+  }
+  if (closeTo(365, 45)) {
+    // Yearly: pick the most frequent month
+    const expectedMonth = months.length ? modeNumber(months) : null;
+    const confidence = Math.max(0, Math.min(1, 1 - stdev / 70));
+    return { cadence: "yearly" as const, confidence, expectedDayOfMonth, expectedMonths: expectedMonth ? [expectedMonth] : uniqueMonths };
+  }
+
+  return {
+    cadence: "unknown" as const,
+    confidence: Math.max(0, Math.min(0.6, 1 - stdev / 30)),
+    expectedDayOfMonth,
+    expectedMonths: uniqueMonths,
+  };
 }
 
 export async function getRecurringSuggestions(filters: RecurringFilters = {}): Promise<RecurringSuggestion[]> {
@@ -338,6 +404,7 @@ export async function getRecurringSuggestions(filters: RecurringFilters = {}): P
       paymentDate: true,
       amount: true,
       leafId: true,
+      source: true,
       keyDesc: true,
       aliasDesc: true,
       simpleDesc: true,
@@ -356,17 +423,19 @@ export async function getRecurringSuggestions(filters: RecurringFilters = {}): P
     return `${tx.leafId}|${abs}|${merchant}`;
   };
 
-  const groups = new Map<string, { meta: any; dates: Date[] }>();
+  const groups = new Map<string, { meta: any; dates: Date[]; sources: string[] }>();
   for (const tx of rows) {
     if (!tx.leafId) continue;
     const key = groupKeyFor(tx);
     const existing = groups.get(key);
     if (existing) {
       existing.dates.push(new Date(tx.paymentDate as any));
+      if (tx.source) existing.sources.push(String(tx.source));
     } else {
       groups.set(key, {
         meta: tx,
         dates: [new Date(tx.paymentDate as any)],
+        sources: tx.source ? [String(tx.source)] : [],
       });
     }
   }
@@ -380,10 +449,13 @@ export async function getRecurringSuggestions(filters: RecurringFilters = {}): P
       .slice(0, 50)
       .toUpperCase();
     const cadence = cadenceFromDates(g.dates);
+    const sourceLabel = modeString(g.sources);
+
     suggestions.push({
       key,
       leafId: String(g.meta.leafId),
       merchantKey,
+      source: sourceLabel,
       appCategoryName: g.meta.appCategoryName || "OPEN",
       category1: g.meta.category1 || "OPEN",
       category2: g.meta.category2 || "OPEN",
@@ -393,6 +465,8 @@ export async function getRecurringSuggestions(filters: RecurringFilters = {}): P
       sampleDate: g.dates.sort((a, b) => b.getTime() - a.getTime())[0]!,
       sampleKeyDesc: g.meta.keyDesc ?? null,
       suggestedCadence: cadence.cadence,
+      expectedDayOfMonth: cadence.expectedDayOfMonth,
+      expectedMonths: cadence.expectedMonths,
       confidence: cadence.confidence,
     });
   }

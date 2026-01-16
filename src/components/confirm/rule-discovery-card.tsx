@@ -75,41 +75,51 @@ export function RuleDiscoveryCard({ candidate, taxonomyOptions, onApplied, onTax
     return Array.from(new Set(taxonomyOptions.map((o) => o.appCategory).filter(Boolean))).sort((a, b) => a.localeCompare(b));
   }, [taxonomyOptions]);
   const category1Options = useMemo(() => {
-    return Array.from(new Set(taxonomyOptions.map((o) => o.category1).filter(Boolean))).sort((a, b) => a.localeCompare(b));
-  }, [taxonomyOptions]);
+    return Array.from(
+      new Set(
+        taxonomyOptions
+          .filter((o) => (newAppCategory ? o.appCategory === newAppCategory : true))
+          .map((o) => o.category1)
+          .filter(Boolean)
+      )
+    ).sort((a, b) => a.localeCompare(b));
+  }, [taxonomyOptions, newAppCategory]);
   const category2Options = useMemo(() => {
     return Array.from(
       new Set(
         taxonomyOptions
+          .filter((o) => (newAppCategory ? o.appCategory === newAppCategory : true))
           .filter((o) => (newCategory1 ? o.category1 === newCategory1 : true))
           .map((o) => o.category2)
           .filter(Boolean)
       )
     ).sort((a, b) => a.localeCompare(b));
-  }, [taxonomyOptions, newCategory1]);
+  }, [taxonomyOptions, newAppCategory, newCategory1]);
   const category3Options = useMemo(() => {
     return Array.from(
       new Set(
         taxonomyOptions
+          .filter((o) => (newAppCategory ? o.appCategory === newAppCategory : true))
           .filter((o) => (newCategory1 ? o.category1 === newCategory1 : true))
           .filter((o) => (newCategory2 ? o.category2 === newCategory2 : true))
           .map((o) => o.category3)
           .filter(Boolean)
       )
     ).sort((a, b) => a.localeCompare(b));
-  }, [taxonomyOptions, newCategory1, newCategory2]);
+  }, [taxonomyOptions, newAppCategory, newCategory1, newCategory2]);
 
   const handleAiSuggest = () => {
     startAiTransition(async () => {
       try {
-        const res = await suggestRuleForOpenCandidate(candidate.description);
+        const base = candidate.sampleKeyDesc || candidate.description;
+        const res = await suggestRuleForOpenCandidate(base);
         if (!res.success) {
           toast.error("IA indisponível", { description: res.error });
           return;
         }
 
         setAiRationale(res.suggestion.rationale || "");
-        setKeywords(res.suggestion.keyWords || candidate.description);
+        setKeywords(res.suggestion.keyWords || base);
         setNegativeKeywords(res.suggestion.keyWordsNegative || "");
         setSelectedLeafId(res.suggestion.leafId);
 
@@ -259,6 +269,11 @@ export function RuleDiscoveryCard({ candidate, taxonomyOptions, onApplied, onTax
           <h3 className="text-xl font-bold font-display text-foreground" title={candidate.description}>
             {candidate.description}
           </h3>
+          {candidate.sampleKeyDesc && (
+            <div className="text-[11px] text-muted-foreground font-mono truncate" title={candidate.sampleKeyDesc}>
+              key_desc: {candidate.sampleKeyDesc}
+            </div>
+          )}
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span className={cn(
               "font-bold",
@@ -536,8 +551,16 @@ export function RuleDiscoveryCard({ candidate, taxonomyOptions, onApplied, onTax
                   <button
                     key={v}
                     type="button"
-                    className={cn("w-full px-3 py-2 text-left text-sm hover:bg-secondary border-b last:border-0", v === newAppCategory && "bg-secondary")}
-                    onClick={() => setNewAppCategory(v)}
+                    className={cn(
+                      "w-full px-3 py-2 text-left text-sm hover:bg-secondary border-b last:border-0",
+                      v === newAppCategory && "bg-emerald-50 dark:bg-emerald-900/20"
+                    )}
+                    onClick={() => {
+                      setNewAppCategory(v);
+                      setNewCategory1("");
+                      setNewCategory2("");
+                      setNewCategory3("");
+                    }}
                   >
                     {v}
                   </button>
@@ -553,8 +576,15 @@ export function RuleDiscoveryCard({ candidate, taxonomyOptions, onApplied, onTax
                   <button
                     key={v}
                     type="button"
-                    className={cn("w-full px-3 py-2 text-left text-sm hover:bg-secondary border-b last:border-0", v === newCategory1 && "bg-secondary")}
-                    onClick={() => setNewCategory1(v)}
+                    className={cn(
+                      "w-full px-3 py-2 text-left text-sm hover:bg-secondary border-b last:border-0",
+                      v === newCategory1 && "bg-emerald-50 dark:bg-emerald-900/20"
+                    )}
+                    onClick={() => {
+                      setNewCategory1(v);
+                      setNewCategory2("");
+                      setNewCategory3("");
+                    }}
                   >
                     {v}
                   </button>
@@ -570,8 +600,14 @@ export function RuleDiscoveryCard({ candidate, taxonomyOptions, onApplied, onTax
                   <button
                     key={v}
                     type="button"
-                    className={cn("w-full px-3 py-2 text-left text-sm hover:bg-secondary border-b last:border-0", v === newCategory2 && "bg-secondary")}
-                    onClick={() => setNewCategory2(v)}
+                    className={cn(
+                      "w-full px-3 py-2 text-left text-sm hover:bg-secondary border-b last:border-0",
+                      v === newCategory2 && "bg-emerald-50 dark:bg-emerald-900/20"
+                    )}
+                    onClick={() => {
+                      setNewCategory2(v);
+                      setNewCategory3("");
+                    }}
                   >
                     {v}
                   </button>
@@ -587,7 +623,10 @@ export function RuleDiscoveryCard({ candidate, taxonomyOptions, onApplied, onTax
                   <button
                     key={v}
                     type="button"
-                    className={cn("w-full px-3 py-2 text-left text-sm hover:bg-secondary border-b last:border-0", v === newCategory3 && "bg-secondary")}
+                    className={cn(
+                      "w-full px-3 py-2 text-left text-sm hover:bg-secondary border-b last:border-0",
+                      v === newCategory3 && "bg-emerald-50 dark:bg-emerald-900/20"
+                    )}
                     onClick={() => setNewCategory3(v)}
                   >
                     {v}

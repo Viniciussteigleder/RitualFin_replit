@@ -30,6 +30,9 @@ export async function markRecurringGroup(input: {
   leafId: string;
   merchantKey: string;
   absAmount: number;
+  cadence?: "monthly" | "quarterly" | "yearly" | "weekly" | "unknown";
+  expectedDayOfMonth?: number | null;
+  expectedMonths?: number[]; // 1..12
   confidence?: number; // 0..1
 }) {
   const session = await auth();
@@ -69,10 +72,18 @@ export async function markRecurringGroup(input: {
     return { success: false as const, error: "No matching transactions found for this group" };
   }
 
-  const recurringGroupId = randomUUID();
+  const cadence = input.cadence ?? "unknown";
+  const expectedMonths = (input.expectedMonths ?? []).filter((m) => Number.isFinite(m) && m >= 1 && m <= 12);
+  const expectedDayOfMonth =
+    input.expectedDayOfMonth && Number.isFinite(input.expectedDayOfMonth) && input.expectedDayOfMonth >= 1 && input.expectedDayOfMonth <= 31
+      ? Math.floor(input.expectedDayOfMonth)
+      : null;
+
+  const recurringGroupId = `rec:${cadence}:${expectedMonths.join(",")}:${expectedDayOfMonth ?? ""}:${randomUUID()}`;
   const days = rows.map((r) => dayOfMonth(r.paymentDate as any)).filter((d) => d >= 1 && d <= 31);
-  const recurringDayOfMonth = days.length ? mode(days) : null;
-  const recurringDayWindow = 3;
+  const inferredDayOfMonth = days.length ? mode(days) : null;
+  const recurringDayOfMonth = expectedDayOfMonth ?? inferredDayOfMonth;
+  const recurringDayWindow = cadence === "weekly" ? 1 : cadence === "monthly" ? 3 : 5;
 
   await db
     .update(transactions)
