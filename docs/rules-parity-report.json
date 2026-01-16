@@ -1,12 +1,12 @@
 {
-  "timestamp": "2026-01-12T14:09:33.604Z",
+  "timestamp": "2026-01-16T14:41:27.372Z",
   "verdict": "FAIL",
   "summary": {
     "missing_in_db": 0,
-    "extra_in_db": 1,
+    "extra_in_db": 2,
     "mismatch": 0,
     "enum_mismatch": 11,
-    "total": 12
+    "total": 13
   },
   "issues": [
     {
@@ -103,6 +103,13 @@
       "key": "Mercados",
       "actual": "Mercados",
       "details": "DB Level 1 \"Mercados\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
     }
   ]
 }

@@ -47,7 +47,7 @@ export default async function AIKeywordsPage() {
             <Badge variant="secondary">Sem keywords estáticas</Badge>
           </div>
           <p className="text-sm text-muted-foreground">
-            Para criar regras com base no seu próprio histórico (OPEN/Outros), use a fila de discovery em{" "}
+            Para criar regras com base no seu próprio histórico (OPEN), use a fila de discovery em{" "}
             <Link href="/confirm" className="underline font-medium">
               /confirm
             </Link>

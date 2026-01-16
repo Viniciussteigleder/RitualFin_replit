@@ -3535,7 +3535,7 @@ export const onboardingCopy = {
 export const layoutCopy = {
   nav: {
     "pt-PT": {
-      dashboard: "Painel",
+      dashboard: "Dashboard",
       transactions: "Transações",
       settings: "Configurações",
       uploadCsv: "Upload CSV"

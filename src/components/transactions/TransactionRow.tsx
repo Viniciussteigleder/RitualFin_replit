@@ -6,9 +6,9 @@ import { Edit3, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { 
     formatDate, 
-    formatAmount, 
-    getCategoryStyles 
+    formatAmount
 } from "@/lib/utils/transaction-formatters";
+import { CategoryIcon } from "@/components/ui/category-icon";
 
 interface TransactionRowProps {
     transaction: any;
@@ -31,7 +31,6 @@ export function TransactionRow({
     onClick,
     aliasMap = {}
 }: TransactionRowProps) {
-    const { color: catColor, bg: catBg, border: catBorder, icon: CatIcon } = getCategoryStyles(transaction.category1);
     const isNegative = Number(transaction.amount) < 0;
     const score = transaction.confidence || transaction.score || (transaction.needsReview ? 40 : 98);
     const scoreText = score >= 90 ? "text-emerald-600" : score >= 60 ? "text-amber-600" : "text-slate-500";
@@ -89,13 +88,11 @@ export function TransactionRow({
                             />
                         </>
                     ) : (
-                        <div className={cn(
-                            "rounded-lg flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-110",
-                            catBg, catBorder, "border",
-                            isCompact ? "w-8 h-8" : "w-10 h-8"
-                        )}>
-                            <CatIcon className={cn("w-4 h-4", catColor)} />
-                        </div>
+                        <CategoryIcon
+                            category={transaction.category1}
+                            size={isCompact ? "sm" : "md"}
+                            className="transition-transform duration-200 group-hover:scale-110"
+                        />
                     )}
 
                     {/* Description & Source */}
@@ -142,12 +139,9 @@ export function TransactionRow({
 
                 {/* Desktop Category (App Category) */}
                 <div className="hidden md:flex items-center">
-                    <div className={cn(
-                        "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors",
-                        catBg, catColor, catBorder
-                    )}>
-                        <CatIcon className="h-3.5 w-3.5" />
-                        <span className="truncate max-w-[100px]">{transaction.appCategoryName || transaction.category1 || "OPEN"}</span>
+                    <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-bold border border-border bg-secondary/30">
+                        <CategoryIcon category={transaction.appCategoryName || transaction.category1 || "OPEN"} size="sm" />
+                        <span className="truncate max-w-[120px]">{transaction.appCategoryName || transaction.category1 || "OPEN"}</span>
                     </div>
                 </div>
 

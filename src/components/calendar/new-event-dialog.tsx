@@ -12,6 +12,7 @@ import { CATEGORY_CONFIGS } from "@/lib/constants/categories";
 import { CATEGORY1_VALUES } from "@/lib/constants/category1";
 import { createCalendarEvent } from "@/lib/actions/calendar";
 import { useRouter } from "next/navigation";
+import { CategoryIcon } from "@/components/ui/category-icon";
 
 interface NewEventDialogProps {
   onEventCreated?: () => void;
@@ -154,7 +155,7 @@ export function NewEventDialog({ onEventCreated }: NewEventDialogProps) {
                   {categories.map(cat => (
                     <SelectItem key={cat} value={cat}>
                       <div className="flex items-center gap-2">
-                        <span>{CATEGORY_CONFIGS[cat]?.icon ?? "•"}</span>
+                        <CategoryIcon category={cat} size="sm" />
                         <span>{cat}</span>
                       </div>
                     </SelectItem>

@@ -28,6 +28,7 @@ import { useLocale } from "@/hooks/use-locale";
 import { layoutCopy, t as translate } from "@/lib/i18n";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import Image from "next/image";
+import { AppIcon } from "@/components/ui/app-icon";
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -40,6 +41,20 @@ export function Sidebar() {
 
   const locale = useLocale();
   const sidebarLabels = useMemo(() => translate(locale, layoutCopy.sidebar), [locale]);
+
+  const iconToneById: Record<string, any> = {
+    dashboard: "emerald",
+    analytics: "blue",
+    transactions: "violet",
+    confirm: "amber",
+    calendar: "blue",
+    rituals: "emerald",
+    goals: "amber",
+    budgets: "violet",
+    accounts: "slate",
+    uploads: "slate",
+    "ai-rules": "rose",
+  };
 
   // Helper for Link Items
   const SidebarItem = ({ item, isChild = false }: { item: any, isChild?: boolean }) => {
@@ -59,10 +74,13 @@ export function Sidebar() {
         aria-current={isActive ? "page" : undefined}
       >
         <div className="flex items-center gap-3 relative z-10">
-          <item.icon className={cn(
-            "h-5 w-5 transition-transform group-hover:scale-110",
-            isActive ? "text-primary" : "text-muted-foreground/60 group-hover:text-foreground"
-          )} />
+          <AppIcon
+            icon={item.icon}
+            tone={iconToneById[item.id] ?? "slate"}
+            size="sm"
+            active={isActive}
+            className={cn("transition-transform group-hover:scale-[1.05]")}
+          />
           <span className="text-sm">{item.label}</span>
         </div>
         {item.badge && (
@@ -110,13 +128,13 @@ export function Sidebar() {
         <div className="flex flex-col gap-8 h-full min-h-0">
           {/* Logo */}
           <div className="flex items-center gap-3 px-2 flex-shrink-0">
-	            <div className="h-10 w-10 rounded-xl bg-transparent border border-border/50 flex items-center justify-center overflow-hidden relative">
+	            <div className="h-12 w-12 rounded-2xl bg-transparent border border-border/50 flex items-center justify-center overflow-hidden relative shadow-sm">
 	              <Image 
 	                src="/RitualFin%20Logo.png" 
 	                alt="RitualFin Logo" 
 	                fill
-	                sizes="40px"
-	                className="object-contain p-1.5"
+	                sizes="48px"
+	                className="object-contain p-1"
 	                priority
 	              />
 	            </div>

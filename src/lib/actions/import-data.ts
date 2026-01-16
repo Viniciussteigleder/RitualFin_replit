@@ -6,6 +6,7 @@ import { transactions, accounts } from '@/lib/db/schema';
 import { parseIngestionFile } from '@/lib/ingest';
 import { eq, and } from 'drizzle-orm';
 import { auth } from '@/auth';
+import { ensureOpenCategory } from '@/lib/actions/setup-open';
 
 /**
  * Server action to import CSV data
@@ -45,6 +46,10 @@ export async function importCSVData() {
   }
 
   const userId = session.user.id;
+  const ensured = await ensureOpenCategory();
+  if (!ensured.openLeafId) {
+    return { success: false, error: "OPEN taxonomy not initialized" };
+  }
 
   console.log('📊 Starting CSV import for user:', userId);
 
@@ -151,9 +156,13 @@ export async function importCSVData() {
             simpleDesc: tx.simpleDesc,
             type: tx.amount < 0 ? 'Despesa' : 'Receita',
             fixVar: 'Variável',
-            category1: 'Outros',
+            leafId: ensured.openLeafId,
+            category1: 'OPEN',
+            category2: 'OPEN',
+            category3: 'OPEN',
             needsReview: true,
-            classifiedBy: 'MANUAL',
+            manualOverride: false,
+            classifiedBy: 'AUTO_KEYWORDS',
             postingStatus: 'posted',
             processingStatus: 'enriched',
           });

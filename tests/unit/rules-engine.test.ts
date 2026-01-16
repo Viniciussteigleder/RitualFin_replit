@@ -94,14 +94,14 @@ function test_TC002_strict_shortcircuit(): void {
   console.log('TC-002: Testing strict rule short-circuit...');
 
   const rules: Rule[] = [
-    createRule({ keyWords: 'MONTHLY', category1: 'Lazer / Esporte', priority: 500, strict: false }),
+    createRule({ keyWords: 'MONTHLY', category1: 'Interno', priority: 500, strict: false }),
     createRule({ keyWords: 'NETFLIX', category1: 'Interno', priority: 400, strict: true }), // Lower priority but strict
   ];
 
   const descNorm = 'NETFLIX MONTHLY';
   const result = matchRules(descNorm, rules);
 
-  // Strict rule should win even with lower priority
+  // Strict rule should win (within the same target) even with lower priority
   assertEqual(result.appliedRule?.category1, 'Interno', 'Strict rule should be applied');
   assertEqual(result.confidence, 100, 'Strict rule should have 100% confidence');
   assertEqual(result.needsReview, false, 'Strict rule should not need review');
@@ -116,9 +116,9 @@ function test_TC003_priority_order(): void {
   console.log('TC-003: Testing priority order...');
 
   const rules: Rule[] = [
-    createRule({ id: 'low-prio', keyWords: 'REWE', category1: 'Outros', priority: 400 }),
+    createRule({ id: 'low-prio', keyWords: 'REWE', category1: 'Mercados', priority: 400 }),
     createRule({ id: 'high-prio', keyWords: 'REWE', category1: 'Mercados', priority: 800 }),
-    createRule({ id: 'med-prio', keyWords: 'REWE', category1: 'Compras', priority: 600 }),
+    createRule({ id: 'med-prio', keyWords: 'REWE', category1: 'Mercados', priority: 600 }),
   ];
 
   const descNorm = 'REWE SUPERMARKET';
@@ -196,15 +196,17 @@ function test_TC007_conflict_detection(): void {
   console.log('TC-007: Testing conflict detection...');
 
   const rules: Rule[] = [
-    createRule({ id: 'rule-a', keyWords: 'EDEKA', category1: 'Mercados', priority: 600 }),
-    createRule({ id: 'rule-b', keyWords: 'EDEKA', category1: 'Alimentação', priority: 600 }), // Same priority
+    createRule({ id: 'rule-a', keyWords: 'EDEKA', category1: 'Mercados', priority: 900 }),
+    createRule({ id: 'rule-b', keyWords: 'EDEKA', category1: 'Alimentação', priority: 100 }), // Different priority, still conflict
   ];
 
   const descNorm = 'EDEKA SUPERMARKET';
   const result = matchRules(descNorm, rules);
 
   assert(result.matches.length > 1, 'Should have multiple matches');
+  assertEqual(result.appliedRule, undefined, 'Conflict should not auto-pick an appliedRule');
   assertEqual(result.needsReview, true, 'Conflict should trigger review');
+  assertEqual(result.confidence, 0, 'Conflict should produce 0 confidence');
 
   console.log('  ✓ TC-007 passed: Conflict detection works');
 }

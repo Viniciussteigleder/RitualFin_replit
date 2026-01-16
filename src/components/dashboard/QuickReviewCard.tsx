@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Check, X, Sparkles, Brain } from "lucide-react";
 import { formatAmount, getCategoryStyles } from "@/lib/utils/transaction-formatters";
 import { cn } from "@/lib/utils";
+import { CategoryIcon } from "@/components/ui/category-icon";
 
 interface QuickReviewCardProps {
     transaction: any;
@@ -23,7 +24,7 @@ export function QuickReviewCard({
 }: QuickReviewCardProps) {
     if (!transaction) return null;
 
-    const { bg: catBg, color: catColor, icon: CatIcon } = getCategoryStyles(transaction.category1);
+    const { color: catColor } = getCategoryStyles(transaction.category1);
     const amount = Number(transaction.amount);
     
     return (
@@ -68,12 +69,7 @@ export function QuickReviewCard({
                                         />
                                     </div>
                                 ) : (
-                                    <div className={cn(
-                                        "w-24 h-24 rounded-[2.5rem] shadow-2xl flex items-center justify-center border relative",
-                                        catBg, catColor, "border-primary/10"
-                                    )}>
-                                        <CatIcon className="w-10 h-10" />
-                                    </div>
+                                    <CategoryIcon category={transaction.category1} size="lg" className="h-24 w-24 rounded-[2.5rem]" />
                                 )}
                             </motion.div>
                             
@@ -89,7 +85,7 @@ export function QuickReviewCard({
                             <div className="flex flex-col items-center gap-2 mt-4 bg-secondary/30 px-6 py-4 rounded-3xl border border-border/50 backdrop-blur-sm">
                                 <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">Mover para</span>
                                 <div className="flex items-center gap-2">
-                                    <CatIcon className={cn("w-4 h-4", catColor)} />
+                                    <CategoryIcon category={transaction.category1} size="sm" />
                                     <span className="text-sm font-bold text-foreground">
                                         {transaction.appCategoryName || transaction.category1 || "Indefinido"}
                                     </span>

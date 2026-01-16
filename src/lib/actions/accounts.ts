@@ -34,6 +34,32 @@ export async function getAccounts() {
     if (row.source) balancesBySource.set(row.source, Number(row.total ?? 0));
   }
 
+  const activityBySourceRows = await db
+    .select({
+      source: transactions.source,
+      lastUploadAt: sql<Date | null>`MAX(${transactions.importedAt})`,
+      lastTransactionAt: sql<Date | null>`MAX(${transactions.paymentDate})`,
+    })
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.userId, userId),
+        ne(transactions.display, "no"),
+        isNotNull(transactions.source)
+      )
+    )
+    .groupBy(transactions.source);
+
+  const activityBySource = new Map<string, { lastUploadAt: Date | null; lastTransactionAt: Date | null }>();
+  for (const row of activityBySourceRows) {
+    if (row.source) {
+      activityBySource.set(row.source, {
+        lastUploadAt: row.lastUploadAt ? new Date(row.lastUploadAt) : null,
+        lastTransactionAt: row.lastTransactionAt ? new Date(row.lastTransactionAt) : null,
+      });
+    }
+  }
+
   function inferSourceFromAccount(account: { name: string; institution: string | null }) {
     const haystack = `${account.name} ${account.institution ?? ""}`.toLowerCase();
     if (haystack.includes("sparkasse")) return "Sparkasse";
@@ -45,11 +71,14 @@ export async function getAccounts() {
   const result = accountsList.map((account) => {
     const inferredSource = inferSourceFromAccount(account);
     const balance = inferredSource ? (balancesBySource.get(inferredSource) ?? 0) : null;
+    const activity = inferredSource ? (activityBySource.get(inferredSource) ?? { lastUploadAt: null, lastTransactionAt: null }) : { lastUploadAt: null, lastTransactionAt: null };
 
     return {
       ...account,
       balance,
       inferredSource,
+      lastUploadAt: activity.lastUploadAt,
+      lastTransactionAt: activity.lastTransactionAt,
     };
   });
 

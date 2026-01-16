@@ -48,13 +48,18 @@ For each rule (sorted by priority DESC):
 
 **Invariant**: Rules are evaluated in priority order (highest first).
 
-**Short-circuit behavior**:
-- If a `strict=true` rule matches → immediately return (confidence=100, needsReview=false)
-- If a non-strict rule matches → continue evaluating but this becomes the candidate
+**Strict category target**:
+- Each match implies a *single classification target*:
+  - Prefer `leafId` when present
+  - Fallback target = (`category1`, `category2`, `category3`) tuple (legacy only)
 
-**Tie-breaking**:
-- If multiple rules have same priority and match → conflict flag set, needsReview=true
-- First match by priority wins for `appliedRule`
+**Resolution (STRICT)**:
+- If matches resolve to **more than one distinct target** → **CONFLICT** (no `appliedRule`)
+- If matches resolve to **exactly one target** → select `appliedRule` **within that target**:
+  - `strict=true` wins over non-strict
+  - Otherwise highest `priority` wins (deterministic)
+
+**Important**: `strict=true` does **not** override conflicts across different targets.
 
 ### 1.4 Confidence Calculation
 
@@ -101,20 +106,20 @@ When a rule has a `leafId`:
 
 ### 2.2 Special Case: leafId = "open"
 
-If `leafId === "open"`:
-- `category1` = "open"
-- `category2` = "open"
-- `category3` = "open"
-- `type` = "open"
-- `fixVar` = "open"
+Deprecated. The system uses a real taxonomy leaf named **OPEN**:
+- `leafId` must reference the user’s **OPEN** leaf in `taxonomy_leaf`
+- Categories cascade to:
+  - `category1` = "OPEN"
+  - `category2` = "OPEN"
+  - `category3` = "OPEN"
 
 ### 2.3 No Rule Match Fallback
 
 If no rule matches:
-- `leafId` = "open"
+- `leafId` = OPEN leaf UUID
 - `needsReview` = true
 - `confidence` = 0
-- Categories remain unset (or "open")
+- Categories cascade to "OPEN" for all levels
 
 ---
 
@@ -165,13 +170,16 @@ Included in:
 
 ## 6. Conflict Detection
 
-**Definition**: Multiple rules match with same priority level.
+**Definition**: Multiple rules match and resolve to **multiple distinct targets** (different `leafId`s or, for legacy rules, different category tuples).
 
 **Behavior**:
 - `conflictFlag` = true
 - `needsReview` = true
-- `classificationCandidates` = array of all matching rules
-- `appliedRule` = first match (but flagged for review)
+- Transaction is treated as **OPEN** for reporting safety:
+  - `leafId` = OPEN leaf UUID
+  - Categories cascade to "OPEN"
+- `classificationCandidates` = array of candidate targets (per leaf), to be resolved by the user
+- `appliedRule` = none (do not auto-pick a category)
 
 ---
 
@@ -181,10 +189,10 @@ Included in:
 Given identical `descNorm` and rules, output must be deterministic.
 
 ### TC-002: Strict rule short-circuits
-Strict rule match bypasses all other rules regardless of priority.
+Strict rule match wins *within the same target*, but does **not** override a multi-target conflict.
 
 ### TC-003: Higher priority wins
-Between two matching rules, higher priority is `appliedRule`.
+Between two matching rules for the **same target**, higher priority is `appliedRule`.
 
 ### TC-004: Negative keywords exclude
 If positive matches but negative also matches, rule is skipped.
@@ -196,7 +204,7 @@ If positive matches but negative also matches, rule is skipped.
 `manualOverride=true` → rule reapply does not change categories.
 
 ### TC-007: Conflict detection
-Same priority + multiple matches → `conflictFlag=true`.
+Multiple target matches → `conflictFlag=true`.
 
 ### TC-008: Confidence threshold
 `confidence >= threshold` + `autoConfirm=true` → `needsReview=false`.

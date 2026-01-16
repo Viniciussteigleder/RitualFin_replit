@@ -8,6 +8,9 @@ import { generateFingerprint } from "@/lib/ingest/fingerprint";
 import { eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { categorizeTransaction, AI_SEED_RULES, matchAlias } from "@/lib/rules/engine";
+import { ensureOpenCategoryCore } from "@/lib/actions/setup-open";
+import { buildLeafHierarchyMaps } from "@/lib/taxonomy/hierarchy";
+import { resolveLeafFromMatches } from "@/lib/rules/leaf-resolution";
 
 function parseEuropeanNumber(input: unknown): number {
   if (typeof input === "number") return input;
@@ -257,7 +260,7 @@ export async function getIngestionBatches() {
 }
 
 import { getAICategorization } from "@/lib/ai/openai";
-import { getTaxonomyTree, getTaxonomyTreeCore } from "./taxonomy";
+import { getTaxonomyTreeCore } from "./taxonomy";
 
 
 // Core function for scripting/internal use
@@ -294,7 +297,7 @@ export async function commitBatchCore(userId: string, batchId: string) {
       keyWordsNegative: null,
       leafId: null,
       category2: r.category2 || null,
-      category3: null
+      category3: (r as any).category3 || null
     } as any));
 
     const effectiveRules = [...userRules, ...seedRules];
@@ -304,26 +307,13 @@ export async function commitBatchCore(userId: string, batchId: string) {
 
     let importedCount = 0;
 
-    // Pre-fetch taxonomy leaves for mapping
-    const taxonomyLeaves = await db.query.taxonomyLeaf.findMany({
-        with: {
-            level2: {
-                with: { level1: true }
-            }
-        }
-    });
-    
-    // Map leafId to full taxonomy
-    const leafMap = new Map();
-    taxonomyLeaves.forEach(l => {
-        leafMap.set(l.leafId, {
-            leaf: l,
-            level2: l.level2,
-            level1: l.level2.level1
-        });
-    });
+    const ensured = await ensureOpenCategoryCore(userId);
+    if (!ensured.success || !ensured.openLeafId) return { error: ensured.error || "Failed to ensure OPEN taxonomy" };
 
-    const openLeafId = taxonomyLeaves.find((leaf) => leaf.nivel3Pt === "OPEN")?.leafId ?? null;
+    const { byLeafId: taxonomyByLeafId, byPathKey: taxonomyByPathKey } = await buildLeafHierarchyMaps(userId);
+    const openLeafId = ensured.openLeafId;
+    const openHierarchy = taxonomyByLeafId.get(openLeafId);
+    if (!openHierarchy) return { error: "OPEN leaf exists but was not found in taxonomy lookup" };
 
     for (const item of batch.items) {
         // Skip duplicates or already imported
@@ -338,48 +328,34 @@ export async function commitBatchCore(userId: string, batchId: string) {
         // 2. Deterministic Rule Categorization
         let categorization = categorizeTransaction(keyDesc, effectiveRules);
         let aiResult = null;
-
-        if (!categorization.ruleIdApplied && openLeafId) {
-            categorization.leafId = openLeafId;
-            categorization.category1 = null as any;
-            categorization.category2 = null;
-            categorization.category3 = null;
-        }
-
-        // Populate Categories from Leaf ID if Rule matched and has leafId
-        if (categorization.ruleIdApplied && categorization.leafId) {
-             const mapping = leafMap.get(categorization.leafId);
-             if (mapping) {
-                 categorization.category1 = mapping.level1.nivel1Pt;
-                 categorization.category2 = mapping.level2.nivel2Pt;
-                 categorization.category3 = mapping.leaf.nivel3Pt;
-                 categorization.type = mapping.level2.receitaDespesaDefault as any || categorization.type;
-                 categorization.fixVar = mapping.level2.fixoVariavelDefault as any || categorization.fixVar;
-             }
-        } else if (categorization.ruleIdApplied && !categorization.leafId) {
-            // Preserve categories provided by the rule/engine; only fall back leafId if available.
-            categorization.leafId = openLeafId;
-        }
+        let resolution = resolveLeafFromMatches({
+            matches: (categorization as any).matches,
+            openLeafId,
+            taxonomyByLeafId,
+            taxonomyByPathKey,
+            confidence: categorization.confidence ?? 0,
+            needsReview: categorization.needsReview ?? true,
+            ruleIdApplied: (categorization as any).ruleIdApplied ?? null,
+            matchedKeyword: (categorization as any).matchedKeyword ?? null,
+        });
 
         // 3. AI Fallback (only if no rules match - and leafId is OPEN)
-        if (openLeafId && !categorization.ruleIdApplied && categorization.leafId === openLeafId && process.env.OPENAI_API_KEY) {
-             // ... AI logic ...
-             // Keeping existing logic but mapping back to leafId if AI returns it
+        if (resolution.status === "OPEN" && process.env.OPENAI_API_KEY) {
              aiResult = await getAICategorization(keyDesc, taxonomyContext);
              if (aiResult && aiResult.confidence > 0.7) {
                   // If AI found a leaf, use it
                   if (aiResult.suggested_leaf_id) {
-                      const mapping = leafMap.get(aiResult.suggested_leaf_id);
-                      if (mapping) {
-                         categorization.leafId = aiResult.suggested_leaf_id;
-                         categorization.category1 = mapping.level1.nivel1Pt;
-                         categorization.category2 = mapping.level2.nivel2Pt;
-                         categorization.category3 = mapping.leaf.nivel3Pt;
-                         categorization.type = mapping.level2.receitaDespesaDefault as any || categorization.type;
-                         categorization.fixVar = mapping.level2.fixoVariavelDefault as any || categorization.fixVar;
-                         categorization.needsReview = aiResult.confidence < 0.9;
-                         categorization.suggestedKeyword = aiResult.rationale;
-                         categorization.confidence = Math.round(aiResult.confidence * 100);
+                      const maybeHierarchy = taxonomyByLeafId.get(aiResult.suggested_leaf_id);
+                      if (maybeHierarchy) {
+                        resolution = {
+                          status: "MATCHED",
+                          leafId: aiResult.suggested_leaf_id,
+                          needsReview: aiResult.confidence < 0.9,
+                          confidence: Math.round(aiResult.confidence * 100),
+                          ruleIdApplied: null,
+                          matchedKeyword: null,
+                          candidates: [],
+                        };
                       }
                   }
              }
@@ -398,10 +374,18 @@ export async function commitBatchCore(userId: string, batchId: string) {
         // "if category_2 = Karlsruhe, then set display = Casa Karlsruhe"
         // "else display='yes' (rule: display all cases not set as 'no')"
         
+        const hierarchy = taxonomyByLeafId.get(resolution.leafId) ?? openHierarchy;
+        const category1 = hierarchy.category1;
+        const category2 = hierarchy.category2;
+        const category3 = hierarchy.category3;
+        const appCategoryId = hierarchy.appCategoryId;
+        const appCategoryName = hierarchy.appCategoryName ?? "OPEN";
+
+        const isInterno = category1 === "Interno";
         let display = "yes";
-        if (categorization.internalTransfer || categorization.category1 === "Interno") {
+        if (isInterno) {
             display = "no";
-        } else if (categorization.category2 === "Karlsruhe") {
+        } else if (category2 === "Karlsruhe") {
             display = "Casa Karlsruhe";
         }
 
@@ -419,27 +403,32 @@ export async function commitBatchCore(userId: string, batchId: string) {
             aliasDesc: aliasMatch ? aliasMatch.aliasDesc : null,
             amount: amountNum,
             currency: data.currency || "EUR",
-            category1: categorization.category1 as any,
-            category2: categorization.category2,
-            category3: categorization.category3,
-            needsReview: categorization.needsReview,
+            category1: category1 as any,
+            category2: category2,
+            category3: category3,
+            needsReview: resolution.needsReview,
             manualOverride: false,
-            type: (categorization.type || (amountNum < 0 ? "Despesa" : "Receita")) as any,
-            fixVar: (categorization.fixVar || "Variável") as any,
-            ruleIdApplied: categorization.ruleIdApplied && !categorization.ruleIdApplied.startsWith("seed-") ? categorization.ruleIdApplied : null,
+            type: ((hierarchy.typeDefault as any) || (categorization.type as any) || (amountNum < 0 ? "Despesa" : "Receita")) as any,
+            fixVar: ((hierarchy.fixVarDefault as any) || (categorization.fixVar as any) || "Variável") as any,
+            ruleIdApplied: resolution.ruleIdApplied && !resolution.ruleIdApplied.startsWith("seed-") ? resolution.ruleIdApplied : null,
             source: (["Sparkasse", "Amex", "M&M"].includes(data.source) ? data.source : null) as any,
             key: data.key || item.itemFingerprint, 
-            leafId: categorization.leafId,
-            confidence: categorization.confidence,
-            suggestedKeyword: categorization.suggestedKeyword || aiResult?.rationale,
+            leafId: resolution.leafId,
+            confidence: resolution.confidence,
+            suggestedKeyword: aiResult?.rationale || null,
+            matchedKeyword: resolution.matchedKeyword,
+            classifiedBy: (aiResult ? "AI_SUGGESTION" : "AUTO_KEYWORDS") as "AI_SUGGESTION" | "AUTO_KEYWORDS",
+            appCategoryId: appCategoryId,
+            appCategoryName: appCategoryName,
             display: display, 
-            internalTransfer: categorization.internalTransfer,
-            conflictFlag: (categorization as any).matches?.length > 1 && categorization.needsReview,
-            classificationCandidates: (categorization as any).matches || null
+            internalTransfer: isInterno,
+            excludeFromBudget: isInterno,
+            conflictFlag: resolution.status === "CONFLICT",
+            classificationCandidates: resolution.status === "CONFLICT" ? resolution.candidates : null
         };
 
         // Insert Transaction
-        await db.insert(transactions).values([newTx]).onConflictDoNothing();
+        await db.insert(transactions).values(newTx).onConflictDoNothing();
 
         // Update Item Status
         await db.update(ingestionItems)

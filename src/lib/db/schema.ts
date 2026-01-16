@@ -9,17 +9,30 @@ export const transactionTypeEnum = pgEnum("transaction_type", ["Despesa", "Recei
 export const fixVarEnum = pgEnum("fix_var", ["Fixo", "Variável"]);
 export const category1Enum = pgEnum("category_1", [
   "Alimentação",
+  "Assinaturas",
   "Mercados", 
   "Renda Extra",
   "Outros",
   "Lazer / Esporte",
+  "Lazer",
+  "Esportes",
   "Compras",
   "Financiamento",
+  "Finanças",
   "Interno",
   "Transporte",
+  "Mobilidade",
   "Moradia",
   "Saúde",
-  "Trabalho"
+  "Trabalho",
+  "Telefone",
+  "Educação",
+  "Doações",
+  "Pets",
+  "Férias",
+  "Transferências",
+  "Vendas",
+  "OPEN"
 ]);
 export const uploadStatusEnum = pgEnum("upload_status", ["processing", "ready", "duplicate", "error"]);
 export const accountTypeEnum = pgEnum("account_type", ["credit_card", "debit_card", "bank_account", "cash"]);

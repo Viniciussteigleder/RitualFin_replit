@@ -9,13 +9,14 @@ import { exportFullDataset } from "@/lib/actions/export";
 import { toast } from "sonner";
 import { getCategoryConfig } from "@/lib/constants/categories";
 import { cn } from "@/lib/utils";
+import { CategoryIcon } from "@/components/ui/category-icon";
 
 interface AnalyticsDrillDownProps {
   data: DrillDownData;
   onDrillDown: (level: string, value: string) => void;
   filters: AnalyticsFilters;
   title: string;
-  level: "category" | "level1" | "level2" | "level3" | "transactions";
+  level: "appCategory" | "category1" | "category2" | "category3" | "transactions";
 }
 
 // Fallback colors if category not found in config
@@ -89,19 +90,11 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
     item: CategoryAggregate & { color: string; config: ReturnType<typeof getCategoryConfig> },
     hasChildren: boolean
   ) => {
-    const CatIcon = item.config.lucideIcon;
     return (
       <div className="group">
         <div className="flex items-center gap-3">
           {/* Icon */}
-          <div
-            className={cn(
-              "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0",
-              item.config.bgColor
-            )}
-          >
-            <CatIcon className={cn("w-5 h-5", item.config.textColor)} />
-          </div>
+          <CategoryIcon category={item.category} size="md" className="transition-transform group-hover:scale-105" />
 
           {/* Main Bar */}
           <div className="flex-1">
@@ -219,7 +212,7 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
                               {tx.category1}
                             </span>
                           )}
-                           {tx.recurrent && (
+                           {tx.recurringFlag && (
                             <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-600 font-medium">
                               Recorrente
                             </span>
@@ -278,7 +271,7 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
   }));
 
   const total = chartData.reduce((sum, d) => sum + d.total, 0);
-  const hasChildren = level !== "level3"; // Level 3 goes to transactions
+  const hasChildren = level !== "category3"; // Category 3 goes to transactions
 
   return (
     <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-lg border border-gray-100/50 hover:shadow-xl transition-all duration-500">

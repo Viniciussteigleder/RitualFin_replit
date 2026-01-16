@@ -22,6 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { AppIcon } from "@/components/ui/app-icon";
 
 const ICON_MAP: Record<string, any> = {
   credit_card: CreditCard,
@@ -68,9 +69,7 @@ export default async function AccountsPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 bg-card p-10 rounded-[3rem] border border-border shadow-sm">
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-3">
-              <div className="p-3 bg-orange-500/10 rounded-2xl">
-                 <Wallet className="h-8 w-8 text-orange-600 dark:text-orange-400" />
-              </div>
+              <AppIcon icon={Wallet} tone="amber" size="lg" />
               <h1 className="text-4xl font-bold text-foreground tracking-tight font-display">Carteira Digital</h1>
            </div>
            <p className="text-muted-foreground font-medium max-w-xl leading-relaxed">

@@ -8,6 +8,7 @@ import { formatCurrency } from "@/lib/utils";
 import { Calendar, Building2, Tag, FileText, ExternalLink, Edit, Trash2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { CATEGORY_CONFIGS } from "@/lib/constants/categories";
 import { useState } from "react";
+import { CategoryIcon } from "@/components/ui/category-icon";
 
 type Transaction = {
   id: string;
@@ -44,7 +45,7 @@ interface TransactionDrawerProps {
   onEdit?: (transaction: Transaction) => void;
   onDelete?: (transactionId: string) => void;
   onConfirm?: (transactionId: string) => void;
-  onCategoryChange?: (transactionId: string, category: string) => void;
+  onLeafChange?: (transactionId: string, leafId: string) => void;
 }
 
 export function TransactionDrawer({ 
@@ -54,7 +55,7 @@ export function TransactionDrawer({
   onEdit,
   onDelete,
   onConfirm,
-  onCategoryChange
+  onLeafChange
 }: TransactionDrawerProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
@@ -152,24 +153,25 @@ export function TransactionDrawer({
                     <button 
                         key={idx}
                         onClick={() => {
-                            if (onCategoryChange) {
-                                onCategoryChange(transaction.id, match.category1);
-                                if (onConfirm) onConfirm(transaction.id); // Auto-confirm on resolution?
+                            if (onLeafChange && match.leafId) {
+                                onLeafChange(transaction.id, match.leafId);
+                                if (onConfirm) onConfirm(transaction.id);
                             }
                         }}
                         className="flex items-center justify-between p-3 bg-white dark:bg-card border border-amber-200 dark:border-amber-800 rounded-xl hover:border-amber-400 hover:shadow-md transition-all text-left group"
                     >
                         <div>
                             <div className="font-bold text-sm flex items-center gap-2">
-                                {match.category1}
+                                {match.appCategoryName ? `${match.appCategoryName} → ` : ""}{match.category1}
                                 {match.category2 && <span className="text-xs font-normal text-muted-foreground">→ {match.category2}</span>}
+                                {match.category3 && <span className="text-xs font-normal text-muted-foreground">→ {match.category3}</span>}
                             </div>
                             <div className="text-xs text-muted-foreground mt-0.5">
                                 Regra: <span className="font-mono text-amber-600 dark:text-amber-400 font-bold">{match.matchedKeyword}</span>
                             </div>
                         </div>
                         <div className="text-[10px] font-bold text-amber-700 bg-amber-100 dark:bg-amber-900/40 dark:text-amber-300 px-2 py-1 rounded-lg">
-                            {match.confidence}%
+                            {match.strict ? "STRICT" : `P${match.priority ?? "?"}`}
                         </div>
                     </button>
                 ))}
@@ -184,9 +186,7 @@ export function TransactionDrawer({
               {categoryConfig ? (
                 <>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-card flex items-center justify-center text-xl">
-                      {categoryConfig.icon}
-                    </div>
+                    <CategoryIcon category={transaction.category1} size="md" />
                     <div className="flex-1">
                       <div className="font-bold text-foreground">{transaction.category1}</div>
                       {transaction.category2 && (

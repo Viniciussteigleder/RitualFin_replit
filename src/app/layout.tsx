@@ -25,6 +25,10 @@ const fontDisplay = Manrope({
 export const metadata: Metadata = {
   title: "RitualFin",
   description: "Financial Ritual Orchestrator",
+  icons: {
+    icon: [{ url: "/RitualFin%20Logo.png", type: "image/png" }],
+    apple: [{ url: "/RitualFin%20Logo.png", type: "image/png" }],
+  },
 };
 
 export default function RootLayout({

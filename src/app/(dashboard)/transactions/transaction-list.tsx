@@ -171,12 +171,12 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
         }
     };
 
-    const handleCategoryUpdate = async (id: string, category: string) => {
+    const handleLeafUpdate = async (id: string, leafId: string) => {
         try {
-            await updateTransactionCategory(id, { category1: category });
-            toast.success("Categoria atualizada");
+            await updateTransactionCategory(id, { leafId });
+            toast.success("Classificação atualizada");
         } catch (error) {
-            toast.error("Erro ao atualizar categoria");
+            toast.error("Erro ao atualizar classificação");
         }
     };
 
@@ -316,7 +316,7 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
                 onOpenChange={(open) => !open && setSelectedTx(null)}
                 onConfirm={handleConfirm}
                 onDelete={handleDelete}
-                onCategoryChange={handleCategoryUpdate}
+                onLeafChange={handleLeafUpdate}
             />
 
             <BulkActionsBarComp

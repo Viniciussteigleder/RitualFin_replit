@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import { transactions, rules } from "@/lib/db/schema";
 import { eq, and, sql, desc, like } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { ensureOpenCategory } from "@/lib/actions/setup-open";
+import { buildLeafHierarchyMaps } from "@/lib/taxonomy/hierarchy";
 
 export interface RuleProposal {
   token: string;
@@ -30,14 +32,16 @@ export async function getRuleSuggestions(limit: number = 10): Promise<RulePropos
   const session = await auth();
   if (!session?.user?.id) return [];
 
-  // Fetch uncategorized transactions
+  const ensured = await ensureOpenCategory();
+  if (!ensured.openLeafId) return [];
+
+  // Fetch uncategorized (OPEN) transactions
   // Note: This is a somewhat naive implementation. 
   // Ideally we'd use robust text analysis, but for now we'll do frequency analysis of tokens.
   const uncategorized = await db.query.transactions.findMany({
     where: and(
       eq(transactions.userId, session.user.id),
-      // We look for 'Outros' or null
-      eq(transactions.category1, 'Outros')
+      eq(transactions.leafId, ensured.openLeafId)
     ),
     limit: 500 // Limit sample size for performance
   });
@@ -129,7 +133,14 @@ export async function createRule(data: {
   if (!session?.user?.id) throw new Error("Not authenticated");
 
   try {
-    const effectiveLeafId = data.leafId || "open";
+    const ensured = await ensureOpenCategory();
+    if (!ensured.openLeafId) throw new Error("OPEN taxonomy not initialized");
+
+    const effectiveLeafId = !data.leafId || data.leafId === "open" ? ensured.openLeafId : data.leafId;
+
+    const { byLeafId } = await buildLeafHierarchyMaps(session.user.id);
+    const hierarchy = byLeafId.get(effectiveLeafId);
+    if (!hierarchy) throw new Error("Invalid leafId (not found in taxonomy)");
 
     // Check if a rule with same leafId already exists for this user
     const existingRule = await db.query.rules.findFirst({
@@ -160,6 +171,9 @@ export async function createRule(data: {
         .set({
           keyWords: combinedKeywords,
           keyWordsNegative: combinedNegativeKeywords || null,
+          category1: hierarchy.category1 as any,
+          category2: hierarchy.category2,
+          category3: hierarchy.category3,
         })
         .where(eq(rules.id, existingRule.id));
 
@@ -175,11 +189,11 @@ export async function createRule(data: {
       userId: session.user.id,
       keyWords: data.keyWords.toUpperCase(),
       keyWordsNegative: data.keyWordsNegative?.toUpperCase() || null,
-      category1: data.category1 as any,
-      category2: data.category2,
-      category3: data.category3,
-      type: data.type || "Despesa",
-      fixVar: data.fixVar || "Variável",
+      category1: hierarchy.category1 as any,
+      category2: hierarchy.category2,
+      category3: hierarchy.category3,
+      type: data.type || hierarchy.typeDefault || "Despesa",
+      fixVar: data.fixVar || hierarchy.fixVarDefault || "Variável",
       active: true,
       priority: 950,
       leafId: effectiveLeafId

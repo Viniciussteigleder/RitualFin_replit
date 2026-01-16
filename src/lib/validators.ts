@@ -27,9 +27,7 @@ export function error(message: string, errorId?: string, code?: string): Result<
 
 export const TransactionUpdateSchema = z.object({
   transactionId: z.string().uuid('Invalid transaction ID'),
-  category1: z.enum(CATEGORY1_VALUES),
-  category2: z.string().optional(),
-  category3: z.string().optional(),
+  leafId: z.string().uuid('Invalid leaf ID'),
 });
 
 export const TransactionConfirmSchema = z.object({

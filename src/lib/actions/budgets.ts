@@ -301,7 +301,7 @@ export async function getBudgetProposals(): Promise<BudgetProposal | null> {
 
   // Process 3-month data first
   for (const row of threeMonthSpending) {
-    const cat = row.category1 || "Outros";
+    const cat = row.category1 || "OPEN";
     const monthCount = Math.max(1, Number(row.monthCount) || 1);
     const avg = Number(row.total) / monthCount;
 
@@ -318,7 +318,7 @@ export async function getBudgetProposals(): Promise<BudgetProposal | null> {
 
   // Add last month data
   for (const row of lastMonthSpending) {
-    const cat = row.category1 || "Outros";
+    const cat = row.category1 || "OPEN";
     const lastMonth = Number(row.total);
     const existing = categoryMap.get(cat);
 
@@ -483,7 +483,7 @@ export async function getHistoricalComparison(currentMonth: string): Promise<Mon
 
   // Process current month
   for (const row of currentSpending) {
-    const cat = row.category1 || "Outros";
+    const cat = row.category1 || "OPEN";
     comparisonMap.set(cat, {
       category1: cat,
       currentMonth: Number(row.total),
@@ -496,7 +496,7 @@ export async function getHistoricalComparison(currentMonth: string): Promise<Mon
 
   // Add last month data
   for (const row of lastMonthSpending) {
-    const cat = row.category1 || "Outros";
+    const cat = row.category1 || "OPEN";
     const existing = comparisonMap.get(cat);
     if (existing) {
       existing.lastMonth = Number(row.total);
@@ -514,7 +514,7 @@ export async function getHistoricalComparison(currentMonth: string): Promise<Mon
 
   // Add 3-month average
   for (const row of threeMonthSpending) {
-    const cat = row.category1 || "Outros";
+    const cat = row.category1 || "OPEN";
     const monthCount = Math.max(1, Number(row.monthCount) || 1);
     const avg = Number(row.total) / monthCount;
     const existing = comparisonMap.get(cat);

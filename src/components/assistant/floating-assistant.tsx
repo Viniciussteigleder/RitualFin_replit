@@ -70,6 +70,7 @@ export function FloatingAssistant() {
     const [isPending, startTransition] = useTransition();
     const [messages, setMessages] = useState<Message[]>([]);
     const [showSuggestions, setShowSuggestions] = useState(true);
+    const [logoError, setLogoError] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const pathname = usePathname();
@@ -247,28 +248,25 @@ export function FloatingAssistant() {
                     onClick={() => setOpen(true)}
                     className={cn(
                         "h-16 w-16 rounded-full shadow-2xl relative overflow-hidden group",
-                        "bg-gradient-to-br from-amber-500 via-amber-600 to-orange-600",
-                        "hover:from-amber-600 hover:via-amber-700 hover:to-orange-700",
-                        "transition-all duration-300 hover:scale-110 hover:shadow-amber-500/25",
-                        "ring-4 ring-amber-500/20 hover:ring-amber-500/40"
+                        "bg-card/90 backdrop-blur-sm border border-border",
+                        "transition-all duration-300 hover:scale-110 hover:shadow-xl",
+                        "hover:bg-card"
                     )}
                 >
-                    {/* Pulse animation */}
-                    <span className="absolute inset-0 rounded-full bg-amber-400 animate-ping opacity-20" />
-
                     {/* Logo */}
-	                    <div className="relative z-10 w-10 h-10 rounded-full overflow-hidden bg-transparent border border-white/20 flex items-center justify-center">
-	                        <Image
-	                            src="/RitualFin%20Logo.png"
-	                            alt="RitualFin"
-	                            width={36}
-	                            height={36}
-	                            className="object-contain drop-shadow-lg"
-                            onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                                e.currentTarget.parentElement!.innerHTML = '<svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>';
-                            }}
-                        />
+                    <div className="relative z-10 w-12 h-12 flex items-center justify-center">
+                        {logoError ? (
+                            <Sparkles className="h-8 w-8 text-amber-600 dark:text-amber-400" />
+                        ) : (
+                            <Image
+                                src="/RitualFin%20Logo.png"
+                                alt="RitualFin"
+                                width={48}
+                                height={48}
+                                className="object-contain"
+                                onError={() => setLogoError(true)}
+                            />
+                        )}
                     </div>
                 </Button>
             </div>
@@ -291,7 +289,7 @@ export function FloatingAssistant() {
                                             e.currentTarget.style.display = 'none';
                                         }}
                                     />
-                                </div>
+	                                </div>
                                 <div>
                                     <SheetTitle className="font-display text-2xl tracking-tight flex items-center gap-2">
                                         Analista Ritual

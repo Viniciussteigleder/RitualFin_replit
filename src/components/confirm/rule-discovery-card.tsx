@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { createRule } from "@/lib/actions/rules";
 import { applyCategorization } from "@/lib/actions/categorization";
 import { DiscoveryCandidate, TaxonomyOption } from "@/lib/actions/discovery";
+import { suggestRuleForOpenCandidate } from "@/lib/actions/ai-rule-suggestion";
 import { Badge } from "@/components/ui/badge";
 import {
   Loader2,
@@ -24,6 +25,7 @@ import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { getCategoryConfig } from "@/lib/constants/categories";
+import { CategoryIcon } from "@/components/ui/category-icon";
 
 interface RuleDiscoveryCardProps {
   candidate: DiscoveryCandidate;
@@ -32,6 +34,7 @@ interface RuleDiscoveryCardProps {
 
 export function RuleDiscoveryCard({ candidate, taxonomyOptions }: RuleDiscoveryCardProps) {
   const [isPending, startTransition] = useTransition();
+  const [isAiPending, startAiTransition] = useTransition();
   const [isSuccess, setIsSuccess] = useState(false);
   const [keywords, setKeywords] = useState(candidate.description);
   const [negativeKeywords, setNegativeKeywords] = useState("");
@@ -41,6 +44,7 @@ export function RuleDiscoveryCard({ candidate, taxonomyOptions }: RuleDiscoveryC
   );
   const [fixVar, setFixVar] = useState<"Fixo" | "Variável">("Variável");
   const [categorySearch, setCategorySearch] = useState("");
+  const [aiRationale, setAiRationale] = useState<string>("");
 
   // Filter taxonomy options by search
   const filteredOptions = useMemo(() => {
@@ -55,6 +59,36 @@ export function RuleDiscoveryCard({ candidate, taxonomyOptions }: RuleDiscoveryC
   }, [taxonomyOptions, categorySearch]);
 
   const selectedOption = taxonomyOptions.find(o => o.leafId === selectedLeafId);
+
+  const handleAiSuggest = () => {
+    startAiTransition(async () => {
+      try {
+        const res = await suggestRuleForOpenCandidate(candidate.description);
+        if (!res.success) {
+          toast.error("IA indisponível", { description: res.error });
+          return;
+        }
+
+        setAiRationale(res.suggestion.rationale || "");
+        setKeywords(res.suggestion.keyWords || candidate.description);
+        setNegativeKeywords(res.suggestion.keyWordsNegative || "");
+        setSelectedLeafId(res.suggestion.leafId);
+
+        const option = taxonomyOptions.find(o => o.leafId === res.suggestion.leafId);
+        if (option) {
+          if (
+            option.category1 === "Renda Extra" ||
+            option.category1 === "Trabalho" ||
+            option.category1.toLowerCase().includes("receita")
+          ) {
+            setType("Receita");
+          }
+        }
+      } catch (error) {
+        toast.error("Erro ao consultar IA");
+      }
+    });
+  };
 
   const handleCreate = () => {
     if (!selectedLeafId) {
@@ -184,17 +218,36 @@ export function RuleDiscoveryCard({ candidate, taxonomyOptions }: RuleDiscoveryC
           {/* Left Column: Keywords */}
           <div className="space-y-4">
             {/* Positive Keywords */}
-            <div className="space-y-2">
-              <label className="text-xs uppercase font-bold text-muted-foreground flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-emerald-500" />
-                Palavra-chave (incluir)
-              </label>
+          <div className="space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <label className="text-xs uppercase font-bold text-muted-foreground flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-emerald-500" />
+                  Palavra-chave (incluir)
+                </label>
+                {candidate.currentCategory1 === "OPEN" && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isAiPending}
+                    onClick={handleAiSuggest}
+                    className="h-7 px-2 rounded-lg text-[10px] font-bold"
+                  >
+                    {isAiPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Sugerir IA"}
+                  </Button>
+                )}
+              </div>
               <Input
                 value={keywords}
                 onChange={(e) => setKeywords(e.target.value)}
                 className="bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800 h-10 text-sm font-medium focus:ring-emerald-500"
                 placeholder="Termo obrigatório para match"
               />
+              {aiRationale && (
+                <div className="text-[11px] text-muted-foreground">
+                  IA: <span className="font-medium">{aiRationale}</span>
+                </div>
+              )}
             </div>
 
             {/* Negative Keywords */}
@@ -332,7 +385,6 @@ export function RuleDiscoveryCard({ candidate, taxonomyOptions }: RuleDiscoveryC
               ) : (
                 filteredOptions.slice(0, 20).map((opt) => {
                   const catConfig = getCategoryConfig(opt.category1);
-                  const CatIcon = catConfig.lucideIcon;
                   return (
                     <button
                       key={opt.leafId}
@@ -343,9 +395,7 @@ export function RuleDiscoveryCard({ candidate, taxonomyOptions }: RuleDiscoveryC
                         selectedLeafId === opt.leafId && "bg-violet-50 dark:bg-violet-900/20"
                       )}
                     >
-                      <div className={cn("p-1 rounded", catConfig.bgColor)}>
-                        <CatIcon className={cn("w-3 h-3", catConfig.textColor)} />
-                      </div>
+                      <CategoryIcon category={catConfig.name} size="sm" />
                       <span className="truncate">{opt.label}</span>
                     </button>
                   );
