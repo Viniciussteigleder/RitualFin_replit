@@ -251,7 +251,7 @@ export function RuleDiscoveryCard({ candidate, taxonomyOptions, onApplied, onTax
   }
 
   return (
-    <div className="bg-card border border-border/60 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 group relative overflow-hidden">
+    <div className="bg-card border border-border/60 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300 group relative overflow-hidden">
       {/* Impact indicator */}
       <div className="absolute top-4 right-4 flex items-center gap-2">
         <Badge
@@ -325,13 +325,16 @@ export function RuleDiscoveryCard({ candidate, taxonomyOptions, onApplied, onTax
                 value={keywords}
                 onChange={(e) => setKeywords(e.target.value)}
                 className="bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800 h-10 text-sm font-medium focus:ring-emerald-500"
-                placeholder="Termo obrigatório para match"
+                placeholder="Ex: PAYPAL; AMAZON; SPOTIFY (separar por ;)"
               />
               {aiRationale && (
                 <div className="text-[11px] text-muted-foreground">
                   IA: <span className="font-medium">{aiRationale}</span>
                 </div>
               )}
+              <div className="text-[11px] text-muted-foreground">
+                Dica: use tokens estáveis (marca/serviço) e evite datas/valores.
+              </div>
             </div>
 
             {/* Negative Keywords */}
@@ -344,8 +347,11 @@ export function RuleDiscoveryCard({ candidate, taxonomyOptions, onApplied, onTax
                 value={negativeKeywords}
                 onChange={(e) => setNegativeKeywords(e.target.value)}
                 className="bg-red-50/50 dark:bg-red-900/10 border-red-200 dark:border-red-800 h-10 text-sm font-medium focus:ring-red-500"
-                placeholder="Opcional: evitar falsos positivos"
+                placeholder="Ex: TRANSFER; ESTORNO (separar por ;)"
               />
+              <div className="text-[11px] text-muted-foreground">
+                Use exclusões para evitar matches errados (ex.: termos genéricos).
+              </div>
             </div>
 
             {/* Type and FixVar Toggle Buttons */}

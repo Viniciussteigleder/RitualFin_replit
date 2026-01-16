@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { toast } from "sonner";
-import { AlertTriangle, Filter, Loader2, Repeat, Search, Swords, Wand2 } from "lucide-react";
+import { AlertTriangle, Filter, Loader2, RefreshCw, Repeat, Search, Swords, Wand2, X } from "lucide-react";
 import {
   getConflictTransactions,
   getDiscoveryCandidates,
@@ -209,50 +209,108 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
     [discovery]
   );
 
+  const resetDiscoveryFilters = () =>
+    setDiscoveryFilters({
+      dateFrom: toISODateInput(new Date(Date.now() - 1000 * 60 * 60 * 24 * 90)),
+      sortBy: "count",
+      sortDir: "desc",
+      limit: 50,
+      dateTo: undefined,
+      minAbsAmount: undefined,
+      maxAbsAmount: undefined,
+    });
+
+  const resetRecurringFilters = () =>
+    setRecurringFilters({
+      dateFrom: toISODateInput(new Date(Date.now() - 1000 * 60 * 60 * 24 * 365)),
+      minOccurrences: 3,
+      sortBy: "occurrences",
+      sortDir: "desc",
+      limit: 50,
+      dateTo: undefined,
+    });
+
+  const resetConflictFilters = () =>
+    setConflictFilters({
+      dateFrom: toISODateInput(new Date(Date.now() - 1000 * 60 * 60 * 24 * 90)),
+      sortBy: "date",
+      sortDir: "desc",
+      limit: 50,
+      dateTo: undefined,
+    });
+
   return (
     <Tabs defaultValue="rules" className="w-full">
-      <TabsList className="w-full justify-start gap-2 rounded-3xl p-2 bg-gradient-to-r from-secondary/70 via-secondary/40 to-secondary/70 border border-border shadow-sm">
+      <TabsList className="w-full justify-start gap-2 rounded-3xl p-2 bg-card/70 border border-border shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/50">
         <TabsTrigger
           value="rules"
           className="rounded-2xl font-black gap-2 px-4 py-2 data-[state=active]:bg-emerald-600 data-[state=active]:text-white"
         >
           <Search className="w-4 h-4" /> Definição de regras
+          <Badge variant="secondary" className="font-mono text-[10px] h-5 px-2">
+            {discovery.length}
+          </Badge>
         </TabsTrigger>
         <TabsTrigger
           value="recurring"
           className="rounded-2xl font-black gap-2 px-4 py-2 data-[state=active]:bg-sky-600 data-[state=active]:text-white"
         >
           <Repeat className="w-4 h-4" /> Recorrentes
+          <Badge variant="secondary" className="font-mono text-[10px] h-5 px-2">
+            {recurring.length}
+          </Badge>
         </TabsTrigger>
         <TabsTrigger
           value="conflicts"
           className="rounded-2xl font-black gap-2 px-4 py-2 data-[state=active]:bg-amber-600 data-[state=active]:text-white"
         >
           <Swords className="w-4 h-4" /> Conflitos
+          <Badge variant="secondary" className="font-mono text-[10px] h-5 px-2">
+            {conflicts.length}
+          </Badge>
         </TabsTrigger>
       </TabsList>
 
       <TabsContent value="rules" className="mt-6 space-y-6">
-        <div className="bg-card border border-border rounded-3xl p-6 shadow-sm space-y-4">
-          <div className="flex items-center justify-between gap-4">
+        <div className="bg-card border border-border rounded-3xl p-5 shadow-sm space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <Filter className="w-4 h-4 text-muted-foreground" />
-                <h2 className="text-lg font-bold">Filtros</h2>
+                <h2 className="text-sm font-black tracking-tight">Filtros (OPEN)</h2>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Apenas transações com classificação <code className="font-mono">OPEN</code>.
+              <p className="text-xs text-muted-foreground">
+                Ajuste e clique em <span className="font-bold">Aplicar filtros</span>. Use <span className="font-bold">Atualizar dados</span> para recarregar.
               </p>
             </div>
-            <Button
-              variant="outline"
-              className="rounded-2xl font-bold"
-              onClick={() => loadDiscovery(discoveryFilters)}
-              disabled={isDiscoveryPending}
-            >
-              {isDiscoveryPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              Atualizar
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                className="rounded-2xl font-bold"
+                onClick={() => {
+                  resetDiscoveryFilters();
+                  loadDiscovery({
+                    dateFrom: toISODateInput(new Date(Date.now() - 1000 * 60 * 60 * 24 * 90)),
+                    sortBy: "count",
+                    sortDir: "desc",
+                    limit: 50,
+                  });
+                }}
+                disabled={isDiscoveryPending}
+              >
+                <X className="w-4 h-4 mr-2" />
+                Limpar
+              </Button>
+              <Button
+                variant="outline"
+                className="rounded-2xl font-bold"
+                onClick={() => loadDiscovery(discoveryFilters)}
+                disabled={isDiscoveryPending}
+              >
+                {isDiscoveryPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+                Atualizar dados
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
@@ -343,7 +401,9 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
               <Badge variant="secondary" className="font-mono">
                 {discovery.length} padrões
               </Badge>
-              <span>Total impacto: {formatCurrency(totalDiscoveryAbs)}</span>
+              <Badge variant="outline" className="font-mono">
+                Impacto: {formatCurrency(totalDiscoveryAbs)}
+              </Badge>
             </div>
             <div className="flex items-center gap-2">
               <Input
@@ -356,11 +416,11 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
                 className="w-24 rounded-xl"
               />
               <Button
-                className="rounded-2xl font-bold"
+                className="rounded-2xl font-black"
                 onClick={() => loadDiscovery(discoveryFilters)}
                 disabled={isDiscoveryPending}
               >
-                Aplicar
+                Aplicar filtros
               </Button>
             </div>
           </div>
@@ -386,26 +446,46 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
       </TabsContent>
 
       <TabsContent value="recurring" className="mt-6 space-y-6">
-        <div className="bg-card border border-border rounded-3xl p-6 shadow-sm space-y-4">
-          <div className="flex items-center justify-between gap-4">
+        <div className="bg-card border border-border rounded-3xl p-5 shadow-sm space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <Filter className="w-4 h-4 text-muted-foreground" />
-                <h2 className="text-lg font-bold">Sugestões</h2>
+                <h2 className="text-sm font-black tracking-tight">Filtros (≠ OPEN)</h2>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Apenas transações já classificadas (≠ <code className="font-mono">OPEN</code>).
+              <p className="text-xs text-muted-foreground">
+                Sugestões por padrão de pagamento. Ajuste frequência/dia/meses antes de aplicar.
               </p>
             </div>
-            <Button
-              variant="outline"
-              className="rounded-2xl font-bold"
-              onClick={() => loadRecurring(recurringFilters)}
-              disabled={isRecurringPending}
-            >
-              {isRecurringPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              Atualizar
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                className="rounded-2xl font-bold"
+                onClick={() => {
+                  resetRecurringFilters();
+                  loadRecurring({
+                    dateFrom: toISODateInput(new Date(Date.now() - 1000 * 60 * 60 * 24 * 365)),
+                    minOccurrences: 3,
+                    sortBy: "occurrences",
+                    sortDir: "desc",
+                    limit: 50,
+                  });
+                }}
+                disabled={isRecurringPending}
+              >
+                <X className="w-4 h-4 mr-2" />
+                Limpar
+              </Button>
+              <Button
+                variant="outline"
+                className="rounded-2xl font-bold"
+                onClick={() => loadRecurring(recurringFilters)}
+                disabled={isRecurringPending}
+              >
+                {isRecurringPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+                Atualizar dados
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
@@ -476,8 +556,8 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
           </div>
 
           <div className="flex justify-end">
-            <Button className="rounded-2xl font-bold" onClick={() => loadRecurring(recurringFilters)} disabled={isRecurringPending}>
-              Aplicar
+            <Button className="rounded-2xl font-black" onClick={() => loadRecurring(recurringFilters)} disabled={isRecurringPending}>
+              Aplicar filtros
             </Button>
           </div>
         </div>
@@ -511,26 +591,45 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
       </TabsContent>
 
       <TabsContent value="conflicts" className="mt-6 space-y-6">
-        <div className="bg-card border border-border rounded-3xl p-6 shadow-sm space-y-4">
-          <div className="flex items-center justify-between gap-4">
+        <div className="bg-card border border-border rounded-3xl p-5 shadow-sm space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-500" />
-                <h2 className="text-lg font-bold">Conflitos de regras</h2>
+                <h2 className="text-sm font-black tracking-tight">Filtros (Conflitos)</h2>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Quando múltiplas regras sugerem classificações diferentes, a transação fica em <code className="font-mono">OPEN</code> com candidatos.
+              <p className="text-xs text-muted-foreground">
+                Compare candidatos, ajuste palavras-chave e confirme. Se preferir, abra a transação para resolver manualmente.
               </p>
             </div>
-            <Button
-              variant="outline"
-              className="rounded-2xl font-bold"
-              onClick={() => loadConflicts(conflictFilters)}
-              disabled={isConflictsPending}
-            >
-              {isConflictsPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              Atualizar
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                className="rounded-2xl font-bold"
+                onClick={() => {
+                  resetConflictFilters();
+                  loadConflicts({
+                    dateFrom: toISODateInput(new Date(Date.now() - 1000 * 60 * 60 * 24 * 90)),
+                    sortBy: "date",
+                    sortDir: "desc",
+                    limit: 50,
+                  });
+                }}
+                disabled={isConflictsPending}
+              >
+                <X className="w-4 h-4 mr-2" />
+                Limpar
+              </Button>
+              <Button
+                variant="outline"
+                className="rounded-2xl font-bold"
+                onClick={() => loadConflicts(conflictFilters)}
+                disabled={isConflictsPending}
+              >
+                {isConflictsPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+                Atualizar dados
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
@@ -592,8 +691,8 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
           </div>
 
           <div className="flex justify-end">
-            <Button className="rounded-2xl font-bold" onClick={() => loadConflicts(conflictFilters)} disabled={isConflictsPending}>
-              Aplicar
+            <Button className="rounded-2xl font-black" onClick={() => loadConflicts(conflictFilters)} disabled={isConflictsPending}>
+              Aplicar filtros
             </Button>
           </div>
         </div>
@@ -630,7 +729,7 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
                         </div>
                       </div>
 
-                      <div className="rounded-2xl border border-border bg-secondary/20 p-3">
+                      <div className="rounded-2xl border border-border bg-secondary/15 p-3">
                         <div className="text-[11px] font-black text-muted-foreground uppercase tracking-wide mb-1">
                           key_desc
                         </div>
@@ -842,7 +941,7 @@ function ConflictCandidateEditor(props: {
   const existingNeg = candidate.ruleKeyWordsNegative ?? "";
 
   return (
-    <div className="rounded-2xl border border-amber-200/60 bg-amber-50/30 dark:bg-amber-950/20 p-4">
+    <div className="rounded-2xl border border-amber-200/60 bg-amber-50/20 dark:bg-amber-950/10 p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="font-black text-sm truncate">{chain}</div>
@@ -893,7 +992,7 @@ function ConflictCandidateEditor(props: {
 
       <div className="mt-3 flex items-center justify-end">
         <Button
-          className="rounded-2xl font-bold"
+          className="rounded-2xl font-black"
           disabled={isSaving || (!addKeyWords.trim() && !addKeyWordsNegative.trim())}
           onClick={() =>
             startSaving(async () => {
@@ -908,7 +1007,7 @@ function ConflictCandidateEditor(props: {
               }
               setAddKeyWords("");
               setAddKeyWordsNegative("");
-              toast.success("Regra atualizada", { description: "Mudança confirmada e aplicada." });
+              toast.success("Mudança confirmada", { description: "Regra atualizada e aplicada." });
               await props.onSaved();
             })
           }
@@ -1016,7 +1115,7 @@ function RecurringSuggestionCard(props: {
 
   return (
     <div className="bg-card border border-border rounded-3xl p-5 shadow-sm">
-      <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4">
         <div className="space-y-2 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="secondary" className="font-mono">{suggestion.occurrences}x</Badge>
@@ -1037,6 +1136,15 @@ function RecurringSuggestionCard(props: {
           {suggestion.sampleKeyDesc && (
             <div className="text-xs text-muted-foreground font-mono truncate">{suggestion.sampleKeyDesc}</div>
           )}
+          <div className="text-xs text-muted-foreground">
+            Último: <span className="font-mono font-bold">{new Date(suggestion.sampleDate).toLocaleDateString("pt-BR")}</span>
+            {nextDate && (
+              <>
+                {" "}
+                • Próximo: <span className="font-mono font-bold">{new Date(nextDate).toLocaleDateString("pt-BR")}</span>
+              </>
+            )}
+          </div>
         </div>
 
         <div className="space-y-3">
@@ -1077,13 +1185,7 @@ function RecurringSuggestionCard(props: {
               </Button>
             </ButtonGroup>
             <div className="mt-2 text-xs text-muted-foreground">
-              Sugestão: <span className="font-bold">{cadenceLabel(suggestion.suggestedCadence)}</span> • {scheduleText}
-              {nextDate && (
-                <>
-                  {" "}
-                  • Próximo: <span className="font-bold">{new Date(nextDate).toLocaleDateString("pt-BR")}</span>
-                </>
-              )}
+              Sugestão IA: <span className="font-bold">{cadenceLabel(suggestion.suggestedCadence)}</span> • {scheduleText}
             </div>
           </div>
 
