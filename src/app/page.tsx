@@ -55,8 +55,7 @@ const ACCOUNT_FILTER_MAP: Record<string, string> = {
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
   try {
     const { month } = await searchParams;
-    const monthParam = month;
-    const targetDate = monthParam ? new Date(`${monthParam}-01T00:00:00`) : new Date();
+    const targetDate = month ? new Date(`${month}-01T00:00:00`) : new Date();
 
     // Fetch data with error handling
     let dashboardData, transactionsData, pendingTransactions, accounts;
@@ -320,9 +319,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           <Link href="/accounts" className="text-sm font-bold text-primary hover:underline">Ver todas</Link>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="flex flex-wrap gap-6">
           {accounts.length === 0 ? (
-            <Card className="col-span-1 md:col-span-3 border-dashed border-2 py-20 flex flex-col items-center justify-center text-muted-foreground bg-secondary/5 rounded-2xl">
+            <Card className="w-full border-dashed border-2 py-20 flex flex-col items-center justify-center text-muted-foreground bg-secondary/5 rounded-2xl">
               <Wallet className="h-10 w-10 mb-4 opacity-20" />
               <p className="font-medium">Nenhuma conta conectada</p>
               <Link href="/uploads">
@@ -331,12 +330,15 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             </Card>
           ) : (
             accounts.map((account) => {
+              // Simulated due date for credit cards
+              const dueDate = account.type === "credit_card" ? "Vence dia 15" : null;
+              
               return (
-                <Card key={account.id} className="rounded-2xl bg-card border-border shadow-sm hover:shadow-lg transition-all group overflow-hidden">
+                <Card key={account.id} className="flex-1 min-w-[300px] max-w-[400px] rounded-2xl bg-card border-border shadow-sm hover:shadow-lg transition-all group overflow-hidden">
                   <CardContent className="p-8 flex flex-col gap-6">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center group-hover:bg-primary transition-colors">
+                        <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center group-hover:bg-primary transition-all duration-500">
                           {account.type === "credit_card" ? (
                             <CreditCard className="h-6 w-6 text-foreground group-hover:text-white transition-colors" />
                           ) : (
@@ -350,46 +352,50 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                           </span>
                         </div>
                       </div>
-                      <Link href="/accounts">
-                        <button className="p-1 hover:bg-secondary rounded-lg text-muted-foreground transition-colors">
-                            <MoreHorizontal className="h-5 w-5" />
-                        </button>
+                      <Link href="/accounts" className="p-2 hover:bg-secondary rounded-xl text-muted-foreground transition-colors">
+                          <MoreHorizontal className="h-5 w-5" />
                       </Link>
                     </div>
 
-                    <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-5">
                       <div className="flex justify-between items-end">
                         <div className="flex flex-col">
-                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Saldo</span>
-                          <span className="text-xl font-bold text-foreground font-display" suppressHydrationWarning>
+                          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em] mb-1">Saldo</span>
+                          <span className="text-2xl font-bold text-foreground font-display" suppressHydrationWarning>
                              {formatCurrency(account.balance, { hideDecimals: true })}
                           </span>
                         </div>
                         <div className="flex flex-col text-right">
-                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Instituição</span>
-                          <span className="text-sm font-bold text-muted-foreground">{account.institution || "Personal"}</span>
+                          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em] mb-1">Instituição</span>
+                          <span className="text-sm font-bold text-foreground/80">{account.institution || "Personal"}</span>
                         </div>
                       </div>
                       
-                      <div className="flex flex-col gap-2">
-                        <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider">
-                          <span className="text-muted-foreground">Estado</span>
-                          <span className="text-primary">Ativo</span>
+                      <div className="flex flex-col gap-2.5">
+                        <div className="flex justify-between text-[10px] font-black uppercase tracking-[0.2em] mb-1">
+                          <span className="text-muted-foreground/60">Utilização</span>
+                          <span className="text-primary">100% Ok</span>
                         </div>
-                        <Progress value={100} className="h-2" />
+                        <Progress value={100} className="h-2 bg-secondary" />
                       </div>
                     </div>
 
-                    <div className="flex gap-2 flex-wrap">
-                      <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-none px-3 py-1 rounded-lg text-[10px] font-bold">Disponível</Badge>
+                    <div className="flex gap-2 flex-wrap h-8">
+                      <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-none px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter">Ativa</Badge>
                       {account.type === "credit_card" && (
-                        <Badge variant="secondary" className="bg-orange-500/10 text-orange-500 hover:bg-orange-500/20 border-none px-3 py-1 rounded-lg text-[10px] font-bold underline decoration-2 underline-offset-2">Fatura Aberta</Badge>
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-500/10 text-orange-600 rounded-lg text-[10px] font-black uppercase tracking-tighter border border-orange-200/50">
+                           <Calendar className="h-3 w-3" />
+                           {dueDate}
+                        </div>
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between pt-4 border-t border-border mt-2">
-                       <Link href={`/transactions?accounts=${encodeURIComponent(ACCOUNT_FILTER_MAP[account.name] || account.name)}`}>
-                            <Button variant="ghost" className="text-xs font-bold text-muted-foreground hover:text-primary p-0 h-auto">Detalhes</Button>
+                    <div className="flex items-center justify-between pt-5 border-t border-border/50 mt-2">
+                       <Link href={`/transactions?accounts=${encodeURIComponent(ACCOUNT_FILTER_MAP[account.name] || account.name)}`} className="w-full">
+                            <Button variant="ghost" className="w-full text-xs font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-primary hover:bg-primary/5 p-0 h-10 group/btn">
+                                Detalhes do Extrato
+                                <ArrowRight className="h-3.5 w-3.5 ml-2 group-hover/btn:translate-x-1 transition-transform" />
+                            </Button>
                        </Link>
                     </div>
                   </CardContent>

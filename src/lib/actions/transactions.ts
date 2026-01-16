@@ -117,8 +117,8 @@ export async function getDashboardData(date?: Date) {
   // 8. Category Breakdown
   const categoryData = await db
     .select({ 
-      name: transactions.category1, 
-      value: sql<number>`ABS(SUM(${transactions.amount}))` // Changed from SUM(ABS(...)) to ABS(SUM(...))
+      name: sql<string>`COALESCE(${transactions.appCategoryName}, ${transactions.category1}, 'Outros')`, 
+      value: sql<number>`ABS(SUM(${transactions.amount}))`
     })
     .from(transactions)
     .where(and(
@@ -129,9 +129,9 @@ export async function getDashboardData(date?: Date) {
        sql`${transactions.category1} NOT IN ('Interno', 'Transferências')`,
        ne(transactions.display, "no")
     ))
-    .groupBy(transactions.category1)
-    .orderBy(desc(sql`ABS(SUM(${transactions.amount}))`)) // Changed from SUM(ABS(...)) to ABS(SUM(...))
-    .limit(20); // Increased limit for frontend filtering
+    .groupBy(sql`COALESCE(${transactions.appCategoryName}, ${transactions.category1}, 'Outros')`)
+    .orderBy(desc(sql`ABS(SUM(${transactions.amount}))`))
+    .limit(20);
 
   return {
     totalBalance,
@@ -144,7 +144,7 @@ export async function getDashboardData(date?: Date) {
         remainingBudget,
         monthlyGoal
     },
-    categoryData: categoryData.map(c => ({ name: c.name || "Outros", value: Number(c.value) }))
+    categoryData: categoryData.map(c => ({ name: c.name, value: Number(c.value) }))
   };
 }
 

@@ -1,0 +1,46 @@
+# Ops Runbook (RitualFin)
+
+**Scope**: day-2 operations for the Next.js + Neon + Auth.js deployment (local/dev, preview, production).
+
+## Quick Commands
+
+- Install deps: `npm ci`
+- Typecheck: `npm run check`
+- Lint (TS + ESLint): `npm run lint`
+- Build: `npm run build`
+- Start (prod server): `npm run start`
+- E2E tests (Playwright): `npm run test:e2e`
+
+## Environment Variables (names only)
+
+Required at runtime (see `src/lib/env.ts`):
+- `DATABASE_URL`
+- `AUTH_SECRET`
+- `AUTH_GOOGLE_ID`
+- `AUTH_GOOGLE_SECRET`
+
+Optional:
+- `AUTH_URL`
+- `OPENAI_API_KEY`
+- `ANALYZE`
+- `PG_POOL_MAX`
+
+## Common Incidents
+
+### Auth redirect / “Configuration” errors
+- Check `AUTH_URL` and OAuth callback/redirect URIs configured in Google.
+- If debugging, use `GET /api/auth/debug` in **non-production** and **authenticated** sessions only (`src/app/api/auth/debug/route.ts`).
+
+### DB connectivity failures
+- Symptom: actions fail with connection errors; `GET /api/auth/debug` reports `DB_CONNECTIVITY=fail` (dev/preview only).
+- Verify `DATABASE_URL` points to the correct Neon branch and includes required SSL options (don’t paste full URL into tickets).
+- Verify connection pool limits (`src/lib/db/index.ts`) are reasonable for the environment (tunable via `PG_POOL_MAX`).
+
+### Preview deploy checks failing (Neon branch workflow)
+- Workflow: `.github/workflows/neon_workflow.yml`
+- Expected behavior: PR Neon branch jobs run only when `NEON_PROJECT_ID` and `NEON_API_KEY` are configured in GitHub Actions.
+
+## Operational Guardrails
+
+- Do not log secrets (DB URLs, OAuth secrets, tokens). Prefer boolean presence checks and redacted summaries.
+- Treat categorization behavior as immutable per `docs/LOGIC_CONTRACT.md` and `rules/oracle/*`.

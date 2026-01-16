@@ -1,0 +1,19 @@
+
+> rest-express@1.0.1 build
+> next build
+
+▲ Next.js 16.1.1 (Turbopack)
+- Environments: .env.production.local, .env.local
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 7.7s
+  Running TypeScript ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/25) ...
+Error occurred prerendering page "/admin/import". Read more: https://nextjs.org/docs/messages/prerender-error
+TypeError: Cannot destructure property 'status' of '(0 , d.useSession)(...)' as it is undefined.
+    at q (.next/server/chunks/ssr/_c6fe06ef._.js:1:2722) {
+  digest: '1217807777'
+}
+Export encountered an error on /(dashboard)/admin/import/page: /admin/import, exiting the build.
+⨯ Next.js build worker exited with code: 1 and signal: null

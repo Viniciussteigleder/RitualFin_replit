@@ -1,10 +1,20 @@
 
+import { auth } from "@/auth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Brain, Sparkles, Filter, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export default function AIKeywordsPage() {
+export default async function AIKeywordsPage() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <p className="text-muted-foreground font-bold">Por favor, faça login para acessar esta página.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
@@ -29,17 +39,17 @@ export default function AIKeywordsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+              <div className="space-y-4">
               <div className="p-4 border bg-white rounded-xl flex items-center justify-between group">
                 <div className="space-y-1">
-                  <div className="font-semibold">"REWE" → Mercado</div>
+                  <div className="font-semibold">&quot;REWE&quot; → Mercado</div>
                   <div className="text-xs text-muted-foreground">Found in 12 unclassified transactions.</div>
                 </div>
                 <Button size="sm" variant="outline">Create Rule</Button>
               </div>
               <div className="p-4 border bg-white rounded-xl flex items-center justify-between">
                 <div className="space-y-1">
-                  <div className="font-semibold">"NETFLIX" → Streaming</div>
+                  <div className="font-semibold">&quot;NETFLIX&quot; → Streaming</div>
                   <div className="text-xs text-muted-foreground">Found in 1 recurring transaction.</div>
                 </div>
                 <Button size="sm" variant="outline">Create Rule</Button>

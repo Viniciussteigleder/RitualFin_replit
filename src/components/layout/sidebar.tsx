@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { useLocale } from "@/hooks/use-locale";
 import { layoutCopy, t as translate } from "@/lib/i18n";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import Image from "next/image";
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -109,8 +110,14 @@ export function Sidebar() {
         <div className="flex flex-col gap-8 h-full min-h-0">
           {/* Logo */}
           <div className="flex items-center gap-3 px-2 flex-shrink-0">
-            <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-              <Sparkles className="h-6 w-6 text-white" />
+            <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 overflow-hidden relative">
+              <Image 
+                src="/logo-ritualfin-wax-seal.png" 
+                alt="RitualFin Logo" 
+                fill
+                className="object-contain p-1.5"
+                priority
+              />
             </div>
             <div className="flex flex-col">
               <h1 className="text-foreground text-xl font-bold tracking-tight font-display">RitualFin</h1>

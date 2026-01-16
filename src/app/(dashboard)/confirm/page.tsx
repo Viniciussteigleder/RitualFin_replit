@@ -1,3 +1,4 @@
+import { auth } from "@/auth";
 import { getPendingTransactions } from "@/lib/actions/transactions";
 import { getDiscoveryCandidates, getTaxonomyOptions } from "@/lib/actions/discovery";
 import { TransactionList } from "../transactions/transaction-list";
@@ -7,8 +8,18 @@ import { Switch } from "@/components/ui/switch";
 import { BulkConfirmButton } from "@/components/transactions/bulk-confirm-button";
 import { RuleDiscoveryCard } from "@/components/confirm/rule-discovery-card";
 import { ReRunRulesButton } from "@/components/transactions/re-run-rules-button";
+import Link from "next/link";
 
 export default async function ConfirmPage() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <p className="text-muted-foreground font-bold">Por favor, faça login para acessar a fila de revisão.</p>
+      </div>
+    );
+  }
+
   const transactions = await getPendingTransactions();
   const highConfidenceCount = transactions.filter(tx => (tx.confidence || 0) >= 80).length;
   
@@ -98,7 +109,7 @@ export default async function ConfirmPage() {
               Não encontramos padrões não categorizados nem revisões pendentes. Seu sistema está otimizado.
             </p>
             <Button className="mt-12 h-16 px-12 bg-foreground text-background rounded-2xl font-bold transition-all shadow-xl hover:opacity-90 active:scale-95 text-base" asChild>
-              <a href="/">Voltar ao Painel</a>
+              <Link href="/">Voltar ao Painel</Link>
             </Button>
           </div>
         </div>

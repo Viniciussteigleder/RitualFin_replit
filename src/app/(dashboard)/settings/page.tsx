@@ -1,3 +1,4 @@
+import { auth } from "@/auth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,16 @@ import { cn } from "@/lib/utils";
 import { PreferencesForm } from "@/components/settings/preferences-form";
 import { AssistantSettingsForm } from "@/components/settings/assistant-settings-form";
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <p className="text-muted-foreground font-bold">Por favor, faça login para acessar configurações.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto flex flex-col gap-10 pb-32 px-1 font-sans">
       {/* Page Header Area */}
@@ -136,7 +146,7 @@ export default function SettingsPage() {
                   </p>
                   <div className="space-y-3 mt-6">
                     <Label htmlFor="confirmDelete" className="text-[10px] font-black text-destructive uppercase tracking-widest ml-1">
-                      Digite "EXCLUIR" para confirmar
+                      Digite &quot;EXCLUIR&quot; para confirmar
                     </Label>
                     <Input
                       id="confirmDelete"

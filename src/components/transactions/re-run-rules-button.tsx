@@ -53,6 +53,7 @@ export function ReRunRulesButton() {
         setStatusText("Aguardando...");
     }
     return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- progress is intentionally not a trigger for restarting the animation loop
   }, [isPending, isOpen]);
 
   const handleReRun = () => {

@@ -1,4 +1,5 @@
 
+import { auth } from "@/auth";
 import { getAccounts } from "@/lib/actions/accounts";
 import { 
   Card, 
@@ -36,6 +37,15 @@ const ACCOUNT_FILTER_MAP: Record<string, string> = {
 };
 
 export default async function AccountsPage() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <p className="text-muted-foreground font-bold">Por favor, faça login para ver suas contas.</p>
+      </div>
+    );
+  }
+
   const accounts = await getAccounts();
 
   const formatCurrency = (value: number) => {

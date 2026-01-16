@@ -1,0 +1,25 @@
+
+> rest-express@1.0.1 lint:eslint
+> eslint src next.config.ts drizzle.config.ts playwright.config.ts
+
+
+/Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/src/app/(auth)/login/page.tsx
+  32:13  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/src/app/(dashboard)/analytics/analytics-content.tsx
+  35:6  warning  React Hook useEffect has a missing dependency: 'loadInitialData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/src/app/layout.tsx
+  27:9  warning  Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font  @next/next/no-page-custom-font
+
+/Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/src/components/dashboard/QuickReviewCard.tsx
+  63:41  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/src/components/transactions/TransactionRow.tsx
+  80:25  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/viniciussteigleder/Documents/Web apps - vide coding/RitualFin_replit_local/RitualFin_replit/src/components/transactions/re-run-rules-button.tsx
+  56:6  warning  React Hook useEffect has a missing dependency: 'progress'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+✖ 6 problems (0 errors, 6 warnings)
+
