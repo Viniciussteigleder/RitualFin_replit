@@ -11,6 +11,7 @@ playwright-report
 .env
 .env.local
 .env.*.local
+.env.vercel.*
 .vercel/
 .next/
 
