@@ -464,6 +464,262 @@ export async function getAliases() {
   });
 }
 
+/**
+ * PERFORMANCE OPTIMIZATION: Consolidated spend averages for multiple periods
+ * Reduces from 12 queries (3 periods × 4 category types) to 4 queries
+ * by fetching 12-month data once and computing averages per period on server
+ */
+export async function getSpendAveragesAllPeriods(
+  date?: Date,
+  periods: number[] = [3, 6, 12]
+) {
+  const session = await auth();
+  if (!session?.user?.id) return null;
+  const userId = session.user.id;
+
+  // Use the longest period to fetch all data once
+  const maxMonths = Math.max(...periods, 12);
+  const target = date || new Date();
+  const start = new Date(target.getFullYear(), target.getMonth() - (maxMonths - 1), 1);
+  const end = new Date(target.getFullYear(), target.getMonth() + 1, 0, 23, 59, 59, 999);
+
+  const baseWhere = and(
+    eq(transactions.userId, userId),
+    eq(transactions.type, "Despesa"),
+    gte(transactions.paymentDate, start),
+    sql`${transactions.paymentDate} <= ${end}`,
+    eq(transactions.internalTransfer, false),
+    sql`(${transactions.category1} IS NULL OR ${transactions.category1} <> 'Interno')`,
+    ne(transactions.display, "no")
+  );
+
+  // Fetch month-by-month totals per category (single query per category type)
+  const monthExpr = sql<string>`TO_CHAR(date_trunc('month', ${transactions.paymentDate}), 'YYYY-MM')`;
+
+  const queryMonthly = async (label: any) => {
+    return await db
+      .select({
+        name: label,
+        month: monthExpr,
+        total: sql<number>`ABS(SUM(${transactions.amount}))`,
+      })
+      .from(transactions)
+      .where(baseWhere)
+      .groupBy(label, monthExpr)
+      .orderBy(label, monthExpr);
+  };
+
+  const appCategoryLabel = sql<string>`COALESCE(${transactions.appCategoryName}, 'OPEN')`;
+  const category1Label = sql<string>`COALESCE(CAST(${transactions.category1} AS text), 'OPEN')`;
+  const category2Label = sql<string>`COALESCE(${transactions.category2}, 'OPEN')`;
+  const category3Label = sql<string>`COALESCE(${transactions.category3}, 'OPEN')`;
+
+  const [appCatMonthly, cat1Monthly, cat2Monthly, cat3Monthly] = await Promise.all([
+    queryMonthly(appCategoryLabel),
+    queryMonthly(category1Label),
+    queryMonthly(category2Label),
+    queryMonthly(category3Label),
+  ]);
+
+  // Aggregate per period
+  const aggregateForPeriod = (
+    monthlyData: { name: string; month: string; total: number }[],
+    months: number
+  ) => {
+    const cutoffDate = new Date(target.getFullYear(), target.getMonth() - (months - 1), 1);
+    const cutoffMonth = `${cutoffDate.getFullYear()}-${String(cutoffDate.getMonth() + 1).padStart(2, "0")}`;
+
+    const filtered = monthlyData.filter(r => r.month >= cutoffMonth);
+    const byName = new Map<string, number>();
+    for (const r of filtered) {
+      byName.set(r.name, (byName.get(r.name) || 0) + Number(r.total));
+    }
+
+    return Array.from(byName.entries())
+      .map(([name, total]) => ({
+        name,
+        average: total / months,
+        total,
+      }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 50);
+  };
+
+  const result: Record<number, {
+    months: number;
+    range: { start: Date; end: Date };
+    appCategory: { name: string; average: number; total: number }[];
+    category1: { name: string; average: number; total: number }[];
+    category2: { name: string; average: number; total: number }[];
+    category3: { name: string; average: number; total: number }[];
+  }> = {};
+
+  for (const months of periods) {
+    const periodStart = new Date(target.getFullYear(), target.getMonth() - (months - 1), 1);
+    result[months] = {
+      months,
+      range: { start: periodStart, end },
+      appCategory: aggregateForPeriod(appCatMonthly.map(r => ({ ...r, total: Number(r.total) })), months),
+      category1: aggregateForPeriod(cat1Monthly.map(r => ({ ...r, total: Number(r.total) })), months),
+      category2: aggregateForPeriod(cat2Monthly.map(r => ({ ...r, total: Number(r.total) })), months),
+      category3: aggregateForPeriod(cat3Monthly.map(r => ({ ...r, total: Number(r.total) })), months),
+    };
+  }
+
+  return result;
+}
+
+/**
+ * PERFORMANCE OPTIMIZATION: Lightweight transaction list for UI
+ * Returns only essential fields for list view, reducing payload by ~60%
+ * Full details should be fetched on-demand when drawer opens
+ */
+export async function getTransactionsForList(
+  input: { limit?: number; sources?: string[]; cursor?: string } = {}
+) {
+  const session = await auth();
+  if (!session?.user?.id) return { items: [], nextCursor: null, hasMore: false };
+
+  const userId = session.user.id;
+  const limit = input.limit ?? 50;
+  const sources = input.sources;
+
+  const sourceClause = sources?.length
+    ? sql`AND t.source IN (${sql.join(sources.map((s) => sql`${s}`), sql`, `)})`
+    : sql``;
+
+  const cursorClause = input.cursor
+    ? sql`AND (t.payment_date, t.id) < (${new Date(input.cursor.split('_')[0]!)}, ${input.cursor.split('_')[1]})`
+    : sql``;
+
+  // Select only essential fields for list view
+  const result = await db.execute(sql`
+    SELECT
+      t.id,
+      t.payment_date,
+      t.desc_norm,
+      t.alias_desc,
+      t.simple_desc,
+      t.amount,
+      t.type,
+      t.source,
+      t.needs_review,
+      t.conflict_flag,
+      t.recurring_flag,
+      t.app_category_name,
+      t.category_1,
+      t.manual_override,
+      COALESCE(t.app_category_name, 'OPEN') as app_category
+    FROM transactions t
+    WHERE t.user_id = ${userId}
+    AND t.display != 'no'
+    ${sourceClause}
+    ${cursorClause}
+    ORDER BY t.payment_date DESC, t.id DESC
+    LIMIT ${limit + 1}
+  `);
+
+  const rows = result.rows as any[];
+  const hasMore = rows.length > limit;
+  const items = rows.slice(0, limit).map((row: any) => ({
+    id: row.id,
+    paymentDate: row.payment_date,
+    descNorm: row.desc_norm,
+    aliasDesc: row.alias_desc,
+    simpleDesc: row.simple_desc,
+    amount: row.amount,
+    type: row.type,
+    source: row.source,
+    needsReview: row.needs_review,
+    conflictFlag: row.conflict_flag,
+    recurringFlag: row.recurring_flag,
+    appCategoryName: row.app_category_name,
+    category1: row.category_1,
+    manualOverride: row.manual_override,
+    appCategory: row.app_category,
+  }));
+
+  const lastItem = items[items.length - 1];
+  const nextCursor = hasMore && lastItem
+    ? `${new Date(lastItem.paymentDate).toISOString()}_${lastItem.id}`
+    : null;
+
+  return { items, nextCursor, hasMore };
+}
+
+/**
+ * Fetch full transaction details on demand (for drawer/detail view)
+ */
+export async function getTransactionDetail(transactionId: string) {
+  const session = await auth();
+  if (!session?.user?.id) return null;
+
+  const result = await db.execute(sql`
+    SELECT
+      t.*,
+      COALESCE(t1.nivel_1_pt, 'OPEN') as level_1,
+      COALESCE(t2.nivel_2_pt, 'OPEN') as level_2,
+      COALESCE(tl.nivel_3_pt, 'OPEN') as level_3,
+      COALESCE(t.app_category_name, 'OPEN') as app_category,
+      r.key_words as rule_keywords,
+      r.category_1 as rule_category_1,
+      r.category_2 as rule_category_2,
+      r.category_3 as rule_category_3
+    FROM transactions t
+    LEFT JOIN taxonomy_leaf tl ON t.leaf_id = tl.leaf_id
+    LEFT JOIN taxonomy_level_2 t2 ON tl.level_2_id = t2.level_2_id
+    LEFT JOIN taxonomy_level_1 t1 ON t2.level_1_id = t1.level_1_id
+    LEFT JOIN rules r ON t.rule_id_applied = r.id
+    WHERE t.id = ${transactionId}
+    AND t.user_id = ${session.user.id}
+    LIMIT 1
+  `);
+
+  if (!result.rows.length) return null;
+
+  const row = result.rows[0] as any;
+  return {
+    ...row,
+    paymentDate: row.payment_date,
+    descRaw: row.desc_raw,
+    descNorm: row.desc_norm,
+    simpleDesc: row.simple_desc,
+    aliasDesc: row.alias_desc,
+    leafId: row.leaf_id,
+    classifiedBy: row.classified_by,
+    recurringFlag: row.recurring_flag,
+    recurringGroupId: row.recurring_group_id,
+    recurringConfidence: row.recurring_confidence,
+    recurringDayOfMonth: row.recurring_day_of_month,
+    recurringDayWindow: row.recurring_day_window,
+    fixVar: row.fix_var,
+    category1: row.category_1,
+    category2: row.category_2,
+    category3: row.category_3,
+    manualOverride: row.manual_override,
+    internalTransfer: row.internal_transfer,
+    excludeFromBudget: row.exclude_from_budget,
+    needsReview: row.needs_review,
+    ruleIdApplied: row.rule_id_applied,
+    uploadId: row.upload_id,
+    suggestedKeyword: row.suggested_keyword,
+    matchedKeyword: row.matched_keyword,
+    appCategoryId: row.app_category_id,
+    appCategoryName: row.app_category_name,
+    conflictFlag: row.conflict_flag,
+    classificationCandidates: row.classification_candidates,
+    userId: row.user_id,
+    level1: row.level_1,
+    level2: row.level_2,
+    level3: row.level_3,
+    appCategory: row.app_category,
+    ruleKeywords: row.rule_keywords,
+    ruleCategory1: row.rule_category_1,
+    ruleCategory2: row.rule_category_2,
+    ruleCategory3: row.rule_category_3,
+  };
+}
+
 export async function createRuleAndApply(
   transactionId: string,
   keyword: string,
