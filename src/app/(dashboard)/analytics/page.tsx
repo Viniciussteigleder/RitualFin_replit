@@ -62,3 +62,5 @@ export default async function AnalyticsPage() {
     </div>
   );
 }
+
+export const dynamic = 'force-dynamic';

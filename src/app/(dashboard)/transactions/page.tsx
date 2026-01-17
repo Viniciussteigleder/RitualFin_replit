@@ -61,3 +61,5 @@ export default async function TransactionsPage({
     </PageContainer>
   );
 }
+
+export const dynamic = 'force-dynamic';

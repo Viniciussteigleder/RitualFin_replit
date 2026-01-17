@@ -46,3 +46,5 @@ export default async function UploadsPage() {
     </PageContainer>
   );
 }
+
+export const dynamic = 'force-dynamic';

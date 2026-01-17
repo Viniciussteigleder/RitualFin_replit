@@ -66,3 +66,5 @@ export default async function RulesPage() {
     </div>
   );
 }
+
+export const dynamic = 'force-dynamic';

@@ -36,3 +36,5 @@ export default async function AgendaPage() {
     </PageContainer>
   );
 }
+
+export const dynamic = 'force-dynamic';

@@ -88,3 +88,5 @@ export default async function DiagnosePage() {
     </div>
   );
 }
+
+export const dynamic = 'force-dynamic';

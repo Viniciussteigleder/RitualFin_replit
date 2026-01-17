@@ -212,3 +212,5 @@ export default async function EventDetailPage(props: {
     </div>
   );
 }
+
+export const dynamic = 'force-dynamic';

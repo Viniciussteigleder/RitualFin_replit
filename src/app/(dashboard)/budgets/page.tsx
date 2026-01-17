@@ -52,3 +52,5 @@ export default async function BudgetsPage() {
     </div>
   );
 }
+
+export const dynamic = 'force-dynamic';

@@ -161,3 +161,5 @@ export default async function AccountsPage() {
     </PageContainer>
   );
 }
+
+export const dynamic = 'force-dynamic';

@@ -78,3 +78,5 @@ export default async function GoalsPage() {
     </div>
   );
 }
+
+export const dynamic = 'force-dynamic';

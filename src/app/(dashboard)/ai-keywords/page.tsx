@@ -58,3 +58,5 @@ export default async function AIKeywordsPage() {
     </div>
   );
 }
+
+export const dynamic = 'force-dynamic';

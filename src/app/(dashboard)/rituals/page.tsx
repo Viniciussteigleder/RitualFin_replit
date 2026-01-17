@@ -75,3 +75,5 @@ export default async function RitualsPage() {
     </div>
   );
 }
+
+export const dynamic = 'force-dynamic';

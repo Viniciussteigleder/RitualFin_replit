@@ -148,3 +148,5 @@ export default async function CalendarPage({
     </div>
   );
 }
+
+export const dynamic = 'force-dynamic';

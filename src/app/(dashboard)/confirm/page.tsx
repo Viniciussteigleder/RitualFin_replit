@@ -69,3 +69,5 @@ export default async function ConfirmPage() {
     </PageContainer>
   );
 }
+
+export const dynamic = 'force-dynamic';

@@ -23,3 +23,5 @@ export default async function RulesStudioPage() {
   return <RulesStudioClient />;
 }
 
+export const dynamic = 'force-dynamic';
+
