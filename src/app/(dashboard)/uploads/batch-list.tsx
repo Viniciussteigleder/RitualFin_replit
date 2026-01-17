@@ -1,67 +1,65 @@
 import { getIngestionBatches, commitBatch, rollbackBatch } from "@/lib/actions/ingest";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Undo2, CheckCircle2, AlertCircle, Clock, FileText, Play, ChevronRight, Info } from "lucide-react";
+import { Undo2, CheckCircle2, AlertCircle, Clock, FileText, Play, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export async function BatchList() {
     const batches = await getIngestionBatches();
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-slate-900">Recent Activity</h2>
-                <Badge variant="outline" className="text-slate-400 border-slate-200">{batches.length} Imports</Badge>
+                <h2 className="text-base font-semibold text-foreground">Atividade Recente</h2>
+                <Badge variant="outline" className="text-muted-foreground">{batches.length} importações</Badge>
             </div>
 
-            <div className="grid gap-4">
+            <div className="grid gap-3">
                 {batches.length === 0 ? (
-                    <Card className="border-dashed bg-slate-50/50">
-                        <CardContent className="py-12 text-center text-slate-500">
-                            <FileText className="h-8 w-8 mx-auto mb-3 opacity-20" />
-                            <p className="font-medium text-sm">No import history found.</p>
-                        </CardContent>
-                    </Card>
+                    <div className="border border-dashed border-border rounded-xl bg-secondary/30 py-10 text-center">
+                        <FileText className="h-6 w-6 mx-auto mb-2 text-muted-foreground/40" />
+                        <p className="text-sm text-muted-foreground">Nenhuma importação encontrada.</p>
+                    </div>
                 ) : null}
 
                 {batches.map(batch => (
                     <Card key={batch.id} className={cn(
-                        "group overflow-hidden transition-all hover:shadow-md border-slate-200",
-                        batch.status === "preview" ? "border-amber-200 bg-amber-50/30" : ""
+                        "overflow-hidden transition-colors",
+                        batch.status === "preview" && "border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20"
                     )}>
                         <CardContent className="p-0">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between p-5 gap-4">
-                                <div className="flex items-start gap-4">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between p-4 gap-3">
+                                <div className="flex items-start gap-3">
                                     <div className={cn(
-                                        "p-3 rounded-2xl shrink-0 group-hover:scale-110 transition-transform",
-                                        batch.status === "committed" ? "bg-emerald-100 text-emerald-600" :
-                                        batch.status === "error" ? "bg-rose-100 text-rose-600" :
-                                        "bg-amber-100 text-amber-600"
+                                        "p-2.5 rounded-xl shrink-0",
+                                        batch.status === "committed" && "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
+                                        batch.status === "error" && "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400",
+                                        batch.status === "preview" && "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400"
                                     )}>
-                                        {batch.status === "committed" ? <CheckCircle2 className="h-5 w-5" /> :
-                                         batch.status === "error" ? <AlertCircle className="h-5 w-5" /> :
-                                         <Clock className="h-5 w-5" />}
+                                        {batch.status === "committed" ? <CheckCircle2 className="h-4 w-4" /> :
+                                         batch.status === "error" ? <AlertCircle className="h-4 w-4" /> :
+                                         <Clock className="h-4 w-4" />}
                                     </div>
-                                    <div className="space-y-1">
-                                        <div className="font-bold text-slate-900 flex items-center gap-2">
-                                            {batch.filename}
-                                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-slate-100 text-slate-500 font-bold uppercase tracking-tight">
+                                    <div className="space-y-1 min-w-0">
+                                        <div className="font-medium text-foreground text-sm flex items-center gap-2 flex-wrap">
+                                            <span className="truncate">{batch.filename}</span>
+                                            <Badge variant="secondary" className="text-[9px] px-1.5 py-0 font-medium uppercase tracking-wide">
                                                 {batch.sourceType || "Upload"}
                                             </Badge>
                                         </div>
-                                        <div className="text-xs text-slate-500 flex items-center gap-2 font-medium">
-                                            <span>{new Date(batch.createdAt).toLocaleDateString()}</span>
-                                            <span className="text-slate-300">•</span>
+                                        <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+                                            <span>{new Date(batch.createdAt).toLocaleDateString("pt-BR")}</span>
+                                            <span className="text-border">•</span>
                                             <span className="flex items-center gap-1">
                                                 <FileText className="h-3 w-3" />
-                                                {batch.items.length} items
+                                                {batch.items.length} itens
                                             </span>
                                             {((batch.diagnosticsJson as any)?.duplicates > 0) && (
                                                 <>
-                                                    <span className="text-slate-300">•</span>
-                                                    <span className="text-amber-600 font-bold">
-                                                        {(batch.diagnosticsJson as any).duplicates} duplicates
+                                                    <span className="text-border">•</span>
+                                                    <span className="text-amber-600 dark:text-amber-400 font-medium">
+                                                        {(batch.diagnosticsJson as any).duplicates} duplicados
                                                     </span>
                                                 </>
                                             )}
@@ -69,48 +67,51 @@ export async function BatchList() {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-3 ml-auto md:ml-0">
+                                <div className="flex items-center gap-2 ml-auto md:ml-0">
                                     <Badge variant="secondary" className={cn(
-                                        "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border-none",
-                                        batch.status === "committed" && "bg-emerald-50 text-emerald-700",
-                                        batch.status === "error" && "bg-rose-50 text-rose-700",
-                                        (batch.status === "preview") && "bg-amber-50 text-amber-700 animate-pulse"
+                                        "px-2.5 py-0.5 rounded-lg text-[10px] font-medium uppercase tracking-wide border-none",
+                                        batch.status === "committed" && "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+                                        batch.status === "error" && "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
+                                        batch.status === "preview" && "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
                                     )}>
-                                        {(batch.status === "preview") ? "Ready to import" : batch.status}
+                                        {batch.status === "preview" ? "Pronto para importar" :
+                                         batch.status === "committed" ? "Importado" :
+                                         batch.status === "error" ? "Erro" : batch.status}
                                     </Badge>
 
-                                    {(batch.status === "preview") ? (
+                                    {batch.status === "preview" && (
                                         <form action={async () => {
                                             "use server";
                                             await commitBatch(batch.id);
                                         }}>
-                                            <Button size="sm" className="bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl px-4 font-bold shadow-lg shadow-emerald-200 border-none group/btn">
-                                                Process & Import <Play className="ml-2 h-3 w-3 fill-current transition-transform group-hover/btn:translate-x-0.5" />
+                                            <Button size="sm" className="bg-primary hover:bg-primary/90 rounded-lg px-3 h-8 text-xs font-medium">
+                                                Importar <Play className="ml-1.5 h-3 w-3 fill-current" />
                                             </Button>
                                         </form>
-                                    ) : batch.status === "committed" ? (
+                                    )}
+                                    {batch.status === "committed" && (
                                         <form action={async () => {
                                             "use server";
                                             await rollbackBatch(batch.id);
                                         }}>
-                                            <Button size="sm" variant="ghost" className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl font-bold text-xs ring-1 ring-rose-200">
-                                                <Undo2 className="h-4 w-4 mr-1" /> Rollback
+                                            <Button size="sm" variant="ghost" className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-lg h-8 text-xs font-medium">
+                                                <Undo2 className="h-3 w-3 mr-1" /> Desfazer
                                             </Button>
                                         </form>
-                                    ) : null}
+                                    )}
                                 </div>
                             </div>
-                            
+
                             {/* Diagnostic Report Area */}
                             {batch.status === "preview" && !!batch.diagnosticsJson && (
-                                <div className="bg-white/50 border-t border-slate-100 p-4 pt-0">
-                                    <div className="p-4 bg-slate-900/5 rounded-2xl flex items-start gap-3 mt-4">
-                                        <Info className="h-4 w-4 text-slate-400 mt-1 shrink-0" />
-                                        <div className="space-y-1">
-                                            <div className="text-xs font-bold text-slate-900 uppercase tracking-widest">Parsing Insights</div>
-                                            <div className="text-[11px] text-slate-500 leading-relaxed italic">
-                                                Automatically detected format: <span className="text-slate-900 font-bold">{(batch.diagnosticsJson as any).format || "Standard CSV"}</span>. 
-                                                All financial fields extracted successfully. {(batch.diagnosticsJson as any).duplicates || 0} records skipped to prevent double counting.
+                                <div className="border-t border-border px-4 pb-4">
+                                    <div className="p-3 bg-secondary/50 rounded-xl flex items-start gap-2 mt-3">
+                                        <Info className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+                                        <div className="space-y-0.5">
+                                            <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Detalhes do Arquivo</div>
+                                            <div className="text-xs text-muted-foreground leading-relaxed">
+                                                Formato detectado: <span className="text-foreground font-medium">{(batch.diagnosticsJson as any).format || "CSV padrão"}</span>.
+                                                {(batch.diagnosticsJson as any).duplicates || 0} registros duplicados ignorados.
                                             </div>
                                         </div>
                                     </div>
