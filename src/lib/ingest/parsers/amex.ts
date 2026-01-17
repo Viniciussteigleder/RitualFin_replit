@@ -20,21 +20,53 @@ const formatDateIso = (date: Date): string => {
 
 export async function parseAmexActivityCSV(content: string): Promise<ParseResult> {
   try {
+    const headerLine = findHeaderLine(content);
+    const delimiter = detectDelimiter(headerLine) ?? ",";
+
     const records = parse(content, {
       columns: true,
       skip_empty_lines: true,
-      delimiter: ",",
+      delimiter,
       relax_quotes: true,
       trim: true
     });
 
+    if (!Array.isArray(records) || records.length === 0) {
+      return {
+        success: false,
+        errors: ["No rows found after parsing. Check delimiter/encoding (Amex exports are often ';' separated or UTF-16)."],
+        transactions: [],
+        rowsTotal: 0,
+        rowsImported: 0,
+        monthAffected: "",
+        format: "amex",
+        meta: {
+          delimiter,
+          warnings: [],
+          hasMultiline: false,
+          headersFound: headerLine ? splitHeaderColumns(headerLine, delimiter) : [],
+        },
+        diagnostics: {
+          headerMatch: {
+            found: headerLine ? splitHeaderColumns(headerLine, delimiter) : [],
+            missing: [],
+            extra: [],
+          },
+        },
+      };
+    }
+
     const transactions: ParsedTransaction[] = records.map((record: any) => {
-        const dateStr = record["Datum"]; 
-        const amountStr = record["Betrag"]; 
-        const beschreibung = record["Beschreibung"] || "";
-        const konto = record["Konto"] || "";
-        const karteninhaber = record["Karteninhaber"] || "";
-        const betreff = record["Betreff"] || "";
+        const dateStr = record["Datum"] ?? record["Date"];
+        const amountStr = record["Betrag"] ?? record["Amount"];
+        const beschreibung = record["Beschreibung"] ?? record["Description"] ?? "";
+        const konto = record["Konto"] ?? record["Account"] ?? "";
+        const karteninhaber = record["Karteninhaber"] ?? record["Cardholder"] ?? "";
+        const betreff = record["Betreff"] ?? record["Subject"] ?? "";
+        const kartennummer = record["Kartennummer"] ?? record["Card Number"] ?? "";
+        const referenz = record["Referenz"] ?? record["Reference"] ?? "";
+        const ort = record["Ort"] ?? record["City"] ?? "";
+        const staat = record["Staat"] ?? record["Country"] ?? "";
         
         // Amex CSV: Expenses are Positive, we invert to Negative.
         // Credits/Refunds are Negative, we invert to Positive.
@@ -78,6 +110,14 @@ export async function parseAmexActivityCSV(content: string): Promise<ParseResult
             keyDesc: keyDesc, // EXPLICITLY SET
             key: key,         // EXPLICITLY SET
             metadata: record,
+            datum: formatDateIso(date),
+            beschreibung,
+            betrag: finalAmount.toFixed(2),
+            karteninhaber,
+            kartennummer,
+            referenz,
+            ort,
+            staat,
             // Legacy/Derived
             paymentDate: date,
             descRaw: beschreibung,
@@ -94,7 +134,7 @@ export async function parseAmexActivityCSV(content: string): Promise<ParseResult
         monthAffected: "",
         format: "amex",
         meta: { 
-            delimiter: ",", 
+            delimiter, 
             warnings: [], 
             hasMultiline: false,
             headersFound: Object.keys(records[0] || {})
@@ -108,7 +148,8 @@ export async function parseAmexActivityCSV(content: string): Promise<ParseResult
         transactions: [],
         rowsTotal: 0,
         rowsImported: 0,
-        monthAffected: ""
+        monthAffected: "",
+        format: "amex",
     };
   }
 }
@@ -128,4 +169,26 @@ function parseCommaAmount(amountStr: string): number {
     // "1.234,56" -> 1234.56
     const clean = amountStr.replace(/\./g, "").replace(",", ".");
     return parseFloat(clean);
+}
+
+function findHeaderLine(content: string): string | null {
+  const lines = content.split(/\r?\n/);
+  for (let i = 0; i < Math.min(lines.length, 50); i++) {
+    const line = lines[i]?.trim();
+    if (!line) continue;
+    if (line.includes("Datum") && (line.includes("Betrag") || line.includes("Amount"))) return line;
+  }
+  return null;
+}
+
+function detectDelimiter(headerLine: string | null): string | null {
+  if (!headerLine) return null;
+  const candidates = [",", ";", "\t"];
+  const counts = candidates.map((d) => ({ d, c: headerLine.split(d).length - 1 }));
+  counts.sort((a, b) => b.c - a.c);
+  return counts[0]?.c ? counts[0].d : null;
+}
+
+function splitHeaderColumns(headerLine: string, delimiter: string): string[] {
+  return headerLine.split(delimiter).map((c) => c.trim()).filter(Boolean);
 }

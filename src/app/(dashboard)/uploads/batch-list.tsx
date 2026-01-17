@@ -110,9 +110,32 @@ export async function BatchList() {
                                         <div className="space-y-0.5">
                                             <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Detalhes do Arquivo</div>
                                             <div className="text-xs text-muted-foreground leading-relaxed">
-                                                Formato detectado: <span className="text-foreground font-medium">{(batch.diagnosticsJson as any).format || "CSV padrão"}</span>.
+                                                Formato detectado: <span className="text-foreground font-medium">{(batch.diagnosticsJson as any).format || batch.sourceFormat || "CSV padrão"}</span>.
                                                 {(batch.diagnosticsJson as any).duplicates || 0} registros duplicados ignorados.
                                             </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {batch.status === "error" && !!batch.diagnosticsJson && (
+                                <div className="border-t border-border px-4 pb-4">
+                                    <div className="p-3 bg-rose-50/60 dark:bg-rose-950/20 rounded-xl flex items-start gap-2 mt-3">
+                                        <AlertCircle className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400 mt-0.5 shrink-0" />
+                                        <div className="space-y-1 min-w-0">
+                                            <div className="text-[10px] font-medium text-rose-700/80 dark:text-rose-300/80 uppercase tracking-wide">
+                                                Motivo do erro
+                                            </div>
+                                            <div className="text-xs text-rose-900/80 dark:text-rose-100/80 leading-relaxed">
+                                                {Array.isArray((batch.diagnosticsJson as any).errors) && (batch.diagnosticsJson as any).errors.length > 0
+                                                    ? (batch.diagnosticsJson as any).errors[0]
+                                                    : "Falha durante o processamento do arquivo."}
+                                            </div>
+                                            {((batch.diagnosticsJson as any)?.meta?.delimiter) && (
+                                                <div className="text-[11px] text-rose-900/60 dark:text-rose-100/60">
+                                                    Delimiter: <span className="font-mono">{(batch.diagnosticsJson as any).meta.delimiter}</span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -124,4 +147,3 @@ export async function BatchList() {
         </div>
     );
 }
-

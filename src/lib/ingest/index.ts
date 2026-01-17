@@ -4,10 +4,11 @@ import { parseMilesMoreCSV } from "./parsers/miles-more";
 import { parseAmexActivityCSV } from "./parsers/amex";
 
 export async function parseIngestionFile(buffer: Buffer | string, filename?: string, userId?: string): Promise<ParseResult> {
-    const fileContent = typeof buffer === "string" ? buffer : buffer.toString("utf-8");
+    const fileContent = typeof buffer === "string" ? stripBom(buffer) : decodeBuffer(buffer);
+    const headerLine = findHeaderLine(fileContent);
     
     // Simple heuristic detection
-    if (fileContent.includes("Miles & More Gold Credit Card") || fileContent.includes("Authorised on;Processed on") || filename?.toLowerCase().includes("miles")) {
+    if (fileContent.includes("Miles & More Gold Credit Card") || fileContent.includes("Authorised on") || fileContent.includes("Processed on") || filename?.toLowerCase().includes("miles")) {
         return parseMilesMoreCSV(fileContent);
     }
     
@@ -15,8 +16,12 @@ export async function parseIngestionFile(buffer: Buffer | string, filename?: str
         return parseSparkasseCSV(fileContent);
     }
     
-    // Amex often has "Datum,Beschreibung" or "Kartennummer" (or just "Datum" and comma separated)
-    if (fileContent.includes("Datum,Beschreibung") || fileContent.includes("PAYPAL *") || filename?.toLowerCase().includes("amex")) {
+    // Amex exports can be comma- or semicolon-separated (and sometimes UTF-16).
+    const headerLooksLikeAmex =
+        !!headerLine &&
+        includesAll(headerLine, ["Datum", "Betrag"]) &&
+        (headerLine.includes("Beschreibung") || headerLine.includes("Karteninhaber") || headerLine.includes("Kartennummer"));
+    if (headerLooksLikeAmex || fileContent.includes("PAYPAL *") || filename?.toLowerCase().includes("amex")) {
         return parseAmexActivityCSV(fileContent);
     }
     
@@ -26,6 +31,62 @@ export async function parseIngestionFile(buffer: Buffer | string, filename?: str
         transactions: [],
         rowsTotal: 0,
         rowsImported: 0,
-        monthAffected: ""
+        monthAffected: "",
+        format: "unknown",
+        diagnostics: {
+            headerMatch: {
+                found: headerLine ? splitHeaderColumns(headerLine) : [],
+                missing: [],
+                extra: [],
+            },
+        },
+        meta: {
+            delimiter: detectDelimiter(headerLine) ?? ",",
+            warnings: headerLine ? [] : ["Could not detect a header line in the first 50 lines."],
+            hasMultiline: false,
+            headersFound: headerLine ? splitHeaderColumns(headerLine) : [],
+        },
     };
+}
+
+function stripBom(input: string): string {
+    return input.replace(/^\uFEFF/, "");
+}
+
+function decodeBuffer(buffer: Buffer): string {
+    // Heuristic: if there are a lot of NUL bytes, it's likely UTF-16LE.
+    const sample = buffer.subarray(0, Math.min(buffer.length, 1024));
+    let nulCount = 0;
+    for (const byte of sample) {
+        if (byte === 0x00) nulCount++;
+    }
+    const encoding = nulCount > sample.length * 0.1 ? "utf16le" : "utf8";
+    return stripBom(buffer.toString(encoding as BufferEncoding));
+}
+
+function findHeaderLine(content: string): string | null {
+    const lines = content.split(/\r?\n/);
+    for (let i = 0; i < Math.min(lines.length, 50); i++) {
+        const line = lines[i]?.trim();
+        if (!line) continue;
+        if (line.includes("Auftragskonto") || line.includes("Authorised on") || line.includes("Datum")) return line;
+    }
+    return null;
+}
+
+function detectDelimiter(headerLine: string | null): string | null {
+    if (!headerLine) return null;
+    const candidates = [",", ";", "\t"];
+    const counts = candidates.map((d) => ({ d, c: headerLine.split(d).length - 1 }));
+    counts.sort((a, b) => b.c - a.c);
+    return counts[0]?.c ? counts[0].d : null;
+}
+
+function splitHeaderColumns(headerLine: string): string[] {
+    const delimiter = detectDelimiter(headerLine) ?? ",";
+    return headerLine.split(delimiter).map((c) => c.trim()).filter(Boolean);
+}
+
+function includesAll(haystack: string, needles: string[]): boolean {
+    return needles.every((n) => haystack.includes(n));
 }

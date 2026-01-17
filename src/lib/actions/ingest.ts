@@ -11,6 +11,24 @@ import { categorizeTransaction, AI_SEED_RULES, matchAlias } from "@/lib/rules/en
 import { ensureOpenCategoryCore } from "@/lib/actions/setup-open";
 import { buildLeafHierarchyMaps } from "@/lib/taxonomy/hierarchy";
 import { resolveLeafFromMatches } from "@/lib/rules/leaf-resolution";
+import { logger } from "@/lib/ingest/logger";
+
+type UploadIngestionResult =
+  | {
+      success: true;
+      batchId: string;
+      newItems: number;
+      duplicates: number;
+      format?: string;
+      warnings?: string[];
+    }
+  | {
+      success: false;
+      error: string;
+      code?: string;
+      batchId?: string;
+      details?: any;
+    };
 
 function parseEuropeanNumber(input: unknown): number {
   if (typeof input === "number") return input;
@@ -37,8 +55,31 @@ function parseEuropeanNumber(input: unknown): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function getErrorMessage(error: unknown): string {
+  if (error && typeof error === "object" && "message" in error && typeof (error as any).message === "string") {
+    return (error as any).message;
+  }
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
+}
+
+function txForDb(tx: any) {
+  const safe: any = { ...tx };
+  for (const key of Object.keys(safe)) {
+    const val = safe[key];
+    if (val instanceof Date) safe[key] = val.toISOString();
+  }
+  if (tx?.date instanceof Date) safe.date = tx.date.toISOString();
+  if (tx?.paymentDate instanceof Date) safe.paymentDate = tx.paymentDate.toISOString();
+  if (tx?.bookingDate instanceof Date) safe.bookingDate = tx.bookingDate.toISOString();
+  return safe;
+}
+
 // Core function for scripting/internal use
-export async function uploadIngestionFileCore(userId: string, buffer: Buffer, filename: string) {
+export async function uploadIngestionFileCore(userId: string, buffer: Buffer, filename: string): Promise<UploadIngestionResult> {
   // 1. Create Ingestion Batch
   const [batch] = await db.insert(ingestionBatches).values({
     userId,
@@ -51,31 +92,59 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
 
 
   try {
+    logger.info("ingest.upload.start", { userId, batchId: batch.id, filename });
     // 2. Parse File
     const result = await parseIngestionFile(buffer, filename, userId);
 
     if (!result.success) {
+      const rawError = result.errors.join(", ");
+      const friendly =
+        rawError.includes("Unknown CSV format")
+          ? "Formato de CSV não reconhecido. Verifique se o arquivo foi exportado como CSV e se é de Amex, Miles & More ou Sparkasse."
+          : rawError;
       await db.update(ingestionBatches)
-        .set({ status: "error", diagnosticsJson: { errors: result.errors } as any })
+        .set({
+          status: "error",
+          sourceFormat: result.format ?? null,
+          diagnosticsJson: { errors: result.errors, format: result.format, diagnostics: result.diagnostics, meta: result.meta } as any
+        })
         .where(eq(ingestionBatches.id, batch.id));
-      return { error: result.errors.join(", ") };
+      logger.warn("ingest.parse.failed", { userId, batchId: batch.id, errors: result.errors, format: result.format });
+      return {
+        success: false,
+        code: "PARSE_FAILED",
+        batchId: batch.id,
+        error: friendly,
+        details: { diagnostics: result.diagnostics, meta: result.meta, format: result.format },
+      };
     }
 
     // 3. Process Items & Deduplicate with Source CSV Tables
     if (result.transactions.length === 0) {
       await db.update(ingestionBatches)
         .set({
-          status: "preview",
+          status: "error",
+          sourceFormat: result.format ?? null,
           diagnosticsJson: {
             rowsTotal: result.rowsTotal,
             newCount: 0,
             duplicates: 0,
-            diagnostics: result.diagnostics
+            format: result.format,
+            errors: ["No transactions detected after parsing. Check delimiter/encoding, or export as CSV."],
+            diagnostics: result.diagnostics,
+            meta: result.meta
           } as any
         })
         .where(eq(ingestionBatches.id, batch.id));
 
-      return { success: true, batchId: batch.id, newItems: 0, duplicates: 0 };
+      logger.warn("ingest.parse.zero_transactions", { userId, batchId: batch.id, format: result.format });
+      return {
+        success: false,
+        code: "NO_TRANSACTIONS",
+        batchId: batch.id,
+        error: "Nenhuma transação encontrada no arquivo. Verifique se o CSV está no formato correto (delimiter e encoding).",
+        details: { diagnostics: result.diagnostics, meta: result.meta, format: result.format },
+      };
     }
 
     const txWithFingerprint = result.transactions.map((tx) => ({ tx, fingerprint: generateFingerprint(tx) }));
@@ -137,8 +206,8 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
         const [item] = await txDb.insert(ingestionItems).values({
         batchId: batch.id,
         itemFingerprint: fingerprint,
-        rawPayload: tx,
-        parsedPayload: tx,
+        rawPayload: txForDb(tx),
+        parsedPayload: txForDb(tx),
         status: isUnique ? "pending" : "duplicate", // Mark status based on uniqueness
         source: result.format || "unknown"
       }).returning();
@@ -159,7 +228,7 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
           await txDb.insert(sourceCsvSparkasse).values({
               ...commonFields,
               auftragskonto: tx.auftragskonto,
-              buchungstag: tx.buchungstag ? new Date(tx.buchungstag) : null,
+              buchungstag: (tx.buchungstag ? new Date(tx.buchungstag) : (tx.date instanceof Date ? tx.date : null)) as any,
               valutadatum: tx.valutadatum ? new Date(tx.valutadatum) : null,
               buchungstext: tx.buchungstext,
               verwendungszweck: tx.verwendungszweck,
@@ -172,8 +241,8 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
               beguenstigterZahlungspflichtiger: tx.beguenstigterZahlungspflichtiger,
               iban: tx.iban,
               bic: tx.bic,
-              betrag: parseEuropeanNumber(tx.betrag),
-              waehrung: tx.waehrung,
+              betrag: parseEuropeanNumber(tx.betrag ?? tx.amount),
+              waehrung: tx.waehrung ?? tx.currency,
               info: tx.info
           });
         } else if (result.format === "miles_and_more") {
@@ -190,9 +259,9 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
         } else if (result.format === "amex") {
            await txDb.insert(sourceCsvAmex).values({
               ...commonFields,
-              datum: tx.datum ? new Date(tx.datum) : null,
-              beschreibung: tx.beschreibung,
-              betrag: parseEuropeanNumber(tx.betrag),
+              datum: (tx.datum ? new Date(tx.datum) : (tx.date instanceof Date ? tx.date : null)) as any,
+              beschreibung: tx.beschreibung ?? tx.description,
+              betrag: parseEuropeanNumber(tx.betrag ?? tx.amount),
               karteninhaber: tx.karteninhaber,
               kartennummer: tx.kartennummer,
               referenz: tx.referenz,
@@ -205,11 +274,14 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
       await txDb.update(ingestionBatches)
         .set({
           status: "preview",
+          sourceFormat: result.format ?? null,
           diagnosticsJson: {
             rowsTotal: result.rowsTotal,
             newCount,
             duplicates: dupCount,
-            diagnostics: result.diagnostics
+            format: result.format,
+            diagnostics: result.diagnostics,
+            meta: result.meta
           } as any
         })
         .where(eq(ingestionBatches.id, batch.id));
@@ -217,23 +289,25 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
       return { dupCount, newCount };
     });
 
-    return { success: true, batchId: batch.id, newItems: counts.newCount, duplicates: counts.dupCount };
+    logger.info("ingest.upload.success", { userId, batchId: batch.id, newItems: counts.newCount, duplicates: counts.dupCount, format: result.format });
+    return { success: true, batchId: batch.id, newItems: counts.newCount, duplicates: counts.dupCount, format: result.format };
 
   } catch (error: any) {
-    console.error("Ingestion error:", error);
+    const message = getErrorMessage(error);
+    logger.error("ingest.upload.exception", { userId, batchId: batch.id }, message);
     await db.update(ingestionBatches)
-      .set({ status: "error", diagnosticsJson: { errors: [error.message] } as any })
+      .set({ status: "error", diagnosticsJson: { errors: [message] } as any })
       .where(eq(ingestionBatches.id, batch.id));
-    return { error: "Internal server error during processing" };
+    return { success: false, code: "INTERNAL", batchId: batch.id, error: message || "Internal server error during processing" };
   }
 }
 
-export async function uploadIngestionFile(formData: FormData) {
+export async function uploadIngestionFile(formData: FormData): Promise<UploadIngestionResult> {
   const session = await auth();
-  if (!session?.user?.id) return { error: "Unauthorized" };
+  if (!session?.user?.id) return { success: false, code: "UNAUTHORIZED", error: "Unauthorized" };
 
   const file = formData.get("file") as File;
-  if (!file) return { error: "No file provided" };
+  if (!file) return { success: false, code: "NO_FILE", error: "No file provided" };
 
   const buffer = Buffer.from(await file.arrayBuffer());
   const filename = file.name;

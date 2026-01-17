@@ -11,41 +11,53 @@ import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useImportWizardOptional } from "@/components/imports/import-wizard";
 
 export function CSVForm({ onUploadSuccess }: { onUploadSuccess?: (batchId: string) => void }) {
     const [isDragging, setIsDragging] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [lastUpload, setLastUpload] = useState<null | { batchId: string; newItems: number; duplicates: number }>(null);
+    const [lastError, setLastError] = useState<null | { message: string; batchId?: string; details?: any }>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const router = useRouter();
+    const wizard = useImportWizardOptional();
 
     async function handleFile(file: File) {
         if (!file.name.endsWith(".csv")) {
             toast.error("Selecione um arquivo CSV (.csv)");
             return;
         }
+        if (file.size > 10 * 1024 * 1024) {
+            toast.error("Arquivo muito grande. Máximo: 10MB.");
+            return;
+        }
 
         setIsUploading(true);
         setLastUpload(null);
+        setLastError(null);
         const formData = new FormData();
         formData.append("file", file);
 
         try {
             const result = await uploadIngestionFile(formData);
-            if ("success" in result && result.success && "batchId" in result && result.batchId) {
+            if (result.success) {
                 const uploadSummary = {
                     batchId: result.batchId,
-                    newItems: "newItems" in result ? (result.newItems ?? 0) : 0,
-                    duplicates: "duplicates" in result ? (result.duplicates ?? 0) : 0,
+                    newItems: result.newItems ?? 0,
+                    duplicates: result.duplicates ?? 0,
                 };
                 setLastUpload(uploadSummary);
                 toast.success("Upload concluído. Arquivo processado com sucesso.");
                 router.refresh();
-                onUploadSuccess?.(result.batchId);
+                if (onUploadSuccess) onUploadSuccess(result.batchId);
+                else wizard?.completeUpload(result.batchId);
             } else {
-                toast.error(("error" in result && result.error) ? result.error : "Falha no upload");
+                const message = result.error || "Falha no upload";
+                setLastError({ message, batchId: result.batchId, details: result.details });
+                toast.error(message);
             }
         } catch (e) {
+            setLastError({ message: "Erro inesperado durante o upload" });
             toast.error("Erro inesperado durante o upload");
         } finally {
             setIsUploading(false);
@@ -55,6 +67,36 @@ export function CSVForm({ onUploadSuccess }: { onUploadSuccess?: (batchId: strin
 
     return (
         <div className="space-y-4">
+            {lastError && (
+                <div
+                    className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-left"
+                    role="alert"
+                    aria-live="polite"
+                >
+                    <div className="flex items-start gap-3">
+                        <div className="h-2.5 w-2.5 rounded-full bg-rose-600 mt-2 shrink-0" />
+                        <div className="min-w-0 flex-1">
+                            <div className="text-sm font-extrabold text-rose-900">Falha no upload</div>
+                            <div className="mt-1 text-xs font-semibold text-rose-900/80">{lastError.message}</div>
+                            {lastError.batchId ? (
+                                <div className="mt-2 text-[11px] text-rose-900/70">
+                                    Lote: <span className="font-mono">{lastError.batchId}</span>
+                                </div>
+                            ) : null}
+                            {lastError.details?.meta?.delimiter ? (
+                                <div className="mt-2 text-[11px] text-rose-900/70">
+                                    Delimiter detectado: <span className="font-mono">{lastError.details.meta.delimiter}</span>
+                                </div>
+                            ) : null}
+                            {Array.isArray(lastError.details?.meta?.headersFound) && lastError.details.meta.headersFound.length > 0 ? (
+                                <div className="mt-2 text-[11px] text-rose-900/70 truncate">
+                                    Headers: <span className="font-mono">{lastError.details.meta.headersFound.slice(0, 6).join(", ")}{lastError.details.meta.headersFound.length > 6 ? "…" : ""}</span>
+                                </div>
+                            ) : null}
+                        </div>
+                    </div>
+                </div>
+            )}
             {lastUpload && (
                 <div
                     className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-left"

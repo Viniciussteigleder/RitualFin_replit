@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { Check, Upload, Eye, CheckCircle } from "lucide-react";
@@ -13,6 +12,26 @@ type WizardStep = "upload" | "preview" | "confirm";
 interface ImportWizardProps {
   onComplete?: (batchId: string) => void;
   children?: React.ReactNode;
+}
+
+interface ImportWizardContextValue {
+  currentStep: WizardStep;
+  batchId: string | null;
+  completeUpload: (newBatchId: string) => void;
+  goToConfirm: () => void;
+  reset: () => void;
+}
+
+const ImportWizardContext = createContext<ImportWizardContextValue | null>(null);
+
+export function useImportWizard(): ImportWizardContextValue {
+  const ctx = useContext(ImportWizardContext);
+  if (!ctx) throw new Error("useImportWizard must be used within <ImportWizard />");
+  return ctx;
+}
+
+export function useImportWizardOptional(): ImportWizardContextValue | null {
+  return useContext(ImportWizardContext);
 }
 
 export function ImportWizard({ onComplete, children }: ImportWizardProps) {
@@ -29,14 +48,28 @@ export function ImportWizard({ onComplete, children }: ImportWizardProps) {
   const currentStepIndex = steps.findIndex((s) => s.id === currentStep);
   const progress = ((currentStepIndex + 1) / steps.length) * 100;
 
-  const handleUploadComplete = (newBatchId: string) => {
+  const completeUpload = useCallback((newBatchId: string) => {
     setBatchId(newBatchId);
     setCurrentStep("preview");
     router.push(`/imports/${newBatchId}/preview`);
-  };
+  }, [router]);
+
+  const value = useMemo<ImportWizardContextValue>(() => {
+    return {
+      currentStep,
+      batchId,
+      completeUpload,
+      goToConfirm: () => setCurrentStep("confirm"),
+      reset: () => {
+        setCurrentStep("upload");
+        setBatchId(null);
+      },
+    };
+  }, [batchId, completeUpload, currentStep]);
 
   return (
-    <div className="space-y-6">
+    <ImportWizardContext.Provider value={value}>
+      <div className="space-y-6">
       {/* Progress Indicator */}
       <Card className="border-slate-200">
         <CardContent className="p-6">
@@ -102,27 +135,7 @@ export function ImportWizard({ onComplete, children }: ImportWizardProps) {
 
       {/* Step Content */}
       {children}
-    </div>
+      </div>
+    </ImportWizardContext.Provider>
   );
-}
-
-export function useImportWizard() {
-  const [step, setStep] = useState<WizardStep>("upload");
-  const [batchId, setBatchId] = useState<string | null>(null);
-
-  return {
-    step,
-    batchId,
-    setStep,
-    setBatchId,
-    goToPreview: (id: string) => {
-      setBatchId(id);
-      setStep("preview");
-    },
-    goToConfirm: () => setStep("confirm"),
-    reset: () => {
-      setStep("upload");
-      setBatchId(null);
-    },
-  };
 }
