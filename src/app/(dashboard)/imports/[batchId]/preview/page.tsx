@@ -58,6 +58,9 @@ export default async function ImportPreviewPage({ params }: PreviewPageProps) {
                   Este lote pode ainda estar sendo persistido/replicado, ou você pode não ter acesso a ele.
                   Vamos tentar atualizar automaticamente por alguns segundos.
                 </div>
+                <div className="text-sm text-muted-foreground font-medium leading-relaxed">
+                  Dica: volte em <Link href="/uploads" className="text-primary font-bold hover:underline">Uploads</Link> e clique em “Revisar” no cartão em “Atividade Recente”.
+                </div>
                 <div className="text-xs text-muted-foreground">
                   Lote: <span className="font-mono">{params.batchId}</span>
                 </div>

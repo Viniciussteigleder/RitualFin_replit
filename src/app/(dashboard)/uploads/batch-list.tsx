@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Undo2, CheckCircle2, AlertCircle, Clock, FileText, Play, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 export async function BatchList() {
     const batches = await getIngestionBatches();
@@ -80,6 +81,17 @@ export async function BatchList() {
                                          batch.status === "error" ? "Erro" :
                                          batch.status === "processing" ? "Processando" : batch.status}
                                     </Badge>
+
+                                    {(batch.status === "preview" || batch.status === "processing" || batch.status === "error") && (
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="rounded-lg px-3 h-8 text-xs font-medium"
+                                            asChild
+                                        >
+                                            <Link href={`/imports/${batch.id}/preview`}>Revisar</Link>
+                                        </Button>
+                                    )}
 
                                     {batch.status === "preview" && (
                                         <form action={async () => {
