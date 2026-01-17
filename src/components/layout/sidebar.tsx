@@ -19,7 +19,11 @@ import {
   Bot,
   BarChart3,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Activity,
+  Compass,
+  Cog,
+  LucideIcon
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useState, useMemo } from "react";
@@ -144,53 +148,74 @@ export function Sidebar() {
           </div>
 
           {/* Navigation - Scrollable Area */}
-          <nav className="flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar flex-grow">
-            
-            {/* CORE SECTION */}
-            <Collapsible open={coreOpen} onOpenChange={setCoreOpen} className="space-y-1">
-                <CollapsibleTrigger className="flex items-center justify-between w-full px-4 text-[10px] font-extrabold text-muted-foreground/50 uppercase tracking-[0.2em] hover:text-foreground transition-colors mb-2">
-                    Monitoramento
-                    {coreOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-1">
-                    {[
-                        { id: "dashboard", icon: LayoutDashboard, href: "/", label: "Dashboard" },
-                        { id: "analytics", icon: BarChart3, href: "/analytics", label: "Análise Total" },
-                        { id: "transactions", icon: Receipt, href: "/transactions", label: "Extrato" },
-                        { id: "confirm", icon: Sparkles, href: "/confirm", label: "Sugestões IA", badge: "Ação" },
-                    ].map(item => <SidebarItem key={item.id} item={item} />)}
-                </CollapsibleContent>
+          <nav className="flex flex-col gap-2 overflow-y-auto pr-1 flex-grow scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent hover:scrollbar-thumb-muted-foreground/30">
+
+            {/* CORE SECTION - Monitoramento */}
+            <Collapsible open={coreOpen} onOpenChange={setCoreOpen}>
+                <div className="bg-secondary/30 rounded-xl p-3 border border-border/50">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full group">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-1.5 rounded-lg bg-emerald-500/10">
+                          <Activity className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                        <span className="text-xs font-bold text-foreground tracking-wide">Monitoramento</span>
+                      </div>
+                      {coreOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-1 pt-3">
+                      {[
+                          { id: "dashboard", icon: LayoutDashboard, href: "/", label: "Dashboard" },
+                          { id: "analytics", icon: BarChart3, href: "/analytics", label: "Análise Total" },
+                          { id: "transactions", icon: Receipt, href: "/transactions", label: "Extrato" },
+                          { id: "confirm", icon: Sparkles, href: "/confirm", label: "Sugestões IA", badge: "Ação" },
+                      ].map(item => <SidebarItem key={item.id} item={item} />)}
+                  </CollapsibleContent>
+                </div>
             </Collapsible>
 
-            {/* STRATEGY SECTION */}
-            <Collapsible open={strategyOpen} onOpenChange={setStrategyOpen} className="space-y-1 pt-4">
-                <CollapsibleTrigger className="flex items-center justify-between w-full px-4 text-[10px] font-extrabold text-muted-foreground/50 uppercase tracking-[0.2em] hover:text-foreground transition-colors mb-2">
-                    Planejamento
-                    {strategyOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-1">
-                    {[
-                        { id: "calendar", icon: CalendarDays, href: "/calendar", label: "Calendário" },
-                        { id: "rituals", icon: RefreshCw, href: "/rituals", label: "Meus Rituais" },
-                        { id: "goals", icon: Target, href: "/goals", label: "Metas" },
-                        { id: "budgets", icon: PieChart, href: "/budgets", label: "Orçamentos" },
-                        { id: "accounts", icon: Wallet, href: "/accounts", label: "Contas" },
-                    ].map(item => <SidebarItem key={item.id} item={item} />)}
-                </CollapsibleContent>
+            {/* STRATEGY SECTION - Planejamento */}
+            <Collapsible open={strategyOpen} onOpenChange={setStrategyOpen}>
+                <div className="bg-secondary/30 rounded-xl p-3 border border-border/50">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full group">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-1.5 rounded-lg bg-blue-500/10">
+                          <Compass className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <span className="text-xs font-bold text-foreground tracking-wide">Planejamento</span>
+                      </div>
+                      {strategyOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-1 pt-3">
+                      {[
+                          { id: "calendar", icon: CalendarDays, href: "/calendar", label: "Calendário" },
+                          { id: "rituals", icon: RefreshCw, href: "/rituals", label: "Meus Rituais" },
+                          { id: "goals", icon: Target, href: "/goals", label: "Metas" },
+                          { id: "budgets", icon: PieChart, href: "/budgets", label: "Orçamentos" },
+                          { id: "accounts", icon: Wallet, href: "/accounts", label: "Contas" },
+                      ].map(item => <SidebarItem key={item.id} item={item} />)}
+                  </CollapsibleContent>
+                </div>
             </Collapsible>
 
-            {/* ADMIN SECTION */}
-            <Collapsible open={adminOpen} onOpenChange={setAdminOpen} className="space-y-1 pt-4">
-                <CollapsibleTrigger className="flex items-center justify-between w-full px-4 text-[10px] font-extrabold text-muted-foreground/50 uppercase tracking-[0.2em] hover:text-foreground transition-colors mb-2">
-                    Configurações
-                    {adminOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-1">
-                    {[
-                        { id: "uploads", icon: Receipt, href: "/uploads", label: "Importar Arquivos" },
-                        { id: "ai-rules", icon: Bot, href: "/settings/rules", label: "Regras de IA" },
-                    ].map(item => <SidebarItem key={item.id} item={item} />)}
-                </CollapsibleContent>
+            {/* ADMIN SECTION - Configurações */}
+            <Collapsible open={adminOpen} onOpenChange={setAdminOpen}>
+                <div className="bg-secondary/30 rounded-xl p-3 border border-border/50">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full group">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-1.5 rounded-lg bg-violet-500/10">
+                          <Cog className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                        </div>
+                        <span className="text-xs font-bold text-foreground tracking-wide">Configurações</span>
+                      </div>
+                      {adminOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-1 pt-3">
+                      {[
+                          { id: "uploads", icon: Receipt, href: "/uploads", label: "Importar Arquivos" },
+                          { id: "ai-rules", icon: Bot, href: "/settings/rules", label: "Regras de IA" },
+                      ].map(item => <SidebarItem key={item.id} item={item} />)}
+                  </CollapsibleContent>
+                </div>
             </Collapsible>
           </nav>
 

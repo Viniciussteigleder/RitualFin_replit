@@ -173,6 +173,23 @@
 
 @layer utilities {
   /* ============================================
+     CUSTOM SCROLLBAR UTILITIES
+     ============================================ */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+  .scrollbar-thin:hover::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30;
+  }
+
+  /* ============================================
      PREMIUM MINIMALIST ANIMATIONS
      Inspired by Apple Design Language
      ============================================ */
