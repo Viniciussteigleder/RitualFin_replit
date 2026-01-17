@@ -196,7 +196,13 @@ export function TransactionDrawer({
                         </div>
                       )}
                     </div>
-                    <Badge className={`${categoryConfig.bgColor} ${categoryConfig.textColor} border-none`}>
+                    <Badge 
+                      className="border-none" 
+                      style={{ 
+                        backgroundColor: `${categoryConfig.color}20`,
+                        color: categoryConfig.color 
+                      }}
+                    >
                       {transaction.fixVar || 'Variável'}
                     </Badge>
                   </div>

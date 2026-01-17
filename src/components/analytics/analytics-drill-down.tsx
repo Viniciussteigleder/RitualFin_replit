@@ -28,23 +28,8 @@ const FALLBACK_COLORS = [
 // Get color for a category
 const getCategoryColor = (category: string, index: number): string => {
   const config = getCategoryConfig(category);
-  // Extract hex from Tailwind class (simplified - use fallback if not found)
-  const colorMap: Record<string, string> = {
-    "text-orange-600": "#ea580c",
-    "text-emerald-600": "#059669",
-    "text-blue-600": "#2563eb",
-    "text-slate-600": "#475569",
-    "text-purple-600": "#9333ea",
-    "text-pink-600": "#db2777",
-    "text-red-600": "#dc2626",
-    "text-indigo-600": "#4f46e5",
-    "text-green-600": "#16a34a",
-    "text-amber-600": "#d97706",
-    "text-gray-600": "#4b5563",
-    "text-yellow-600": "#ca8a04",
-    "text-neutral-600": "#525252",
-  };
-  return colorMap[config.textColor] || FALLBACK_COLORS[index % FALLBACK_COLORS.length];
+  // Use the color property directly (it's already a hex value)
+  return config.color || FALLBACK_COLORS[index % FALLBACK_COLORS.length];
 };
 
 export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }: AnalyticsDrillDownProps) {

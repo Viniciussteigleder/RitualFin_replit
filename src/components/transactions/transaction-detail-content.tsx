@@ -188,8 +188,19 @@ export function TransactionDetailContent({ transaction, onClose, onConfirm }: Tr
 
                     {/* Category & Confidence Grid */}
                     <div className="w-full grid grid-cols-2 gap-5 mb-10">
-                        <div className={cn("p-6 rounded-[2.5rem] text-left border relative overflow-hidden group transition-all", config.bgColor, config.borderColor)}>
-                            <p className={cn("text-[9px] font-black uppercase tracking-[0.2em] mb-3 relative z-10", config.textColor)}>Categoria de Fluxo</p>
+                        <div 
+                            className="p-6 rounded-[2.5rem] text-left border relative overflow-hidden group transition-all"
+                            style={{ 
+                                backgroundColor: `${config.color}10`, 
+                                borderColor: `${config.color}40` 
+                            }}
+                        >
+                            <p 
+                                className="text-[9px] font-black uppercase tracking-[0.2em] mb-3 relative z-10"
+                                style={{ color: config.color }}
+                            >
+                                Categoria de Fluxo
+                            </p>
                             <div className="relative z-10">
                                 <Select 
                                     value={selectedLeafId}

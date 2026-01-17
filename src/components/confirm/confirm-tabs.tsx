@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { toast } from "sonner";
-import { AlertTriangle, Filter, Loader2, RefreshCw, Repeat, Search, Swords, Wand2, X } from "lucide-react";
+import { AlertTriangle, Ban, CheckCircle2, Filter, Loader2, RefreshCw, Repeat, Search, Swords, Wand2, X } from "lucide-react";
 import {
   getConflictTransactions,
   getDiscoveryCandidates,
@@ -26,7 +26,7 @@ import { markRecurringGroup } from "@/lib/actions/recurring";
 import { TransactionDrawer } from "@/components/transactions/transaction-drawer";
 import { updateTransactionCategory } from "@/lib/actions/transactions";
 import { suggestConflictResolution } from "@/lib/actions/ai-conflict-resolution";
-import { mergeRuleKeywordsById } from "@/lib/actions/rules";
+import { mergeRuleKeywordsById, updateRule } from "@/lib/actions/rules";
 import { applyCategorization } from "@/lib/actions/categorization";
 import { formatCurrency } from "@/lib/utils";
 import { cn } from "@/lib/utils";

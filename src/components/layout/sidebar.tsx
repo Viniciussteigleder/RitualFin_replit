@@ -47,24 +47,22 @@ export function Sidebar() {
   const locale = useLocale();
   const sidebarLabels = useMemo(() => translate(locale, layoutCopy.sidebar), [locale]);
 
-  const iconToneById: Record<string, any> = {
-    dashboard: "emerald",
-    analytics: "blue",
-    transactions: "violet",
-    confirm: "amber",
-    calendar: "blue",
-    rituals: "emerald",
-    goals: "amber",
-    budgets: "violet",
-    accounts: "slate",
-    uploads: "slate",
-    "ai-rules": "rose",
-    "agenda": "blue",
+  const iconColorById: Record<string, string> = {
+    "dashboard": "#142 76% 36%", // Primary green
+    "transactions": "#6366F1", // Indigo
+    "goals": "#10B981", // Emerald
+    "analytics": "#8B5CF6", // Violet
+    "agenda": "#F59E0B", // Amber
+    "rituals": "#EC4899", // Pink
+    "budgets": "#3B82F6", // Blue
+    "rules": "#14B8A6", // Teal
+    "uploads": "#94A3B8", // Slate
+    "settings": "#64748B", // Slate
   };
 
   // Helper for Link Items
-  const SidebarItem = ({ item, isChild = false }: { item: any, isChild?: boolean }) => {
-    const isActive = pathname === item.href || (item.id === 'dashboard' && pathname === '/');
+  const renderNavItem = (item: any, isChild = false) => {
+    const isActive = pathname === item.href || (item.children?.some((child: any) => pathname === child.href) ?? false);
     return (
       <Link
         key={item.id}
@@ -82,10 +80,9 @@ export function Sidebar() {
         <div className="flex items-center gap-3 relative z-10">
           <AppIcon
             icon={item.icon}
-            tone={iconToneById[item.id] ?? "slate"}
-            size="sm"
-            active={isActive}
-            className={cn("transition-transform group-hover:scale-[1.05]")}
+            color={iconColorById[item.id]}
+            selected={isActive}
+            className={cn("transition-transform group-hover:scale-[1.05]", "w-5 h-5")}
           />
           <span className="text-sm">{item.label}</span>
         </div>
@@ -170,7 +167,7 @@ export function Sidebar() {
                           { id: "analytics", icon: BarChart3, href: "/analytics", label: "Análise Total" },
                           { id: "transactions", icon: Receipt, href: "/transactions", label: "Extrato" },
                           { id: "confirm", icon: Sparkles, href: "/confirm", label: "Sugestões IA", badge: "Ação" },
-                      ].map(item => <SidebarItem key={item.id} item={item} />)}
+                      ].map(item => renderNavItem({item}, false))}
                   </CollapsibleContent>
                 </div>
             </Collapsible>
@@ -195,7 +192,7 @@ export function Sidebar() {
                           { id: "goals", icon: Target, href: "/goals", label: "Metas" },
                           { id: "budgets", icon: PieChart, href: "/budgets", label: "Orçamentos" },
                           { id: "accounts", icon: Wallet, href: "/accounts", label: "Contas" },
-                      ].map(item => <SidebarItem key={item.id} item={item} />)}
+                      ].map(item => renderNavItem({item}, false))}
                   </CollapsibleContent>
                 </div>
             </Collapsible>
@@ -216,7 +213,7 @@ export function Sidebar() {
                       {[
                           { id: "uploads", icon: Receipt, href: "/uploads", label: "Importar Arquivos" },
                           { id: "ai-rules", icon: Bot, href: "/settings/rules", label: "Regras de IA" },
-                      ].map(item => <SidebarItem key={item.id} item={item} />)}
+                      ].map(item => renderNavItem({item}, false))}
                   </CollapsibleContent>
                 </div>
             </Collapsible>

@@ -30,9 +30,7 @@ export const formatAmount = (amount: number, hideCents: boolean = false) => {
 export const getCategoryStyles = (category: string) => {
     const config = getCategoryConfig(category);
     return {
-        color: config.textColor,
-        bg: config.bgColor,
-        border: config.borderColor,
+        color: config.color,
         icon: config.lucideIcon
     };
 };

@@ -261,7 +261,13 @@ export default function RulesStudioClient() {
                         {selectedCategory && (
                           <div className="text-sm text-muted-foreground flex items-center gap-2">
                             Serão movidos para:
-                            <Badge className={`${CATEGORY_CONFIGS[selectedCategory]?.bgColor} ${CATEGORY_CONFIGS[selectedCategory]?.textColor} border-none`}>
+                            <Badge 
+                              className="border-none" 
+                              style={{ 
+                                backgroundColor: `${CATEGORY_CONFIGS[selectedCategory]?.color}20`,
+                                color: CATEGORY_CONFIGS[selectedCategory]?.color 
+                              }}
+                            >
                               {selectedCategory}
                             </Badge>
                           </div>

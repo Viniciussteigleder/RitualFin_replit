@@ -153,8 +153,8 @@ export function CategoryChart({ data, total }: { data: CategoryData[], total: nu
                         {/* Semantic Progress Bar */}
                         <div className="h-1.5 w-full bg-secondary/50 rounded-full overflow-hidden">
                             <div 
-                                className={cn("h-full rounded-full transition-all duration-1000", config.progressColor)} 
-                                style={{ width: `${percent}%` }}
+                                className="h-full rounded-full transition-all duration-1000" 
+                                style={{ width: `${percent}%`, backgroundColor: config.color }}
                             />
                         </div>
                     </div>

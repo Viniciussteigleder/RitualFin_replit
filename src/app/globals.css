@@ -13,7 +13,7 @@
     --popover-foreground: 142 40% 5%;
 
     /* Brand Green (Ritual Core) */
-    --primary: 142 76% 36%; /* Slightly deeper, more premium green */
+    --primary: 142 76% 36%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 142 12% 95%;
@@ -36,7 +36,7 @@
   }
 
   .dark {
-    --background: 160 30% 2.5%; /* Deep obsidian with subtle green hue */
+    --background: 160 30% 2.5%;
     --foreground: 142 15% 95%;
 
     --card: 160 30% 4.5%;
@@ -63,66 +63,49 @@
     --border: 160 30% 12%;
     --input: 160 30% 12%;
     --ring: 142 66% 45%;
-
-    --sidebar: 160 30% 3.5%;
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply font-sans antialiased bg-background text-foreground;
   }
 }
 
 @layer utilities {
-  /* ============================================
-     ICON BUTTON GLOBAL COMPONENT
-     Size: 56x56px | Radius: 10px | Border: None
-     ============================================ */
   .ritual-icon-button {
-    @apply w-[56px] h-[56px] rounded-[10px] flex items-center justify-center border-none transition-all duration-200 cursor-pointer;
+    width: 56px;
+    height: 56px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    transition: all 0.2s;
+    cursor: pointer;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02), 0 1px 0 rgba(0, 0, 0, 0.02);
     background-size: 200% 200%;
   }
 
   .ritual-icon-button:hover {
-    @apply brightness-110;
+    filter: brightness(1.1);
     box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
   }
 
   .ritual-icon-button:active {
-    @apply brightness-95 scale-[0.98];
+    filter: brightness(0.95);
+    transform: scale(0.98);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02), 0 1px 0 rgba(0, 0, 0, 0.02);
   }
 
-  .ritual-icon-button:focus-visible {
-    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
-  }
-
-  .ritual-icon-button-selected {
-    @apply ring-2 ring-primary ring-offset-2;
-  }
-
-  /* ============================================
-     PREMIUM CARD SYSTEM
-     ============================================ */
   .ritual-card {
-    @apply rounded-[15px] border border-border bg-card transition-all duration-300;
+    border-radius: 15px;
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--card));
+    transition: all 0.3s;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02), 0 1px 0 rgba(0, 0, 0, 0.02);
   }
 
   .ritual-card-hover:hover {
-    @apply -translate-y-1 border-border/80;
+    transform: translateY(-4px);
+    border-color: hsl(var(--border) / 0.8);
     box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
   }
 
-  /* ============================================
-     CATEGORY ACCENT SYSTEM (DRY)
-     ============================================ */
-  /* Categories are defined with --cat-X colors */
   [data-category="market"] { --cat-color: #10b981; }
   [data-category="housing"] { --cat-color: #3b82f6; }
   [data-category="shopping"] { --cat-color: #ec4899; }
@@ -138,11 +121,8 @@
   .bg-cat-medium { background-color: color-mix(in srgb, var(--cat-color) 80%, white); }
   .bg-cat-soft { background-color: color-mix(in srgb, var(--cat-color) 12%, transparent); }
 
-  /* ============================================
-     ANIMATIONS
-     ============================================ */
   .transition-premium {
-    @apply transition-all duration-300;
+    transition: all 0.3s;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
