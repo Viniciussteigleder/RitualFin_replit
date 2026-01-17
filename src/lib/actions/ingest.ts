@@ -93,6 +93,12 @@ function parseDotDateToUtc(dateStr: string): Date | null {
   return new Date(Date.UTC(year, month - 1, day));
 }
 
+function chunk<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
+  return chunks;
+}
+
 // Core function for scripting/internal use
 export async function uploadIngestionFileCore(userId: string, buffer: Buffer, filename: string): Promise<UploadIngestionResult> {
   // 1. Create Ingestion Batch
@@ -162,6 +168,20 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
       };
     }
 
+    await db.update(ingestionBatches)
+      .set({
+        status: "processing",
+        sourceFormat: result.format ?? null,
+        diagnosticsJson: {
+          stage: "parsed",
+          rowsTotal: result.rowsTotal,
+          format: result.format,
+          diagnostics: result.diagnostics,
+          meta: result.meta
+        } as any
+      })
+      .where(eq(ingestionBatches.id, batch.id));
+
     const txWithFingerprint = result.transactions.map((tx) => ({ tx, fingerprint: generateFingerprint(tx) }));
     const fingerprints = txWithFingerprint.map((t) => t.fingerprint);
     let existingUniqueFingerprints = new Set<string>();
@@ -190,102 +210,111 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
       let newCount = 0;
       const seenFingerprints = new Set(existingUniqueFingerprints);
 
-      for (const { tx, fingerprint } of txWithFingerprint) {
-
-      // Check for existing item with unique_row = true in the specific source table
-      // We check ACROSS ALL BATCHES for this user/account to find global duplicates
-      // But we need to know which table to query.
-      // Assuming uploadIngestionFileCore handles known formats.
-      
-      // Determine uniqueness
-      // Query source table for existing fingerprint with uniqueRow=true
-      // Note: This is an expensive loop. Ideally done in bulk or using `onConflict`.
-      // For now, we query. 
-      // Actually, we can just insert and let the periodic cleanup or batch commit handle it? 
-      // Plan said: "Check if fingerprint exists in source_csv_{type} with unique_row = true"
-      
-      // We'll trust the plan. 
-      // Use existing `db.query` is hard with dynamic table selection without raw SQL or 'any'.
-      // Lets use a helper or switch.
-      
+      const prepared = txWithFingerprint.map(({ tx, fingerprint }) => {
         const isUnique = !seenFingerprints.has(fingerprint);
         if (isUnique) seenFingerprints.add(fingerprint);
 
-        if (!isUnique) {
-          dupCount++;
-        } else {
-          newCount++;
-        }
+        if (isUnique) newCount++;
+        else dupCount++;
 
-      // Create Ingestion Item (Parent)
-      // Note: We still use ingestionItems as a handle, but data lives in source_csv_* too?
-      // Schema says source_csv_* references ingestionItems. So we must create item first.
-        const [item] = await txDb.insert(ingestionItems).values({
-        batchId: batch.id,
-        itemFingerprint: fingerprint,
-        rawPayload: txForDb(tx),
-        parsedPayload: txForDb(tx),
-        status: isUnique ? "pending" : "duplicate", // Mark status based on uniqueness
-        source: result.format || "unknown"
-      }).returning();
-      
-      // Insert into Source CSV Table
-      const commonFields = {
-          userId,
+        return { tx, fingerprint, isUnique };
+      });
+
+      const itemValues = prepared.map(({ tx, fingerprint, isUnique }) => {
+        const payload = txForDb(tx);
+        return {
           batchId: batch.id,
-          ingestionItemId: item.id,
-          rowFingerprint: fingerprint,
-          key: fingerprint,
-          keyDesc: tx.keyDesc || tx.description,
-          uniqueRow: isUnique,
-          importedAt: new Date()
-      };
+          itemFingerprint: fingerprint,
+          rawPayload: payload,
+          parsedPayload: payload,
+          status: isUnique ? "pending" : "duplicate",
+          source: result.format || "unknown",
+        };
+      });
 
-        if (result.format === "sparkasse") {
-          await txDb.insert(sourceCsvSparkasse).values({
-              ...commonFields,
-              auftragskonto: tx.auftragskonto,
-              // Parser already provides `tx.date` as a Date; Sparkasse raw strings are DD.MM.YY and don't parse with `new Date(...)`.
-              buchungstag: (tx.date instanceof Date ? tx.date : (parseDotDateToUtc(tx.buchungstag ?? "") ?? null)) as any,
-              valutadatum: parseDotDateToUtc(tx.valutadatum ?? "") as any,
-              buchungstext: tx.buchungstext,
-              verwendungszweck: tx.verwendungszweck,
-              glaeubigerId: tx.glaeubigerId,
-              mandatsreferenz: tx.mandatsreferenz,
-              kundenreferenz: tx.kundenreferenz,
-              sammlerreferenz: tx.sammlerreferenz,
-              lastschrifteinreicherId: tx.lastschrifteinreicherId,
-              idEndToEnd: tx.idEndToEnd,
-              beguenstigterZahlungspflichtiger: tx.beguenstigterZahlungspflichtiger,
-              iban: tx.iban,
-              bic: tx.bic,
-              betrag: parseEuropeanNumber(tx.betrag ?? tx.amount),
-              waehrung: tx.waehrung ?? tx.currency,
-              info: tx.info
-          }).onConflictDoNothing();
-        } else if (result.format === "miles_and_more") {
-           await txDb.insert(sourceCsvMm).values({
-              ...commonFields,
-              authorisedOn: tx.authorisedOn ? new Date(tx.authorisedOn) : null,
-              processedOn: tx.processedOn ? new Date(tx.processedOn) : null,
-              paymentType: tx.paymentType,
-              status: tx.status,
-              amount: tx.amount || 0, // tx.amount is usually already parsed to number
-              currency: tx.currency,
-              description: tx.description
-           }).onConflictDoNothing();
-        } else if (result.format === "amex") {
-           await txDb.insert(sourceCsvAmex).values({
-              ...commonFields,
-              datum: (tx.datum ? new Date(tx.datum) : (tx.date instanceof Date ? tx.date : null)) as any,
-              beschreibung: tx.beschreibung ?? tx.description,
-              betrag: parseEuropeanNumber(tx.betrag ?? tx.amount),
-              karteninhaber: tx.karteninhaber,
-              kartennummer: tx.kartennummer,
-              referenz: tx.referenz,
-              ort: tx.ort,
-              staat: tx.staat
-           }).onConflictDoNothing();
+      // Insert ingestion items in bulk for speed (serverless runtime).
+      const insertedItems = await txDb
+        .insert(ingestionItems)
+        .values(itemValues)
+        .returning({ id: ingestionItems.id });
+
+      const commonFieldsByIdx = prepared.map(({ tx, fingerprint, isUnique }, idx) => {
+        const inserted = insertedItems[idx];
+        return {
+          idx,
+          tx,
+          fingerprint,
+          isUnique,
+          ingestionItemId: inserted?.id,
+          base: {
+            userId,
+            batchId: batch.id,
+            ingestionItemId: inserted?.id,
+            rowFingerprint: fingerprint,
+            key: fingerprint,
+            keyDesc: tx.keyDesc || tx.description,
+            uniqueRow: isUnique,
+            importedAt: new Date(),
+          },
+        };
+      }).filter((r) => !!r.ingestionItemId);
+
+      // Insert into Source CSV Table (bulk + idempotent).
+      if (result.format === "sparkasse") {
+        const rows = commonFieldsByIdx.map(({ tx, base }) => ({
+          ...base,
+          auftragskonto: tx.auftragskonto,
+          buchungstag: (tx.date instanceof Date ? tx.date : (parseDotDateToUtc(tx.buchungstag ?? "") ?? null)) as any,
+          valutadatum: parseDotDateToUtc(tx.valutadatum ?? "") as any,
+          buchungstext: tx.buchungstext,
+          verwendungszweck: tx.verwendungszweck,
+          glaeubigerId: tx.glaeubigerId,
+          mandatsreferenz: tx.mandatsreferenz,
+          kundenreferenz: tx.kundenreferenz,
+          sammlerreferenz: tx.sammlerreferenz,
+          lastschrifteinreicherId: tx.lastschrifteinreicherId,
+          idEndToEnd: tx.idEndToEnd,
+          beguenstigterZahlungspflichtiger: tx.beguenstigterZahlungspflichtiger,
+          iban: tx.iban,
+          bic: tx.bic,
+          betrag: parseEuropeanNumber(tx.betrag ?? tx.amount),
+          waehrung: tx.waehrung ?? tx.currency,
+          info: tx.info,
+        }));
+
+        for (const part of chunk(rows, 400)) {
+          await txDb.insert(sourceCsvSparkasse).values(part).onConflictDoNothing();
+        }
+      } else if (result.format === "miles_and_more") {
+        const rows = commonFieldsByIdx.map(({ tx, base }) => ({
+          ...base,
+          authorisedOn: (tx.authorisedOn ? new Date(tx.authorisedOn) : (tx.date instanceof Date ? tx.date : null)) as any,
+          processedOn: (tx.processedOn ? new Date(tx.processedOn) : null) as any,
+          paymentType: tx.paymentType,
+          status: tx.status,
+          amount: tx.amount || 0,
+          currency: tx.currency,
+          description: tx.description,
+        }));
+
+        for (const part of chunk(rows, 400)) {
+          await txDb.insert(sourceCsvMm).values(part).onConflictDoNothing();
+        }
+      } else if (result.format === "amex") {
+        const rows = commonFieldsByIdx.map(({ tx, base }) => ({
+          ...base,
+          datum: (tx.datum ? new Date(tx.datum) : (tx.date instanceof Date ? tx.date : null)) as any,
+          beschreibung: tx.beschreibung ?? tx.description,
+          betrag: parseEuropeanNumber(tx.betrag ?? tx.amount),
+          karteninhaber: tx.karteninhaber,
+          kartennummer: tx.kartennummer,
+          referenz: tx.referenz,
+          ort: tx.ort,
+          staat: tx.staat,
+        }));
+
+        for (const part of chunk(rows, 400)) {
+          await txDb.insert(sourceCsvAmex).values(part).onConflictDoNothing();
         }
       }
 

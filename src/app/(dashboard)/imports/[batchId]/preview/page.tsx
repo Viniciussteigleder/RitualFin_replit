@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { ingestionBatches, ingestionItems } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
@@ -10,6 +10,7 @@ import { commitBatch } from "@/lib/actions/ingest";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { auth } from "@/auth";
+import { PreviewAutoRefresh } from "./preview-auto-refresh";
 
 interface PreviewPageProps {
   params: {
@@ -33,12 +34,46 @@ export default async function ImportPreviewPage({ params }: PreviewPageProps) {
   });
 
   if (!batch) {
-    notFound();
+    return (
+      <div className="flex flex-col gap-8 pb-32 max-w-3xl mx-auto px-1">
+        <div className="flex items-center gap-2 text-muted-foreground mb-2">
+          <Link
+            href="/uploads"
+            className="flex items-center gap-2 hover:text-primary transition-colors font-bold text-xs uppercase tracking-widest"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Voltar aos Uploads
+          </Link>
+        </div>
+
+        <Card className="rounded-[2.5rem] border border-border shadow-sm">
+          <CardContent className="p-10 space-y-5">
+            <div className="flex items-start gap-4">
+              <div className="h-10 w-10 rounded-2xl bg-secondary flex items-center justify-center">
+                <Info className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div className="space-y-2">
+                <div className="text-xl font-bold text-foreground font-display">Importação ainda não disponível</div>
+                <div className="text-sm text-muted-foreground font-medium leading-relaxed">
+                  Este lote pode ainda estar sendo persistido/replicado, ou você pode não ter acesso a ele.
+                  Vamos tentar atualizar automaticamente por alguns segundos.
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Lote: <span className="font-mono">{params.batchId}</span>
+                </div>
+              </div>
+            </div>
+            <PreviewAutoRefresh />
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   const diagnostics = batch.diagnosticsJson as any;
   const hasErrors = batch.status === "error";
   const canProceed = batch.status === "preview";
+  const isProcessing = batch.status === "processing";
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-PT", {
@@ -97,6 +132,23 @@ export default async function ImportPreviewPage({ params }: PreviewPageProps) {
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {isProcessing && (
+        <Card className="rounded-[2.5rem] border-amber-200 bg-amber-50/60 shadow-none">
+          <CardContent className="p-8 space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="h-3 w-3 rounded-full bg-amber-500 mt-1.5" />
+              <div className="space-y-1">
+                <div className="text-sm font-extrabold text-amber-900">Processando o arquivo…</div>
+                <div className="text-xs font-semibold text-amber-900/70">
+                  Se você estiver em Vercel, arquivos grandes podem levar alguns segundos. Esta página atualizará automaticamente.
+                </div>
+              </div>
+            </div>
+            <PreviewAutoRefresh />
           </CardContent>
         </Card>
       )}

@@ -72,11 +72,13 @@ export async function BatchList() {
                                         "px-2.5 py-0.5 rounded-lg text-[10px] font-medium uppercase tracking-wide border-none",
                                         batch.status === "committed" && "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
                                         batch.status === "error" && "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
-                                        batch.status === "preview" && "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                                        batch.status === "preview" && "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+                                        batch.status === "processing" && "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400"
                                     )}>
                                         {batch.status === "preview" ? "Pronto para importar" :
                                          batch.status === "committed" ? "Importado" :
-                                         batch.status === "error" ? "Erro" : batch.status}
+                                         batch.status === "error" ? "Erro" :
+                                         batch.status === "processing" ? "Processando" : batch.status}
                                     </Badge>
 
                                     {batch.status === "preview" && (
@@ -112,6 +114,24 @@ export async function BatchList() {
                                             <div className="text-xs text-muted-foreground leading-relaxed">
                                                 Formato detectado: <span className="text-foreground font-medium">{(batch.diagnosticsJson as any).format || batch.sourceFormat || "CSV padrão"}</span>.
                                                 {(batch.diagnosticsJson as any).duplicates || 0} registros duplicados ignorados.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {batch.status === "processing" && !!batch.diagnosticsJson && (
+                                <div className="border-t border-border px-4 pb-4">
+                                    <div className="p-3 bg-sky-50/60 dark:bg-sky-950/20 rounded-xl flex items-start gap-2 mt-3">
+                                        <Clock className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400 mt-0.5 shrink-0" />
+                                        <div className="space-y-0.5">
+                                            <div className="text-[10px] font-medium text-sky-700/80 dark:text-sky-300/80 uppercase tracking-wide">
+                                                Processamento em andamento
+                                            </div>
+                                            <div className="text-xs text-sky-900/70 dark:text-sky-100/70 leading-relaxed">
+                                                {((batch.diagnosticsJson as any)?.stage === "parsed")
+                                                    ? `Arquivo lido. Formato: ${(batch.diagnosticsJson as any).format || batch.sourceFormat || "CSV"}.`
+                                                    : "Processando arquivo..."}
                                             </div>
                                         </div>
                                     </div>
