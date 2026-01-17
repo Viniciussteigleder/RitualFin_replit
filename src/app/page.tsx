@@ -1,4 +1,4 @@
-import { getTransactions, getDashboardData, getSpendAveragesLastMonths } from "@/lib/actions/transactions";
+import { getTransactions, getDashboardData, getSpendAveragesAllPeriods } from "@/lib/actions/transactions";
 import { getAccounts } from "@/lib/actions/accounts";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
@@ -71,7 +71,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   let fetchError: unknown = null;
 
   try {
-    const [dashboardDataRes, transactionsRes, accountsRes, avg3, avg6, avg12] = await Promise.all([
+    // PERFORMANCE: Reduced from 6 parallel calls to 4 by consolidating spend averages
+    // Previous: 3 separate getSpendAveragesLastMonths calls (12 DB queries)
+    // Now: 1 getSpendAveragesAllPeriods call (4 DB queries)
+    const [dashboardDataRes, transactionsRes, accountsRes, spendAveragesRes] = await Promise.all([
       getDashboardData(targetDate).catch((err) => {
         console.error("[Dashboard] getDashboardData error:", err);
         return null;
@@ -84,16 +87,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         console.error("[Dashboard] getAccounts error:", err);
         return [];
       }),
-      getSpendAveragesLastMonths(targetDate, 3).catch((err) => {
-        console.error("[Dashboard] getSpendAveragesLastMonths(3) error:", err);
-        return null;
-      }),
-      getSpendAveragesLastMonths(targetDate, 6).catch((err) => {
-        console.error("[Dashboard] getSpendAveragesLastMonths(6) error:", err);
-        return null;
-      }),
-      getSpendAveragesLastMonths(targetDate, 12).catch((err) => {
-        console.error("[Dashboard] getSpendAveragesLastMonths(12) error:", err);
+      getSpendAveragesAllPeriods(targetDate, [3, 6, 12]).catch((err) => {
+        console.error("[Dashboard] getSpendAveragesAllPeriods error:", err);
         return null;
       }),
     ]);
@@ -101,9 +96,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     dashboardData = dashboardDataRes;
     transactionsData = transactionsRes;
     accounts = accountsRes;
-
-    const anyAverages = Boolean(avg3 || avg6 || avg12);
-    spendAverages = anyAverages ? ({ 3: avg3, 6: avg6, 12: avg12 } as const) : null;
+    spendAverages = spendAveragesRes;
   } catch (err) {
     fetchError = err;
     console.error("[Dashboard] Data fetching error:", err);
