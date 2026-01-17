@@ -3,19 +3,18 @@
 import { useState } from "react";
 import * as XLSX from "xlsx";
 import { 
-    Search, 
-    Download, 
-    Upload, 
-    Plus, 
-    Edit2, 
-    Trash2, 
-    Zap, 
-    Tag, 
-    ChevronRight, 
-    MoreVertical, 
-    Filter,
+    Search,
+    Download,
+    Upload,
+    Zap,
+    ChevronRight,
+    Edit2,
+    Trash2,
     X,
-    Save
+    Save,
+    Sparkles,
+    Braces,
+    Layers
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -230,47 +229,101 @@ export function RulesManager({ initialRules }: { initialRules: any[] }) {
                 </div>
             </div>
 
-            {/* Rules Grid */}
-            <div className="grid gap-4">
+            {/* Neural Links / Rules Grid */}
+            <div className="flex items-center gap-2 px-1 mb-2">
+                <Layers className="h-4 w-4 text-primary" />
+                <h2 className="text-xl font-bold text-foreground font-display tracking-tight">Conexões Neurais</h2>
+                <Badge variant="outline" className="ml-2 border-border text-[10px] font-black uppercase text-muted-foreground">{filteredRules.length} Regras</Badge>
+            </div>
+
+            <div className="grid gap-6">
                 {filteredRules.length === 0 && (
-                    <div className="text-center py-20 text-muted-foreground">
-                        Nenhuma regra encontrada para os filtros.
+                    <div className="text-center py-20 bg-card rounded-[2.5rem] border border-dashed border-border flex flex-col items-center justify-center gap-4">
+                        <div className="w-16 h-16 bg-secondary/30 rounded-full flex items-center justify-center">
+                            <Braces className="h-8 w-8 text-muted-foreground/30" />
+                        </div>
+                        <p className="text-muted-foreground font-medium">Nenhuma conexão neural encontrada para os filtros.</p>
+                        <Button variant="outline" className="rounded-xl" onClick={() => { setSearch(""); setCategoryFilter("ALL"); }}>Limpar Filtros</Button>
                     </div>
                 )}
 
                 {filteredRules.map(rule => (
-                    <div key={rule.id} className="group relative bg-card border border-border rounded-3xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row gap-6 items-start md:items-center">
-                        <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary shrink-0">
-                            <Zap className="h-5 w-5" />
-                        </div>
-                        
-                        <div className="flex-1 space-y-1">
-                            <h3 className="font-bold text-lg text-foreground">{rule.keyWords}</h3>
-                            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                {/* <Badge variant="secondary" className="rounded-lg font-mono tracking-wide">{rule.keywords}</Badge> */}
-                                <span className="flex items-center gap-1 bg-secondary/50 px-2 py-0.5 rounded-lg">
-                                    <Tag className="h-3 w-3" /> {rule.category1}
-                                </span>
-                                {rule.category2 && (
-                                     <span className="flex items-center gap-1 bg-secondary/50 px-2 py-0.5 rounded-lg">
-                                        <ChevronRight className="h-3 w-3" /> {rule.category2}
-                                    </span>
-                                )}
+                    <div key={rule.id} className="group relative bg-card border border-border rounded-[2rem] p-8 shadow-sm hover:shadow-xl hover:border-primary/30 transition-all duration-300 flex flex-col xl:flex-row gap-8 items-start xl:items-center overflow-hidden">
+                        {/* Status bar on the side */}
+                        <div className={cn(
+                            "absolute left-0 top-0 bottom-0 w-1.5 transition-all duration-300",
+                            rule.active ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]" : "bg-neutral-500"
+                        )} />
+
+                        {/* Connection Visualizer */}
+                        <div className="flex flex-col sm:flex-row items-center gap-6 flex-1 w-full">
+                            <div className="flex flex-col items-center sm:items-start gap-1 shrink-0">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                                        <Braces className="h-4 w-4 text-primary" />
+                                    </div>
+                                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Input Layer</span>
+                                </div>
+                                <h3 className="font-bold text-xl text-foreground font-display tracking-tight mt-1 max-w-[300px] truncate">
+                                    {rule.keyWords}
+                                </h3>
+                            </div>
+
+                            {/* The "Neural Flow" Arrow */}
+                            <div className="hidden sm:flex flex-1 items-center px-4 relative">
+                                <div className="h-px bg-gradient-to-r from-primary/30 via-primary/50 to-primary/30 w-full relative">
+                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-3 py-1 border border-border rounded-full flex items-center gap-1.5 shadow-sm">
+                                        <Zap className="h-3 w-3 text-amber-500" />
+                                        <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">P:{rule.priority}</span>
+                                    </div>
+                                    {/* Pulsing Dot */}
+                                    {rule.active && (
+                                        <div className="absolute top-1/2 left-0 h-1 w-1 bg-primary rounded-full -translate-y-1/2 animate-neural-pulse-infinite" style={{ left: '0%' }} />
+                                    )}
+                                </div>
+                                <ChevronRight className="h-4 w-4 text-primary/50 -ml-1" />
+                            </div>
+
+                            <div className="flex flex-col items-center sm:items-end gap-1 shrink-0">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Output Class</span>
+                                    <div className="w-8 h-8 bg-emerald-500/10 rounded-lg flex items-center justify-center">
+                                        <Sparkles className="h-4 w-4 text-emerald-500" />
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <Badge variant="secondary" className="bg-secondary/50 text-foreground font-bold rounded-lg px-3 py-1 text-sm border-none">
+                                        {rule.category1}
+                                    </Badge>
+                                    {rule.category2 && (
+                                         <Badge variant="outline" className="border-border text-muted-foreground font-medium rounded-lg px-2 py-0.5 text-[10px] uppercase">
+                                            {rule.category2}
+                                        </Badge>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-2 md:ml-auto w-full md:w-auto">
-                             <Badge className={cn(
-                                "mr-auto md:mr-0 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase",
-                                rule.active ? "bg-emerald-500/10 text-emerald-500" : "bg-neutral-500/10 text-neutral-500"
-                             )}>
-                                {rule.active ? "Ativa" : "Inativa"}
-                             </Badge>
+                        {/* Actions Area */}
+                        <div className="flex items-center gap-3 w-full xl:w-auto pt-4 xl:pt-0 border-t xl:border-t-0 border-border/50">
+                             <div className="xl:hidden flex-1 text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                                Priority: {rule.priority}
+                             </div>
                              
-                             <Button variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground hover:text-primary rounded-xl" onClick={() => openEdit(rule)}>
-                                <Edit2 className="h-4 w-4" />
+                             <Button 
+                                variant="secondary" 
+                                size="sm" 
+                                className="rounded-xl h-11 px-5 font-bold gap-2 text-xs bg-secondary hover:bg-secondary/70 border border-border/50 transition-all hover:scale-105 active:scale-95" 
+                                onClick={() => openEdit(rule)}
+                             >
+                                <Edit2 className="h-3.5 w-3.5" /> Ajustar
                              </Button>
-                             <Button variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground hover:text-destructive rounded-xl" onClick={() => handleDelete(rule.id)}>
+                             <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-11 w-11 text-muted-foreground hover:text-destructive rounded-xl hover:bg-destructive/5 transition-all" 
+                                onClick={() => handleDelete(rule.id)}
+                             >
                                 <Trash2 className="h-4 w-4" />
                              </Button>
                         </div>

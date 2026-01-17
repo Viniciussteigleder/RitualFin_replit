@@ -607,4 +607,16 @@
     background-color: #fee2e2;
     color: #991b1b;
   }
+
+  /* Neural Flow Pulse */
+  @keyframes neuralPulse {
+    0% { left: 0%; opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { left: 100%; opacity: 0; }
+  }
+
+  .animate-neural-pulse-infinite {
+    animation: neuralPulse 3s linear infinite;
+  }
 }

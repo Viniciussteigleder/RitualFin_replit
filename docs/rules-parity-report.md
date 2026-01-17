@@ -1,6 +1,6 @@
 # Rules Parity Report
 
-**Generated**: 2026-01-16T14:41:27.372Z
+**Generated**: 2026-01-17T20:28:47.008Z
 **Verdict**: FAIL
 
 ## Summary
@@ -8,10 +8,10 @@
 | Issue Type | Count |
 |------------|-------|
 | Missing in DB | 0 |
-| Extra in DB | 2 |
+| Extra in DB | 98 |
 | Field Mismatches | 0 |
 | Enum Mismatches | 11 |
-| **Total** | **13** |
+| **Total** | **109** |
 
 ## Issues
 
@@ -35,8 +35,27 @@
 
 | Type | Key | Details |
 |------|-----|---------|
-| extra_in_db | Mercados | DB Level 1 "Mercados" not found in Excel Oracle |
 | extra_in_db | OPEN | DB Level 1 "OPEN" not found in Excel Oracle |
+| extra_in_db | OPEN | DB Level 1 "OPEN" not found in Excel Oracle |
+| extra_in_db | OPEN | DB Level 1 "OPEN" not found in Excel Oracle |
+| extra_in_db | OPEN | DB Level 1 "OPEN" not found in Excel Oracle |
+| extra_in_db | OPEN | DB Level 1 "OPEN" not found in Excel Oracle |
+| extra_in_db | OPEN | DB Level 1 "OPEN" not found in Excel Oracle |
+| extra_in_db | OPEN | DB Level 1 "OPEN" not found in Excel Oracle |
+| extra_in_db | OPEN | DB Level 1 "OPEN" not found in Excel Oracle |
+| extra_in_db | OPEN | DB Level 1 "OPEN" not found in Excel Oracle |
+| extra_in_db | OPEN | DB Level 1 "OPEN" not found in Excel Oracle |
+| extra_in_db | OPEN | DB Level 1 "OPEN" not found in Excel Oracle |
+| extra_in_db | OPEN | DB Level 1 "OPEN" not found in Excel Oracle |
+| extra_in_db | OPEN | DB Level 1 "OPEN" not found in Excel Oracle |
+| extra_in_db | OPEN | DB Level 1 "OPEN" not found in Excel Oracle |
+| extra_in_db | OPEN | DB Level 1 "OPEN" not found in Excel Oracle |
+| extra_in_db | OPEN | DB Level 1 "OPEN" not found in Excel Oracle |
+| extra_in_db | OPEN | DB Level 1 "OPEN" not found in Excel Oracle |
+| extra_in_db | OPEN | DB Level 1 "OPEN" not found in Excel Oracle |
+| extra_in_db | OPEN | DB Level 1 "OPEN" not found in Excel Oracle |
+| extra_in_db | OPEN | DB Level 1 "OPEN" not found in Excel Oracle |
+| ... | ... | 78 more issues |
 
 ## Resolution Steps
 

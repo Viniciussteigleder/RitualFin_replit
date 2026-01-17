@@ -1,12 +1,12 @@
 {
-  "timestamp": "2026-01-16T14:41:27.372Z",
+  "timestamp": "2026-01-17T20:28:47.008Z",
   "verdict": "FAIL",
   "summary": {
     "missing_in_db": 0,
-    "extra_in_db": 2,
+    "extra_in_db": 98,
     "mismatch": 0,
     "enum_mismatch": 11,
-    "total": 13
+    "total": 109
   },
   "issues": [
     {
@@ -100,9 +100,681 @@
     {
       "type": "extra_in_db",
       "table": "taxonomy_level_1",
-      "key": "Mercados",
-      "actual": "Mercados",
-      "details": "DB Level 1 \"Mercados\" not found in Excel Oracle"
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
+    },
+    {
+      "type": "extra_in_db",
+      "table": "taxonomy_level_1",
+      "key": "OPEN",
+      "actual": "OPEN",
+      "details": "DB Level 1 \"OPEN\" not found in Excel Oracle"
     },
     {
       "type": "extra_in_db",

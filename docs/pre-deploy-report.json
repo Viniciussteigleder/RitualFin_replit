@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-01-16T14:41:27.391Z",
+  "timestamp": "2026-01-17T20:28:47.022Z",
   "verdict": "WARNING",
   "summary": {
     "total": 4,
@@ -12,26 +12,26 @@
       "name": "TypeScript Compilation",
       "passed": true,
       "critical": true,
-      "duration": 4560
+      "duration": 9099
     },
     {
       "name": "Production Build",
       "passed": true,
       "critical": true,
-      "duration": 17473
+      "duration": 19767
     },
     {
       "name": "Rules Engine Unit Tests",
       "passed": true,
       "critical": true,
-      "duration": 723
+      "duration": 1255
     },
     {
       "name": "Database Parity Check",
       "passed": false,
       "critical": false,
       "error": "Command failed: npx tsx scripts/verify-db-parity.ts",
-      "duration": 1473
+      "duration": 1674
     }
   ]
 }
