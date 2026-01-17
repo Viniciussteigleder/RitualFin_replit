@@ -18,20 +18,33 @@ interface PreviewPageProps {
   };
 }
 
-export default async function ImportPreviewPage({ params }: PreviewPageProps) {
+export default async function ImportPreviewPage(props: { params: Promise<{ batchId: string }> }) {
+  const { batchId } = await props.params;
   const session = await auth();
   if (!session?.user?.id) {
     redirect("/login");
   }
 
-  const batch = await db.query.ingestionBatches.findFirst({
-    where: and(eq(ingestionBatches.id, params.batchId), eq(ingestionBatches.userId, session.user.id)),
-    with: {
-      items: {
-        limit: 50,
+  // Fetch batch with logic to handle potential consistency lag on Vercel
+  let batch = null;
+  let retryCount = 0;
+  
+  while (retryCount < 3) {
+    batch = await db.query.ingestionBatches.findFirst({
+      where: and(eq(ingestionBatches.id, batchId), eq(ingestionBatches.userId, session.user.id)),
+      with: {
+        items: {
+          limit: 100, // Increased limit for better check
+        },
       },
-    },
-  });
+    });
+    
+    if (batch) break;
+    
+    // If not found, wait a tiny bit and retry (only in serverless/production to handle replication lag)
+    retryCount++;
+    await new Promise(resolve => setTimeout(resolve, 500 * retryCount));
+  }
 
   if (!batch) {
     return (
@@ -62,7 +75,7 @@ export default async function ImportPreviewPage({ params }: PreviewPageProps) {
                   Dica: volte em <Link href="/uploads" className="text-primary font-bold hover:underline">Uploads</Link> e clique em “Revisar” no cartão em “Atividade Recente”.
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  Lote: <span className="font-mono">{params.batchId}</span>
+                  Lote: <span className="font-mono">{batchId}</span>
                 </div>
               </div>
             </div>
@@ -241,7 +254,7 @@ export default async function ImportPreviewPage({ params }: PreviewPageProps) {
             className="flex-1 max-w-sm"
             action={async () => {
               "use server";
-              await commitBatch(params.batchId);
+              await commitBatch(batchId);
               redirect("/transactions");
             }}
           >

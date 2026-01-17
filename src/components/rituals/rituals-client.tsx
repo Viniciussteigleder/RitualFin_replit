@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,12 +25,15 @@ import {
   CheckCircle2,
   AlertCircle,
   ExternalLink,
+  Plus,
+  Trash,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { completeRitual } from "@/lib/actions/rituals";
+import { completeRitual, createRitualGoal, updateRitualGoal, deleteRitualGoal } from "@/lib/actions/rituals";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input";
 
 interface RitualTask {
   id: string;
@@ -67,6 +70,7 @@ interface RitualsClientProps {
   dailyTasks: DailyTasks | null;
   weeklyTasks: WeeklyTasks | null;
   monthlyTasks: MonthlyTasks | null;
+  initialGoals?: any[];
 }
 
 const RITUAL_CONFIGS = {
@@ -99,8 +103,11 @@ const RITUAL_CONFIGS = {
   },
 };
 
-export function RitualsClient({ streak, dailyTasks, weeklyTasks, monthlyTasks }: RitualsClientProps) {
+export function RitualsClient({ streak, dailyTasks, weeklyTasks, monthlyTasks, initialGoals = [] }: RitualsClientProps) {
   const [completingRitual, setCompletingRitual] = useState<string | null>(null);
+  const [goals, setGoals] = useState(initialGoals);
+  const [newGoalText, setNewGoalText] = useState("");
+  const [isAddingGoal, setIsAddingGoal] = useState<string | null>(null);
   const router = useRouter();
 
   const formatCurrency = (value: number) => {
@@ -129,6 +136,53 @@ export function RitualsClient({ streak, dailyTasks, weeklyTasks, monthlyTasks }:
     }
   };
 
+  const handleAddGoal = async (period: string) => {
+    if (!newGoalText.trim()) return;
+    try {
+      const result = await createRitualGoal({
+        ritualType: period,
+        goalText: newGoalText.trim(),
+      });
+      if (result.success) {
+        setGoals([result.goal, ...goals]);
+        setNewGoalText("");
+        setIsAddingGoal(null);
+        toast.success("Meta adicionada!");
+      } else {
+        toast.error(result.error || "Erro ao adicionar meta");
+      }
+    } catch (error) {
+      toast.error("Erro ao adicionar meta");
+    }
+  };
+
+  const handleToggleGoal = async (id: string, completed: boolean) => {
+    try {
+      const result = await updateRitualGoal(id, { completed });
+      if (result.success) {
+        setGoals(goals.map(g => g.id === id ? { ...g, completed, completedAt: completed ? new Date().toISOString() : null } : g));
+      } else {
+        toast.error(result.error || "Erro ao atualizar meta");
+      }
+    } catch (error) {
+      toast.error("Erro ao atualizar meta");
+    }
+  };
+
+  const handleDeleteGoal = async (id: string) => {
+    try {
+      const result = await deleteRitualGoal(id);
+      if (result.success) {
+        setGoals(goals.filter(g => g.id !== id));
+        toast.success("Meta removida");
+      } else {
+        toast.error(result.error || "Erro ao remover meta");
+      }
+    } catch (error) {
+      toast.error("Erro ao remover meta");
+    }
+  };
+
   const getNextExecution = (type: string) => {
     const now = new Date();
     if (type === "daily") {
@@ -152,38 +206,113 @@ export function RitualsClient({ streak, dailyTasks, weeklyTasks, monthlyTasks }:
     return "Pendente";
   };
 
-  const renderTaskList = (tasks: RitualTask[] | undefined) => {
-    if (!tasks || tasks.length === 0) return null;
+  const renderTaskList = (tasks: RitualTask[] | undefined, period: string) => {
+    const periodGoals = goals.filter(g => g.ritualType === period);
 
     return (
-      <div className="mt-6 space-y-3">
-        {tasks.map((task) => (
-          <Link
-            key={task.id}
-            href={task.link}
-            className={cn(
-              "flex items-center justify-between p-4 rounded-xl border transition-all",
-              task.completed
-                ? "bg-emerald-500/5 border-emerald-500/20"
-                : "bg-secondary/30 border-border hover:bg-secondary/50"
-            )}
-          >
-            <div className="flex items-center gap-3">
-              {task.completed ? (
-                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-              ) : (
-                <AlertCircle className="h-5 w-5 text-muted-foreground" />
-              )}
-              <span className={cn("font-medium", task.completed && "text-emerald-600")}>{task.name}</span>
-              {task.count && task.count > 0 && !task.completed && (
-                <Badge variant="secondary" className="text-xs">
-                  {task.count}
-                </Badge>
-              )}
+      <div className="mt-6 space-y-6">
+        {/* Real-time system tasks */}
+        {tasks && tasks.length > 0 && (
+          <div className="space-y-3">
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Checklist do Sistema</p>
+            {tasks.map((task) => (
+              <Link
+                key={task.id}
+                href={task.link}
+                className={cn(
+                  "flex items-center justify-between p-4 rounded-xl border transition-all",
+                  task.completed
+                    ? "bg-emerald-500/5 border-emerald-500/20"
+                    : "bg-secondary/30 border-border hover:bg-secondary/50"
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  {task.completed ? (
+                    <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                  ) : (
+                    <AlertCircle className="h-5 w-5 text-muted-foreground" />
+                  )}
+                  <span className={cn("font-medium", task.completed && "text-emerald-600")}>{task.name}</span>
+                  {task.count && task.count > 0 && !task.completed && (
+                    <Badge variant="secondary" className="text-xs">
+                      {task.count}
+                    </Badge>
+                  )}
+                </div>
+                <ExternalLink className="h-4 w-4 text-muted-foreground" />
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {/* Custom User Goals */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Minhas Intenções</p>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-6 text-[10px] font-black uppercase tracking-tighter gap-1"
+              onClick={() => setIsAddingGoal(period)}
+            >
+              <Plus className="h-3 w-3" /> Adicionar
+            </Button>
+          </div>
+
+          {isAddingGoal === period && (
+            <div className="flex gap-2 animate-in fade-in slide-in-from-top-1">
+              <Input
+                placeholder="Ex: Não gastar com delivery..."
+                value={newGoalText}
+                onChange={(e) => setNewGoalText(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddGoal(period)}
+                className="rounded-xl h-10 text-sm"
+                autoFocus
+              />
+              <Button size="sm" className="rounded-xl px-4 font-bold" onClick={() => handleAddGoal(period)}>Ok</Button>
+              <Button size="sm" variant="ghost" className="rounded-xl" onClick={() => setIsAddingGoal(null)}>X</Button>
             </div>
-            <ExternalLink className="h-4 w-4 text-muted-foreground" />
-          </Link>
-        ))}
+          )}
+
+          {periodGoals.length === 0 && !isAddingGoal && (
+            <div className="py-4 text-center border border-dashed border-border rounded-xl opacity-50">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest italic">Nenhuma intenção personalizada.</p>
+            </div>
+          )}
+
+          {periodGoals.map((goal) => (
+            <div
+              key={goal.id}
+              className={cn(
+                "flex items-center justify-between p-4 rounded-xl border group/goal transition-all shadow-sm",
+                goal.completed
+                  ? "bg-emerald-500/5 border-emerald-500/20"
+                  : "bg-background border-border"
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => handleToggleGoal(goal.id, !goal.completed)}
+                  className={cn(
+                    "w-5 h-5 rounded-md flex items-center justify-center transition-all border",
+                    goal.completed ? "bg-emerald-500 border-emerald-500 text-white" : "border-muted-foreground/30 hover:border-primary"
+                  )}
+                >
+                  {goal.completed && <Check className="h-3.5 w-3.5" />}
+                </button>
+                <span className={cn("font-medium text-sm transition-all", goal.completed && "text-muted-foreground line-through")}>
+                  {goal.goalText}
+                </span>
+              </div>
+              <button 
+                onClick={() => handleDeleteGoal(goal.id)}
+                className="opacity-0 group-hover/goal:opacity-100 p-1.5 hover:bg-red-500/10 hover:text-red-500 rounded-lg text-muted-foreground transition-all"
+              >
+                <Trash className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
     );
   };
@@ -285,8 +414,8 @@ export function RitualsClient({ streak, dailyTasks, weeklyTasks, monthlyTasks }:
                       </Badge>
                     </div>
 
-                    {/* Task List */}
-                    {renderTaskList(tasks)}
+                    {/* Task & Goal List */}
+                    {renderTaskList(tasks, period)}
 
                     {/* Monthly Summary */}
                     {period === "monthly" && monthlyTasks?.summary && (

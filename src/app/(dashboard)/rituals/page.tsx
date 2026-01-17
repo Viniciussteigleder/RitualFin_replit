@@ -15,11 +15,12 @@ export default async function RitualsPage() {
   }
 
   // Fetch ritual data
-  const [rituals, dailyTasks, weeklyTasks, monthlyTasks] = await Promise.all([
+  const [rituals, dailyTasks, weeklyTasks, monthlyTasks, ritualGoals] = await Promise.all([
     getRituals(),
     getDailyRitualTasks(),
     getWeeklyRitualTasks(),
     getMonthlyRitualTasks(),
+    import("@/lib/actions/rituals").then(m => m.getRitualGoals()),
   ]);
 
   // Calculate streak from rituals
@@ -64,6 +65,12 @@ export default async function RitualsPage() {
         dailyTasks={dailyTasks}
         weeklyTasks={weeklyTasks}
         monthlyTasks={monthlyTasks}
+        initialGoals={ritualGoals.map((g: any) => ({
+          ...g,
+          targetDate: g.targetDate?.toISOString(),
+          createdAt: g.createdAt.toISOString(),
+          updatedAt: g.updatedAt.toISOString(),
+        }))}
       />
     </div>
   );

@@ -353,8 +353,8 @@ export async function uploadIngestionFile(formData: FormData): Promise<UploadIng
   const session = await auth();
   if (!session?.user?.id) return { success: false, code: "UNAUTHORIZED", error: "Unauthorized" };
 
-  // Rate Limiting: 5 uploads per 10 minutes
-  const ratelimitResult = await rateLimit(session.user.id, "upload-file", { limit: 5, windowMs: 10 * 60 * 1000 });
+  // Rate Limiting: 25 uploads per 10 minutes
+  const ratelimitResult = await rateLimit(session.user.id, "upload-file", { limit: 25, windowMs: 10 * 60 * 1000 });
   if (!ratelimitResult.success) {
     return { 
       success: false, 
@@ -386,6 +386,7 @@ export async function uploadIngestionFile(formData: FormData): Promise<UploadIng
   
   if (result.success) {
       revalidatePath("/uploads");
+      revalidatePath(`/imports/${result.batchId}/preview`);
   }
   return result;
 }

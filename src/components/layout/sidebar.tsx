@@ -23,7 +23,8 @@ import {
   Activity,
   Compass,
   Cog,
-  LucideIcon
+  LucideIcon,
+  ListOrdered
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useState, useMemo } from "react";
@@ -58,6 +59,7 @@ export function Sidebar() {
     accounts: "slate",
     uploads: "slate",
     "ai-rules": "rose",
+    "agenda": "blue",
   };
 
   // Helper for Link Items
@@ -187,6 +189,7 @@ export function Sidebar() {
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-1 pt-3">
                       {[
+                          { id: "agenda", icon: ListOrdered, href: "/agenda", label: "Agenda" },
                           { id: "calendar", icon: CalendarDays, href: "/calendar", label: "Calendário" },
                           { id: "rituals", icon: RefreshCw, href: "/rituals", label: "Meus Rituais" },
                           { id: "goals", icon: Target, href: "/goals", label: "Metas" },

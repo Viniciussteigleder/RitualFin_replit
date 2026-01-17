@@ -26,10 +26,10 @@ export default async function GoalsPage() {
         projectedBalance: rawProjection.projectedBalance,
         currentBalance: rawProjection.totalBalance,
         projectedChange: rawProjection.projectedBalance - rawProjection.totalBalance,
-        projectedIncome: rawProjection.currentIncome, // This is actually current income for now
+        projectedIncome: rawProjection.projectedIncome,
         projectedExpenses: rawProjection.projectedTotal,
         daysRemaining: rawProjection.daysRemaining,
-        dailyAverageSpend: rawProjection.dailyAverage,
+        dailyAverageSpend: rawProjection.dailyAverageSpend,
         confidence: Math.min(95, Math.max(50, 70 + rawProjection.daysPassed * 2)), // Higher confidence as month progresses
       }
     : null;

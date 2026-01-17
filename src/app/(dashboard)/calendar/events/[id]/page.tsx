@@ -15,11 +15,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-export default async function EventDetailPage({
-  params,
-}: {
-  params: { id: string };
+export default async function EventDetailPage(props: {
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await props.params;
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -28,7 +27,7 @@ export default async function EventDetailPage({
 
   const event = await db.query.calendarEvents.findFirst({
     where: and(
-      eq(calendarEvents.id, params.id),
+      eq(calendarEvents.id, id),
       eq(calendarEvents.userId, session.user.id)
     ),
   });

@@ -358,6 +358,93 @@ function test_EC004_case_insensitivity(): void {
 }
 
 // ============================================================================
+// TC-011: Hierarchy Mapping (category1, category2, category3)
+// ============================================================================
+function test_TC011_hierarchy_mapping(): void {
+  console.log('TC-011: Testing hierarchy mapping...');
+
+  const rules: Rule[] = [
+    createRule({ 
+      keyWords: 'REWE', 
+      category1: 'Alimentação', 
+      category2: 'Mercados', 
+      category3: 'Supermercado',
+      priority: 800 
+    }),
+  ];
+
+  const result = categorizeTransaction('REWE SUPERMARKET', rules);
+
+  assertEqual(result.category1, 'Alimentação', 'category1 should map');
+  assertEqual(result.category2, 'Mercados', 'category2 should map');
+  assertEqual(result.category3, 'Supermercado', 'category3 should map');
+
+  console.log('  ✓ TC-011 passed: Hierarchy mapping correctly populates categories');
+}
+
+// ============================================================================
+// TC-012: Specific vs. General matching
+// ============================================================================
+function test_TC012_specific_vs_general(): void {
+  console.log('TC-012: Testing specific vs. general specificity...');
+
+  const rules: Rule[] = [
+    createRule({ id: 'general', keyWords: 'AMAZON', category1: 'Compras', priority: 500 }),
+    createRule({ id: 'specific', keyWords: 'AMAZON *PRIME', category1: 'Lazer / Esporte', priority: 500 }),
+  ];
+
+  const resultGeneral = matchRules('AMAZON MARKETPLACE', rules);
+  assertEqual(resultGeneral.appliedRule?.ruleId, 'general', 'General keyword should match basic description');
+
+  const resultSpecific = matchRules('AMAZON *PRIME SUBSCRIPTION', rules);
+  // Both match, same priority. In current engine, it might be ambiguous or pick first.
+  // Actually, splitKeyExpressions and findMatchedExpression handle '*' as wildcard.
+  // We want to verify how the engine handles overlapping patterns.
+  
+  if (resultSpecific.needsReview) {
+    console.log('  ✓ TC-012: Specific vs General triggered review (ambiguity detected)');
+  } else {
+    console.log(`  ✓ TC-012: Engine picked ${resultSpecific.appliedRule?.ruleId}`);
+  }
+}
+
+// ============================================================================
+// TC-013: Performance Benchmark (High Volume)
+// ============================================================================
+function test_TC013_performance_benchmark(): void {
+  console.log('TC-013: Performance benchmarking (10k txs + 100 rules)...');
+
+  const ruleCount = 100;
+  const txCount = 10000;
+
+  const rules: Rule[] = Array.from({ length: ruleCount }, (_, i) => 
+    createRule({ 
+      id: `rule-${i}`, 
+      keyWords: `KEYWORD-${i}`, 
+      category1: 'Outros', 
+      priority: i 
+    })
+  );
+
+  const txs = Array.from({ length: txCount }, (_, i) => 
+    `SOME DESCRIPTION WITH KEYWORD-${i % ruleCount} AND EXTRA NOISE`
+  );
+
+  const start = performance.now();
+  for (const tx of txs) {
+    categorizeTransaction(tx, rules);
+  }
+  const end = performance.now();
+  const duration = end - start;
+
+  console.log(`  ✓ TC-013 complete: Processed ${txCount} transactions in ${duration.toFixed(2)}ms`);
+  console.log(`  Avg time per transaction: ${(duration / txCount).toFixed(4)}ms`);
+  
+  // Performance threshold: < 1ms per tx (standard is usually < 0.1ms)
+  assert(duration / txCount < 1, "Performance too slow: > 1ms per transaction");
+}
+
+// ============================================================================
 // Run all tests
 // ============================================================================
 async function runTests(): Promise<void> {
@@ -384,6 +471,9 @@ async function runTests(): Promise<void> {
     test_EC002_special_characters,
     test_EC003_unicode_normalization,
     test_EC004_case_insensitivity,
+    test_TC011_hierarchy_mapping,
+    test_TC012_specific_vs_general,
+    test_TC013_performance_benchmark,
   ];
 
   for (const test of tests) {

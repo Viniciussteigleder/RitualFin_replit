@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { goals, categoryGoals, transactions } from "@/lib/db/schema";
+import { goals, categoryGoals, transactions, calendarEvents } from "@/lib/db/schema";
 import { eq, and, sql, gte, lte, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
@@ -255,13 +255,14 @@ export async function getMonthlyProjection() {
   if (!session?.user?.id) return null;
 
   const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
   const daysInMonth = endOfMonth.getDate();
   const daysPassed = now.getDate();
   const daysRemaining = daysInMonth - daysPassed;
 
-  // Get current month spending
+  // 1. Get current month spending (actual transactions)
   const [spendingResult] = await db
     .select({
       total: sql<number>`COALESCE(SUM(${transactions.amount}), 0)`,
@@ -280,10 +281,42 @@ export async function getMonthlyProjection() {
     );
 
   const currentSpending = Math.abs(Number(spendingResult?.total || 0));
-  const dailyAverage = daysPassed > 0 ? currentSpending / daysPassed : 0;
-  const projectedTotal = currentSpending + dailyAverage * daysRemaining;
 
-  // Get current month income
+  // 2. Get upcoming calendar events for the rest of the month
+  const upcomingEvents = await db.query.calendarEvents.findMany({
+    where: and(
+      eq(calendarEvents.userId, session.user.id),
+      eq(calendarEvents.isActive, true),
+      gte(calendarEvents.nextDueDate, startOfToday),
+      lte(calendarEvents.nextDueDate, endOfMonth)
+    )
+  });
+
+  const totalUpcomingEvents = upcomingEvents.reduce((sum, e) => sum + Math.abs(e.amount), 0);
+
+  // 3. Calculate "Variable Daily Spend" (what's NOT in calendar)
+  // We assume that a portion of history is variable/discretionary
+  // For simplicity, we'll take the current spending, subtract any known events that already passed,
+  // and spread the remainder as an average.
+  
+  // Get calendar events that ALREADY passed this month
+  const passedEvents = await db.query.calendarEvents.findMany({
+    where: and(
+      eq(calendarEvents.userId, session.user.id),
+      gte(calendarEvents.nextDueDate, startOfMonth),
+      lte(calendarEvents.nextDueDate, new Date(now.getTime() - 86400000)) // Yesterday or earlier
+    )
+  });
+  
+  const totalPassedEvents = passedEvents.reduce((sum, e) => sum + Math.abs(e.amount), 0);
+  const variableSpendingSoFar = Math.max(0, currentSpending - totalPassedEvents);
+  const dailyVariableAverage = daysPassed > 0 ? variableSpendingSoFar / daysPassed : 0;
+  
+  // 4. Calculate Projection
+  const projectedVariableSpending = dailyVariableAverage * daysRemaining;
+  const projectedTotal = currentSpending + totalUpcomingEvents + projectedVariableSpending;
+
+  // 5. Get current and projected income
   const [incomeResult] = await db
     .select({
       total: sql<number>`COALESCE(SUM(${transactions.amount}), 0)`,
@@ -300,8 +333,14 @@ export async function getMonthlyProjection() {
     );
 
   const currentIncome = Number(incomeResult?.total || 0);
+  
+  const upcomingIncome = upcomingEvents
+    .filter(e => e.amount > 0)
+    .reduce((sum, e) => sum + e.amount, 0);
+    
+  const projectedIncome = currentIncome + upcomingIncome;
 
-  // Get total balance
+  // 6. Get total balance
   const [balanceResult] = await db
     .select({
       total: sql<number>`COALESCE(SUM(${transactions.amount}), 0)`,
@@ -310,13 +349,14 @@ export async function getMonthlyProjection() {
     .where(eq(transactions.userId, session.user.id));
 
   const totalBalance = Number(balanceResult?.total || 0);
-  const projectedBalance = totalBalance - dailyAverage * daysRemaining;
+  const projectedBalance = totalBalance - (totalUpcomingEvents + projectedVariableSpending) + upcomingIncome;
 
   return {
     currentSpending,
-    dailyAverage,
+    dailyAverageSpend: dailyVariableAverage,
     projectedTotal,
     currentIncome,
+    projectedIncome,
     totalBalance,
     projectedBalance,
     daysRemaining,

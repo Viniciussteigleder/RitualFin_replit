@@ -367,8 +367,8 @@ export async function sendChatMessage(
     return { success: false, error: "Não autenticado" };
   }
 
-  // Rate Limiting: 20 messages per 1 hour
-  const ratelimitResult = await rateLimit(session.user.id, "ai-chat", { limit: 20, windowMs: 60 * 60 * 1000 });
+  // Rate Limiting: 100 messages per 1 hour
+  const ratelimitResult = await rateLimit(session.user.id, "ai-chat", { limit: 100, windowMs: 60 * 60 * 1000 });
   if (!ratelimitResult.success) {
     return { 
       success: false, 
