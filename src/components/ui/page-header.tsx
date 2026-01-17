@@ -1,7 +1,6 @@
-"use client";
-
 import { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 /**
  * PageHeader - Standardized header for all dashboard pages
@@ -113,8 +112,7 @@ interface EmptyStateProps {
   description: string;
   action?: {
     label: string;
-    onClick?: () => void;
-    href?: string;
+    href: string;
   };
 }
 
@@ -126,22 +124,13 @@ export function EmptyState({ icon: Icon, title, description, action }: EmptyStat
       </div>
       <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
       <p className="text-sm text-muted-foreground max-w-md mb-6">{description}</p>
-      {action && (
-        action.href ? (
-          <a
-            href={action.href}
-            className="inline-flex items-center justify-center h-10 px-6 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors"
-          >
-            {action.label}
-          </a>
-        ) : (
-          <button
-            onClick={action.onClick}
-            className="inline-flex items-center justify-center h-10 px-6 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors"
-          >
-            {action.label}
-          </button>
-        )
+      {action?.href && (
+        <Link
+          href={action.href}
+          className="inline-flex items-center justify-center h-10 px-6 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors"
+        >
+          {action.label}
+        </Link>
       )}
     </div>
   );
