@@ -48,16 +48,19 @@ export function Sidebar() {
   const sidebarLabels = useMemo(() => translate(locale, layoutCopy.sidebar), [locale]);
 
   const iconColorById: Record<string, string> = {
-    "dashboard": "#142 76% 36%", // Primary green
+    "dashboard": "#059669", // Primary green (Emerald 600)
     "transactions": "#6366F1", // Indigo
     "goals": "#10B981", // Emerald
     "analytics": "#8B5CF6", // Violet
     "agenda": "#F59E0B", // Amber
     "rituals": "#EC4899", // Pink
     "budgets": "#3B82F6", // Blue
+    "accounts": "#64748B", // Slate
     "rules": "#14B8A6", // Teal
     "uploads": "#94A3B8", // Slate
     "settings": "#64748B", // Slate
+    "ai-rules": "#8B5CF6", // Violet (AI)
+    "calendar": "#F59E0B", // Amber
   };
 
   // Helper for Link Items
@@ -167,7 +170,7 @@ export function Sidebar() {
                           { id: "analytics", icon: BarChart3, href: "/analytics", label: "Análise Total" },
                           { id: "transactions", icon: Receipt, href: "/transactions", label: "Extrato" },
                           { id: "confirm", icon: Sparkles, href: "/confirm", label: "Sugestões IA", badge: "Ação" },
-                      ].map(item => renderNavItem({item}, false))}
+                      ].map(item => renderNavItem(item, false))}
                   </CollapsibleContent>
                 </div>
             </Collapsible>
@@ -192,7 +195,7 @@ export function Sidebar() {
                           { id: "goals", icon: Target, href: "/goals", label: "Metas" },
                           { id: "budgets", icon: PieChart, href: "/budgets", label: "Orçamentos" },
                           { id: "accounts", icon: Wallet, href: "/accounts", label: "Contas" },
-                      ].map(item => renderNavItem({item}, false))}
+                      ].map(item => renderNavItem(item, false))}
                   </CollapsibleContent>
                 </div>
             </Collapsible>
@@ -213,7 +216,7 @@ export function Sidebar() {
                       {[
                           { id: "uploads", icon: Receipt, href: "/uploads", label: "Importar Arquivos" },
                           { id: "ai-rules", icon: Bot, href: "/settings/rules", label: "Regras de IA" },
-                      ].map(item => renderNavItem({item}, false))}
+                      ].map(item => renderNavItem(item, false))}
                   </CollapsibleContent>
                 </div>
             </Collapsible>
