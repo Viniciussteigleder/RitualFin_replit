@@ -13,6 +13,13 @@ import "@/lib/env";
 // Original: Noto_Sans, Manrope from next/font/google
 // Benefit: ~50-100ms faster LCP, no FOUT, works offline
 // System fonts defined in globals.css
+import { Roboto } from "next/font/google";
+
+const roboto = Roboto({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "700"],
+  variable: "--font-roboto",
+});
 
 export const metadata: Metadata = {
   title: "RitualFin",
@@ -33,7 +40,7 @@ export default function RootLayout({
   return (
     <html lang="pt-PT" suppressHydrationWarning>
       <body
-        className="antialiased bg-background text-foreground flex min-h-screen font-sans"
+        className={`antialiased bg-background text-foreground flex min-h-screen font-sans ${roboto.variable}`}
         suppressHydrationWarning
       >
         <MonthProvider>

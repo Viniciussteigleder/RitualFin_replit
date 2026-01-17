@@ -475,7 +475,7 @@ export default function RulesClient({ initialRules }: RulesClientProps) {
                             </div>
                             <div className="flex items-center gap-2">
                               <Tag className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                              <code className="text-sm font-mono font-bold text-foreground bg-secondary/50 px-3 py-1 rounded-lg truncate">
+                              <code className="text-sm font-mono font-bold text-foreground bg-secondary/50 px-3 py-1 rounded-lg whitespace-normal break-all">
                                 {rule.keyWords}
                               </code>
                             </div>

@@ -82,26 +82,31 @@ export function TopListInsight({
         <div className="p-10 text-center text-muted-foreground">{emptyText}</div>
       ) : (
         <div className="p-4">
-          <div className="grid gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {rows.map((r) => (
               <div
                 key={r.name}
-                className="group flex items-center gap-4 p-3 rounded-2xl bg-background/60 border border-border hover:border-emerald-200/60 hover:shadow-sm transition-all duration-300"
+                className="group flex flex-col gap-3 p-4 rounded-2xl bg-background/60 border border-border hover:border-emerald-200/60 hover:shadow-sm transition-all duration-300"
               >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="font-black text-foreground truncate">{r.name}</div>
-                    <div className="text-sm font-black text-foreground tabular-nums">{formatCurrency(r.total, { hideDecimals: true })}</div>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-xs font-black text-muted-foreground">
+                      {r.name.substring(0, 1)}
+                    </div>
+                    <div className="font-black text-foreground truncate text-sm">{r.name}</div>
                   </div>
-                  <div className="mt-2 h-2 bg-secondary/60 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-emerald-500/80 group-hover:bg-emerald-500 transition-colors"
-                      style={{ width: `${max > 0 ? Math.max(2, (r.total / max) * 100) : 0}%` }}
-                    />
+                  <div className="text-right">
+                    <div className="text-sm font-black text-foreground tabular-nums">{formatCurrency(r.total, { hideDecimals: true })}</div>
+                    <div className="text-[10px] font-bold text-muted-foreground tabular-nums">
+                      {r.count} tx
+                    </div>
                   </div>
                 </div>
-                <div className="text-xs font-black text-muted-foreground tabular-nums whitespace-nowrap">
-                  {r.count} tx
+                <div className="h-1.5 bg-secondary/60 rounded-full overflow-hidden w-full">
+                  <div
+                    className="h-full rounded-full bg-emerald-500/80 group-hover:bg-emerald-500 transition-colors"
+                    style={{ width: `${max > 0 ? Math.max(2, (r.total / max) * 100) : 0}%` }}
+                  />
                 </div>
               </div>
             ))}
