@@ -18,3 +18,5 @@ playwright-report
 .claude/settings.local.json
 .vercel
 .env*.local
+# UI backup files
+src/app/_backup_ui_*/
