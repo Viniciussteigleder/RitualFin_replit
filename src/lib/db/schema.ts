@@ -272,7 +272,9 @@ export const rules = pgTable("rules", {
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
-  // Removed index on ruleKey
+  // PERFORMANCE INDEX: For fast rule lookup during categorization
+  userActiveLeafIdx: index("idx_rules_user_active_leaf").on(table.userId, table.active, table.leafId),
+  userActiveIdx: index("idx_rules_user_active").on(table.userId, table.active),
 }));
 
 export const rulesRelations = relations(rules, ({ one }) => ({
@@ -391,7 +393,13 @@ export const transactions = pgTable("transactions", {
   classificationCandidates: jsonb("classification_candidates"),
 }, (table) => ({
   uniqueKeyPerUser: uniqueIndex("transactions_unique_key_per_user").on(table.userId, table.key),
-  // Removed indices dependent on accountId
+  // PERFORMANCE INDEXES - Added for common query patterns
+  // These indexes significantly improve query performance for dashboard, transactions list, and analytics
+  userPaymentDateIdx: index("idx_transactions_user_date").on(table.userId, table.paymentDate),
+  userNeedsReviewIdx: index("idx_transactions_user_review").on(table.userId, table.needsReview),
+  userAppCategoryIdx: index("idx_transactions_user_app_cat").on(table.userId, table.appCategoryName),
+  userTypeIdx: index("idx_transactions_user_type").on(table.userId, table.type),
+  userDisplayIdx: index("idx_transactions_user_display").on(table.userId, table.display),
 }));
 
 export const transactionsRelations = relations(transactions, ({ one, many }) => ({
