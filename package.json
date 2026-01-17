@@ -16,6 +16,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
+    "db:optimize": "npx tsx scripts/apply-performance-indexes.ts",
     "db:ensure-open": "npx tsx scripts/ensure-open-all-users.ts",
     "db:backfill-categorization": "npx tsx scripts/backfill-categorization-all-users.ts",
     "release:gate": "npx tsx scripts/pre-deploy-check.ts",
@@ -54,6 +55,7 @@
     "@radix-ui/react-toggle-group": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@tailwindcss/postcss": "^4.1.18",
+    "@tanstack/react-virtual": "^3.13.18",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -107,6 +109,5 @@
     "tsx": "^4.20.5",
     "typescript": "5.6.3",
     "xlsx": "^0.18.5"
-  },
-  "optionalDependencies": {}
+  }
 }

@@ -28,6 +28,7 @@ import {
 import { toast } from "sonner";
 import { TransactionDrawer } from "@/components/transactions/transaction-drawer";
 import { TransactionFilters } from "@/components/transactions/filter-panel";
+import { VirtualizedTransactionList } from "@/components/transactions/VirtualizedTransactionList";
 
 type SortField = "date" | "amount" | "category" | "confidence";
 type SortDirection = "asc" | "desc";
@@ -334,7 +335,20 @@ export function TransactionList({
             </div>
 
             {/* Transaction Rows Grouped by Date */}
-            <div className="bg-card border border-border border-t-0 rounded-b-3xl overflow-hidden shadow-sm">
+            {transactions.length >= 100 ? (
+                <VirtualizedTransactionList
+                    groupedTransactions={groupedTransactions}
+                    sortedDateKeys={sortedDateKeys}
+                    isCompact={isCompact}
+                    hideCents={hideCents}
+                    selectedIds={selectedIds}
+                    onToggleSelect={toggleSelect}
+                    onEditClick={(tx) => setSelectedTx(tx)}
+                    onClick={(tx) => setSelectedTx(tx)}
+                    aliasMap={aliasMap}
+                />
+            ) : (
+                <div className="bg-card border border-border border-t-0 rounded-b-3xl overflow-hidden shadow-sm">
                 <div className="divide-y divide-border/30">
                     {isRefetching ? (
                         <div className="text-center py-32 flex flex-col items-center">
@@ -374,8 +388,9 @@ export function TransactionList({
                             />
                         ))
                     )}
+                    </div>
                 </div>
-            </div>
+            )}
 
             {hasMore && (
                 <div className="flex justify-center pt-4 pb-8">
