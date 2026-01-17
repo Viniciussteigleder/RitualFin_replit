@@ -6,22 +6,27 @@ import { parseAmexActivityCSV } from "./parsers/amex";
 export async function parseIngestionFile(buffer: Buffer | string, filename?: string, userId?: string): Promise<ParseResult> {
     const fileContent = typeof buffer === "string" ? stripBom(buffer) : decodeBuffer(buffer);
     const headerLine = findHeaderLine(fileContent);
+    const normalized = normalizeForDetect(headerLine ?? fileContent);
     
     // Simple heuristic detection
-    if (fileContent.includes("Miles & More Gold Credit Card") || fileContent.includes("Authorised on") || fileContent.includes("Processed on") || filename?.toLowerCase().includes("miles")) {
+    if (normalized.includes("miles & more gold credit card") || normalized.includes("authorised on") || normalized.includes("processed on") || filename?.toLowerCase().includes("miles")) {
         return parseMilesMoreCSV(fileContent);
     }
     
-    if ((fileContent.includes("Auftragskonto") && fileContent.includes("Buchungstag")) || filename?.toLowerCase().includes("sparkasse")) {
+    const headerLooksLikeSparkasse =
+        (normalized.includes("buchungstag") || normalized.includes("buchungstext")) &&
+        (normalized.includes("auftragskonto") || normalized.includes("verwendungszweck") || normalized.includes("begunstigter/zahlungspflichtiger")) &&
+        (normalized.includes("betrag") || normalized.includes("waehrung"));
+    if (headerLooksLikeSparkasse || filename?.toLowerCase().includes("sparkasse")) {
         return parseSparkasseCSV(fileContent);
     }
     
     // Amex exports can be comma- or semicolon-separated (and sometimes UTF-16).
     const headerLooksLikeAmex =
-        !!headerLine &&
-        includesAll(headerLine, ["Datum", "Betrag"]) &&
-        (headerLine.includes("Beschreibung") || headerLine.includes("Karteninhaber") || headerLine.includes("Kartennummer"));
-    if (headerLooksLikeAmex || fileContent.includes("PAYPAL *") || filename?.toLowerCase().includes("amex")) {
+        normalized.includes("datum") &&
+        normalized.includes("betrag") &&
+        (normalized.includes("beschreibung") || normalized.includes("karteninhaber") || normalized.includes("kartennummer"));
+    if (headerLooksLikeAmex || normalized.includes("paypal *") || filename?.toLowerCase().includes("amex")) {
         return parseAmexActivityCSV(fileContent);
     }
     
@@ -61,7 +66,16 @@ function decodeBuffer(buffer: Buffer): string {
         if (byte === 0x00) nulCount++;
     }
     const encoding = nulCount > sample.length * 0.1 ? "utf16le" : "utf8";
-    return stripBom(buffer.toString(encoding as BufferEncoding));
+    const decoded = stripBom(buffer.toString(encoding as BufferEncoding));
+
+    // If UTF-8 decoding produced lots of replacement chars, fall back to latin1 (common in bank exports).
+    if (encoding === "utf8") {
+        const replacementCount = (decoded.match(/\uFFFD/g) || []).length;
+        if (replacementCount > 5) {
+            return stripBom(buffer.toString("latin1"));
+        }
+    }
+    return decoded;
 }
 
 function findHeaderLine(content: string): string | null {
@@ -89,4 +103,14 @@ function splitHeaderColumns(headerLine: string): string[] {
 
 function includesAll(haystack: string, needles: string[]): boolean {
     return needles.every((n) => haystack.includes(n));
+}
+
+function normalizeForDetect(input: string): string {
+    return input
+        .toLowerCase()
+        .normalize("NFKD")
+        // eslint-disable-next-line no-control-regex
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
 }

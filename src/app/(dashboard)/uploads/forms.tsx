@@ -23,7 +23,7 @@ export function CSVForm({ onUploadSuccess }: { onUploadSuccess?: (batchId: strin
     const wizard = useImportWizardOptional();
 
     async function handleFile(file: File) {
-        if (!file.name.endsWith(".csv")) {
+        if (!file.name.toLowerCase().endsWith(".csv")) {
             toast.error("Selecione um arquivo CSV (.csv)");
             return;
         }

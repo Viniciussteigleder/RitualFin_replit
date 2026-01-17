@@ -173,6 +173,7 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
     const counts = await db.transaction(async (txDb) => {
       let dupCount = 0;
       let newCount = 0;
+      const seenFingerprints = new Set(existingUniqueFingerprints);
 
       for (const { tx, fingerprint } of txWithFingerprint) {
 
@@ -192,7 +193,8 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
       // Use existing `db.query` is hard with dynamic table selection without raw SQL or 'any'.
       // Lets use a helper or switch.
       
-        const isUnique = !existingUniqueFingerprints.has(fingerprint);
+        const isUnique = !seenFingerprints.has(fingerprint);
+        if (isUnique) seenFingerprints.add(fingerprint);
 
         if (!isUnique) {
           dupCount++;
@@ -218,7 +220,7 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
           batchId: batch.id,
           ingestionItemId: item.id,
           rowFingerprint: fingerprint,
-          key: tx.key,
+          key: fingerprint,
           keyDesc: tx.keyDesc || tx.description,
           uniqueRow: isUnique,
           importedAt: new Date()
@@ -244,7 +246,7 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
               betrag: parseEuropeanNumber(tx.betrag ?? tx.amount),
               waehrung: tx.waehrung ?? tx.currency,
               info: tx.info
-          });
+          }).onConflictDoNothing();
         } else if (result.format === "miles_and_more") {
            await txDb.insert(sourceCsvMm).values({
               ...commonFields,
@@ -255,7 +257,7 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
               amount: tx.amount || 0, // tx.amount is usually already parsed to number
               currency: tx.currency,
               description: tx.description
-           });
+           }).onConflictDoNothing();
         } else if (result.format === "amex") {
            await txDb.insert(sourceCsvAmex).values({
               ...commonFields,
@@ -267,7 +269,7 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
               referenz: tx.referenz,
               ort: tx.ort,
               staat: tx.staat
-           });
+           }).onConflictDoNothing();
         }
       }
 

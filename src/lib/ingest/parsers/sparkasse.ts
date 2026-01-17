@@ -24,35 +24,53 @@ export async function parseSparkasseCSV(content: string): Promise<ParseResult> {
     // Find the header line index (sometimes there's metadata above)
     // We look for "Auftragskonto" and "Buchungstag"
     let headerLineIndex = 0;
-    for (let i = 0; i < Math.min(20, lines.length); i++) { // search top 20 lines
-        if (lines[i].includes("Auftragskonto") && lines[i].includes("Buchungstag")) {
+    let headerLine: string | null = null;
+    for (let i = 0; i < Math.min(30, lines.length); i++) { // search top 30 lines
+        const candidate = lines[i] || "";
+        const normalized = normalize(candidate);
+        if (normalized.includes("buchungstag") && (normalized.includes("auftragskonto") || normalized.includes("verwendungszweck") || normalized.includes("begunstigter"))) {
             headerLineIndex = i;
+            headerLine = candidate;
             break;
         }
     }
+
+    const delimiter = detectDelimiter(headerLine) ?? ";";
 
     // Pass the content starting from the header line to csv-parse
     // We rejoin because csv-parse takes a string input usually or we can just slice lines
     // But csv-parse 'from_line' option is easier if we pass full content
     const records = parse(content, {
+      bom: true,
       columns: true,
       skip_empty_lines: true,
-      delimiter: ";", // Sparkasse is usually semicolon
+      delimiter, // Sparkasse is usually semicolon
       relax_quotes: true,
+      relax_column_count: true,
       trim: true,
       from_line: headerLineIndex + 1
     });
 
     const transactions: ParsedTransaction[] = records.map((record: any) => {
+        const nmap = buildNormalizedKeyMap(record);
         // Map columns correctly based on documentation
-        const buchungstag = record["Buchungstag"] || record["Valutadatum"];
-        const beguenstigter = record["Beguenstigter/Zahlungspflichtiger"] || "";
-        const verwendungszweck = record["Verwendungszweck"] || "";
-        const buchungstext = record["Buchungstext"] || "";
-        const iban = record["Kontonummer/IBAN"] || "";
-        const glaeubigerId = record["Glaeubiger ID"] || record["GlaeubigerID"] || "";
-        const betragStr = record["Betrag"];
-        const waehrung = record["Waehrung"] || "EUR";
+        const auftragskonto = pick(record, nmap, ["Auftragskonto"]);
+        const buchungstag = pick(record, nmap, ["Buchungstag", "Buchungstag ", "Buchungstag (Valuta)", "Buchungstag/Valuta", "Valutadatum"]);
+        const valutadatum = pick(record, nmap, ["Valutadatum"]);
+        const beguenstigter = pick(record, nmap, ["Beguenstigter/Zahlungspflichtiger", "Begünstigter/Zahlungspflichtiger", "Beguenstigter / Zahlungspflichtiger", "Begünstigter / Zahlungspflichtiger"]);
+        const verwendungszweck = pick(record, nmap, ["Verwendungszweck"]);
+        const buchungstext = pick(record, nmap, ["Buchungstext"]);
+        const iban = pick(record, nmap, ["Kontonummer/IBAN", "Kontonummer / IBAN", "IBAN"]);
+        const bic = pick(record, nmap, ["BIC"]);
+        const glaeubigerId = pick(record, nmap, ["Glaeubiger ID", "Gläubiger ID", "GlaeubigerID", "GläubigerID"]);
+        const mandatsreferenz = pick(record, nmap, ["Mandatsreferenz"]);
+        const kundenreferenz = pick(record, nmap, ["Kundenreferenz (End-to-End)", "Kundenreferenz", "End-to-End-Referenz", "End-to-End Referenz"]);
+        const sammlerreferenz = pick(record, nmap, ["Sammlerreferenz"]);
+        const lastschrifteinreicherId = pick(record, nmap, ["Lastschrifteinreicher ID", "LastschrifteinreicherID"]);
+        const idEndToEnd = pick(record, nmap, ["ID End-to-End", "ID EndToEnd", "End-to-End-ID"]);
+        const info = pick(record, nmap, ["Info"]);
+        const betragStr = pick(record, nmap, ["Betrag"]);
+        const waehrung = pick(record, nmap, ["Waehrung", "Währung", "Currency"]) || "EUR";
 
         const amount = parseGermanAmount(betragStr);
         const date = parseGermanDate(buchungstag);
@@ -91,10 +109,27 @@ export async function parseSparkasseCSV(content: string): Promise<ParseResult> {
             amount: amount,
             currency: waehrung,
             description: beguenstigter, // Simple display description
-            rawDescription: record["Verwendungszweck"] || beguenstigter, // Legacy raw
+            rawDescription: verwendungszweck || beguenstigter, // Legacy raw
             keyDesc: keyDesc, // THE IMPORTANT FIELD
             key: key,         // Unique ID
             metadata: record,
+            auftragskonto: auftragskonto || undefined,
+            buchungstag: buchungstag || undefined,
+            valutadatum: valutadatum || undefined,
+            buchungstext: buchungstext || undefined,
+            verwendungszweck: verwendungszweck || undefined,
+            glaeubigerId: glaeubigerId || undefined,
+            mandatsreferenz: mandatsreferenz || undefined,
+            kundenreferenz: kundenreferenz || undefined,
+            sammlerreferenz: sammlerreferenz || undefined,
+            lastschrifteinreicherId: lastschrifteinreicherId || undefined,
+            idEndToEnd: idEndToEnd || undefined,
+            beguenstigterZahlungspflichtiger: beguenstigter || undefined,
+            iban: iban || undefined,
+            bic: bic || undefined,
+            betrag: betragStr || undefined,
+            waehrung: waehrung || undefined,
+            info: info || undefined,
             // Additional legacy fields mapping
             paymentDate: date,
             descRaw: verwendungszweck || beguenstigter,
@@ -111,7 +146,7 @@ export async function parseSparkasseCSV(content: string): Promise<ParseResult> {
         monthAffected: "",
         format: "sparkasse",
         meta: {
-            delimiter: ";",
+            delimiter,
             warnings: [],
             hasMultiline: false,
             headersFound: Object.keys(records[0] || {})
@@ -150,4 +185,40 @@ function parseGermanAmount(amountStr: string): number {
     // "-260,00" -> -260.00 / "1.000,00" -> 1000.00
     const clean = amountStr.replace(/\./g, "").replace(",", ".");
     return parseFloat(clean);
+}
+
+function normalize(input: string): string {
+    return (input || "")
+        .toLowerCase()
+        .normalize("NFKD")
+        // eslint-disable-next-line no-control-regex
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+function detectDelimiter(headerLine: string | null): string | null {
+    if (!headerLine) return null;
+    const candidates = [",", ";", "\t"];
+    const counts = candidates.map((d) => ({ d, c: headerLine.split(d).length - 1 }));
+    counts.sort((a, b) => b.c - a.c);
+    return counts[0]?.c ? counts[0].d : null;
+}
+
+function buildNormalizedKeyMap(record: Record<string, any>): Map<string, string> {
+    const map = new Map<string, string>();
+    for (const k of Object.keys(record)) {
+        map.set(normalize(k).replace(/[^\p{L}\p{N}]/gu, ""), k);
+    }
+    return map;
+}
+
+function pick(record: Record<string, any>, normalizedMap: Map<string, string>, keys: string[]): string {
+    for (const key of keys) {
+        if (key in record && record[key] != null && String(record[key]).trim() !== "") return String(record[key]).trim();
+        const nk = normalize(key).replace(/[^\p{L}\p{N}]/gu, "");
+        const original = normalizedMap.get(nk);
+        if (original && record[original] != null && String(record[original]).trim() !== "") return String(record[original]).trim();
+    }
+    return "";
 }

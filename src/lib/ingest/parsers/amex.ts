@@ -24,10 +24,12 @@ export async function parseAmexActivityCSV(content: string): Promise<ParseResult
     const delimiter = detectDelimiter(headerLine) ?? ",";
 
     const records = parse(content, {
+      bom: true,
       columns: true,
       skip_empty_lines: true,
       delimiter,
       relax_quotes: true,
+      relax_column_count: true,
       trim: true
     });
 

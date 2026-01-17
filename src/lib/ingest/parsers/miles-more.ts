@@ -25,13 +25,17 @@ export async function parseMilesMoreCSV(content: string): Promise<ParseResult> {
     if (headerIndex === -1) throw new Error("Unknown M&M headers");
 
     const csvContent = lines.slice(headerIndex).join("\n");
+    const headerLine = lines[headerIndex] || "";
+    const delimiter = detectDelimiter(headerLine) ?? ";";
 
     const records = parse(csvContent, {
+      bom: true,
       columns: true,
       skip_empty_lines: true,
-      delimiter: ";",
+      delimiter,
       trim: true,
-      relax_column_count: true
+      relax_column_count: true,
+      relax_quotes: true
     });
 
     const transactions: ParsedTransaction[] = records.map((record: any) => {
@@ -106,7 +110,7 @@ export async function parseMilesMoreCSV(content: string): Promise<ParseResult> {
         monthAffected: "",
         format: "miles_and_more",
         meta: { 
-            delimiter: ";", 
+            delimiter, 
             warnings: [], 
             hasMultiline: false,
             headersFound: Object.keys(records[0] || {})
@@ -122,6 +126,14 @@ export async function parseMilesMoreCSV(content: string): Promise<ParseResult> {
         monthAffected: ""
     };
   }
+}
+
+function detectDelimiter(headerLine: string | null): string | null {
+    if (!headerLine) return null;
+    const candidates = [",", ";", "\t"];
+    const counts = candidates.map((d) => ({ d, c: headerLine.split(d).length - 1 }));
+    counts.sort((a, b) => b.c - a.c);
+    return counts[0]?.c ? counts[0].d : null;
 }
 
 function parseGermanDate(dateStr: string): Date {
