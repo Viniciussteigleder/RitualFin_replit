@@ -4,7 +4,7 @@ import { TransactionList } from "./transaction-list";
 import { AIAnalystChat } from "@/components/transactions/AIAnalystChat";
 import { ReRunRulesButton } from "@/components/transactions/re-run-rules-button";
 import { Wallet } from "lucide-react";
-import { AppIcon } from "@/components/ui/app-icon";
+import { PageHeader, PageContainer } from "@/components/ui/page-header";
 
 export default async function TransactionsPage({
   searchParams
@@ -36,36 +36,29 @@ export default async function TransactionsPage({
   };
 
   return (
-    <div className="max-w-7xl mx-auto flex flex-col gap-10 pb-32 px-1">
-      {/* Header Section - Premium Card Style */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8 bg-card p-10 rounded-[3rem] border border-border shadow-sm animate-fade-in-up">
-        <div className="flex flex-col gap-3">
+    <PageContainer>
+      <PageHeader
+        icon={Wallet}
+        iconColor="violet"
+        title="Extrato"
+        subtitle="Explore, filtre e gerencie seu histórico financeiro com precisão."
+        actions={
           <div className="flex items-center gap-3">
-            <AppIcon icon={Wallet} tone="violet" size="lg" />
-            <h1 className="text-4xl font-bold text-foreground tracking-tight font-display">Extrato</h1>
+            <ReRunRulesButton />
+            <AIAnalystChat />
           </div>
-          <p className="text-muted-foreground font-medium max-w-xl leading-relaxed">
-            Explore, filtre e gerencie seu histórico financeiro com precisão.
-          </p>
-        </div>
+        }
+      />
 
-        <div className="flex items-center gap-3">
-             <ReRunRulesButton />
-             <AIAnalystChat />
-        </div>
-      </div>
-
-      <div className="animate-fade-in-up" style={{ animationDelay: '100ms' }}>
-        <TransactionList
-          transactions={transactions.map(tx => ({
-            ...tx,
-            date: tx.paymentDate,
-            description: tx.descNorm || tx.descRaw
-          }))}
-          initialFilters={initialFilters}
-          aliasMap={aliasMap}
-        />
-      </div>
-    </div>
+      <TransactionList
+        transactions={transactions.map(tx => ({
+          ...tx,
+          date: tx.paymentDate,
+          description: tx.descNorm || tx.descRaw
+        }))}
+        initialFilters={initialFilters}
+        aliasMap={aliasMap}
+      />
+    </PageContainer>
   );
 }
