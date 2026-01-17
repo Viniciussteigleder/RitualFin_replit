@@ -27,6 +27,7 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { RecentTransactionsList } from "@/components/dashboard/recent-transactions-list";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AppIcon } from "@/components/ui/app-icon";
+import { AccountLogo } from "@/components/accounts/account-logo";
 
 // Dynamic import for heavy chart component (reduces initial bundle)
 const CategoryChart = dynamicImport(
@@ -308,9 +309,20 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                   <CardContent className="p-5 flex flex-col gap-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className={cn("h-11 w-11 rounded-2xl flex items-center justify-center font-black text-[10px] tracking-widest shadow-sm", mark.bg, mark.fg)}>
-                          {mark.initials}
-                        </div>
+                        <AccountLogo
+                          institution={institution}
+                          fallback={
+                            <div
+                              className={cn(
+                                "h-11 w-11 rounded-2xl flex items-center justify-center font-black text-[10px] tracking-widest shadow-sm",
+                                mark.bg,
+                                mark.fg
+                              )}
+                            >
+                              {mark.initials}
+                            </div>
+                          }
+                        />
                         <div className="flex flex-col min-w-0">
                           <span className="text-sm font-black text-foreground font-display truncate">{account.name}</span>
                           <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.18em] truncate">

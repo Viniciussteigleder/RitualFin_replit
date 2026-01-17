@@ -4,33 +4,18 @@ import { getAccounts } from "@/lib/actions/accounts";
 import { 
   Card, 
   CardContent, 
-  CardHeader, 
-  CardTitle,
-  CardDescription
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
-  CreditCard, 
-  Plus, 
   Wallet, 
-  Building2, 
-  Coins,
   Settings2,
   PlusCircle,
   PiggyBank
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { AppIcon } from "@/components/ui/app-icon";
 import { PageHeader, PageContainer } from "@/components/ui/page-header";
-
-const ICON_MAP: Record<string, any> = {
-  credit_card: CreditCard,
-  bank_account: Building2,
-  debit_card: Wallet,
-  cash: Coins,
-};
+import { AccountLogo } from "@/components/accounts/account-logo";
 
 const ACCOUNT_FILTER_MAP: Record<string, string> = {
   "American Express": "Amex",
@@ -108,9 +93,13 @@ export default async function AccountsPage() {
           </div>
         ) : (
           accounts.map((account) => {
-            const Icon = ICON_MAP[account.type] || Wallet;
             const balance = account.balance;
             const hasBalance = typeof balance === "number" && Number.isFinite(balance);
+            const institution =
+              account.inferredSource ||
+              ACCOUNT_FILTER_MAP[account.name] ||
+              account.institution ||
+              account.name;
 
             return (
               <div key={account.id} className="group relative bg-card border border-border rounded-[2.5rem] p-10 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 overflow-hidden flex flex-col gap-10">
@@ -125,9 +114,19 @@ export default async function AccountsPage() {
                     </div>
                   </div>
                   
-                  <div className={cn("p-5 rounded-[1.5rem] text-white shadow-lg transition-all duration-500 group-hover:rotate-6")} style={{ backgroundColor: account.color || "#091E16" }}>
-                    <Icon className="h-7 w-7" />
-                  </div>
+                  <AccountLogo
+                    institution={institution}
+                    className={cn("h-16 w-16 shadow-lg transition-all duration-500 group-hover:rotate-6")}
+                    fallback={
+                      <div
+                        className={cn("p-5 rounded-[1.5rem] text-white shadow-lg transition-all duration-500 group-hover:rotate-6")}
+                        style={{ backgroundColor: account.color || "#091E16" }}
+                        aria-hidden="true"
+                      >
+                        <Wallet className="h-7 w-7" />
+                      </div>
+                    }
+                  />
                 </div>
 
                 <div className="flex flex-col gap-6">
