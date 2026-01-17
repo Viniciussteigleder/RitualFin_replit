@@ -465,6 +465,39 @@ export async function getAliases() {
 }
 
 /**
+ * PERFORMANCE: Fetch only aliases used in the provided transactions
+ * Reduces payload by ~80% (500 aliases → ~20 visible)
+ */
+export async function getAliasesForTransactions(transactions: Array<{ aliasDesc?: string | null }>) {
+  const session = await auth();
+  if (!session?.user?.id) return {};
+
+  const aliasDescs = transactions
+    .map(tx => tx.aliasDesc)
+    .filter((desc): desc is string => Boolean(desc));
+
+  if (aliasDescs.length === 0) return {};
+
+  const aliases = await db.query.aliasAssets.findMany({
+    where: and(
+      eq(aliasAssets.userId, session.user.id),
+      sql`${aliasAssets.aliasDesc} IN (${sql.join(aliasDescs.map(d => sql`${d}`), sql`, `)})`
+    ),
+    columns: {
+      aliasDesc: true,
+      logoUrl: true,
+    }
+  });
+
+  return aliases.reduce((acc, alias) => {
+    if (alias.logoUrl && alias.aliasDesc) {
+      acc[alias.aliasDesc] = alias.logoUrl;
+    }
+    return acc;
+  }, {} as Record<string, string>);
+}
+
+/**
  * PERFORMANCE OPTIMIZATION: Consolidated spend averages for multiple periods
  * Reduces from 12 queries (3 periods × 4 category types) to 4 queries
  * by fetching 12-month data once and computing averages per period on server
@@ -575,21 +608,65 @@ export async function getSpendAveragesAllPeriods(
  * Full details should be fetched on-demand when drawer opens
  */
 export async function getTransactionsForList(
-  input: { limit?: number; sources?: string[]; cursor?: string } = {}
+  input: { 
+    limit?: number; 
+    sources?: string[]; 
+    cursor?: string;
+    search?: string;
+    categories?: string[];
+    minAmount?: number;
+    maxAmount?: number;
+    dateFrom?: Date;
+    dateTo?: Date;
+  } = {}
 ) {
   const session = await auth();
   if (!session?.user?.id) return { items: [], nextCursor: null, hasMore: false };
 
   const userId = session.user.id;
   const limit = input.limit ?? 50;
-  const sources = input.sources;
+  const { sources, search, categories, minAmount, maxAmount, dateFrom, dateTo } = input;
 
+  // Build dynamic WHERE clauses
   const sourceClause = sources?.length
     ? sql`AND t.source IN (${sql.join(sources.map((s) => sql`${s}`), sql`, `)})`
     : sql``;
 
   const cursorClause = input.cursor
     ? sql`AND (t.payment_date, t.id) < (${new Date(input.cursor.split('_')[0]!)}, ${input.cursor.split('_')[1]})`
+    : sql``;
+
+  // Search clause (desc_norm, desc_raw, alias_desc, category)
+  const searchClause = search
+    ? sql`AND (
+        LOWER(t.desc_norm) LIKE ${`%${search.toLowerCase()}%`} OR
+        LOWER(t.desc_raw) LIKE ${`%${search.toLowerCase()}%`} OR
+        LOWER(t.alias_desc) LIKE ${`%${search.toLowerCase()}%`} OR
+        LOWER(CAST(t.category_1 AS text)) LIKE ${`%${search.toLowerCase()}%`}
+      )`
+    : sql``;
+
+  // Category filter
+  const categoryClause = categories?.length
+    ? sql`AND t.category_1 IN (${sql.join(categories.map((c) => sql`${c}`), sql`, `)})`
+    : sql``;
+
+  // Amount range filter
+  const minAmountClause = minAmount !== undefined
+    ? sql`AND ABS(t.amount) >= ${minAmount}`
+    : sql``;
+
+  const maxAmountClause = maxAmount !== undefined
+    ? sql`AND ABS(t.amount) <= ${maxAmount}`
+    : sql``;
+
+  // Date range filter
+  const dateFromClause = dateFrom
+    ? sql`AND t.payment_date >= ${dateFrom}`
+    : sql``;
+
+  const dateToClause = dateTo
+    ? sql`AND t.payment_date <= ${dateTo}`
     : sql``;
 
   // Select only essential fields for list view
@@ -615,6 +692,12 @@ export async function getTransactionsForList(
     WHERE t.user_id = ${userId}
     AND t.display != 'no'
     ${sourceClause}
+    ${searchClause}
+    ${categoryClause}
+    ${minAmountClause}
+    ${maxAmountClause}
+    ${dateFromClause}
+    ${dateToClause}
     ${cursorClause}
     ORDER BY t.payment_date DESC, t.id DESC
     LIMIT ${limit + 1}

@@ -243,6 +243,22 @@ export interface BudgetProposal {
   recommendations: string[];
 }
 
+export interface CategoryBreakdown {
+  category1: string;
+  total: number;
+  avgMonthly: number;
+  level2: {
+    name: string;
+    total: number;
+    avgMonthly: number;
+    level3: {
+      name: string;
+      total: number;
+      avgMonthly: number;
+    }[];
+  }[];
+}
+
 /**
  * Get smart budget proposals based on past 3 months of spending
  * Analyzes spending patterns and provides intelligent budget recommendations
@@ -582,4 +598,76 @@ export async function applyBudgetProposals(month: string, proposals: { category1
     console.error("[applyBudgetProposals] Error:", error);
     return { success: false, error: "Erro ao aplicar orçamentos" };
   }
+}
+
+/**
+ * Get breakdown for a specific category1 into level 2 and 3
+ */
+export async function getCategoryBreakdown(category1: string, months: number = 3): Promise<CategoryBreakdown | null> {
+  const session = await auth();
+  if (!session?.user?.id) return null;
+
+  const userId = session.user.id;
+  const now = new Date();
+  const startDate = new Date(now.getFullYear(), now.getMonth() - months, 1);
+  const endDate = new Date(now.getFullYear(), now.getMonth(), 0);
+
+  const results = await db
+    .select({
+      category1: transactions.category1,
+      category2: transactions.category2,
+      category3: transactions.category3,
+      total: sql<number>`COALESCE(SUM(ABS(${transactions.amount})), 0)`,
+    })
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.userId, userId),
+        eq(transactions.category1, category1 as any),
+        eq(transactions.type, "Despesa"),
+        gte(transactions.paymentDate, startDate),
+        lte(transactions.paymentDate, endDate),
+        ne(transactions.display, "no")
+      )
+    )
+    .groupBy(transactions.category1, transactions.category2, transactions.category3);
+
+  if (results.length === 0) return null;
+
+  const total = results.reduce((sum, r) => sum + Number(r.total), 0);
+  const avgMonthly = total / months;
+
+  const level2Map = new Map<string, { name: string; total: number; level3Map: Map<string, number> }>();
+
+  for (const row of results) {
+    const l2Name = row.category2 || "Outros";
+    const l3Name = row.category3 || "Outros";
+    const rowTotal = Number(row.total);
+
+    if (!level2Map.has(l2Name)) {
+      level2Map.set(l2Name, { name: l2Name, total: 0, level3Map: new Map() });
+    }
+
+    const l2Data = level2Map.get(l2Name)!;
+    l2Data.total += rowTotal;
+    l2Data.level3Map.set(l3Name, (l2Data.level3Map.get(l3Name) || 0) + rowTotal);
+  }
+
+  const level2 = Array.from(level2Map.values()).map(l2 => ({
+    name: l2.name,
+    total: l2.total,
+    avgMonthly: l2.total / months,
+    level3: Array.from(l2.level3Map.entries()).map(([name, total]) => ({
+      name,
+      total,
+      avgMonthly: total / months
+    })).sort((a, b) => b.total - a.total)
+  })).sort((a, b) => b.total - a.total);
+
+  return {
+    category1,
+    total,
+    avgMonthly,
+    level2
+  };
 }

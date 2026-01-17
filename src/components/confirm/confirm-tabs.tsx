@@ -708,47 +708,47 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
               const keyDesc = tx.keyDesc ?? tx.descNorm ?? tx.descRaw;
 
               return (
-                <div key={tx.id} className="bg-card border border-border rounded-3xl p-4 md:p-6 shadow-sm">
-                  <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1.9fr] gap-4 lg:gap-6">
+                <div className="bg-amber-50/50 border border-amber-100 rounded-[2.5rem] p-4 md:p-6 shadow-sm overflow-hidden">
+                  <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1.9fr] gap-4 lg:gap-8">
                     {/* Left: transaction context */}
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">
-                          <div className="font-black text-base leading-tight truncate">{display}</div>
-                          <div className="text-xs text-muted-foreground">
+                          <div className="font-black text-lg leading-tight truncate text-amber-950">{display}</div>
+                          <div className="text-sm font-medium text-amber-800/60 mt-0.5">
                             {new Date(tx.paymentDate).toLocaleDateString("pt-BR")}
                           </div>
                         </div>
                         <div className="text-right shrink-0">
-                          <div className={cn("font-black font-mono", tx.amount < 0 ? "text-red-600" : "text-emerald-600")}>
+                          <div className={cn("font-black font-mono text-lg", tx.amount < 0 ? "text-red-600" : "text-emerald-600")}>
                             {formatCurrency(tx.amount)}
                           </div>
-                          <Badge variant="outline" className="mt-1 font-mono text-[10px]">
+                          <Badge variant="outline" className="mt-1 font-mono text-[10px] bg-amber-100/50 text-amber-700 border-amber-200 uppercase tracking-widest">
                             conflito
                           </Badge>
                         </div>
                       </div>
 
-                      <div className="rounded-2xl border border-border bg-secondary/15 p-3">
-                        <div className="text-[11px] font-black text-muted-foreground uppercase tracking-wide mb-1">
-                          key_desc
+                      <div className="rounded-2xl border border-amber-200/50 bg-amber-100/30 p-4">
+                        <div className="text-[10px] font-black text-amber-900/40 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                            <Search className="w-3 h-3" /> key_desc
                         </div>
-                        <div className="text-sm font-mono leading-relaxed break-words">
+                        <div className="text-sm font-mono leading-relaxed break-words text-amber-900/80">
                           {keyDesc}
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3 pt-2">
                         <Button
                           variant="outline"
-                          className="rounded-2xl font-bold"
+                          className="rounded-2xl font-black bg-white/50 border-amber-200 hover:bg-white text-amber-900"
                           onClick={() => setSelectedConflict(tx)}
                         >
                           Abrir transação
                         </Button>
                         <Button
                           variant="outline"
-                          className="rounded-2xl font-bold"
+                          className="rounded-2xl font-black bg-amber-600 text-white border-amber-600 hover:bg-amber-700 hover:text-white"
                           disabled={isConflictAiPending}
                           onClick={() =>
                             startConflictAi(async () => {
@@ -762,20 +762,21 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
                             })
                           }
                         >
-                          {isConflictAiPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                          {isConflictAiPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Wand2 className="w-4 h-4 mr-2" />}
                           Sugestão IA
                         </Button>
                       </div>
                     </div>
 
                     {/* Right: candidates */}
-                    <div className="space-y-3">
+                    <div className="space-y-4 bg-amber-50/30 dark:bg-black/20 rounded-[2rem] p-4 lg:p-6 border border-amber-200/50">
                       <div className="flex items-center justify-between">
-                        <div className="text-sm font-black text-amber-700">
-                          Candidatos ({tx.classificationCandidates.length})
+                        <div className="text-sm font-black text-amber-900 flex items-center gap-2">
+                          <Swords className="w-4 h-4 text-amber-600" />
+                          Sugestões de Regra ({tx.classificationCandidates.length})
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          Ajuste palavras-chave e confirme.
+                        <div className="text-[11px] font-bold text-amber-800/50 uppercase tracking-tight">
+                          Ajuste e confirme abaixo
                         </div>
                       </div>
 
@@ -936,83 +937,123 @@ function ConflictCandidateEditor(props: {
   const [addKeyWords, setAddKeyWords] = useState("");
   const [addKeyWordsNegative, setAddKeyWordsNegative] = useState("");
 
+  const [currentKW, setCurrentKW] = useState(() => splitKeywords(candidate.ruleKeyWords));
+  const [currentNeg, setCurrentNeg] = useState(() => splitKeywords(candidate.ruleKeyWordsNegative));
+
   const chain = `${candidate.appCategoryName ?? "OPEN"} > ${candidate.category1} > ${candidate.category2} > ${candidate.category3}`;
-  const existingKW = candidate.ruleKeyWords ?? "";
-  const existingNeg = candidate.ruleKeyWordsNegative ?? "";
+
+  const handleRemoveKW = (token: string) => setCurrentKW(prev => prev.filter(t => t !== token));
+  const handleRemoveNeg = (token: string) => setCurrentNeg(prev => prev.filter(t => t !== token));
 
   return (
-    <div className="rounded-2xl border border-amber-200/60 bg-amber-50/20 dark:bg-amber-950/10 p-4">
+    <div className="rounded-2xl border border-amber-200/60 bg-white/60 dark:bg-white/5 p-4 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="font-black text-sm truncate">{chain}</div>
-          <div className="text-xs text-muted-foreground mt-0.5">
-            Match:{" "}
-            <span className="font-mono font-bold text-amber-700">
+          <div className="font-black text-sm truncate text-amber-950 uppercase tracking-tight">{chain}</div>
+          <div className="text-[11px] font-bold text-amber-700/60 mt-1 flex items-center gap-1.5">
+            MATCH ATUAL:{" "}
+            <span className="font-mono bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200 text-amber-800">
               {candidate.matchedKeyword ?? "-"}
             </span>
           </div>
         </div>
-        <Badge className="font-mono text-[10px] bg-amber-100 text-amber-800 border-0 shrink-0">
+        <Badge className="font-mono text-[10px] bg-amber-600 text-white border-0 shrink-0 font-black">
           {candidate.strict ? "STRICT" : `P${candidate.priority}`}
         </Badge>
       </div>
 
-      <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div className="rounded-xl border border-border bg-background/60 p-3">
-          <div className="text-[10px] font-black text-muted-foreground uppercase tracking-wide mb-1">key_words</div>
-          <div className="text-xs font-mono break-words leading-relaxed">{highlightText(existingKW || "-", marks)}</div>
+      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="rounded-xl border border-amber-200/50 bg-white/40 p-3">
+          <div className="text-[10px] font-black text-amber-900/40 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+            <Search className="w-3 h-3" /> key_words
+          </div>
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {currentKW.map(kw => (
+              <Badge key={kw} variant="secondary" className="font-mono text-[10px] gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-200/80">
+                {kw}
+                <button
+                  type="button"
+                  onClick={() => handleRemoveKW(kw)}
+                  className="hover:text-red-600 transition-colors p-0.5"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </Badge>
+            ))}
+            {currentKW.length === 0 && <span className="text-[11px] text-muted-foreground italic">Nenhuma palavra-chave</span>}
+          </div>
           <div className="mt-2">
             <Input
               value={addKeyWords}
               onChange={(e) => setAddKeyWords(e.target.value)}
               placeholder="Adicionar (separar por ;)…"
-              className="h-9 rounded-xl font-mono text-xs"
+              className="h-9 rounded-xl font-mono text-xs border-amber-100 bg-white/80 focus:ring-amber-500"
             />
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-background/60 p-3">
-          <div className="text-[10px] font-black text-muted-foreground uppercase tracking-wide mb-1">key_words_negative</div>
-          <div className="text-xs font-mono break-words leading-relaxed">{highlightText(existingNeg || "-", marks)}</div>
-          <div className="mt-2">
+        <div className="rounded-xl border border-red-200/50 bg-white/40 p-3">
+          <div className="text-[10px] font-black text-red-900/40 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+            <Ban className="w-3 h-3" /> key_words_negative (excluir)
+          </div>
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {currentNeg.map(kw => (
+              <Badge key={kw} variant="secondary" className="font-mono text-[10px] gap-1 px-2 py-0.5 bg-red-100 text-red-800 border-red-200 hover:bg-red-200/80">
+                {kw}
+                <button
+                  type="button"
+                  onClick={() => handleRemoveNeg(kw)}
+                  className="hover:text-red-900 transition-colors p-0.5"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </Badge>
+            ))}
+            {currentNeg.length === 0 && <span className="text-[11px] text-muted-foreground italic">Nenhuma exclusão</span>}
+          </div>
+          <div className="mt-2 text-[10px] text-red-800/60 mb-1 px-1">Se presente na transação, desconsidera esta regra.</div>
+          <div>
             <Input
               value={addKeyWordsNegative}
               onChange={(e) => setAddKeyWordsNegative(e.target.value)}
               placeholder="Adicionar exclusões (separar por ;)…"
-              className="h-9 rounded-xl font-mono text-xs"
+              className="h-9 rounded-xl font-mono text-xs border-red-100 bg-white/80 focus:ring-red-500"
             />
           </div>
         </div>
       </div>
 
-      <div className="mt-3 rounded-xl border border-border bg-background/60 p-3">
-        <div className="text-[10px] font-black text-muted-foreground uppercase tracking-wide mb-1">key_desc (marcado)</div>
-        <div className="text-xs font-mono break-words leading-relaxed">{highlightText(keyDesc, marks)}</div>
+      <div className="mt-4 rounded-xl border border-amber-200/50 bg-white/40 p-4">
+        <div className="text-[10px] font-black text-amber-900/40 uppercase tracking-widest mb-1.5">key_desc (preview marcas)</div>
+        <div className="text-xs font-mono break-words leading-relaxed text-amber-900/70">{highlightText(keyDesc, marks)}</div>
       </div>
 
-      <div className="mt-3 flex items-center justify-end">
+      <div className="mt-4 flex items-center justify-end">
         <Button
-          className="rounded-2xl font-black"
-          disabled={isSaving || (!addKeyWords.trim() && !addKeyWordsNegative.trim())}
+          className="rounded-2xl font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 px-6"
+          disabled={isSaving}
           onClick={() =>
             startSaving(async () => {
-              const res = await mergeRuleKeywordsById({
-                ruleId: candidate.ruleId,
-                addKeyWords: addKeyWords.trim() || null,
-                addKeyWordsNegative: addKeyWordsNegative.trim() || null,
+              const finalKW = [...new Set([...currentKW, ...splitKeywords(addKeyWords)])].join("; ");
+              const finalNeg = [...new Set([...currentNeg, ...splitKeywords(addKeyWordsNegative)])].join("; ");
+
+              const res = await updateRule(candidate.ruleId, {
+                keyWords: finalKW || null,
+                keyWordsNegative: finalNeg || null,
               });
+
               if (!res.success) {
                 toast.error("Erro ao salvar regra", { description: res.error });
                 return;
               }
               setAddKeyWords("");
               setAddKeyWordsNegative("");
-              toast.success("Mudança confirmada", { description: "Regra atualizada e aplicada." });
+              toast.success("Regra atualizada!", { description: "As mudanças foram aplicadas imediatamente." });
               await props.onSaved();
             })
           }
         >
-          {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+          {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
           Confirmar mudança
         </Button>
       </div>

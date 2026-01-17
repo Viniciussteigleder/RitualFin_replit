@@ -29,6 +29,7 @@ import {
   BarChart3,
   Lightbulb,
   Zap,
+  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BudgetDialog } from "./budget-dialog";
@@ -38,8 +39,10 @@ import {
   getBudgetProposals,
   getHistoricalComparison,
   applyBudgetProposals,
+  getCategoryBreakdown,
   type BudgetProposal,
   type MonthlyComparison,
+  type CategoryBreakdown,
 } from "@/lib/actions/budgets";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -66,6 +69,9 @@ export function BudgetsClient({ budgets, currentMonth }: BudgetsClientProps) {
   const [loadingProposals, setLoadingProposals] = useState(false);
   const [loadingComparison, setLoadingComparison] = useState(false);
   const [applyingProposals, setApplyingProposals] = useState(false);
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [breakdownData, setBreakdownData] = useState<Record<string, CategoryBreakdown>>({});
+  const [loadingBreakdown, setLoadingBreakdown] = useState<string | null>(null);
   const router = useRouter();
 
   const filteredBudgets = budgets.filter((b) => b.month === selectedMonth);
@@ -146,6 +152,27 @@ export function BudgetsClient({ budgets, currentMonth }: BudgetsClientProps) {
       }
     } finally {
       setApplyingProposals(false);
+    }
+  };
+
+  const handleToggleBreakdown = async (category1: string) => {
+    if (expandedCategory === category1) {
+      setExpandedCategory(null);
+      return;
+    }
+
+    setExpandedCategory(category1);
+
+    if (!breakdownData[category1]) {
+      setLoadingBreakdown(category1);
+      try {
+        const data = await getCategoryBreakdown(category1);
+        if (data) {
+          setBreakdownData((prev) => ({ ...prev, [category1]: data }));
+        }
+      } finally {
+        setLoadingBreakdown(null);
+      }
     }
   };
 
@@ -474,7 +501,11 @@ export function BudgetsClient({ budgets, currentMonth }: BudgetsClientProps) {
                   {proposals.categories.map((cat) => (
                     <div
                       key={cat.category1}
-                      className="bg-card border border-border rounded-xl p-5 hover:shadow-md transition-all"
+                      className={cn(
+                        "bg-card border border-border rounded-xl p-5 hover:shadow-md transition-all cursor-pointer",
+                        expandedCategory === cat.category1 && "border-primary/30 ring-1 ring-primary/10"
+                      )}
+                      onClick={() => handleToggleBreakdown(cat.category1)}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -482,7 +513,13 @@ export function BudgetsClient({ budgets, currentMonth }: BudgetsClientProps) {
                             <Target className="h-5 w-5 text-muted-foreground" />
                           </div>
                           <div>
-                            <h5 className="font-bold text-foreground">{cat.category1}</h5>
+                            <div className="flex items-center gap-2">
+                              <h5 className="font-bold text-foreground">{cat.category1}</h5>
+                              <ChevronDown className={cn(
+                                "h-4 w-4 text-muted-foreground transition-transform duration-300",
+                                expandedCategory === cat.category1 && "rotate-180"
+                              )} />
+                            </div>
                             <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                               <span>Mês passado: {formatCurrency(cat.lastMonth)}</span>
                               <span>Média: {formatCurrency(cat.threeMonthAvg)}</span>
@@ -519,6 +556,51 @@ export function BudgetsClient({ budgets, currentMonth }: BudgetsClientProps) {
                           </div>
                         </div>
                       </div>
+
+                      {/* Drill-down Breakdown */}
+                      {expandedCategory === cat.category1 && (
+                        <div className="mt-6 pt-6 border-t border-border animate-in fade-in slide-in-from-top-2 duration-300" onClick={(e) => e.stopPropagation()}>
+                          {loadingBreakdown === cat.category1 ? (
+                            <div className="flex items-center justify-center py-4">
+                              <Loader2 className="h-5 w-5 text-primary animate-spin mr-2" />
+                              <span className="text-sm text-muted-foreground">Carregando detalhes...</span>
+                            </div>
+                          ) : breakdownData[cat.category1] ? (
+                            <div className="space-y-4">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-black text-muted-foreground uppercase tracking-widest">Detalhamento (Média 3 meses)</span>
+                              </div>
+                              <div className="space-y-3">
+                                {breakdownData[cat.category1].level2.map((l2) => (
+                                  <div key={l2.name} className="space-y-2">
+                                    <div className="flex items-center justify-between text-sm py-1">
+                                      <span className="font-bold text-foreground">{l2.name}</span>
+                                      <span className="font-bold">{formatCurrency(l2.avgMonthly)}</span>
+                                    </div>
+                                    <div className="pl-4 space-y-1 border-l-2 border-primary/10">
+                                      {l2.level3.map((l3) => (
+                                        <div key={l3.name} className="flex items-center justify-between text-xs py-0.5 text-muted-foreground">
+                                          <span>{l3.name}</span>
+                                          <span>{formatCurrency(l3.avgMonthly)}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    {/* Progress bar for level 2 relative to category total */}
+                                    <div className="h-1 w-full bg-secondary rounded-full overflow-hidden">
+                                      <div 
+                                        className="h-full bg-primary/40 rounded-full"
+                                        style={{ width: `${(l2.avgMonthly / breakdownData[cat.category1].avgMonthly) * 100}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-xs text-muted-foreground text-center">Nenhum detalhe disponível</p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

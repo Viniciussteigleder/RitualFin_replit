@@ -28,6 +28,7 @@ import { RecentTransactionsList } from "@/components/dashboard/recent-transactio
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AppIcon } from "@/components/ui/app-icon";
 import { AccountLogo } from "@/components/accounts/account-logo";
+import { PredictiveInsights } from "@/components/dashboard/PredictiveInsights";
 
 // Dynamic import for heavy chart component (reduces initial bundle)
 const CategoryChart = dynamicImport(
@@ -151,18 +152,21 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       <DashboardHeader />
 
       {/* TopSummaryRow */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 animate-fade-in-up" style={{ animationDelay: '50ms' }}>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 animate-slide-up" style={{ animationDelay: '50ms' }}>
         
         {/* BIG Focus Card: Disponível (Budget) */}
-        <Card className="md:col-span-2 rounded-2xl border-primary/20 bg-emerald-50/50 dark:bg-emerald-950/10 shadow-sm transition-all group relative overflow-hidden ring-1 ring-emerald-500/10">
-           <div className={`absolute inset-0 opacity-10 ${remainingBudget > 0 ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
-          <CardContent className="p-8 flex flex-col justify-between h-full gap-5 relative z-10">
+        <Card className="md:col-span-2 ritual-card bg-emerald-50/20 dark:bg-emerald-500/5 group relative overflow-hidden">
+          <CardContent className="p-8 flex flex-col justify-between h-full gap-6 relative z-10">
                 <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <AppIcon icon={Wallet} tone={remainingBudget > 0 ? "emerald" : "rose"} size="md" active={remainingBudget > 0} />
+                <div className="flex items-center gap-4">
+                    <AppIcon 
+                      icon={Wallet} 
+                      color={remainingBudget > 0 ? "#10b981" : "#ef4444"} 
+                      variant="gradient"
+                    />
                     <div className="flex flex-col">
-                        <span className="text-xs font-black text-muted-foreground uppercase tracking-[0.15em]">Saldo Livre</span>
-                        <span className="text-[10px] text-muted-foreground/60 font-bold uppercase tracking-wider">Para o resto do mês</span>
+                        <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Saldo Livre</span>
+                        <span className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-wider">Para o resto do mês</span>
                     </div>
                 </div>
                 <div className="text-right">
@@ -172,21 +176,27 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
              </div>
              
              <div>
-                <h3 className={`text-6xl font-bold font-display tracking-tightest ${remainingBudget >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`} suppressHydrationWarning>
+                <h3 className={cn(
+                  "text-6xl font-bold tracking-tighter tabular-nums",
+                  remainingBudget >= 0 ? "text-[var(--primary)]" : "text-destructive"
+                )} suppressHydrationWarning>
                     {formatCurrency(remainingBudget, { hideDecimals: true })}
                 </h3>
              </div>
              
              <div className="space-y-3">
-                 <div className="flex flex-col gap-1 w-full bg-secondary h-3 rounded-full overflow-hidden relative border border-border/50">
+                 <div className="flex flex-col gap-1 w-full bg-secondary h-2.5 rounded-full overflow-hidden relative">
                     <div 
-                        className={`h-full ${remainingBudget > 0 ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]' : 'bg-red-500 transition-all duration-500'}`} 
+                        className={cn(
+                          "h-full transition-all duration-1000 ease-out",
+                          remainingBudget > 0 ? "bg-primary" : "bg-destructive"
+                        )} 
                         style={{ width: `${Math.max(0, Math.min((remainingBudget / monthlyGoal) * 100, 100))}%` }}
                     ></div>
                  </div>
-                 <div className="flex justify-between items-center text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground/80">
-                    <span className="flex items-center gap-1.5">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                 <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">
+                    <span className="flex items-center gap-2">
+                        <div className={cn("w-1.5 h-1.5 rounded-full", remainingBudget > 0 ? "bg-primary" : "bg-destructive")}></div>
                         Você ainda tem {Math.round((remainingBudget / monthlyGoal) * 100)}%
                     </span>
                     <span className="opacity-50">Budget Total</span> 
@@ -199,21 +209,21 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6 h-full">
             {/* Card: Gasto Realizado */}
             <Link href="/transactions" className="contents">
-                <Card className="rounded-2xl border-border bg-white dark:bg-card shadow-sm hover:shadow-md transition-all group relative overflow-hidden cursor-pointer border-l-4 border-l-orange-500/50">
+                <Card className="ritual-card ritual-card-hover group cursor-pointer border-l-[3px] border-l-[#F59E0B]">
                 <CardContent className="p-8 flex flex-col justify-between h-full gap-4">
-                    <div className="flex items-center gap-3">
-                        <AppIcon icon={TrendingUp} tone="amber" size="md" />
+                    <div className="flex items-center gap-4">
+                        <AppIcon icon={TrendingUp} color="#F59E0B" />
                         <div className="flex flex-col">
                             <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Gasto Acumulado</span>
-                            <span className="text-[10px] text-muted-foreground/60 font-bold uppercase">Realizado até hoje</span>
+                            <span className="text-[10px] text-muted-foreground/60 font-medium uppercase">Realizado até hoje</span>
                         </div>
                     </div>
                     <div>
-                        <h3 className="text-4xl font-bold font-display text-orange-600 dark:text-orange-400 tracking-tight" suppressHydrationWarning>
+                        <h3 className="text-4xl font-bold tracking-tight text-[#F59E0B] dark:text-[#F59E0B]/90" suppressHydrationWarning>
                             {formatCurrency(spentMonthToDate, { hideDecimals: true })}
                         </h3>
                     </div>
-                    <Button variant="ghost" className="p-0 h-auto text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-orange-500 justify-start gap-2">
+                    <Button variant="ghost" className="p-0 h-auto text-[10px] font-bold uppercase tracking-widest text-muted-foreground group-hover:text-[#F59E0B] justify-start gap-2 transition-colors">
                         Ver Extrato <ArrowRight className="h-3 w-3" />
                     </Button>
                 </CardContent>
@@ -222,23 +232,22 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
             {/* Card: Projeção Final */}
             <Link href="/transactions" className="contents">
-                <Card className="rounded-2xl border-border bg-card shadow-sm hover:shadow-md transition-all group relative overflow-hidden cursor-pointer border-l-4 border-l-blue-500/50">
-                <div className="absolute right-0 top-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl"></div>
+                <Card className="ritual-card ritual-card-hover group cursor-pointer border-l-[3px] border-l-[#3B82F6]">
                 <CardContent className="p-8 flex flex-col justify-between h-full gap-4 relative z-10">
-                    <div className="flex items-center gap-3">
-                        <AppIcon icon={Activity} tone="blue" size="md" />
+                    <div className="flex items-center gap-4">
+                        <AppIcon icon={Activity} color="#3B82F6" />
                         <div className="flex flex-col">
                             <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Projeção Final</span>
-                            <span className="text-[10px] text-muted-foreground/60 font-bold uppercase">Baseado no perfil IA</span>
+                            <span className="text-[10px] text-muted-foreground/60 font-medium uppercase">Baseado no perfil IA</span>
                         </div>
                     </div>
                     <div>
-                        <h3 className="text-4xl font-bold text-foreground font-display tracking-tight" suppressHydrationWarning>
+                        <h3 className="text-4xl font-bold tracking-tight text-foreground" suppressHydrationWarning>
                             {formatCurrency(projectedSpend, { hideDecimals: true })}
                         </h3>
                     </div>
                     <div>
-                        <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-400/10 dark:text-blue-400 dark:border-blue-400/20 text-[9px] font-black px-2 tracking-tighter uppercase">
+                        <Badge variant="secondary" className="bg-[#3B82F6]/10 text-[#3B82F6] dark:bg-[#3B82F6]/20 dark:text-[#3B82F6]/90 border-none text-[9px] font-bold px-2 tracking-tight uppercase">
                             Previsão estimada
                         </Badge>
                     </div>
@@ -249,14 +258,17 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       </div>
 
       {/* Row 2: Category Chart */}
-      <div className="grid grid-cols-1 gap-6 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
-        <Card className="rounded-2xl border-border bg-card shadow-sm p-2">
+      <div className="grid grid-cols-1 gap-6 animate-slide-up" style={{ animationDelay: '100ms' }}>
+        <Card className="ritual-card">
             <CardContent className="p-8">
                 {/* Passing full data to Client Component to handle filtering/drilldown */}
                 <CategoryChart data={categoryData || []} total={spentMonthToDate} />
             </CardContent>
         </Card>
       </div>
+
+      {/* Row 3: Predictive Insights (P6 Engine) */}
+      <PredictiveInsights />
 
       {/* AccountCardsGrid - Kept mostly same but hide decimals */}
       <div className="flex flex-col gap-6 animate-fade-in-up" style={{ animationDelay: '150ms' }}>

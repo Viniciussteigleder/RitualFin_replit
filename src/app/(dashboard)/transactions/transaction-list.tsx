@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import {
     Search,
     ChevronDown,
@@ -79,8 +80,47 @@ export function TransactionList({
     const [hideCents, setHideCents] = useState(false);
     const [sortField, setSortField] = useState<SortField>("date");
     const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+    const [isRefetching, setIsRefetching] = useState(false);
 
-    // Handle sorting
+    // Debounce search to reduce server calls
+    const debouncedSearch = useDebouncedValue(search, 300);
+
+    // Refetch transactions when filters change (server-side filtering)
+    useEffect(() => {
+        const refetchWithFilters = async () => {
+            if (isRefetching) return;
+            
+            setIsRefetching(true);
+            try {
+                const result = await getTransactionsForList({
+                    limit: 50,
+                    sources: filters.accounts,
+                    search: debouncedSearch || undefined,
+                    categories: filters.categories,
+                    minAmount: filters.minAmount,
+                    maxAmount: filters.maxAmount,
+                    dateFrom: filters.dateFrom,
+                    dateTo: filters.dateTo,
+                });
+                
+                setTransactions(result.items.map(tx => ({
+                    ...tx,
+                    date: tx.paymentDate,
+                    description: tx.descNorm || tx.descRaw
+                })));
+                setHasMore(result.hasMore);
+                setNextCursor(result.nextCursor);
+            } catch (error) {
+                console.error('Failed to refetch transactions:', error);
+            } finally {
+                setIsRefetching(false);
+            }
+        };
+
+        refetchWithFilters();
+    }, [debouncedSearch, filters]);
+
+    // Handle sorting (client-side for now, can be moved to server later)
     const handleSort = (field: SortField) => {
         if (sortField === field) {
             setSortDirection(sortDirection === "asc" ? "desc" : "asc");
@@ -90,29 +130,9 @@ export function TransactionList({
         }
     };
 
-    const filtered = useMemo(() => {
-        return transactions.filter(tx => {
-            const descMatch = (tx.descNorm || tx.descRaw || "").toLowerCase();
-            const catMatch = (tx.category1 || "").toLowerCase();
-            const matchesSearch = descMatch.includes(search.toLowerCase()) ||
-                catMatch.includes(search.toLowerCase());
-
-            if (!matchesSearch) return false;
-
-            if (filters.categories?.length && !filters.categories.includes(tx.category1)) return false;
-            if (filters.accounts?.length && !filters.accounts.includes(tx.source)) return false;
-            if (filters.minAmount !== undefined && Math.abs(tx.amount) < filters.minAmount) return false;
-            if (filters.maxAmount !== undefined && Math.abs(tx.amount) > filters.maxAmount) return false;
-            if (filters.dateFrom && new Date(tx.date) < filters.dateFrom) return false;
-            if (filters.dateTo && new Date(tx.date) > filters.dateTo) return false;
-
-            return true;
-        });
-    }, [transactions, search, filters]);
-
-    // Sort and group transactions
+    // Sort and group transactions (now operating on server-filtered data)
     const sortedTransactions = useMemo(() => {
-        const sorted = [...filtered].sort((a, b) => {
+        const sorted = [...transactions].sort((a, b) => {
             let comparison = 0;
             switch (sortField) {
                 case "date":
@@ -131,7 +151,7 @@ export function TransactionList({
             return sortDirection === "asc" ? comparison : -comparison;
         });
         return sorted;
-    }, [filtered, sortField, sortDirection]);
+    }, [transactions, sortField, sortDirection]);
 
     const groupedTransactions = useMemo(() => {
         return sortedTransactions.reduce((acc: Record<string, any[]>, tx: any) => {
@@ -161,10 +181,10 @@ export function TransactionList({
     };
 
     const toggleSelectAll = () => {
-        if (selectedIds.size === filtered.length && filtered.length > 0) {
+        if (selectedIds.size === transactions.length && transactions.length > 0) {
             setSelectedIds(new Set());
         } else {
-            setSelectedIds(new Set(filtered.map(tx => tx.id)));
+            setSelectedIds(new Set(transactions.map(tx => tx.id)));
         }
     };
 
@@ -302,7 +322,7 @@ export function TransactionList({
             {/* Table Header (Desktop Only) */}
             <div className="hidden md:grid grid-cols-[40px_80px_2.5fr_1fr_1.2fr_1fr_80px_80px] gap-3 px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-wider bg-secondary/50 rounded-t-3xl border border-border backdrop-blur-sm">
                 <div className="flex justify-center">
-                    <Checkbox checked={selectedIds.size === filtered.length && filtered.length > 0} onCheckedChange={toggleSelectAll} className="h-4 w-4 rounded border-2" />
+                    <Checkbox checked={selectedIds.size === transactions.length && transactions.length > 0} onCheckedChange={toggleSelectAll} className="h-4 w-4 rounded border-2" />
                 </div>
                 <SortableHeader field="date" sortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Data</SortableHeader>
                 <div>Estabelecimento</div>
@@ -316,7 +336,12 @@ export function TransactionList({
             {/* Transaction Rows Grouped by Date */}
             <div className="bg-card border border-border border-t-0 rounded-b-3xl overflow-hidden shadow-sm">
                 <div className="divide-y divide-border/30">
-                    {filtered.length === 0 ? (
+                    {isRefetching ? (
+                        <div className="text-center py-32 flex flex-col items-center">
+                            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+                            <p className="text-sm text-muted-foreground font-medium">Atualizando transações...</p>
+                        </div>
+                    ) : transactions.length === 0 ? (
                         <div className="text-center py-32 flex flex-col items-center animate-in fade-in zoom-in duration-500">
                             <div className="w-24 h-24 rounded-[3rem] bg-gradient-to-br from-secondary to-secondary/30 flex items-center justify-center mb-8 shadow-xl text-muted-foreground/40">
                                 <Search className="h-12 w-12" />
