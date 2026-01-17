@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { ingestionBatches, ingestionItems, transactions, rules, accounts, aliasAssets, sourceCsvSparkasse, sourceCsvMm, sourceCsvAmex, transactionEvidenceLink } from "@/lib/db/schema";
+import { ingestionBatches, ingestionItems, transactions, rules, aliasAssets, sourceCsvSparkasse, sourceCsvMm, sourceCsvAmex, transactionEvidenceLink } from "@/lib/db/schema";
 import { parseIngestionFile } from "@/lib/ingest";
 import { generateFingerprint } from "@/lib/ingest/fingerprint";
 import { eq, inArray } from "drizzle-orm";
@@ -351,8 +351,7 @@ export async function getIngestionBatches() {
     });
 }
 
-import { getAICategorization } from "@/lib/ai/openai";
-import { getTaxonomyTreeCore } from "./taxonomy";
+// NOTE: We intentionally do not use AI to auto-classify transactions.
 
 
 // Core function for scripting/internal use
@@ -365,17 +364,13 @@ export async function commitBatchCore(userId: string, batchId: string) {
     if (!batch) return { error: "Batch not found" };
     if (batch.status === "committed") return { error: "Batch already imported" };
 
-    // Fetch user rules, aliases, and accounts
+    // Fetch user rules and aliases
     const userRules = await db.query.rules.findMany({
         where: eq(rules.userId, userId)
     });
 
     const userAliases = await db.query.aliasAssets.findMany({
         where: eq(aliasAssets.userId, userId)
-    });
-
-    const userAccounts = await db.query.accounts.findMany({
-        where: eq(accounts.userId, userId)
     });
 
     // Map seed rules to Rule interface
@@ -393,9 +388,6 @@ export async function commitBatchCore(userId: string, batchId: string) {
     } as any));
 
     const effectiveRules = [...userRules, ...seedRules];
-    
-    const taxonomy = await getTaxonomyTreeCore(userId);
-    const taxonomyContext = JSON.stringify(taxonomy);
 
     let importedCount = 0;
 
@@ -418,8 +410,7 @@ export async function commitBatchCore(userId: string, batchId: string) {
         const aliasMatch = matchAlias(keyDesc, userAliases);
 
         // 2. Deterministic Rule Categorization
-        let categorization = categorizeTransaction(keyDesc, effectiveRules);
-        let aiResult = null;
+        const categorization = categorizeTransaction(keyDesc, effectiveRules);
         let resolution = resolveLeafFromMatches({
             matches: (categorization as any).matches,
             openLeafId,
@@ -431,29 +422,7 @@ export async function commitBatchCore(userId: string, batchId: string) {
             matchedKeyword: (categorization as any).matchedKeyword ?? null,
         });
 
-        // 3. AI Fallback (only if no rules match - and leafId is OPEN)
-        if (resolution.status === "OPEN" && process.env.OPENAI_API_KEY) {
-             aiResult = await getAICategorization(keyDesc, taxonomyContext);
-             if (aiResult && aiResult.confidence > 0.7) {
-                  // If AI found a leaf, use it
-                  if (aiResult.suggested_leaf_id) {
-                      const maybeHierarchy = taxonomyByLeafId.get(aiResult.suggested_leaf_id);
-                      if (maybeHierarchy) {
-                        resolution = {
-                          status: "MATCHED",
-                          leafId: aiResult.suggested_leaf_id,
-                          needsReview: aiResult.confidence < 0.9,
-                          confidence: Math.round(aiResult.confidence * 100),
-                          ruleIdApplied: null,
-                          matchedKeyword: null,
-                          candidates: [],
-                        };
-                      }
-                  }
-             }
-        }
-
-        // 4. Account Linking (Existing Heuristic)
+        // 3. Account Linking (Existing Heuristic)
         let accountId = null; // Removed from schema, but logic might still use it to find 'accountSource'?
         // Wait, I removed accountId from transactions table. 
         // User said "delete account_id -> no need".
@@ -507,9 +476,9 @@ export async function commitBatchCore(userId: string, batchId: string) {
             key: data.key || item.itemFingerprint, 
             leafId: resolution.leafId,
             confidence: resolution.confidence,
-            suggestedKeyword: aiResult?.rationale || null,
+            suggestedKeyword: null,
             matchedKeyword: resolution.matchedKeyword,
-            classifiedBy: (aiResult ? "AI_SUGGESTION" : "AUTO_KEYWORDS") as "AI_SUGGESTION" | "AUTO_KEYWORDS",
+            classifiedBy: "AUTO_KEYWORDS" as "AUTO_KEYWORDS",
             appCategoryId: appCategoryId,
             appCategoryName: appCategoryName,
             display: display, 

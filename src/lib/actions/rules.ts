@@ -3,10 +3,11 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { transactions, rules } from "@/lib/db/schema";
-import { eq, and, sql, desc, like } from "drizzle-orm";
+import { eq, and, desc, like } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { ensureOpenCategory } from "@/lib/actions/setup-open";
-import { buildLeafHierarchyMaps } from "@/lib/taxonomy/hierarchy";
+import { buildLeafHierarchyMaps, taxonomyPathKey } from "@/lib/taxonomy/hierarchy";
+import { applyCategorizationCore } from "@/lib/actions/categorization";
 
 export interface RuleProposal {
   token: string;
@@ -268,7 +269,14 @@ export async function getRules() {
   const session = await auth();
   if (!session?.user?.id) return [];
 
-  // Fetch rules with app category information via joins
+  const ensured = await ensureOpenCategory();
+  if (!ensured.openLeafId) return [];
+
+  const { byLeafId: taxonomyByLeafId, byPathKey: taxonomyByPathKey } = await buildLeafHierarchyMaps(session.user.id);
+  const openLeafId = ensured.openLeafId;
+  const openHierarchy = taxonomyByLeafId.get(openLeafId);
+  if (!openHierarchy) return [];
+
   const rulesData = await db
     .select({
       id: rules.id,
@@ -286,34 +294,29 @@ export async function getRules() {
       keyWordsNegative: rules.keyWordsNegative,
       active: rules.active,
       createdAt: rules.createdAt,
-      appCategoryId: sql<string | null>`app_category.app_cat_id`,
-      appCategoryName: sql<string | null>`app_category.name`,
     })
     .from(rules)
-    .leftJoin(
-      sql`taxonomy_leaf`,
-      sql`rules.leaf_id = taxonomy_leaf.leaf_id`
-    )
-    .leftJoin(
-      sql`taxonomy_level_2`,
-      sql`taxonomy_leaf.level_2_id = taxonomy_level_2.level_2_id`
-    )
-    .leftJoin(
-      sql`taxonomy_level_1`,
-      sql`taxonomy_level_2.level_1_id = taxonomy_level_1.level_1_id`
-    )
-    .leftJoin(
-      sql`app_category_leaf`,
-      sql`taxonomy_leaf.leaf_id = app_category_leaf.leaf_id`
-    )
-    .leftJoin(
-      sql`app_category`,
-      sql`app_category_leaf.app_cat_id = app_category.app_cat_id`
-    )
     .where(eq(rules.userId, session.user.id))
     .orderBy(desc(rules.priority));
 
-  return rulesData;
+  return rulesData.map((r) => {
+    const directLeafId = r.leafId && r.leafId !== "open" ? r.leafId : null;
+    const pathLeafId =
+      !directLeafId && r.category1 && r.category2 && r.category3
+        ? taxonomyByPathKey.get(
+            taxonomyPathKey({ category1: r.category1, category2: r.category2, category3: r.category3 })
+          ) ?? null
+        : null;
+
+    const effectiveLeafId = directLeafId ?? pathLeafId ?? openLeafId;
+    const hierarchy = taxonomyByLeafId.get(effectiveLeafId) ?? openHierarchy;
+
+    return {
+      ...r,
+      appCategoryId: hierarchy.appCategoryId,
+      appCategoryName: hierarchy.appCategoryName ?? "OPEN",
+    };
+  });
 }
 
 export async function updateRule(id: string, data: Partial<typeof rules.$inferInsert>) {
@@ -357,19 +360,44 @@ export async function upsertRules(rulesData: any[]) {
     
     let count = 0;
     try {
+        const ensured = await ensureOpenCategory();
+        if (!ensured.openLeafId) throw new Error("OPEN taxonomy not initialized");
+
+        const { byLeafId: taxonomyByLeafId, byPathKey: taxonomyByPathKey } = await buildLeafHierarchyMaps(session.user.id);
+        const openLeafId = ensured.openLeafId;
+        const openHierarchy = taxonomyByLeafId.get(openLeafId);
+        if (!openHierarchy) throw new Error("OPEN leaf exists but was not found in taxonomy lookup");
+
         for (const r of rulesData) {
-            // Clean data
-            // Clean data
+            const rawCat1 = r.category1 || r.Category1 || null;
+            const rawCat2 = r.category2 || r.Category2 || null;
+            const rawCat3 = r.category3 || r.Category3 || null;
+
+            const directLeafId = typeof r.leafId === "string" && r.leafId.length > 10 ? r.leafId : null;
+            const pathLeafId =
+              !directLeafId && rawCat1 && rawCat2 && rawCat3
+                ? taxonomyByPathKey.get(
+                    taxonomyPathKey({ category1: rawCat1, category2: rawCat2, category3: rawCat3 })
+                  ) ?? null
+                : null;
+
+            const leafId = directLeafId ?? pathLeafId ?? openLeafId;
+            const hierarchy = taxonomyByLeafId.get(leafId) ?? openHierarchy;
+
             const payload = {
-                userId: session.user.id,
-                // name: r.name || r.Name || "Regra Importada",
-                keyWords: r.keywords || r.Keywords || r.keyWords || "",
-                category1: r.category1 || r.Category1 || "Outros",
-                category2: r.category2 || r.Category2 || null,
-                priority: parseInt(r.priority || r.Priority || "500"),
-                active: r.active === true || r.active === "true" || r.Active === true,
-                // ruleKey: r.ruleKey || r.RuleKey || `IMPORT_${Date.now()}_${Math.random()}`
-                leafId: "open"
+              userId: session.user.id,
+              keyWords: r.keywords || r.Keywords || r.keyWords || "",
+              keyWordsNegative: r.keyWordsNegative || r.KeyWordsNegative || r.keyWords_negative || null,
+              type: r.type || r.Type || hierarchy.typeDefault || "Despesa",
+              fixVar: r.fixVar || r.FixVar || hierarchy.fixVarDefault || "Variável",
+              category1: hierarchy.category1 as any,
+              category2: hierarchy.category2,
+              category3: hierarchy.category3,
+              priority: parseInt(r.priority || r.Priority || "500"),
+              active: r.active === true || r.active === "true" || r.Active === true,
+              strict: Boolean(r.strict ?? r.Strict ?? false),
+              isSystem: Boolean(r.isSystem ?? r.IsSystem ?? false),
+              leafId,
             };
 
             // If ID exists and is valid UUID, try update, else insert
@@ -389,64 +417,15 @@ export async function upsertRules(rulesData: any[]) {
         return { success: false, error: error.message };
     }
 }
-import { categorizeTransaction, AI_SEED_RULES } from "@/lib/rules/engine";
-
 export async function reApplyAllRules() {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
-  const userId = session.user.id;
-
-  // 1. Fetch all rules (Active and for this user)
-  const userRules = await db.query.rules.findMany({ 
-    where: and(eq(rules.userId, userId), eq(rules.active, true)) 
-  });
-  
-  // Map seeds to expected format
-  const seedRules = AI_SEED_RULES.map((r, i) => ({
-    ...r,
-    id: `seed-${i}`,
-    userId: userId,
-    // ruleKey: `SEED-${r.name}`,
-    active: true,
-    createdAt: new Date(),
-    keyWords: r.keyWords,
-    category2: r.category2 || null,
-    category3: null
-  } as any));
-
-  const effectiveRules = [...userRules, ...seedRules];
-
-  // 2. Fetch all transactions that don't have manualOverride
-  const txs = await db.query.transactions.findMany({
-    where: and(eq(transactions.userId, userId), eq(transactions.manualOverride, false))
-  });
-
-  // 3. Re-categorize each transaction
-  let updatedCount = 0;
-  for (const tx of txs) {
-    const categorization = categorizeTransaction(tx.descNorm || tx.descRaw || "", effectiveRules);
-    
-    if (categorization.category1) {
-      await db.update(transactions)
-        .set({
-           category1: categorization.category1,
-           category2: categorization.category2 || null,
-           category3: categorization.category3 || null,
-           type: categorization.type as any,
-           fixVar: categorization.fixVar as any,
-           ruleIdApplied: categorization.ruleIdApplied && !categorization.ruleIdApplied.startsWith("seed-") ? categorization.ruleIdApplied : null,
-           needsReview: categorization.needsReview,
-           confidence: categorization.confidence
-        })
-        .where(eq(transactions.id, tx.id));
-      updatedCount++;
-    }
-  }
+  const res = await applyCategorizationCore(session.user.id);
 
   revalidatePath("/");
   revalidatePath("/transactions");
   revalidatePath("/admin/rules");
-  return { success: true, updatedCount };
+  return res;
 }
 
 /**

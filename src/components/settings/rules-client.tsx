@@ -82,6 +82,7 @@ export default function RulesClient({ initialRules }: RulesClientProps) {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [expandedRule, setExpandedRule] = useState<string | null>(null);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [editingRule, setEditingRule] = useState<string | null>(null);
   const [editKeywords, setEditKeywords] = useState<string>("");
   const [editKeywordsNegative, setEditKeywordsNegative] = useState<string>("");
@@ -119,12 +120,24 @@ export default function RulesClient({ initialRules }: RulesClientProps) {
   const groupedRules = useMemo(() => {
     const groups: Record<string, Rule[]> = {};
     filteredRules.forEach((rule) => {
-      const key = rule.appCategoryName || "Sem App Category";
+      const key = rule.appCategoryName?.trim() || "OPEN";
       if (!groups[key]) groups[key] = [];
       groups[key].push(rule);
     });
     return groups;
   }, [filteredRules]);
+
+  const toggleGroup = (group: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(group)) next.delete(group);
+      else next.add(group);
+      return next;
+    });
+  };
+
+  const collapseAllGroups = () => setCollapsedGroups(new Set(Object.keys(groupedRules)));
+  const expandAllGroups = () => setCollapsedGroups(new Set());
 
   const toggleExpand = (ruleId: string) => {
     setExpandedRule(expandedRule === ruleId ? null : ruleId);
@@ -268,6 +281,21 @@ export default function RulesClient({ initialRules }: RulesClientProps) {
                 </TooltipContent>
               </Tooltip>
 
+              <Button
+                variant="outline"
+                onClick={expandAllGroups}
+                className="h-12 px-4 rounded-xl border-violet-200 hover:bg-violet-50"
+              >
+                Expandir grupos
+              </Button>
+              <Button
+                variant="outline"
+                onClick={collapseAllGroups}
+                className="h-12 px-4 rounded-xl border-violet-200 hover:bg-violet-50"
+              >
+                Recolher grupos
+              </Button>
+
               {/* Nova Regra - Navigate to Confirm page */}
               <Button
                 onClick={() => window.location.href = '/confirm'}
@@ -373,15 +401,25 @@ export default function RulesClient({ initialRules }: RulesClientProps) {
           Object.entries(groupedRules).map(([category, categoryRules]) => (
             <div key={category} className="space-y-3">
               {/* Category Header */}
-              <div className="flex items-center gap-3 px-2">
+              <button
+                type="button"
+                onClick={() => toggleGroup(category)}
+                className="w-full flex items-center gap-3 px-2 py-1 rounded-xl hover:bg-secondary/40 transition-colors"
+              >
+                {collapsedGroups.has(category) ? (
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                )}
                 <Layers className="h-5 w-5 text-violet-600 dark:text-violet-400" />
-                <h3 className="text-lg font-bold text-foreground font-display">{category}</h3>
+                <h3 className="text-lg font-bold text-foreground font-display text-left">{category}</h3>
                 <Badge variant="secondary" className="ml-auto">
                   {categoryRules.length} {categoryRules.length === 1 ? "regra" : "regras"}
                 </Badge>
-              </div>
+              </button>
 
               {/* Rules in Category */}
+              {!collapsedGroups.has(category) && (
               <div className="space-y-2">
                 {categoryRules.map((rule) => (
                   <Card
@@ -685,6 +723,7 @@ export default function RulesClient({ initialRules }: RulesClientProps) {
                   </Card>
                 ))}
               </div>
+              )}
             </div>
           ))
         )}

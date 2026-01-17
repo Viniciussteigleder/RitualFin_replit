@@ -1,8 +1,8 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { taxonomyLevel1, taxonomyLevel2, taxonomyLeaf } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { appCategory, appCategoryLeaf, taxonomyLevel1, taxonomyLevel2, taxonomyLeaf } from "@/lib/db/schema";
+import { and, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { ensureOpenCategoryCore } from "@/lib/actions/setup-open";
 
@@ -104,6 +104,25 @@ export async function createLeaf(level2Id: string, name: string) {
     level2Id: level2Id,
     nivel3Pt: name,
   }).returning();
+
+  // App Category is mandatory for correct UI navigation; default to OPEN when created via taxonomy editor.
+  await ensureOpenCategoryCore(session.user.id);
+  const openAppCat = await db.query.appCategory.findFirst({
+    where: and(eq(appCategory.userId, session.user.id), eq(appCategory.name, "OPEN")),
+  });
+  if (openAppCat) {
+    const leaf = result[0]!;
+    const existingLink = await db.query.appCategoryLeaf.findFirst({
+      where: and(eq(appCategoryLeaf.userId, session.user.id), eq(appCategoryLeaf.leafId, leaf.leafId)),
+    });
+    if (!existingLink) {
+      await db.insert(appCategoryLeaf).values({
+        userId: session.user.id,
+        appCatId: openAppCat.appCatId,
+        leafId: leaf.leafId,
+      });
+    }
+  }
 
   return { success: true, data: result[0] };
 }

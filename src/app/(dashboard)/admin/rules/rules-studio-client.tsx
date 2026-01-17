@@ -127,7 +127,7 @@ export default function RulesStudioClient() {
             onClick={async () => {
               if (confirm("Deseja reaplicar todas as regras às transações existentes? Isto não afetará edições manuais.")) {
                 const res = await reApplyAllRules();
-                if (res.success) alert(`${res.updatedCount} transações atualizadas!`);
+                if (res.success) alert(`${res.categorized} categorizadas; ${res.needsReview} para revisar (total: ${res.total}).`);
               }
             }}
           >

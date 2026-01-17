@@ -12,7 +12,7 @@ export default function FixButton() {
   const router = useRouter();
 
   const handleFix = async () => {
-    if (!confirm("This will attempt to fix missing app_category mappings and DELETE unfixable rules. Are you sure?")) return;
+    if (!confirm("This will attempt to fix missing app category mappings by defaulting unmapped leaves to 'OPEN'. Continue?")) return;
     
     setLoading(true);
     try {

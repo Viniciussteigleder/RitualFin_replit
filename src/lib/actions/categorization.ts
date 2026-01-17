@@ -51,8 +51,9 @@ export async function applyCategorizationCore(userId: string) {
           continue;
       }
 
-      const result = categorizeTransaction(tx.descNorm, userRules);
-      const aliasMatch = matchAlias(tx.descNorm, userAliases);
+      const keyDesc = tx.keyDesc || tx.descNorm || tx.descRaw || "";
+      const result = categorizeTransaction(keyDesc, userRules);
+      const aliasMatch = matchAlias(keyDesc, userAliases);
 
       const resolution = resolveLeafFromMatches({
         matches: (result as any).matches,
