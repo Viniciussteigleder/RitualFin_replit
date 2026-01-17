@@ -94,9 +94,11 @@ export function Sidebar() {
             icon={item.icon}
             color={iconColorById[item.id]}
             selected={isActive}
-            className={cn("transition-transform group-hover:scale-[1.05]", "w-4 h-4")}
+            variant="gradient"
+            className={cn("transition-transform group-hover:scale-[1.05]", "w-8 h-8 rounded-lg shadow-sm")} // 32px box
+            iconClassName="w-4 h-4" // 16px icon
           />
-          <span className="text-[15px] font-medium">{item.label}</span>
+          <span className="text-[14px] font-medium text-muted-foreground group-hover:text-foreground transition-colors">{item.label}</span>
         </div>
         {item.badge && (
           <span className="text-[9px] bg-primary text-white px-1.5 py-0.5 rounded-md font-black uppercase tracking-tighter relative z-10">

@@ -14,8 +14,8 @@ export function AppIcon({
   selected = false,
 }: {
   icon: LucideIcon;
-  className?: string;
-  iconClassName?: string;
+  className?: string; // Container classes (size, rounded, etc)
+  iconClassName?: string; // Icon size overrides
   color?: string;
   variant?: "solid" | "gradient";
   selected?: boolean;
@@ -27,15 +27,15 @@ export function AppIcon({
   return (
     <div
       className={cn(
-        "ritual-icon-button",
-        selected && "ritual-icon-button-selected",
+        "ritual-icon-button w-14 h-14 shrink-0", // Default size 56px
+        selected && "ritual-icon-button-selected shadow-md scale-[1.02]",
         className
       )}
       style={bgStyle}
       aria-hidden="true"
     >
       <Icon
-        className={cn("w-6 h-6 text-white", iconClassName)}
+        className={cn("w-[45%] h-[45%] text-white", iconClassName)} // Dynamic icon size
         strokeWidth={2}
       />
     </div>
