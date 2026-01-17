@@ -61,7 +61,7 @@ export async function parseSparkasseCSV(content: string): Promise<ParseResult> {
         const verwendungszweck = pick(record, nmap, ["Verwendungszweck"]);
         const buchungstext = pick(record, nmap, ["Buchungstext"]);
         const iban = pick(record, nmap, ["Kontonummer/IBAN", "Kontonummer / IBAN", "IBAN"]);
-        const bic = pick(record, nmap, ["BIC"]);
+        const bic = pick(record, nmap, ["BIC", "BIC (SWIFT-Code)", "BIC (SWIFT Code)", "BIC/SWIFT", "SWIFT-Code", "SWIFT Code"]);
         const glaeubigerId = pick(record, nmap, ["Glaeubiger ID", "Gläubiger ID", "GlaeubigerID", "GläubigerID"]);
         const mandatsreferenz = pick(record, nmap, ["Mandatsreferenz"]);
         const kundenreferenz = pick(record, nmap, ["Kundenreferenz (End-to-End)", "Kundenreferenz", "End-to-End-Referenz", "End-to-End Referenz"]);

@@ -78,6 +78,21 @@ function txForDb(tx: any) {
   return safe;
 }
 
+function parseDotDateToUtc(dateStr: string): Date | null {
+  // Accepts DD.MM.YY or DD.MM.YYYY
+  const trimmed = (dateStr || "").trim();
+  if (!trimmed) return null;
+  const parts = trimmed.split(".");
+  if (parts.length !== 3) return null;
+  const [dayStr, monthStr, yearStr] = parts;
+  const day = Number.parseInt(dayStr, 10);
+  const month = Number.parseInt(monthStr, 10);
+  let year = Number.parseInt(yearStr, 10);
+  if (!Number.isFinite(day) || !Number.isFinite(month) || !Number.isFinite(year)) return null;
+  if (yearStr.length === 2) year += 2000;
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
 // Core function for scripting/internal use
 export async function uploadIngestionFileCore(userId: string, buffer: Buffer, filename: string): Promise<UploadIngestionResult> {
   // 1. Create Ingestion Batch
@@ -230,8 +245,9 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
           await txDb.insert(sourceCsvSparkasse).values({
               ...commonFields,
               auftragskonto: tx.auftragskonto,
-              buchungstag: (tx.buchungstag ? new Date(tx.buchungstag) : (tx.date instanceof Date ? tx.date : null)) as any,
-              valutadatum: tx.valutadatum ? new Date(tx.valutadatum) : null,
+              // Parser already provides `tx.date` as a Date; Sparkasse raw strings are DD.MM.YY and don't parse with `new Date(...)`.
+              buchungstag: (tx.date instanceof Date ? tx.date : (parseDotDateToUtc(tx.buchungstag ?? "") ?? null)) as any,
+              valutadatum: parseDotDateToUtc(tx.valutadatum ?? "") as any,
               buchungstext: tx.buchungstext,
               verwendungszweck: tx.verwendungszweck,
               glaeubigerId: tx.glaeubigerId,
