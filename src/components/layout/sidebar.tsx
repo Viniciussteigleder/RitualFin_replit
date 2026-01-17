@@ -35,6 +35,15 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import Image from "next/image";
 import { AppIcon } from "@/components/ui/app-icon";
 
+interface SidebarItem {
+  id: string;
+  icon: LucideIcon;
+  href: string;
+  label: string;
+  badge?: string;
+  children?: SidebarItem[];
+}
+
 export function Sidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
@@ -64,8 +73,8 @@ export function Sidebar() {
   };
 
   // Helper for Link Items
-  const renderNavItem = (item: any, isChild = false) => {
-    const isActive = pathname === item.href || (item.children?.some((child: any) => pathname === child.href) ?? false);
+  const renderNavItem = (item: SidebarItem, isChild = false) => {
+    const isActive = pathname === item.href || (item.children?.some((child: SidebarItem) => pathname === child.href) ?? false);
     return (
       <Link
         key={item.id}
