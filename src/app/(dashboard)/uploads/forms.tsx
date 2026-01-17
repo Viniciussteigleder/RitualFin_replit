@@ -94,10 +94,10 @@ export function CSVForm({ onUploadSuccess }: { onUploadSuccess?: (batchId: strin
                 </div>
             )}
 
-        <div 
+        <div
             className={cn(
                 "border-2 border-dashed rounded-2xl p-12 text-center transition-all cursor-pointer group",
-                isDragging ? "border-primary bg-primary/5 scale-[0.99]" : "border-slate-200 hover:border-slate-300 hover:bg-slate-50",
+                isDragging ? "border-primary bg-primary/5 scale-[0.99]" : "border-border hover:border-border/80 hover:bg-secondary/50",
                 isUploading && "opacity-50 pointer-events-none"
             )}
             role="button"
@@ -135,7 +135,7 @@ export function CSVForm({ onUploadSuccess }: { onUploadSuccess?: (batchId: strin
             
             <div className="flex flex-col items-center gap-4">
                 <div className={cn(
-                    "p-4 rounded-full bg-slate-100 text-slate-400 transition-all group-hover:scale-110 group-hover:bg-primary/10 group-hover:text-primary",
+                    "p-4 rounded-full bg-secondary text-muted-foreground transition-all group-hover:scale-110 group-hover:bg-primary/10 group-hover:text-primary",
                     isDragging && "scale-110 bg-primary/20 text-primary"
                 )}>
                     {isUploading ? (
@@ -145,15 +145,15 @@ export function CSVForm({ onUploadSuccess }: { onUploadSuccess?: (batchId: strin
                     )}
                 </div>
                 <div>
-                    <h3 className="text-lg font-bold text-slate-900">
+                    <h3 className="text-lg font-bold text-foreground">
                         {isUploading ? "Enviando e processando..." : "Clique ou arraste seu extrato CSV"}
                     </h3>
-                    <p className="text-slate-500 text-sm mt-1 max-w-[280px] mx-auto leading-relaxed">
+                    <p className="text-muted-foreground text-sm mt-1 max-w-[280px] mx-auto leading-relaxed">
                         Suporta Miles & More, Amex e Sparkasse. (Máx. 10MB)
                     </p>
                 </div>
                 {!isUploading && (
-                    <Button variant="outline" className="mt-2 rounded-xl border-slate-200 font-bold px-8 shadow-sm group-hover:bg-white group-hover:border-primary group-hover:text-primary transition-all">
+                    <Button variant="outline" className="mt-2 rounded-xl border-border font-bold px-8 shadow-sm group-hover:bg-card group-hover:border-primary group-hover:text-primary transition-all">
                         Selecionar arquivo
                     </Button>
                 )}

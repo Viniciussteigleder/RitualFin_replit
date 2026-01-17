@@ -7,15 +7,7 @@ import { FileText, Smartphone, CloudUpload } from "lucide-react";
 
 export function UploadClient() {
   return (
-    <div className="flex flex-col gap-10">
-      {/* Page Header Area */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 px-1">
-        <div>
-          <h1 className="text-4xl font-bold text-foreground tracking-tight font-display mb-2">Importar Dados</h1>
-          <p className="text-muted-foreground font-medium max-w-2xl leading-relaxed">Conecte seus extratos bancários ou faça upload de comprovantes para análise inteligente.</p>
-        </div>
-      </div>
-
+    <div className="flex flex-col gap-6">
       <ImportWizard>
         <div className="bg-card rounded-[2.5rem] p-2 shadow-sm border border-border">
           <Tabs defaultValue="csv" className="w-full">

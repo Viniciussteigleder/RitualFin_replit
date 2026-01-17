@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { AppIcon } from "@/components/ui/app-icon";
+import { PageHeader, PageContainer } from "@/components/ui/page-header";
 
 const ICON_MAP: Record<string, any> = {
   credit_card: CreditCard,
@@ -63,36 +64,29 @@ export default async function AccountsPage() {
   const hasAnyKnownBalance = knownBalances.length > 0;
 
   return (
-    <div className="flex flex-col gap-10 pb-32 max-w-7xl mx-auto px-1">
-      {/* Page Header Area */}
-      {/* Page Header Area */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 bg-card p-10 rounded-[3rem] border border-border shadow-sm">
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-3">
-              <AppIcon icon={Wallet} tone="amber" size="lg" />
-              <h1 className="text-4xl font-bold text-foreground tracking-tight font-display">Carteira Digital</h1>
-           </div>
-           <p className="text-muted-foreground font-medium max-w-xl leading-relaxed">
-             Gerencie suas conexões bancárias e cartões. Sua liquidez total em tempo real.
-           </p>
-        </div>
-        
-        <div className="flex items-center gap-6">
-           <div className="hidden lg:flex flex-col items-end mr-2 bg-secondary/30 p-4 rounded-3xl border border-border px-6">
-                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Total em Contas</span>
-                <span className="text-lg font-bold text-foreground">
-                  {hasAnyKnownBalance ? formatCurrency(totalKnownBalance) : "—"}
-                </span>
-           </div>
-
-           <Link href="/admin/import">
-             <Button className="h-14 px-8 bg-foreground text-background hover:scale-105 transition-all rounded-2xl font-bold shadow-xl shadow-foreground/5 gap-2">
-               <PlusCircle className="h-5 w-5" />
-               Conectar Conta
-             </Button>
-           </Link>
-        </div>
-      </div>
+    <PageContainer>
+      <PageHeader
+        icon={Wallet}
+        iconColor="amber"
+        title="Carteira Digital"
+        subtitle="Gerencie suas conexões bancárias e cartões. Sua liquidez total em tempo real."
+        badge={
+          hasAnyKnownBalance && (
+            <div className="hidden lg:flex flex-col items-end bg-secondary/30 p-3 rounded-2xl border border-border px-5">
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Total em Contas</span>
+              <span className="text-lg font-bold text-foreground">{formatCurrency(totalKnownBalance)}</span>
+            </div>
+          )
+        }
+        actions={
+          <Link href="/admin/import">
+            <Button className="h-12 px-6 bg-foreground text-background hover:scale-105 transition-all rounded-xl font-bold shadow-lg gap-2">
+              <PlusCircle className="h-4 w-4" />
+              Conectar Conta
+            </Button>
+          </Link>
+        }
+      />
 
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
         {accounts.length === 0 ? (
@@ -165,6 +159,6 @@ export default async function AccountsPage() {
           })
         )}
       </div>
-    </div>
+    </PageContainer>
   );
 }
