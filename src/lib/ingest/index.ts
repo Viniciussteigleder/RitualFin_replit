@@ -109,7 +109,6 @@ function normalizeForDetect(input: string): string {
     return input
         .toLowerCase()
         .normalize("NFKD")
-        // eslint-disable-next-line no-control-regex
         .replace(/[\u0300-\u036f]/g, "")
         .replace(/\s+/g, " ")
         .trim();
