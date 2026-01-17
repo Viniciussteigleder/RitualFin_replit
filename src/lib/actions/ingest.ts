@@ -1,5 +1,4 @@
 "use server";
-
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { ingestionBatches, ingestionItems, transactions, rules, aliasAssets, sourceCsvSparkasse, sourceCsvMm, sourceCsvAmex, transactionEvidenceLink } from "@/lib/db/schema";
@@ -12,6 +11,7 @@ import { ensureOpenCategoryCore } from "@/lib/actions/setup-open";
 import { buildLeafHierarchyMaps } from "@/lib/taxonomy/hierarchy";
 import { resolveLeafFromMatches } from "@/lib/rules/leaf-resolution";
 import { logger } from "@/lib/ingest/logger";
+import { rateLimit } from "@/lib/security/rate-limit";
 
 type UploadIngestionResult =
   | {
@@ -211,13 +211,13 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
       const seenFingerprints = new Set(existingUniqueFingerprints);
 
       const prepared = txWithFingerprint.map(({ tx, fingerprint }) => {
-        const isUnique = !seenFingerprints.has(fingerprint);
-        if (isUnique) seenFingerprints.add(fingerprint);
+        const isUniqueRow = !seenFingerprints.has(fingerprint);
+        if (isUniqueRow) seenFingerprints.add(fingerprint);
 
-        if (isUnique) newCount++;
+        if (isUniqueRow) newCount++;
         else dupCount++;
 
-        return { tx, fingerprint, isUnique };
+        return { tx, fingerprint, isUnique: isUniqueRow };
       });
 
       const itemValues = prepared.map(({ tx, fingerprint, isUnique }) => {
@@ -353,8 +353,31 @@ export async function uploadIngestionFile(formData: FormData): Promise<UploadIng
   const session = await auth();
   if (!session?.user?.id) return { success: false, code: "UNAUTHORIZED", error: "Unauthorized" };
 
+  // Rate Limiting: 5 uploads per 10 minutes
+  const ratelimitResult = await rateLimit(session.user.id, "upload-file", { limit: 5, windowMs: 10 * 60 * 1000 });
+  if (!ratelimitResult.success) {
+    return { 
+      success: false, 
+      code: "RATE_LIMITED", 
+      error: `Muitas tentativas. Tente novamente em ${Math.ceil((ratelimitResult.reset - Date.now()) / 60000)} minutos.` 
+    };
+  }
+
   const file = formData.get("file") as File;
-  if (!file) return { success: false, code: "NO_FILE", error: "No file provided" };
+
+  if (!file || file.size === 0) return { success: false, code: "NO_FILE", error: "O arquivo selecionado está vazio ou não foi fornecido." };
+  
+  // Basic validation for CSV or Image
+  const isCSV = file.name.toLowerCase().endsWith('.csv');
+  const isImage = ['image/jpeg', 'image/png', 'image/webp'].includes(file.type);
+  
+  if (!isCSV && !isImage) {
+    return { success: false, code: "INVALID_TYPE", error: "Tipo de arquivo inválido. Use CSV para extratos ou JPG/PNG para fotos." };
+  }
+
+  if (file.size > 10 * 1024 * 1024) { // 10MB limit
+    return { success: false, code: "FILE_TOO_LARGE", error: "O arquivo é grande demais (máximo 10MB)." };
+  }
 
   const buffer = Buffer.from(await file.arrayBuffer());
   const filename = file.name;
@@ -501,6 +524,7 @@ export async function commitBatchCore(userId: string, batchId: string) {
             type: ((hierarchy.typeDefault as any) || (categorization.type as any) || (amountNum < 0 ? "Despesa" : "Receita")) as any,
             fixVar: ((hierarchy.fixVarDefault as any) || (categorization.fixVar as any) || "Variável") as any,
             ruleIdApplied: resolution.ruleIdApplied && !resolution.ruleIdApplied.startsWith("seed-") ? resolution.ruleIdApplied : null,
+            uploadId: batch.id,
             source: (["Sparkasse", "Amex", "M&M"].includes(data.source) ? data.source : null) as any,
             key: data.key || item.itemFingerprint, 
             leafId: resolution.leafId,

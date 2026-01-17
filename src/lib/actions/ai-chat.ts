@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { transactions, rules, accounts, assistantSettings, calendarEvents } from "@/lib/db/schema";
 import { eq, desc, sql, and, gte, lte, ne } from "drizzle-orm";
 import OpenAI from "openai";
+import { rateLimit } from "@/lib/security/rate-limit";
 import {
   DEFAULT_DATABASE_CONTEXT,
   DEFAULT_ANALYSIS_PROMPT,
@@ -364,6 +365,15 @@ export async function sendChatMessage(
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, error: "Não autenticado" };
+  }
+
+  // Rate Limiting: 20 messages per 1 hour
+  const ratelimitResult = await rateLimit(session.user.id, "ai-chat", { limit: 20, windowMs: 60 * 60 * 1000 });
+  if (!ratelimitResult.success) {
+    return { 
+      success: false, 
+      error: `Limite de mensagens atingido. Tente novamente em ${Math.ceil((ratelimitResult.reset - Date.now()) / 60000)} minutos.` 
+    };
   }
 
   if (!process.env.OPENAI_API_KEY) {

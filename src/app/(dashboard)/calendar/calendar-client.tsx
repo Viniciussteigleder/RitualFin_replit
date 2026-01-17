@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,11 @@ export function CalendarClient({
     weeks, 
     monthName 
 }: CalendarClientProps) {
-  const [selectedDay, setSelectedDay] = useState<number | null>(new Date().getDate());
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+
+  useEffect(() => {
+    setSelectedDay(new Date().getDate());
+  }, []);
 
   const selectedTransactions = selectedDay ? transactionsByDay[selectedDay] || [] : [];
   const selectedEvents = selectedDay ? eventsByDay[selectedDay] || [] : [];
@@ -59,10 +63,9 @@ export function CalendarClient({
                 week.map((day, dIndex) => {
                   const dayTx = day ? transactionsByDay[day] || [] : [];
                   const dayEvents = day ? eventsByDay[day] || [] : [];
-                  
-                  const isToday = day === new Date().getDate() && 
-                                  currentDate.getMonth() === new Date().getMonth() && 
-                                  currentDate.getFullYear() === new Date().getFullYear();
+                  const isToday = day === (typeof window !== "undefined" ? new Date().getDate() : null) &&
+                                   currentDate.getMonth() === new Date().getMonth() &&
+                                   currentDate.getFullYear() === new Date().getFullYear();
                   
                   const isSelected = day === selectedDay;
                   

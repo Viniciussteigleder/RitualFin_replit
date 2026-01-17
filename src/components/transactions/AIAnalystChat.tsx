@@ -25,13 +25,17 @@ export function AIAnalystChat({ currentScreen = "transactions" }: AIAnalystChatP
     const [open, setOpen] = useState(false);
     const [input, setInput] = useState("");
     const [isPending, startTransition] = useTransition();
-    const [messages, setMessages] = useState<Message[]>([
-        {
-            role: "assistant",
-            content: "Olá! Sou o Analista Ritual, seu assistente financeiro. Posso ajudar a analisar seus gastos, comparar períodos, identificar padrões e muito mais. Como posso ajudar?",
-            timestamp: new Date()
-        }
-    ]);
+    const [messages, setMessages] = useState<Message[]>([]);
+
+    useEffect(() => {
+        setMessages([
+            {
+                role: "assistant",
+                content: "Olá! Sou o Analista Ritual, seu assistente financeiro. Posso ajudar a analisar seus gastos, comparar períodos, identificar padrões e muito mais. Como posso ajudar?",
+                timestamp: new Date()
+            }
+        ]);
+    }, []);
     const [showSuggestions, setShowSuggestions] = useState(true);
     const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -75,13 +79,12 @@ export function AIAnalystChat({ currentScreen = "transactions" }: AIAnalystChatP
         });
     };
 
-    // Get random sample questions (5 at a time)
-    const getSampleQuestions = () => {
+    const [sampleQuestions, setSampleQuestions] = useState<string[]>([]);
+    
+    useEffect(() => {
         const shuffled = [...SAMPLE_QUESTIONS].sort(() => 0.5 - Math.random());
-        return shuffled.slice(0, 5);
-    };
-
-    const [sampleQuestions] = useState(getSampleQuestions);
+        setSampleQuestions(shuffled.slice(0, 5));
+    }, []);
 
     return (
         <Sheet open={open} onOpenChange={setOpen}>

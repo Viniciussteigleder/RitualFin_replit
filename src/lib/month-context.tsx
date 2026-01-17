@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 
 interface MonthContextType {
   month: string;
@@ -11,7 +11,11 @@ interface MonthContextType {
 const MonthContext = createContext<MonthContextType | null>(null);
 
 export function MonthProvider({ children }: { children: ReactNode }) {
-  const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const [month, setMonth] = useState("");
+
+  useEffect(() => {
+    setMonth(new Date().toISOString().slice(0, 7));
+  }, []);
 
   const formatMonth = (m: string) => {
     const [year, monthNum] = m.split("-");

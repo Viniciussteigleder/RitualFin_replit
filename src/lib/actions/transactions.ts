@@ -597,6 +597,7 @@ export async function getTransactionsForList(
     SELECT
       t.id,
       t.payment_date,
+      t.desc_raw,
       t.desc_norm,
       t.alias_desc,
       t.simple_desc,
@@ -624,6 +625,7 @@ export async function getTransactionsForList(
   const items = rows.slice(0, limit).map((row: any) => ({
     id: row.id,
     paymentDate: row.payment_date,
+    descRaw: row.desc_raw,
     descNorm: row.desc_norm,
     aliasDesc: row.alias_desc,
     simpleDesc: row.simple_desc,

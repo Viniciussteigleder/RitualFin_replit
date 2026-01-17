@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { getTransactions, getAliases } from "@/lib/actions/transactions";
+import { getTransactionsForList, getAliases } from "@/lib/actions/transactions";
 import { TransactionList } from "./transaction-list";
 import { AIAnalystChat } from "@/components/transactions/AIAnalystChat";
 import { ReRunRulesButton } from "@/components/transactions/re-run-rules-button";
@@ -22,7 +22,7 @@ export default async function TransactionsPage({
 
   const params = await searchParams;
   const sources = params.accounts ? (Array.isArray(params.accounts) ? params.accounts : [params.accounts]) : undefined;
-  const transactions = await getTransactions({ limit: sources?.length ? 1200 : 2000, sources });
+  const { items: transactions, hasMore, nextCursor } = await getTransactionsForList({ limit: 50, sources });
   const aliases = await getAliases();
 
   const aliasMap = aliases.reduce((acc, alias) => {
@@ -51,13 +51,15 @@ export default async function TransactionsPage({
       />
 
       <TransactionList
-        transactions={transactions.map(tx => ({
+        transactions={transactions.map((tx: any) => ({
           ...tx,
           date: tx.paymentDate,
           description: tx.descNorm || tx.descRaw
         }))}
         initialFilters={initialFilters}
         aliasMap={aliasMap}
+        initialHasMore={hasMore}
+        initialNextCursor={nextCursor}
       />
     </PageContainer>
   );

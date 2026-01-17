@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import {
     Search,
     ChevronDown,
-    ChevronUp
+    ChevronUp,
+    Loader2
 } from "lucide-react";
 import { TransactionFilters as TransactionFiltersComp } from "@/components/transactions/TransactionFilters";
 import { TransactionGroup } from "@/components/transactions/TransactionGroup";
@@ -15,7 +16,8 @@ import { cn } from "@/lib/utils";
 import {
     confirmTransaction,
     deleteTransaction,
-    updateTransactionCategory
+    updateTransactionCategory,
+    getTransactionsForList
 } from "@/lib/actions/transactions";
 import {
     bulkConfirmTransactions,
@@ -52,7 +54,23 @@ function SortableHeader({
     );
 }
 
-export function TransactionList({ transactions, initialFilters = {}, aliasMap = {} }: { transactions: any[], initialFilters?: TransactionFilters, aliasMap?: Record<string, string> }) {
+export function TransactionList({ 
+    transactions: initialTransactions, 
+    initialFilters = {}, 
+    aliasMap = {},
+    initialHasMore = false,
+    initialNextCursor = null
+}: { 
+    transactions: any[], 
+    initialFilters?: TransactionFilters, 
+    aliasMap?: Record<string, string>,
+    initialHasMore?: boolean,
+    initialNextCursor?: string | null
+}) {
+    const [transactions, setTransactions] = useState(initialTransactions);
+    const [hasMore, setHasMore] = useState(initialHasMore);
+    const [nextCursor, setNextCursor] = useState(initialNextCursor);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [selectedTx, setSelectedTx] = useState<any>(null);
     const [search, setSearch] = useState("");
     const [filters, setFilters] = useState<TransactionFilters>(initialFilters);
@@ -217,6 +235,30 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
         }
     };
 
+    const handleLoadMore = async () => {
+        if (!nextCursor || isLoadingMore) return;
+        
+        setIsLoadingMore(true);
+        try {
+            const result = await getTransactionsForList({ 
+                limit: 50, 
+                cursor: nextCursor,
+                sources: filters.accounts 
+            });
+            
+            setTransactions(prev => [...prev, ...result.items.map(tx => ({
+                ...tx,
+                date: tx.paymentDate,
+                description: tx.descNorm || tx.descRaw
+            }))]);
+            setHasMore(result.hasMore);
+            setNextCursor(result.nextCursor);
+        } catch (error) {
+            toast.error("Erro ao carregar mais transações");
+        } finally {
+            setIsLoadingMore(false);
+        }
+    };
     const handleBulkExport = async () => {
         const ids = selectedIds.size > 0 ? Array.from(selectedIds) : undefined;
         try {
@@ -309,6 +351,26 @@ export function TransactionList({ transactions, initialFilters = {}, aliasMap = 
                     )}
                 </div>
             </div>
+
+            {hasMore && (
+                <div className="flex justify-center pt-4 pb-8">
+                    <Button 
+                        variant="outline" 
+                        onClick={handleLoadMore} 
+                        disabled={isLoadingMore}
+                        className="rounded-2xl h-12 px-12 font-bold border-border hover:bg-secondary transition-all shadow-sm"
+                    >
+                        {isLoadingMore ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Carregando...
+                            </>
+                        ) : (
+                            "Carregar mais transações"
+                        )}
+                    </Button>
+                </div>
+            )}
 
             <TransactionDrawer 
                 transaction={selectedTx}

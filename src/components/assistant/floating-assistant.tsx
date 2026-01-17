@@ -173,10 +173,12 @@ export function FloatingAssistant() {
     };
 
     // Get random sample questions
-    const [sampleQuestions] = useState(() => {
+    const [sampleQuestions, setSampleQuestions] = useState<string[]>([]);
+    
+    useEffect(() => {
         const shuffled = [...SAMPLE_QUESTIONS].sort(() => 0.5 - Math.random());
-        return shuffled.slice(0, 4);
-    });
+        setSampleQuestions(shuffled.slice(0, 4));
+    }, []);
 
     function renderInlineMarkdown(text: string): React.ReactNode[] {
         const nodes: React.ReactNode[] = [];
@@ -394,7 +396,7 @@ export function FloatingAssistant() {
                                         <span className={cn(
                                             "text-[10px] text-muted-foreground px-2",
                                             msg.role === "user" ? "text-right" : "text-left"
-                                        )}>
+                                        )} suppressHydrationWarning>
                                             {msg.timestamp.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                         </span>
                                     </div>
