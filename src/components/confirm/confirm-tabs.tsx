@@ -405,7 +405,7 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
                 Impacto: {formatCurrency(totalDiscoveryAbs)}
               </Badge>
             </div>
-            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <div className="flex items-center gap-2 flex-wrap">
               <Input
                 inputMode="numeric"
                 placeholder="Limite"
@@ -714,7 +714,7 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
 
               return (
                 <div className="bg-amber-50/50 border border-amber-100 rounded-[2.5rem] p-4 md:p-6 shadow-sm overflow-hidden">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                     {/* Left: transaction context */}
                     <div className="space-y-4">
                       <div className="flex items-start justify-between gap-4">
