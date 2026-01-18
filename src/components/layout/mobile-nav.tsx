@@ -37,14 +37,14 @@ export function MobileNav() {
             key={item.href}
             href={item.href}
             className={cn(
-              "flex flex-col items-center gap-1 p-2 transition-colors",
+              "flex flex-col items-center gap-1 min-w-[48px] min-h-[48px] p-2 transition-colors rounded-lg active:bg-primary/10",
               isActive
                 ? "text-primary"
                 : "text-gray-500 dark:text-gray-400"
             )}
           >
             <Icon className="h-6 w-6" />
-            <span className="text-[10px] font-medium">{item.label}</span>
+            <span className="text-xs font-medium">{item.label}</span>
           </Link>
         );
       })}
