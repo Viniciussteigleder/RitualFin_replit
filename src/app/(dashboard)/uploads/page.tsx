@@ -24,23 +24,21 @@ export default async function UploadsPage() {
         badge={<StatusBadge status="success" label="Operacional" pulse />}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Upload Area - Takes 2/3 */}
-        <div className="lg:col-span-2">
-          <UploadClient />
-        </div>
+      {/* Upload Area - Full width */}
+      <div className="mb-8">
+        <UploadClient />
+      </div>
 
-        {/* History Area - Takes 1/3 */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 px-1">
-            <History className="h-4 w-4 text-muted-foreground" />
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              Histórico de Importações
-            </h3>
-          </div>
-          <div className="bg-card border border-border rounded-2xl p-5 min-h-[400px]">
-            <BatchList />
-          </div>
+      {/* History Area - Below */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 px-1">
+          <History className="h-4 w-4 text-muted-foreground" />
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            Histórico de Importações
+          </h3>
+        </div>
+        <div className="bg-card border border-border rounded-2xl p-5">
+          <BatchList />
         </div>
       </div>
     </PageContainer>
