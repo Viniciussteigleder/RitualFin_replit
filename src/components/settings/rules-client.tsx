@@ -24,7 +24,8 @@ import {
   X,
   Info,
   Loader2,
-  Merge
+  Merge,
+  Server
 } from "lucide-react";
 import {
   Select,
@@ -49,7 +50,10 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { TYPE_STYLES, FIXVAR_STYLES, PRIORITY_INFO, MODE_INFO } from "@/lib/constants/categories";
-import { updateRule, deleteRule, consolidateDuplicateRules } from "@/lib/actions/rules";
+import { updateRule, deleteRule, consolidateDuplicateRules, updateRuleClassification } from "@/lib/actions/rules";
+import { TaxonomyOption } from "@/lib/actions/discovery";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 
 interface Rule {
@@ -74,9 +78,10 @@ interface Rule {
 
 interface RulesClientProps {
   initialRules: Rule[];
+  taxonomyOptions: TaxonomyOption[];
 }
 
-export default function RulesClient({ initialRules }: RulesClientProps) {
+export default function RulesClient({ initialRules, taxonomyOptions = [] }: RulesClientProps) {
   const [rules, setRules] = useState<Rule[]>(initialRules);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
@@ -99,7 +104,8 @@ export default function RulesClient({ initialRules }: RulesClientProps) {
         rule.category1?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         rule.category2?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         rule.category3?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        rule.appCategoryName?.toLowerCase().includes(searchQuery.toLowerCase());
+        rule.appCategoryName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (rule.leafId && rule.leafId.includes(searchQuery));
 
       // Type filter
       const matchesType = typeFilter === "all" || rule.type === typeFilter;
@@ -503,21 +509,21 @@ export default function RulesClient({ initialRules }: RulesClientProps) {
                             </Badge>
                             {/* Category 2 */}
                             {rule.category2 && (
-                              <>
-                                <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
-                                <Badge variant="outline" className="h-8 px-3 rounded-xl text-xs">
-                                  {rule.category2}
-                                </Badge>
-                              </>
+                                <>
+                                  <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+                                  <Badge variant="outline" className="h-8 px-3 rounded-xl text-xs">
+                                    {rule.category2}
+                                  </Badge>
+                                </>
                             )}
                             {/* Category 3 */}
                             {rule.category3 && (
-                              <>
-                                <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
-                                <Badge variant="outline" className="h-8 px-3 rounded-xl text-xs">
-                                  {rule.category3}
-                                </Badge>
-                              </>
+                                <>
+                                  <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+                                  <Badge variant="outline" className="h-8 px-3 rounded-xl text-xs">
+                                    {rule.category3}
+                                  </Badge>
+                                </>
                             )}
                           </div>
                         </div>
@@ -657,47 +663,94 @@ export default function RulesClient({ initialRules }: RulesClientProps) {
 
                             {/* Taxonomy Section */}
                             <div className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <Layers className="h-4 w-4 text-violet-600" />
-                                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                                  Hierarquia Taxonômica
-                                </span>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Layers className="h-4 w-4 text-violet-600" />
+                                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                                    Hierarquia Taxonômica
+                                  </span>
+                                </div>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button variant="ghost" size="sm" className="h-6 text-[10px] font-bold uppercase tracking-wider text-primary hover:text-primary/80 hover:bg-primary/5">
+                                            <Edit2 className="w-3 h-3 mr-1.5" />
+                                            Alterar
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[400px] p-0" align="end">
+                                        <Command>
+                                            <CommandInput placeholder="Buscar categoria..." />
+                                            <CommandList>
+                                                <CommandEmpty>Nenhuma categoria encontrada.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {taxonomyOptions.map((option) => (
+                                                        <CommandItem
+                                                            key={option.leafId}
+                                                            value={option.label}
+                                                            onSelect={async () => {
+                                                                const toastId = toast.loading("Atualizando classificação...");
+                                                                try {
+                                                                    await updateRuleClassification(rule.id, option.leafId);
+                                                                    toast.success("Regra atualizada!", { id: toastId });
+                                                                    window.location.reload();
+                                                                } catch (err: any) {
+                                                                    toast.error("Erro ao atualizar: " + err.message, { id: toastId });
+                                                                }
+                                                            }}
+                                                        >
+                                                            <div className="flex items-center justify-between w-full">
+                                                                <div className="flex flex-col">
+                                                                    <span className="font-medium text-sm">{option.category3}</span>
+                                                                    <span className="text-[10px] text-muted-foreground">{option.appCategory} &gt; {option.category1} &gt; {option.category2}</span>
+                                                                </div>
+                                                                {rule.leafId === option.leafId && <div className="w-2 h-2 rounded-full bg-primary" />}
+                                                            </div>
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
                               </div>
                               <div className="space-y-2">
-                                {rule.appCategoryName && (
+                                  {/* App Category Badge */}
                                   <div className="flex items-center gap-2">
                                     <span className="text-xs text-muted-foreground w-24">App Category:</span>
                                     <Badge variant="outline" className="font-mono text-xs">
-                                      {rule.appCategoryName}
+                                      {rule.appCategoryName || "OPEN"}
                                     </Badge>
                                   </div>
-                                )}
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-muted-foreground w-24">Category 1:</span>
-                                  <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 border-0">
-                                    {rule.category1}
-                                  </Badge>
-                                </div>
-                                {rule.category2 && (
+
+                                  {/* Category 1 Badge */}
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-muted-foreground w-24">Category 1:</span>
+                                    <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 border-0">
+                                      {rule.category1}
+                                    </Badge>
+                                  </div>
+
+                                  {/* Category 2 Badge */}
                                   <div className="flex items-center gap-2">
                                     <span className="text-xs text-muted-foreground w-24">Category 2:</span>
-                                    <Badge variant="outline">{rule.category2}</Badge>
+                                    <Badge variant="outline">{rule.category2 || "OPEN"}</Badge>
                                   </div>
-                                )}
-                                {rule.category3 && (
+
+                                  {/* Category 3 Badge */}
                                   <div className="flex items-center gap-2">
                                     <span className="text-xs text-muted-foreground w-24">Category 3:</span>
-                                    <Badge variant="outline">{rule.category3}</Badge>
+                                    <Badge variant="outline">{rule.category3 || "OPEN"}</Badge>
                                   </div>
-                                )}
-                                {rule.leafId && (
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs text-muted-foreground w-24">Leaf ID:</span>
-                                    <code className="text-xs font-mono bg-secondary px-2 py-1 rounded">
-                                      {rule.leafId}
-                                    </code>
-                                  </div>
-                                )}
+
+                                  {/* Optional Leaf ID Debug */}
+                                  {rule.leafId && rule.leafId.length > 10 && (
+                                    <div className="flex items-center gap-2 opacity-50 hover:opacity-100 transition-opacity">
+                                      <span className="text-[10px] text-muted-foreground w-24">Leaf ID:</span>
+                                      <code className="text-[10px] font-mono bg-secondary px-1.5 py-0.5 rounded text-muted-foreground">
+                                        {rule.leafId.substring(0, 8)}...
+                                      </code>
+                                    </div>
+                                  )}
                               </div>
                             </div>
                           </div>

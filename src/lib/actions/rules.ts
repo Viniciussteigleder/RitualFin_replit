@@ -332,7 +332,45 @@ export async function updateRule(id: string, data: Partial<typeof rules.$inferIn
        .set(toUpdate)
        .where(and(eq(rules.id, id), eq(rules.userId, session.user.id)));
 
-     revalidatePath("/rules");
+     revalidatePath("/settings/rules");
+     return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function updateRuleClassification(ruleId: string, leafId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  try {
+     const { byLeafId } = await buildLeafHierarchyMaps(session.user.id);
+     const hierarchy = byLeafId.get(leafId);
+     
+     if (!hierarchy) {
+         // Fallback/Open? Strict validation preferred for "Update" action.
+         throw new Error("Invalid classification (Leaf ID not found)");
+     }
+
+     const toUpdate = {
+         leafId,
+         category1: hierarchy.category1 as any,
+         category2: hierarchy.category2,
+         category3: hierarchy.category3,
+         // We do not update type/fixVar automatically here to preserve manual overrides if any,
+         // UNLESS they were unset or we decide strict sync is better. 
+         // For now, let's stick to updating the classification pointers.
+         // Wait, usually changing category IMPLIES changing default Type/FixVar?
+         // Let's create a specialized behavior: update type/fixVar ONLY if the rule doesn't have them explicitly set (null)?
+         // But rules usually have defaults.
+         // Let's just update classification fields.
+     };
+
+     await db.update(rules)
+       .set(toUpdate)
+       .where(and(eq(rules.id, ruleId), eq(rules.userId, session.user.id)));
+
+     revalidatePath("/settings/rules");
      return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
