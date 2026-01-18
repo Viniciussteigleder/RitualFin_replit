@@ -4,102 +4,187 @@
 
 @layer base {
   :root {
-    /* Ultra-calm off-white background with a hint of warmth/brand */
-    --background: 142 12% 98.5%;
-    --foreground: 142 40% 5%;
+    /* ─────────────────────────────────────────────────────
+       RitualFin Design Tokens - Light Mode
+       Typography: Roboto | Brand: Emerald Green
+       ───────────────────────────────────────────────────── */
+
+    /* Background & Surface */
+    --background: 150 10% 98%;
+    --foreground: 150 25% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 142 40% 5%;
+    --card-foreground: 150 25% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 142 40% 5%;
+    --popover-foreground: 150 25% 10%;
 
-    /* Brand Green (Ritual Core) */
-    --primary: 142 76% 36%;
+    /* Brand Green (Ritual Core) - Enhanced contrast */
+    --primary: 152 69% 31%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 142 12% 95%;
-    --secondary-foreground: 142 40% 10%;
+    /* Secondary - Subtle green tint */
+    --secondary: 150 15% 94%;
+    --secondary-foreground: 150 25% 15%;
 
-    --muted: 142 8% 94%;
-    --muted-foreground: 142 10% 45%;
+    /* Muted - For disabled/secondary text */
+    --muted: 150 10% 92%;
+    --muted-foreground: 150 10% 40%;
 
-    --accent: 142 76% 36%;
+    /* Accent */
+    --accent: 152 69% 31%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
+    /* Semantic Colors */
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 142 12% 92%;
-    --input: 142 12% 92%;
-    --ring: 142 76% 36%;
+    --success: 152 69% 31%;
+    --success-foreground: 0 0% 100%;
 
-    --radius: 15px;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --info: 217 91% 60%;
+    --info-foreground: 0 0% 100%;
+
+    /* Borders & Inputs */
+    --border: 150 15% 90%;
+    --input: 150 15% 90%;
+    --ring: 152 69% 31%;
+
+    /* Sidebar */
+    --sidebar: 150 10% 97%;
+    --sidebar-foreground: 150 25% 10%;
+    --sidebar-border: 150 15% 92%;
+
+    /* Radius */
+    --radius: 12px;
   }
 
   .dark {
-    --background: 160 30% 2.5%;
-    --foreground: 142 15% 95%;
+    /* ─────────────────────────────────────────────────────
+       RitualFin Design Tokens - Dark Mode
+       ───────────────────────────────────────────────────── */
 
-    --card: 160 30% 4.5%;
-    --card-foreground: 142 15% 95%;
+    --background: 160 25% 4%;
+    --foreground: 150 15% 92%;
 
-    --popover: 160 30% 4.5%;
-    --popover-foreground: 142 15% 95%;
+    --card: 160 25% 6%;
+    --card-foreground: 150 15% 92%;
 
-    --primary: 142 66% 45%;
-    --primary-foreground: 160 30% 2.5%;
+    --popover: 160 25% 6%;
+    --popover-foreground: 150 15% 92%;
 
-    --secondary: 160 30% 8%;
-    --secondary-foreground: 142 15% 95%;
+    --primary: 152 60% 45%;
+    --primary-foreground: 160 25% 4%;
 
-    --muted: 160 30% 8%;
-    --muted-foreground: 142 10% 65%;
+    --secondary: 160 20% 10%;
+    --secondary-foreground: 150 15% 92%;
 
-    --accent: 142 66% 45%;
-    --accent-foreground: 160 30% 2.5%;
+    --muted: 160 20% 12%;
+    --muted-foreground: 150 10% 60%;
 
-    --destructive: 0 70% 50%;
+    --accent: 152 60% 45%;
+    --accent-foreground: 160 25% 4%;
+
+    /* Semantic Colors - Dark Mode */
+    --destructive: 0 62% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 160 30% 12%;
-    --input: 160 30% 12%;
-    --ring: 142 66% 45%;
+    --success: 152 60% 45%;
+    --success-foreground: 160 25% 4%;
+
+    --warning: 38 82% 55%;
+    --warning-foreground: 0 0% 0%;
+
+    --info: 217 81% 65%;
+    --info-foreground: 0 0% 100%;
+
+    --border: 160 20% 14%;
+    --input: 160 20% 14%;
+    --ring: 152 60% 45%;
+
+    --sidebar: 160 25% 5%;
+    --sidebar-foreground: 150 15% 92%;
+    --sidebar-border: 160 20% 12%;
   }
 
   * {
     border-color: hsl(var(--border));
   }
-  
+
+  /* ─────────────────────────────────────────────────────
+     Base Typography - Roboto
+     ───────────────────────────────────────────────────── */
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
-    font-family: var(--font-roboto), "Roboto", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    font-size: 14px;
-    line-height: 1.6;
-    font-weight: 400;
-    letter-spacing: -0.01em;
+    font-feature-settings: "kern" 1, "liga" 1;
+    text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Typography Scale (Roboto optimized) */
-  h1, .text-4xl { font-weight: 700; letter-spacing: -0.025em; }
-  h2, .text-3xl { font-weight: 600; letter-spacing: -0.02em; }
-  h3, .text-2xl { font-weight: 600; letter-spacing: -0.015em; }
-  h4, .text-xl { font-weight: 500; letter-spacing: -0.01em; }
-  h5, .text-lg { font-weight: 500; }
+  /* Headings - Roboto optimized weights */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: hsl(var(--foreground));
+  }
 
-  /* Improved focus states for accessibility */
+  h1 { font-size: 2.25rem; line-height: 1.2; font-weight: 700; }
+  h2 { font-size: 1.875rem; line-height: 1.25; font-weight: 600; }
+  h3 { font-size: 1.5rem; line-height: 1.3; font-weight: 600; }
+  h4 { font-size: 1.25rem; line-height: 1.4; font-weight: 500; }
+  h5 { font-size: 1.125rem; line-height: 1.4; font-weight: 500; }
+  h6 { font-size: 1rem; line-height: 1.5; font-weight: 500; }
+
+  /* Body text defaults */
+  p, li, td, th {
+    line-height: 1.6;
+  }
+
+  /* Small text utility */
+  small, .text-sm {
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+
+  /* Caption/Label text */
+  .text-xs {
+    font-size: 0.75rem;
+    line-height: 1.35;
+    letter-spacing: 0.01em;
+  }
+
+  /* Improved focus states for accessibility - WCAG AA */
   :focus-visible {
     outline: 2px solid hsl(var(--ring));
     outline-offset: 2px;
+    border-radius: 4px;
   }
 
   /* Selection color */
   ::selection {
-    background-color: hsl(var(--primary) / 0.2);
+    background-color: hsl(var(--primary) / 0.25);
     color: hsl(var(--foreground));
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.3);
   }
 }
 
