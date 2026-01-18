@@ -23,7 +23,7 @@ export default async function ConfirmPage() {
   const taxonomyOptions = await getTaxonomyOptions();
 
   return (
-    <PageContainer className="max-w-6xl">
+    <PageContainer className="max-w-[1800px]">
       <PageHeader
         icon={BrainCircuit}
         iconColor="primary"

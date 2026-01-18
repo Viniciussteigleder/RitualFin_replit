@@ -396,8 +396,8 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
             </ButtonGroup>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground whitespace-nowrap">
               <Badge variant="secondary" className="font-mono">
                 {discovery.length} padrões
               </Badge>
@@ -405,7 +405,7 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
                 Impacto: {formatCurrency(totalDiscoveryAbs)}
               </Badge>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
               <Input
                 inputMode="numeric"
                 placeholder="Limite"
@@ -413,10 +413,10 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
                 onChange={(e) =>
                   setDiscoveryFilters((p) => ({ ...p, limit: e.target.value ? Number(e.target.value) : 50 }))
                 }
-                className="w-24 rounded-xl"
+                className="w-24 rounded-xl shrink-0"
               />
               <Button
-                className="rounded-2xl font-black"
+                className="rounded-2xl font-black shrink-0"
                 onClick={() => loadDiscovery(discoveryFilters)}
                 disabled={isDiscoveryPending}
               >
@@ -555,8 +555,8 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
             />
           </div>
 
-          <div className="flex justify-end">
-            <Button className="rounded-2xl font-black" onClick={() => loadRecurring(recurringFilters)} disabled={isRecurringPending}>
+          <div className="flex justify-end pt-2">
+            <Button className="rounded-2xl font-black w-full sm:w-auto" onClick={() => loadRecurring(recurringFilters)} disabled={isRecurringPending}>
               Aplicar filtros
             </Button>
           </div>
@@ -681,16 +681,21 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
                 Asc
               </Button>
             </ButtonGroup>
-            <Input
-              inputMode="numeric"
-              placeholder="Limite"
-              value={conflictFilters.limit ?? 50}
-              onChange={(e) => setConflictFilters((p) => ({ ...p, limit: e.target.value ? Number(e.target.value) : 50 }))}
-              className="rounded-xl"
-            />
+            <div className="flex items-center gap-2">
+                <Input
+                inputMode="numeric"
+                placeholder="Limite"
+                value={conflictFilters.limit ?? 50}
+                onChange={(e) => setConflictFilters((p) => ({ ...p, limit: e.target.value ? Number(e.target.value) : 50 }))}
+                className="rounded-xl flex-1"
+                />
+                <Button className="rounded-2xl font-black md:hidden" onClick={() => loadConflicts(conflictFilters)} disabled={isConflictsPending}>
+                    Aplicar
+                </Button>
+            </div>
           </div>
 
-          <div className="flex justify-end">
+          <div className="hidden md:flex justify-end pt-2">
             <Button className="rounded-2xl font-black" onClick={() => loadConflicts(conflictFilters)} disabled={isConflictsPending}>
               Aplicar filtros
             </Button>
@@ -709,7 +714,7 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
 
               return (
                 <div className="bg-amber-50/50 border border-amber-100 rounded-[2.5rem] p-4 md:p-6 shadow-sm overflow-hidden">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
                     {/* Left: transaction context */}
                     <div className="space-y-4">
                       <div className="flex items-start justify-between gap-4">
