@@ -171,7 +171,7 @@ export function Sidebar() {
                         <div className="p-1.5 rounded-lg bg-emerald-500/10">
                           <Activity className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                         </div>
-                        <span className="text-xs font-bold text-foreground tracking-wide">Monitoramento</span>
+                        <span className="text-sm font-bold text-foreground tracking-wide">Monitoramento</span>
                       </div>
                       {coreOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                   </CollapsibleTrigger>
@@ -194,7 +194,7 @@ export function Sidebar() {
                         <div className="p-1.5 rounded-lg bg-blue-500/10">
                           <Compass className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                         </div>
-                        <span className="text-xs font-bold text-foreground tracking-wide">Planejamento</span>
+                        <span className="text-sm font-bold text-foreground tracking-wide">Planejamento</span>
                       </div>
                       {strategyOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                   </CollapsibleTrigger>
@@ -219,7 +219,7 @@ export function Sidebar() {
                         <div className="p-1.5 rounded-lg bg-violet-500/10">
                           <Cog className="h-4 w-4 text-violet-600 dark:text-violet-400" />
                         </div>
-                        <span className="text-xs font-bold text-foreground tracking-wide">Configurações</span>
+                        <span className="text-sm font-bold text-foreground tracking-wide">Configurações</span>
                       </div>
                       {adminOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                   </CollapsibleTrigger>
