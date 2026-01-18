@@ -116,9 +116,9 @@ export function TransactionRow({
 
                         {/* Mobile info badges */}
                         <div className="flex items-center gap-2 flex-wrap text-xs md:hidden">
-                            <span className="text-[9px] text-muted-foreground">{formatDate(transaction.date)}</span>
-                            <span className="text-[9px] text-muted-foreground">•</span>
-                            <span className="text-[9px] text-muted-foreground">{transaction.category1 || "N/A"}</span>
+                            <span className="text-[10px] text-muted-foreground">{formatDate(transaction.date)}</span>
+                            <span className="text-[10px] text-muted-foreground">•</span>
+                            <span className="text-[10px] text-muted-foreground">{transaction.category1 || "N/A"}</span>
                             {transaction.conflictFlag && (
                                 <Badge className="h-4 px-1 rounded bg-red-100 text-red-700 border-none text-[8px]">
                                     <AlertCircle className="w-3 h-3 mr-0.5" />

@@ -11,28 +11,30 @@ export function UploadClient() {
       <ImportWizard>
         <div className="bg-card rounded-[2.5rem] p-2 shadow-sm border border-border">
           <Tabs defaultValue="csv" className="w-full">
-            <div className="flex justify-center p-6 pb-2">
-              <TabsList className="bg-secondary/50 p-1.5 h-auto rounded-[1.5rem] gap-2 border border-border">
-                <TabsTrigger 
-                  value="csv" 
-                  className="rounded-2xl px-10 py-4 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-[0.1em] gap-3 transition-all"
+            <div className="flex justify-center p-4 md:p-6 pb-2">
+              <TabsList className="bg-secondary/50 p-1.5 h-auto rounded-[1.5rem] gap-1 md:gap-2 border border-border flex-wrap justify-center">
+                <TabsTrigger
+                  value="csv"
+                  className="rounded-2xl px-4 py-3 md:px-10 md:py-4 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[10px] md:text-[11px] font-black uppercase tracking-[0.1em] gap-2 md:gap-3 transition-all"
                 >
                   <FileText className="h-4 w-4" />
-                  Extrato Bancário
+                  <span className="hidden sm:inline">Extrato Bancário</span>
+                  <span className="sm:hidden">CSV</span>
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="screenshot" 
-                  className="rounded-2xl px-10 py-4 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-[0.1em] gap-3 transition-all"
+                <TabsTrigger
+                  value="screenshot"
+                  className="rounded-2xl px-4 py-3 md:px-10 md:py-4 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[10px] md:text-[11px] font-black uppercase tracking-[0.1em] gap-2 md:gap-3 transition-all"
                 >
                   <Smartphone className="h-4 w-4" />
-                  Evidência (Print)
+                  <span className="hidden sm:inline">Evidência (Print)</span>
+                  <span className="sm:hidden">Print</span>
                 </TabsTrigger>
               </TabsList>
             </div>
             
-            <div className="p-6 md:p-12">
+            <div className="p-4 md:p-8 lg:p-12">
               <TabsContent value="csv" className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-10 lg:gap-16 items-center">
                   <div className="space-y-8">
                     <div className="w-20 h-20 bg-primary/10 rounded-[2.5rem] flex items-center justify-center text-primary shadow-inner">
                       <CloudUpload className="h-10 w-10" />
@@ -65,7 +67,7 @@ export function UploadClient() {
               </TabsContent>
               
               <TabsContent value="screenshot" className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500">
-                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-10 lg:gap-16 items-center">
                     <div className="space-y-8">
                       <div className="w-20 h-20 bg-primary/10 rounded-[2.5rem] flex items-center justify-center text-primary shadow-inner">
                         <Smartphone className="h-10 w-10" />

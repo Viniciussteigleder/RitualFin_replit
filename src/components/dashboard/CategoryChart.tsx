@@ -93,7 +93,7 @@ export function CategoryChart({ data, total }: { data: CategoryData[], total: nu
 
         <div className="flex flex-col md:flex-row items-center gap-10 w-full">
         {/* Chart */}
-        <div className="relative w-full max-w-[320px] h-[260px] flex-shrink-0 mx-auto md:mx-0">
+        <div className="relative w-full max-w-[280px] sm:max-w-[320px] h-[240px] sm:h-[260px] flex-shrink-0 mx-auto md:mx-0">
             <div className="absolute inset-0 flex items-center justify-center flex-col z-10 pointer-events-none pb-2">
                 <span className="text-2xl font-bold font-display text-foreground">{formatCurrency(total, { hideDecimals: true })}</span>
                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Total Gasto</span>

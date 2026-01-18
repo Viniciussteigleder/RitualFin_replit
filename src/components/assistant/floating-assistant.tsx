@@ -230,8 +230,8 @@ export function FloatingAssistant() {
 
     return (
         <>
-            {/* Floating Button - Desktop Only */}
-            <div className="fixed bottom-6 right-6 z-50 hidden lg:flex flex-col items-end gap-3">
+            {/* Floating Button - Tablet and Desktop */}
+            <div className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-40 hidden sm:flex flex-col items-end gap-3">
                 {/* Tooltip hint */}
                 {!open && (
                     <div className="bg-card/95 backdrop-blur-sm border border-border rounded-2xl px-4 py-2 shadow-xl animate-in fade-in slide-in-from-right-2 duration-500">
