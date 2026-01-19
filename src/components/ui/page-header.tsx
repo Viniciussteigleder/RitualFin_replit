@@ -54,6 +54,7 @@ export function PageHeader({
         "relative z-10", // Prevent positioning issues
         className
       )}
+      style={{ top: 0, visibility: 'visible', display: 'flex' }} // Force visibility
     >
       <div className="flex flex-col gap-3">
         {/* Icon + Title Row */}
