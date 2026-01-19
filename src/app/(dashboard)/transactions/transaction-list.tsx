@@ -91,6 +91,11 @@ export function TransactionList({
     const [viewMode, setViewMode] = useState<"day" | "week">("day");
     const router = useRouter();
 
+    // Prevent automatic scroll on mount/hydration
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []); // Run once on mount
+
     // Debounce search to reduce server calls
     const debouncedSearch = useDebouncedValue(search, 300);
 

@@ -24,7 +24,9 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
-  experimental: {},
+  experimental: {
+    scrollRestoration: false, // Disable automatic scroll restoration
+  },
   // @ts-ignore - Next.js 16/Turbopack custom experimental key
   turbopack: {
     root: process.cwd(),
