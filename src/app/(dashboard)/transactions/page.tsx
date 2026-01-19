@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { getTransactionsForList, getAliasesForTransactions } from "@/lib/actions/transactions";
+import { getTransactionsForList, getAliasesForTransactions, getFilterOptions } from "@/lib/actions/transactions";
 import { TransactionList } from "./transaction-list";
 import { AIAnalystChat } from "@/components/transactions/AIAnalystChat";
 import { ReRunRulesButton } from "@/components/transactions/re-run-rules-button";
@@ -22,8 +22,16 @@ export default async function TransactionsPage({
 
   const params = await searchParams;
   const sources = params.accounts ? (Array.isArray(params.accounts) ? params.accounts : [params.accounts]) : undefined;
-  const { items: transactions, hasMore, nextCursor } = await getTransactionsForList({ limit: 50, sources });
-  
+
+  // Fetch transactions and filter options in parallel - M1/M10 fix
+  const [transactionsResult, filterOptions, aliasMapResult] = await Promise.all([
+    getTransactionsForList({ limit: 50, sources }),
+    getFilterOptions(),
+    Promise.resolve(null) // Placeholder, aliasMap fetched after
+  ]);
+
+  const { items: transactions, hasMore, nextCursor } = transactionsResult;
+
   // PERFORMANCE: Only fetch aliases for visible transactions (80% smaller payload)
   const aliasMap = await getAliasesForTransactions(transactions);
 
@@ -57,6 +65,8 @@ export default async function TransactionsPage({
         aliasMap={aliasMap}
         initialHasMore={hasMore}
         initialNextCursor={nextCursor}
+        allCategories={filterOptions.categories as string[]}
+        allAccounts={filterOptions.accounts as string[]}
       />
     </PageContainer>
   );

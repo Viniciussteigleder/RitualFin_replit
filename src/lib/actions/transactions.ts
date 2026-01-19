@@ -607,10 +607,36 @@ export async function getSpendAveragesAllPeriods(
  * Returns only essential fields for list view, reducing payload by ~60%
  * Full details should be fetched on-demand when drawer opens
  */
+/**
+ * Get all available filter options (categories and accounts) - M1/M10 fix
+ * Fetches from ALL user transactions, not just currently loaded ones
+ */
+export async function getFilterOptions() {
+  const session = await auth();
+  if (!session?.user?.id) return { categories: [], accounts: [] };
+
+  const userId = session.user.id;
+
+  const result = await db.execute(sql`
+    SELECT DISTINCT
+      category_1 as category,
+      source as account
+    FROM transactions
+    WHERE user_id = ${userId}
+    AND display != 'no'
+    AND (category_1 IS NOT NULL OR source IS NOT NULL)
+  `);
+
+  const categories = [...new Set(result.rows.map((r: any) => r.category).filter(Boolean))].sort();
+  const accounts = [...new Set(result.rows.map((r: any) => r.account).filter(Boolean))].sort();
+
+  return { categories, accounts };
+}
+
 export async function getTransactionsForList(
-  input: { 
-    limit?: number; 
-    sources?: string[]; 
+  input: {
+    limit?: number;
+    sources?: string[];
     cursor?: string;
     search?: string;
     categories?: string[];

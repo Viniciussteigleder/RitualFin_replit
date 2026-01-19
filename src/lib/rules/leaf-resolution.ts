@@ -87,6 +87,12 @@ export function resolveLeafFromMatches(args: {
     if (!mappedLeafId) continue;
     const hierarchy = taxonomyByLeafId.get(mappedLeafId) ?? openHierarchy;
 
+    // M5 Fix: Consistency validation - skip if hierarchy is inconsistent (OPEN leaf with non-OPEN categories)
+    if (hierarchy.category1 === "OPEN" && hierarchy.appCategoryName && hierarchy.appCategoryName !== "OPEN") {
+      console.warn(`[leaf-resolution] Inconsistent hierarchy: leafId=${mappedLeafId}, category1=OPEN but appCategoryName=${hierarchy.appCategoryName}`);
+      continue; // Skip inconsistent entries
+    }
+
     enriched.push({
       leafId: mappedLeafId,
       ruleId: m.ruleId,

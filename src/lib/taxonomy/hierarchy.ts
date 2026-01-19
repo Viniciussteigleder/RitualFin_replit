@@ -46,10 +46,13 @@ export async function buildLeafHierarchyMaps(userId: string) {
 
   for (const row of rows) {
     if (!row.leafId || !row.category1 || !row.category2 || !row.category3) continue;
+    // M4 Fix: If appCategoryName is null but we have valid taxonomy, default to category1
+    // This ensures consistency - if category1 is "Mercados", appCategoryName should also reflect that
+    const derivedAppCategoryName = row.appCategoryName ?? (row.category1 !== "OPEN" ? row.category1 : "OPEN");
     const hierarchy: LeafHierarchy = {
       leafId: row.leafId,
       appCategoryId: row.appCategoryId ?? null,
-      appCategoryName: row.appCategoryName ?? null,
+      appCategoryName: derivedAppCategoryName,
       category1: row.category1,
       category2: row.category2,
       category3: row.category3,
