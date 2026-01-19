@@ -28,6 +28,15 @@ import {
   appCategory
 } from "@/lib/db/schema";
 import { eq, sql, and, isNull, isNotNull, count, desc, asc } from "drizzle-orm";
+import type { DiagnosticStage } from "@/lib/diagnostics/catalog-core";
+import { getCatalogItemCore } from "@/lib/diagnostics/catalog-core";
+import {
+  detectDateFormatDrift,
+  detectNumberLocaleDrift,
+  detectReplacementChar,
+  getColumnCount,
+  pickFirstPresent,
+} from "@/lib/diagnostics/detectors";
 
 // ============================================================================
 // TYPES
@@ -39,12 +48,17 @@ export interface DiagnosticIssue {
   id: string;
   category: DiagnosticCategory;
   severity: Severity;
+  stage?: DiagnosticStage;
   title: string;
   description: string;
   affectedCount: number;
   samples: any[];
   recommendation: string;
   autoFixable: boolean;
+  confidenceLabel?: "raw-backed" | "DB-only (low confidence)";
+  includeInHealthScore?: boolean;
+  howWeKnow?: string;
+  approach?: string;
 }
 
 export interface DiagnosticCategory {
@@ -85,6 +99,11 @@ export interface CategoryResult {
   checksRun: number;
   checksPassed: number;
 }
+
+export type DiagnosticsScope =
+  | { kind: "all_recent"; recentBatches?: number }
+  | { kind: "batch"; batchId: string }
+  | { kind: "date_range"; from: string; to: string };
 
 // ============================================================================
 // DIAGNOSTIC CATEGORIES
@@ -127,7 +146,7 @@ const CATEGORIES = {
 // MAIN DIAGNOSTIC FUNCTION
 // ============================================================================
 
-export async function runFullDiagnostics(): Promise<DiagnosticResult> {
+export async function runFullDiagnostics(scope: DiagnosticsScope = { kind: "all_recent", recentBatches: 10 }): Promise<DiagnosticResult> {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
@@ -143,7 +162,7 @@ export async function runFullDiagnostics(): Promise<DiagnosticResult> {
     financialIssues,
     taxonomyIssues
   ] = await Promise.all([
-    runImportDiagnostics(userId),
+    runImportDiagnostics(userId, scope),
     runRuleDiagnostics(userId),
     runCategorizationDiagnostics(userId),
     runFinancialDiagnostics(userId),
@@ -153,17 +172,26 @@ export async function runFullDiagnostics(): Promise<DiagnosticResult> {
   issues.push(...importIssues.issues, ...ruleIssues.issues, ...categorizationIssues.issues,
               ...financialIssues.issues, ...taxonomyIssues.issues);
 
+  const enrichedIssues = issues.map(enrichIssueFromCatalog);
+
   // Calculate summary
-  const critical = issues.filter(i => i.severity === "critical").length;
-  const high = issues.filter(i => i.severity === "high").length;
-  const medium = issues.filter(i => i.severity === "medium").length;
-  const low = issues.filter(i => i.severity === "low").length;
-  const info = issues.filter(i => i.severity === "info").length;
+  const critical = enrichedIssues.filter(i => i.severity === "critical").length;
+  const high = enrichedIssues.filter(i => i.severity === "high").length;
+  const medium = enrichedIssues.filter(i => i.severity === "medium").length;
+  const low = enrichedIssues.filter(i => i.severity === "low").length;
+  const info = enrichedIssues.filter(i => i.severity === "info").length;
+
+  const scoreEligible = enrichedIssues.filter((i) => i.includeInHealthScore !== false);
+  const scoreCritical = scoreEligible.filter(i => i.severity === "critical").length;
+  const scoreHigh = scoreEligible.filter(i => i.severity === "high").length;
+  const scoreMedium = scoreEligible.filter(i => i.severity === "medium").length;
+  const scoreLow = scoreEligible.filter(i => i.severity === "low").length;
 
   // Health score: 100 - (critical*25 + high*10 + medium*5 + low*2)
-  const healthScore = Math.max(0, Math.min(100,
-    100 - (critical * 25) - (high * 10) - (medium * 5) - (low * 2)
-  ));
+  const healthScore = Math.max(
+    0,
+    Math.min(100, 100 - (scoreCritical * 25) - (scoreHigh * 10) - (scoreMedium * 5) - (scoreLow * 2))
+  );
 
   return {
     success: true,
@@ -185,7 +213,7 @@ export async function runFullDiagnostics(): Promise<DiagnosticResult> {
       financial: financialIssues.categoryResult,
       taxonomy: taxonomyIssues.categoryResult
     },
-    issues
+    issues: enrichedIssues
   };
 }
 
@@ -193,10 +221,278 @@ export async function runFullDiagnostics(): Promise<DiagnosticResult> {
 // IMPORT DIAGNOSTICS
 // ============================================================================
 
-async function runImportDiagnostics(userId: string) {
+async function runImportDiagnostics(userId: string, scope: DiagnosticsScope) {
   const issues: DiagnosticIssue[] = [];
   let checksRun = 0;
   let checksPassed = 0;
+
+  const batchIds = await resolveScopeBatchIds(userId, scope);
+  const primaryBatchId = batchIds[0];
+
+  // FILE-001 (raw-backed): encoding suspicion via replacement char
+  checksRun++;
+  if (primaryBatchId) {
+    const rows = await db
+      .select({
+        id: ingestionItems.id,
+        batchId: ingestionItems.batchId,
+        rowIndex: ingestionItems.rowIndex,
+        rawColumnsJson: ingestionItems.rawColumnsJson,
+        rawPayload: ingestionItems.rawPayload,
+      })
+      .from(ingestionItems)
+      .where(eq(ingestionItems.batchId, primaryBatchId))
+      .limit(600);
+
+    const hit = rows
+      .filter((r) => detectReplacementChar((r.rawColumnsJson as any) ?? (r.rawPayload as any)))
+      .slice(0, 5)
+      .map((r) => ({
+        ingestionItemId: r.id,
+        batchId: r.batchId,
+        rowIndex: r.rowIndex,
+        rawColumns: r.rawColumnsJson ?? r.rawPayload,
+      }));
+
+    if (hit.length > 0) {
+      issues.push({
+        id: "FILE-001",
+        category: CATEGORIES.imports,
+        severity: "high",
+        title: "Possível problema de encoding (caractere de substituição)",
+        description: "Algumas linhas parecem conter caracteres corrompidos (�), sugerindo encoding errado.",
+        affectedCount: hit.length,
+        samples: hit,
+        recommendation: "Reimportar/reprocessar com encoding correto.",
+        autoFixable: false,
+      });
+    } else {
+      checksPassed++;
+    }
+  } else {
+    checksPassed++;
+  }
+
+  // FILE-003 (raw-backed): variable column counts (sample-based)
+  checksRun++;
+  if (primaryBatchId) {
+    const rows = await db
+      .select({
+        id: ingestionItems.id,
+        batchId: ingestionItems.batchId,
+        rowIndex: ingestionItems.rowIndex,
+        rawColumnsJson: ingestionItems.rawColumnsJson,
+      })
+      .from(ingestionItems)
+      .where(eq(ingestionItems.batchId, primaryBatchId))
+      .limit(800);
+
+    const counts = rows.map((r) => ({
+      ingestionItemId: r.id,
+      batchId: r.batchId,
+      rowIndex: r.rowIndex,
+      columnCount: getColumnCount((r.rawColumnsJson as any) ?? null),
+      rawColumns: r.rawColumnsJson,
+    }));
+    const nonZero = counts.filter((c) => c.columnCount > 0);
+    const distinct = new Set(nonZero.map((c) => c.columnCount));
+    if (distinct.size > 1) {
+      const sorted = [...distinct].sort((a, b) => a - b);
+      const min = sorted[0]!;
+      const max = sorted[sorted.length - 1]!;
+      const outliers = nonZero.filter((c) => c.columnCount === min || c.columnCount === max).slice(0, 5);
+      issues.push({
+        id: "FILE-003",
+        category: CATEGORIES.imports,
+        severity: "high",
+        title: "Contagem de colunas variável por linha",
+        description: `A contagem de colunas varia nas amostras (min=${min}, max=${max}).`,
+        affectedCount: outliers.length,
+        samples: outliers,
+        recommendation: "Revisar delimitador/aspas e reprocessar; ver linhas outlier no diff viewer.",
+        autoFixable: false,
+      });
+    } else {
+      checksPassed++;
+    }
+  } else {
+    checksPassed++;
+  }
+
+  // PAR-013 (raw-backed): locale number drift
+  checksRun++;
+  if (primaryBatchId) {
+    const rows = await db
+      .select({
+        id: ingestionItems.id,
+        batchId: ingestionItems.batchId,
+        rowIndex: ingestionItems.rowIndex,
+        rawColumnsJson: ingestionItems.rawColumnsJson,
+      })
+      .from(ingestionItems)
+      .where(eq(ingestionItems.batchId, primaryBatchId))
+      .limit(1000);
+
+    const amountStrings = rows
+      .map((r) => pickFirstPresent((r.rawColumnsJson as any) ?? null, ["Betrag", "Amount", "amount", "betrag"]))
+      .filter(Boolean);
+    const drift = detectNumberLocaleDrift(amountStrings);
+    if (drift.drift) {
+      const examples = rows
+        .map((r) => ({
+          ingestionItemId: r.id,
+          batchId: r.batchId,
+          rowIndex: r.rowIndex,
+          amountRaw: pickFirstPresent((r.rawColumnsJson as any) ?? null, ["Betrag", "Amount", "amount", "betrag"]),
+          rawColumns: r.rawColumnsJson,
+        }))
+        .filter((x) => !!x.amountRaw)
+        .slice(0, 8);
+
+      issues.push({
+        id: "PAR-013",
+        category: CATEGORIES.imports,
+        severity: "medium",
+        title: "Drift de locale numérico no mesmo batch",
+        description: `Padrões mistos detectados (EU=${drift.eu}, US=${drift.us}).`,
+        affectedCount: drift.eu + drift.us,
+        samples: examples,
+        recommendation: "Ajustar separadores decimais/milhares e reprocessar o batch.",
+        autoFixable: false,
+      });
+    } else {
+      checksPassed++;
+    }
+  } else {
+    checksPassed++;
+  }
+
+  // PAR-016 (raw-backed): date format drift
+  checksRun++;
+  if (primaryBatchId) {
+    const rows = await db
+      .select({
+        id: ingestionItems.id,
+        batchId: ingestionItems.batchId,
+        rowIndex: ingestionItems.rowIndex,
+        rawColumnsJson: ingestionItems.rawColumnsJson,
+      })
+      .from(ingestionItems)
+      .where(eq(ingestionItems.batchId, primaryBatchId))
+      .limit(1000);
+
+    const dateStrings = rows
+      .map((r) =>
+        pickFirstPresent((r.rawColumnsJson as any) ?? null, ["Buchungstag", "Valutadatum", "Datum", "Authorised on", "Processed on"])
+      )
+      .filter(Boolean);
+
+    const drift = detectDateFormatDrift(dateStrings);
+    if (drift.drift) {
+      const examples = rows
+        .map((r) => ({
+          ingestionItemId: r.id,
+          batchId: r.batchId,
+          rowIndex: r.rowIndex,
+          dateRaw: pickFirstPresent((r.rawColumnsJson as any) ?? null, ["Buchungstag", "Valutadatum", "Datum", "Authorised on", "Processed on"]),
+          rawColumns: r.rawColumnsJson,
+        }))
+        .filter((x) => !!x.dateRaw)
+        .slice(0, 8);
+
+      issues.push({
+        id: "PAR-016",
+        category: CATEGORIES.imports,
+        severity: "medium",
+        title: "Drift de formato de data no mesmo batch",
+        description: `Múltiplos formatos detectados (known=${drift.distinctKnownFormats}).`,
+        affectedCount: dateStrings.length,
+        samples: examples,
+        recommendation: "Definir date_format e reprocessar; se necessário, separar o arquivo.",
+        autoFixable: false,
+      });
+    } else {
+      checksPassed++;
+    }
+  } else {
+    checksPassed++;
+  }
+
+  // BCH-002 (raw-backed-ish): sum mismatch parsed vs DB, requires batch_id on transactions
+  checksRun++;
+  if (primaryBatchId) {
+    const sums = await db.execute(sql`
+      SELECT
+        ib.id AS batch_id,
+        COALESCE(
+          SUM(
+            CASE
+              WHEN (ii.parsed_payload->>'amount') ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN (ii.parsed_payload->>'amount')::numeric
+              ELSE 0
+            END
+          ),
+          0
+        ) AS parsed_sum,
+        COALESCE(SUM(t.amount), 0) AS db_sum,
+        COUNT(ii.id)::int AS parsed_count,
+        COUNT(t.id)::int AS db_count
+      FROM ingestion_batches ib
+      LEFT JOIN ingestion_items ii ON ii.batch_id = ib.id
+      LEFT JOIN transactions t ON t.batch_id = ib.id
+      WHERE ib.user_id = ${userId}
+        AND ib.id = ${primaryBatchId}
+      GROUP BY ib.id
+    `);
+
+    const row = sums.rows[0] as any;
+    const parsedSum = Number(row?.parsed_sum ?? 0);
+    const dbSum = Number(row?.db_sum ?? 0);
+    const diff = Math.abs(parsedSum - dbSum);
+    if (diff > 0.01 && (Math.abs(parsedSum) > 0.01 || Math.abs(dbSum) > 0.01)) {
+      issues.push({
+        id: "BCH-002",
+        category: CATEGORIES.imports,
+        severity: "high",
+        title: "Mismatch de soma (Parsed vs DB) por batch",
+        description: `parsed_sum=${parsedSum.toFixed(2)} vs db_sum=${dbSum.toFixed(2)} (diff=${diff.toFixed(2)}).`,
+        affectedCount: Number(row?.db_count ?? 0),
+        samples: [],
+        recommendation: "Inspecionar exemplos no drill-down e reprocessar o batch (locale/sinal).",
+        autoFixable: false,
+      });
+    } else {
+      checksPassed++;
+    }
+  } else {
+    checksPassed++;
+  }
+
+  // BCH-003 (raw-backed): duplicate file hash across batches
+  checksRun++;
+  const dupBatches = await db.execute(sql`
+    SELECT file_hash_sha256, COUNT(*)::int AS cnt
+    FROM ingestion_batches
+    WHERE user_id = ${userId}
+      AND file_hash_sha256 IS NOT NULL
+    GROUP BY file_hash_sha256
+    HAVING COUNT(*) > 1
+    LIMIT 20
+  `);
+  if (dupBatches.rows.length > 0) {
+    issues.push({
+      id: "BCH-003",
+      category: CATEGORIES.imports,
+      severity: "medium",
+      title: "Possível import duplicado (mesmo file hash)",
+      description: "Um ou mais hashes de arquivo aparecem em múltiplos batches.",
+      affectedCount: dupBatches.rows.length,
+      samples: dupBatches.rows.slice(0, 5),
+      recommendation: "Identificar duplicados pelo hash e fazer rollback/quarentena do duplicado.",
+      autoFixable: false,
+    });
+  } else {
+    checksPassed++;
+  }
 
   // Check 0: Missing provenance linkage (raw-backed via batch + fingerprint join)
   checksRun++;
@@ -356,33 +652,6 @@ async function runImportDiagnostics(userId: string) {
     checksPassed++;
   }
 
-  // Check 4: Orphan ingestion items
-  checksRun++;
-  const orphanItems = await db.execute(sql`
-    SELECT COUNT(*) as count
-    FROM ingestion_items ii
-    LEFT JOIN ingestion_batches ib ON ii.batch_id = ib.id
-    WHERE ib.id IS NULL
-    AND ii.user_id = ${userId}
-  `);
-
-  const orphanCount = (orphanItems.rows[0] as any)?.count || 0;
-  if (orphanCount > 0) {
-    issues.push({
-      id: "IMP-004",
-      category: CATEGORIES.imports,
-      severity: "low",
-      title: "Itens de Ingestão Órfãos",
-      description: "Itens sem batch associado",
-      affectedCount: parseInt(orphanCount),
-      samples: [],
-      recommendation: "Limpar registros órfãos do banco",
-      autoFixable: true
-    });
-  } else {
-    checksPassed++;
-  }
-
   const status: CategoryResult["status"] = issues.some(i => i.severity === "critical") ? "critical"
                : issues.some(i => i.severity === "high") ? "warning" : "healthy";
 
@@ -397,6 +666,79 @@ async function runImportDiagnostics(userId: string) {
       checksPassed
     }
   };
+}
+
+function enrichIssueFromCatalog(issue: DiagnosticIssue): DiagnosticIssue {
+  const catalog = getCatalogItemCore(issue.id);
+  if (!catalog) {
+    return {
+      ...issue,
+      confidenceLabel: "DB-only (low confidence)",
+      includeInHealthScore: false,
+    };
+  }
+
+  return {
+    ...issue,
+    stage: catalog.stage,
+    howWeKnow: issue.howWeKnow ?? catalog.howWeKnowPt,
+    approach: issue.approach ?? catalog.approachPt,
+    recommendation: issue.recommendation || catalog.recommendedActionPt,
+    confidenceLabel: "raw-backed",
+    includeInHealthScore: catalog.includeInHealthScoreByDefault,
+  };
+}
+
+async function resolveScopeBatchIds(userId: string, scope: DiagnosticsScope): Promise<string[]> {
+  if (scope.kind === "batch") return [scope.batchId];
+
+  if (scope.kind === "date_range") {
+    const from = new Date(scope.from);
+    const to = new Date(scope.to);
+    const rows = await db.execute(sql`
+      SELECT DISTINCT ib.id
+      FROM ingestion_batches ib
+      JOIN transactions t ON t.batch_id = ib.id
+      WHERE ib.user_id = ${userId}
+        AND t.payment_date >= ${from}
+        AND t.payment_date <= ${to}
+      ORDER BY ib.created_at DESC
+      LIMIT 50
+    `);
+    return (rows.rows as any[]).map((r) => r.id);
+  }
+
+  const limit = Math.max(1, Math.min(50, scope.recentBatches ?? 10));
+  const rows = await db.execute(sql`
+    SELECT id
+    FROM ingestion_batches
+    WHERE user_id = ${userId}
+    ORDER BY created_at DESC
+    LIMIT ${limit}
+  `);
+  return (rows.rows as any[]).map((r) => r.id);
+}
+
+export async function getRecentBatchesForDiagnostics(
+  limit: number = 20
+): Promise<Array<{ id: string; filename: string | null; createdAt: string }>> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  const userId = session.user.id;
+
+  const rows = await db.execute(sql`
+    SELECT id, filename, created_at
+    FROM ingestion_batches
+    WHERE user_id = ${userId}
+    ORDER BY created_at DESC
+    LIMIT ${Math.max(1, Math.min(50, limit))}
+  `);
+
+  return (rows.rows as any[]).map((r) => ({
+    id: r.id,
+    filename: r.filename ?? null,
+    createdAt: r.created_at?.toISOString?.() ?? String(r.created_at),
+  }));
 }
 
 // ============================================================================
@@ -1155,13 +1497,107 @@ export async function bulkFixIssues(issueIds: string[]): Promise<{
 // GET AFFECTED RECORDS (for drill-down)
 // ============================================================================
 
-export async function getAffectedRecords(issueId: string, limit: number = 50): Promise<any[]> {
+export async function getAffectedRecords(
+  issueId: string,
+  limitOrParams: number | { limit?: number; scope?: DiagnosticsScope } = 50
+): Promise<any[]> {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
   const userId = session.user.id;
+  const limit = typeof limitOrParams === "number" ? limitOrParams : (limitOrParams.limit ?? 50);
+  const scope = typeof limitOrParams === "number" ? undefined : limitOrParams.scope;
+  const batchIds = scope ? await resolveScopeBatchIds(userId, scope) : [];
+  const primaryBatchId = batchIds[0];
 
   switch (issueId) {
+    case "FILE-001":
+    case "FILE-003":
+    case "PAR-013":
+    case "PAR-016": {
+      if (!primaryBatchId) return [];
+      const rows = await db.execute(sql`
+        SELECT
+          ii.id AS id,
+          ii.batch_id,
+          ii.row_index,
+          ii.raw_columns_json,
+          ii.parsed_payload
+        FROM ingestion_items ii
+        JOIN ingestion_batches ib ON ii.batch_id = ib.id
+        WHERE ib.user_id = ${userId}
+          AND ii.batch_id = ${primaryBatchId}
+        LIMIT ${limit}
+      `);
+      return rows.rows;
+    }
+
+    case "BCH-001": {
+      const rows = await db.execute(sql`
+        SELECT
+          t.id AS id,
+          t.upload_id AS batch_id,
+          t.key AS fingerprint,
+          t.key_desc,
+          t.amount,
+          t.payment_date,
+          ii.id AS ingestion_item_id,
+          ii.row_index,
+          ii.raw_columns_json,
+          ii.parsed_payload
+        FROM transactions t
+        JOIN ingestion_items ii
+          ON ii.batch_id = t.upload_id
+         AND ii.item_fingerprint = t.key
+        WHERE t.user_id = ${userId}
+          AND t.upload_id IS NOT NULL
+          AND t.ingestion_item_id IS NULL
+        LIMIT ${limit}
+      `);
+      return rows.rows;
+    }
+
+    case "BCH-002": {
+      if (!primaryBatchId) return [];
+      const rows = await db.execute(sql`
+        SELECT
+          t.id AS id,
+          t.batch_id,
+          t.ingestion_item_id,
+          t.key_desc,
+          t.amount AS db_amount,
+          t.payment_date,
+          ii.raw_columns_json,
+          ii.parsed_payload
+        FROM transactions t
+        LEFT JOIN ingestion_items ii ON ii.id = t.ingestion_item_id
+        WHERE t.user_id = ${userId}
+          AND t.batch_id = ${primaryBatchId}
+        ORDER BY ABS(t.amount) DESC
+        LIMIT ${limit}
+      `);
+      return rows.rows;
+    }
+
+    case "BCH-003": {
+      const rows = await db.execute(sql`
+        SELECT id, filename, created_at, status, file_hash_sha256
+        FROM ingestion_batches
+        WHERE user_id = ${userId}
+          AND file_hash_sha256 IN (
+            SELECT file_hash_sha256
+            FROM ingestion_batches
+            WHERE user_id = ${userId}
+              AND file_hash_sha256 IS NOT NULL
+            GROUP BY file_hash_sha256
+            HAVING COUNT(*) > 1
+          )
+        ORDER BY created_at DESC
+        LIMIT ${limit}
+      `);
+      return rows.rows;
+    }
+
     case "CAT-001":
       const cat001 = await db.execute(sql`
         SELECT t.id, t.key_desc, t.amount, t.payment_date, t.leaf_id, t.app_category_name

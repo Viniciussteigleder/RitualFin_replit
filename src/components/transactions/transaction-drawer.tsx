@@ -229,11 +229,19 @@ export function TransactionDrawer({
                         {/* Hierarquia */}
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-muted-foreground">Nível 1:</span>
-                          <span className="font-medium">{transaction.level1 || 'OPEN'}</span>
+                          <span className="font-medium">
+                            {transaction.level1 && transaction.level1 !== 'OPEN' 
+                              ? transaction.level1 
+                              : (transaction.category1 && transaction.category1 !== 'OPEN' ? transaction.category1 : 'OPEN')}
+                          </span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-muted-foreground">Nível 2:</span>
-                          <span className="font-medium">{transaction.level2 || 'OPEN'}</span>
+                          <span className="font-medium">
+                            {transaction.level2 && transaction.level2 !== 'OPEN' 
+                              ? transaction.level2 
+                              : (transaction.category2 && transaction.category2 !== 'OPEN' ? transaction.category2 : 'OPEN')}
+                          </span>
                         </div>
                         {transaction.level3 && transaction.level3 !== 'OPEN' && (
                           <div className="flex items-center justify-between text-sm">

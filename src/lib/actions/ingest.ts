@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { ingestionBatches, ingestionItems, transactions, rules, aliasAssets, sourceCsvSparkasse, sourceCsvMm, sourceCsvAmex, transactionEvidenceLink } from "@/lib/db/schema";
 import { parseIngestionFile } from "@/lib/ingest";
 import { generateFingerprint } from "@/lib/ingest/fingerprint";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { categorizeTransaction, AI_SEED_RULES, matchAlias } from "@/lib/rules/engine";
 import { ensureOpenCategoryCore } from "@/lib/actions/setup-open";
@@ -475,6 +475,53 @@ export async function commitBatchCore(userId: string, batchId: string) {
 
     const effectiveRules = [...userRules, ...seedRules];
 
+    const rulesVersion = sha256Hex(stableStringify(
+      effectiveRules
+        .map((r: any) => ({
+          id: r.id,
+          active: !!r.active,
+          strict: !!r.strict,
+          priority: Number(r.priority ?? 0),
+          type: r.type ?? null,
+          fixVar: r.fixVar ?? null,
+          category1: r.category1 ?? null,
+          category2: r.category2 ?? null,
+          category3: (r as any).category3 ?? null,
+          leafId: r.leafId ?? null,
+          keyWords: r.keyWords ?? null,
+          keyWordsNegative: r.keyWordsNegative ?? null,
+          isSystem: !!r.isSystem,
+        }))
+        .sort((a, b) => String(a.id).localeCompare(String(b.id)))
+    ));
+
+    const taxonomyRows = await db.execute(sql`
+      SELECT
+        tl.leaf_id,
+        tl.nivel_3_pt,
+        t2.level_2_id,
+        t2.nivel_2_pt,
+        t1.level_1_id,
+        t1.nivel_1_pt,
+        ac.app_cat_id,
+        ac.name AS app_category_name
+      FROM taxonomy_leaf tl
+      JOIN taxonomy_level_2 t2 ON tl.level_2_id = t2.level_2_id
+      JOIN taxonomy_level_1 t1 ON t2.level_1_id = t1.level_1_id
+      LEFT JOIN app_category_leaf acl ON acl.leaf_id = tl.leaf_id AND acl.user_id = ${userId}
+      LEFT JOIN app_category ac ON ac.app_cat_id = acl.app_cat_id
+      WHERE tl.user_id = ${userId}
+      ORDER BY tl.leaf_id ASC
+    `);
+    const taxonomyVersion = sha256Hex(stableStringify(taxonomyRows.rows));
+
+    await db.update(ingestionBatches)
+      .set({
+        rulesVersion,
+        taxonomyVersion,
+      })
+      .where(eq(ingestionBatches.id, batch.id));
+
     let importedCount = 0;
 
     const ensured = await ensureOpenCategoryCore(userId);
@@ -569,8 +616,8 @@ export async function commitBatchCore(userId: string, batchId: string) {
             rawRowHash,
             parserVersion: batch.parserVersion ?? null,
             normalizationVersion: batch.normalizationVersion ?? null,
-            rulesVersion: batch.rulesVersion ?? null,
-            taxonomyVersion: batch.taxonomyVersion ?? null,
+            rulesVersion,
+            taxonomyVersion,
             source: (["Sparkasse", "Amex", "M&M"].includes(data.source) ? data.source : null) as any,
             key: data.key || item.itemFingerprint, 
             leafId: resolution.leafId,

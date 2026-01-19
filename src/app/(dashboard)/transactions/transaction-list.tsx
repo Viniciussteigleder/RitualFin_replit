@@ -20,7 +20,8 @@ import {
     confirmTransaction,
     deleteTransaction,
     updateTransactionCategory,
-    getTransactionsForList
+    getTransactionsForList,
+    getTransactionDetail
 } from "@/lib/actions/transactions";
 import {
     bulkConfirmTransactions,
@@ -416,8 +417,33 @@ export function TransactionList({
         }
     }, [selectedIds]);
 
-    const handleEditClick = useCallback((tx: any) => setSelectedTx(tx), []);
-    const handleRowClick = useCallback((tx: any) => setSelectedTx(tx), []);
+    const handleEditClick = useCallback(async (tx: any) => {
+        // Upgrade the transaction object with full details (taxonomy etc)
+        setSelectedTx(tx); // Set immediately for UI responsiveness
+        try {
+            const fullTx = await getTransactionDetail(tx.id);
+            if (fullTx) {
+                setSelectedTx(fullTx);
+                // Also update in main list so subsequent opens are fast
+                setTransactions(prev => prev.map(item => item.id === tx.id ? { ...item, ...fullTx } : item));
+            }
+        } catch (error) {
+            console.error("Failed to fetch transaction details:", error);
+        }
+    }, []);
+
+    const handleRowClick = useCallback(async (tx: any) => {
+        setSelectedTx(tx);
+        try {
+            const fullTx = await getTransactionDetail(tx.id);
+            if (fullTx) {
+                setSelectedTx(fullTx);
+                setTransactions(prev => prev.map(item => item.id === tx.id ? { ...item, ...fullTx } : item));
+            }
+        } catch (error) {
+            console.error("Failed to fetch transaction details:", error);
+        }
+    }, []);
     const handleClearSelection = useCallback(() => setSelectedIds(new Set()), []);
     const handleClearFilters = useCallback(() => { setSearch(""); setFilters({}); }, []);
 
