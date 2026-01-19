@@ -24,7 +24,8 @@ import {
   Compass,
   Cog,
   LucideIcon,
-  ListOrdered
+  ListOrdered,
+  Shield
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useState, useMemo } from "react";
@@ -70,6 +71,7 @@ export function Sidebar() {
     "settings": "#64748B", // Slate
     "ai-rules": "#8B5CF6", // Violet (AI)
     "calendar": "#F59E0B", // Amber
+    "diagnostics": "#EF4444", // Red (Health)
   };
 
   // Helper for Link Items
@@ -227,6 +229,7 @@ export function Sidebar() {
                       {[
                           { id: "uploads", icon: Receipt, href: "/uploads", label: "Importar Arquivos" },
                           { id: "ai-rules", icon: Bot, href: "/settings/rules", label: "Regras de IA" },
+                          { id: "diagnostics", icon: Shield, href: "/admin/diagnostics", label: "Diagnóstico" },
                       ].map(item => renderNavItem(item, false))}
                   </CollapsibleContent>
                 </div>
