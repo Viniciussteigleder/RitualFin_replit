@@ -7,6 +7,7 @@
  * Run with: npx tsx scripts/add-performance-indexes.ts
  */
 
+import 'dotenv/config'; // Load .env file
 import { db } from '../src/lib/db';
 import { sql } from 'drizzle-orm';
 
