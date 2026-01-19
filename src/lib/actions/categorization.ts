@@ -3,7 +3,7 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { transactions, rules, aliasAssets } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { categorizeTransaction, matchAlias } from "@/lib/rules/engine";
 import { ensureOpenCategoryCore } from "@/lib/actions/setup-open";
 import { buildLeafHierarchyMaps } from "@/lib/taxonomy/hierarchy";
@@ -271,5 +271,408 @@ export async function fixInconsistentTransactions() {
     total: diagnosis.inconsistentCount,
     fixed,
     message: `Fixed ${fixed} of ${diagnosis.inconsistentCount} inconsistent transactions`
+  };
+}
+
+/**
+ * Comprehensive Data Integrity Audit
+ * Expert Panel: Dr. Martin Kleppmann (Data Integrity), Markus Winand (DB Forensics), Dr. Fei-Fei Li (Classification)
+ *
+ * Checks:
+ * 1. app_category_leaf integrity - OPEN leaf links
+ * 2. taxonomy hierarchy integrity - FK consistency
+ * 3. transactions table integrity - leaf_id vs category consistency
+ * 4. rules table integrity - leaf_id validity
+ */
+export async function auditDataIntegrity() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "Not authenticated", issues: [] };
+  }
+
+  const userId = session.user.id;
+  const issues: Array<{
+    type: string;
+    severity: "critical" | "high" | "medium" | "low";
+    table: string;
+    description: string;
+    affectedIds: string[];
+    suggestedFix: string;
+  }> = [];
+
+  // ============================================================
+  // AUDIT 1: app_category_leaf integrity
+  // ============================================================
+
+  // 1a. Find OPEN leaf linked to non-OPEN app_category
+  const openLeafWithWrongAppCat = await db.execute(sql`
+    SELECT
+      acl.id as link_id,
+      acl.leaf_id,
+      ac.name as app_category_name,
+      tl.nivel_3_pt as leaf_name,
+      t2.nivel_2_pt as level_2_name,
+      t1.nivel_1_pt as level_1_name
+    FROM app_category_leaf acl
+    JOIN taxonomy_leaf tl ON acl.leaf_id = tl.leaf_id
+    JOIN taxonomy_level_2 t2 ON tl.level_2_id = t2.level_2_id
+    JOIN taxonomy_level_1 t1 ON t2.level_1_id = t1.level_1_id
+    JOIN app_category ac ON acl.app_cat_id = ac.app_cat_id
+    WHERE acl.user_id = ${userId}
+    AND t1.nivel_1_pt = 'OPEN' AND t2.nivel_2_pt = 'OPEN' AND tl.nivel_3_pt = 'OPEN'
+    AND ac.name != 'OPEN'
+  `);
+
+  if (openLeafWithWrongAppCat.rows.length > 0) {
+    issues.push({
+      type: "OPEN_LEAF_WRONG_APP_CATEGORY",
+      severity: "critical",
+      table: "app_category_leaf",
+      description: `OPEN leaf is linked to non-OPEN app_category: ${openLeafWithWrongAppCat.rows.map((r: any) => r.app_category_name).join(", ")}`,
+      affectedIds: openLeafWithWrongAppCat.rows.map((r: any) => r.link_id),
+      suggestedFix: "Delete incorrect app_category_leaf links and ensure OPEN leaf links only to OPEN app_category"
+    });
+  }
+
+  // 1b. Find non-OPEN leaves linked to OPEN app_category
+  const nonOpenLeafWithOpenAppCat = await db.execute(sql`
+    SELECT
+      acl.id as link_id,
+      acl.leaf_id,
+      ac.name as app_category_name,
+      tl.nivel_3_pt as leaf_name,
+      t1.nivel_1_pt as level_1_name
+    FROM app_category_leaf acl
+    JOIN taxonomy_leaf tl ON acl.leaf_id = tl.leaf_id
+    JOIN taxonomy_level_2 t2 ON tl.level_2_id = t2.level_2_id
+    JOIN taxonomy_level_1 t1 ON t2.level_1_id = t1.level_1_id
+    JOIN app_category ac ON acl.app_cat_id = ac.app_cat_id
+    WHERE acl.user_id = ${userId}
+    AND (t1.nivel_1_pt != 'OPEN' OR tl.nivel_3_pt != 'OPEN')
+    AND ac.name = 'OPEN'
+  `);
+
+  if (nonOpenLeafWithOpenAppCat.rows.length > 0) {
+    issues.push({
+      type: "NON_OPEN_LEAF_WITH_OPEN_APP_CATEGORY",
+      severity: "high",
+      table: "app_category_leaf",
+      description: `Non-OPEN leaves linked to OPEN app_category: ${nonOpenLeafWithOpenAppCat.rows.length} links`,
+      affectedIds: nonOpenLeafWithOpenAppCat.rows.map((r: any) => r.link_id),
+      suggestedFix: "Create proper app_category for these leaves or update links"
+    });
+  }
+
+  // 1c. Find orphan app_category_leaf links (leaf_id not in taxonomy_leaf)
+  const orphanAppCategoryLinks = await db.execute(sql`
+    SELECT acl.id as link_id, acl.leaf_id
+    FROM app_category_leaf acl
+    LEFT JOIN taxonomy_leaf tl ON acl.leaf_id = tl.leaf_id
+    WHERE acl.user_id = ${userId}
+    AND tl.leaf_id IS NULL
+  `);
+
+  if (orphanAppCategoryLinks.rows.length > 0) {
+    issues.push({
+      type: "ORPHAN_APP_CATEGORY_LEAF_LINK",
+      severity: "high",
+      table: "app_category_leaf",
+      description: `app_category_leaf links pointing to non-existent taxonomy_leaf: ${orphanAppCategoryLinks.rows.length} links`,
+      affectedIds: orphanAppCategoryLinks.rows.map((r: any) => r.link_id),
+      suggestedFix: "Delete orphan app_category_leaf links"
+    });
+  }
+
+  // ============================================================
+  // AUDIT 2: taxonomy hierarchy integrity
+  // ============================================================
+
+  // 2a. Find leaves with broken level_2_id references
+  const leavesWithBrokenLevel2 = await db.execute(sql`
+    SELECT tl.leaf_id, tl.nivel_3_pt, tl.level_2_id
+    FROM taxonomy_leaf tl
+    LEFT JOIN taxonomy_level_2 t2 ON tl.level_2_id = t2.level_2_id
+    WHERE tl.user_id = ${userId}
+    AND t2.level_2_id IS NULL
+  `);
+
+  if (leavesWithBrokenLevel2.rows.length > 0) {
+    issues.push({
+      type: "LEAF_BROKEN_LEVEL2_FK",
+      severity: "critical",
+      table: "taxonomy_leaf",
+      description: `Leaves with broken level_2_id foreign key: ${leavesWithBrokenLevel2.rows.length} leaves`,
+      affectedIds: leavesWithBrokenLevel2.rows.map((r: any) => r.leaf_id),
+      suggestedFix: "Fix or delete leaves with broken level_2 references"
+    });
+  }
+
+  // 2b. Find level_2 with broken level_1_id references
+  const level2WithBrokenLevel1 = await db.execute(sql`
+    SELECT t2.level_2_id, t2.nivel_2_pt, t2.level_1_id
+    FROM taxonomy_level_2 t2
+    LEFT JOIN taxonomy_level_1 t1 ON t2.level_1_id = t1.level_1_id
+    WHERE t2.user_id = ${userId}
+    AND t1.level_1_id IS NULL
+  `);
+
+  if (level2WithBrokenLevel1.rows.length > 0) {
+    issues.push({
+      type: "LEVEL2_BROKEN_LEVEL1_FK",
+      severity: "critical",
+      table: "taxonomy_level_2",
+      description: `Level 2 entries with broken level_1_id foreign key: ${level2WithBrokenLevel1.rows.length} entries`,
+      affectedIds: level2WithBrokenLevel1.rows.map((r: any) => r.level_2_id),
+      suggestedFix: "Fix or delete level_2 entries with broken level_1 references"
+    });
+  }
+
+  // 2c. Validate OPEN chain exists and is consistent
+  const openChainValidation = await db.execute(sql`
+    SELECT
+      tl.leaf_id,
+      tl.nivel_3_pt as leaf_name,
+      t2.nivel_2_pt as level_2_name,
+      t1.nivel_1_pt as level_1_name
+    FROM taxonomy_leaf tl
+    JOIN taxonomy_level_2 t2 ON tl.level_2_id = t2.level_2_id
+    JOIN taxonomy_level_1 t1 ON t2.level_1_id = t1.level_1_id
+    WHERE tl.user_id = ${userId}
+    AND (tl.nivel_3_pt = 'OPEN' OR t2.nivel_2_pt = 'OPEN' OR t1.nivel_1_pt = 'OPEN')
+  `);
+
+  const openEntries = openChainValidation.rows as any[];
+  const inconsistentOpenEntries = openEntries.filter(
+    (r) => !(r.leaf_name === "OPEN" && r.level_2_name === "OPEN" && r.level_1_name === "OPEN")
+  );
+
+  if (inconsistentOpenEntries.length > 0) {
+    issues.push({
+      type: "INCONSISTENT_OPEN_CHAIN",
+      severity: "high",
+      table: "taxonomy_*",
+      description: `Inconsistent OPEN chain - partial OPEN in hierarchy: ${inconsistentOpenEntries.map((r) => `${r.level_1_name}>${r.level_2_name}>${r.leaf_name}`).join(", ")}`,
+      affectedIds: inconsistentOpenEntries.map((r) => r.leaf_id),
+      suggestedFix: "OPEN should be consistent across all three levels"
+    });
+  }
+
+  // ============================================================
+  // AUDIT 3: transactions table integrity
+  // ============================================================
+
+  // 3a. Transactions where leaf_id = OPEN but app_category_name != OPEN
+  const txOpenLeafWrongAppCat = await db.execute(sql`
+    SELECT
+      t.id,
+      t.desc_norm,
+      t.leaf_id,
+      t.app_category_name,
+      t.category_1,
+      tl.nivel_3_pt as actual_leaf_name
+    FROM transactions t
+    LEFT JOIN taxonomy_leaf tl ON t.leaf_id = tl.leaf_id
+    WHERE t.user_id = ${userId}
+    AND tl.nivel_3_pt = 'OPEN'
+    AND t.app_category_name IS NOT NULL
+    AND t.app_category_name != 'OPEN'
+  `);
+
+  if (txOpenLeafWrongAppCat.rows.length > 0) {
+    issues.push({
+      type: "TX_OPEN_LEAF_WRONG_APP_CATEGORY",
+      severity: "critical",
+      table: "transactions",
+      description: `Transactions with OPEN leaf_id but non-OPEN app_category_name: ${txOpenLeafWrongAppCat.rows.length} transactions`,
+      affectedIds: txOpenLeafWrongAppCat.rows.map((r: any) => r.id),
+      suggestedFix: "Set app_category_name to OPEN for these transactions or re-classify"
+    });
+  }
+
+  // 3b. Transactions where category_1 != OPEN but leaf_id points to OPEN
+  const txCategory1NotOpenButLeafOpen = await db.execute(sql`
+    SELECT
+      t.id,
+      t.desc_norm,
+      t.leaf_id,
+      t.category_1,
+      tl.nivel_3_pt as actual_leaf_name
+    FROM transactions t
+    LEFT JOIN taxonomy_leaf tl ON t.leaf_id = tl.leaf_id
+    WHERE t.user_id = ${userId}
+    AND tl.nivel_3_pt = 'OPEN'
+    AND t.category_1 IS NOT NULL
+    AND CAST(t.category_1 AS text) != 'OPEN'
+  `);
+
+  if (txCategory1NotOpenButLeafOpen.rows.length > 0) {
+    issues.push({
+      type: "TX_CATEGORY1_LEAF_MISMATCH",
+      severity: "critical",
+      table: "transactions",
+      description: `Transactions with OPEN leaf but non-OPEN category_1: ${txCategory1NotOpenButLeafOpen.rows.length} transactions`,
+      affectedIds: txCategory1NotOpenButLeafOpen.rows.map((r: any) => r.id),
+      suggestedFix: "Re-derive category_1 from leaf hierarchy or re-classify"
+    });
+  }
+
+  // 3c. Transactions with leaf_id that doesn't exist in taxonomy_leaf
+  const txOrphanLeafId = await db.execute(sql`
+    SELECT t.id, t.desc_norm, t.leaf_id
+    FROM transactions t
+    LEFT JOIN taxonomy_leaf tl ON t.leaf_id = tl.leaf_id
+    WHERE t.user_id = ${userId}
+    AND t.leaf_id IS NOT NULL
+    AND tl.leaf_id IS NULL
+  `);
+
+  if (txOrphanLeafId.rows.length > 0) {
+    issues.push({
+      type: "TX_ORPHAN_LEAF_ID",
+      severity: "high",
+      table: "transactions",
+      description: `Transactions with leaf_id pointing to non-existent taxonomy_leaf: ${txOrphanLeafId.rows.length} transactions`,
+      affectedIds: txOrphanLeafId.rows.map((r: any) => r.id),
+      suggestedFix: "Re-classify these transactions to valid leaf or OPEN"
+    });
+  }
+
+  // ============================================================
+  // AUDIT 4: rules table integrity
+  // ============================================================
+
+  // 4a. Rules with leaf_id pointing to non-existent leaves
+  const rulesOrphanLeafId = await db.execute(sql`
+    SELECT r.id, r.key_words, r.leaf_id
+    FROM rules r
+    LEFT JOIN taxonomy_leaf tl ON r.leaf_id = tl.leaf_id
+    WHERE r.user_id = ${userId}
+    AND r.leaf_id IS NOT NULL
+    AND r.leaf_id != 'open'
+    AND tl.leaf_id IS NULL
+  `);
+
+  if (rulesOrphanLeafId.rows.length > 0) {
+    issues.push({
+      type: "RULE_ORPHAN_LEAF_ID",
+      severity: "high",
+      table: "rules",
+      description: `Rules with leaf_id pointing to non-existent taxonomy_leaf: ${rulesOrphanLeafId.rows.length} rules`,
+      affectedIds: rulesOrphanLeafId.rows.map((r: any) => r.id),
+      suggestedFix: "Update rules to point to valid leaf_id or clear leaf_id"
+    });
+  }
+
+  // 4b. Rules with category1 that doesn't match the leaf's taxonomy
+  const rulesCategoryLeafMismatch = await db.execute(sql`
+    SELECT
+      r.id,
+      r.key_words,
+      r.category_1 as rule_category1,
+      t1.nivel_1_pt as leaf_category1,
+      r.leaf_id
+    FROM rules r
+    JOIN taxonomy_leaf tl ON r.leaf_id = tl.leaf_id
+    JOIN taxonomy_level_2 t2 ON tl.level_2_id = t2.level_2_id
+    JOIN taxonomy_level_1 t1 ON t2.level_1_id = t1.level_1_id
+    WHERE r.user_id = ${userId}
+    AND r.leaf_id IS NOT NULL
+    AND r.category_1 IS NOT NULL
+    AND CAST(r.category_1 AS text) != t1.nivel_1_pt
+  `);
+
+  if (rulesCategoryLeafMismatch.rows.length > 0) {
+    issues.push({
+      type: "RULE_CATEGORY_LEAF_MISMATCH",
+      severity: "medium",
+      table: "rules",
+      description: `Rules where category_1 doesn't match leaf's taxonomy: ${rulesCategoryLeafMismatch.rows.length} rules`,
+      affectedIds: rulesCategoryLeafMismatch.rows.map((r: any) => r.id),
+      suggestedFix: "Update rule category_1 to match leaf taxonomy or clear leaf_id"
+    });
+  }
+
+  // ============================================================
+  // Summary
+  // ============================================================
+
+  const criticalCount = issues.filter((i) => i.severity === "critical").length;
+  const highCount = issues.filter((i) => i.severity === "high").length;
+  const mediumCount = issues.filter((i) => i.severity === "medium").length;
+
+  return {
+    success: true,
+    summary: {
+      totalIssues: issues.length,
+      critical: criticalCount,
+      high: highCount,
+      medium: mediumCount,
+      low: issues.filter((i) => i.severity === "low").length,
+    },
+    issues,
+    recommendation: criticalCount > 0
+      ? "CRITICAL issues found - run fixDataIntegrityIssues() immediately"
+      : highCount > 0
+        ? "HIGH severity issues found - review and fix soon"
+        : issues.length > 0
+          ? "Minor issues found - review when convenient"
+          : "No data integrity issues detected"
+  };
+}
+
+/**
+ * Fix critical data integrity issues automatically
+ */
+export async function fixDataIntegrityIssues() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "Not authenticated" };
+  }
+
+  const userId = session.user.id;
+  const fixes: string[] = [];
+
+  // Fix 1: Remove incorrect app_category_leaf links for OPEN leaf
+  const fix1 = await db.execute(sql`
+    DELETE FROM app_category_leaf
+    WHERE id IN (
+      SELECT acl.id
+      FROM app_category_leaf acl
+      JOIN taxonomy_leaf tl ON acl.leaf_id = tl.leaf_id
+      JOIN taxonomy_level_2 t2 ON tl.level_2_id = t2.level_2_id
+      JOIN taxonomy_level_1 t1 ON t2.level_1_id = t1.level_1_id
+      JOIN app_category ac ON acl.app_cat_id = ac.app_cat_id
+      WHERE acl.user_id = ${userId}
+      AND t1.nivel_1_pt = 'OPEN' AND t2.nivel_2_pt = 'OPEN' AND tl.nivel_3_pt = 'OPEN'
+      AND ac.name != 'OPEN'
+    )
+  `);
+  fixes.push(`Removed ${fix1.rowCount || 0} incorrect OPEN leaf app_category links`);
+
+  // Fix 2: Update transactions with OPEN leaf but wrong app_category_name
+  const fix2 = await db.execute(sql`
+    UPDATE transactions t
+    SET
+      app_category_name = 'OPEN',
+      category_1 = 'OPEN',
+      category_2 = 'OPEN',
+      category_3 = 'OPEN'
+    FROM taxonomy_leaf tl
+    WHERE t.leaf_id = tl.leaf_id
+    AND t.user_id = ${userId}
+    AND tl.nivel_3_pt = 'OPEN'
+    AND (t.app_category_name != 'OPEN' OR CAST(t.category_1 AS text) != 'OPEN')
+  `);
+  fixes.push(`Fixed ${fix2.rowCount || 0} transactions with OPEN leaf but wrong categories`);
+
+  // Fix 3: Re-run setup-open to ensure proper OPEN linkage
+  const { ensureOpenCategoryCore } = await import("@/lib/actions/setup-open");
+  await ensureOpenCategoryCore(userId);
+  fixes.push("Re-validated OPEN category chain");
+
+  return {
+    success: true,
+    fixes,
+    message: "Data integrity fixes applied. Run auditDataIntegrity() to verify."
   };
 }
