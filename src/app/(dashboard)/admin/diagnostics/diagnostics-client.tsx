@@ -93,6 +93,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { ReRunRulesButton } from "@/components/transactions/re-run-rules-button";
 import {
   runFullDiagnostics,
   autoFixIssue,
@@ -527,11 +528,13 @@ export function DiagnosticsClient() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* History Button */}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
+	        <div className="flex items-center gap-2">
+	          <ReRunRulesButton />
+
+	          {/* History Button */}
+	          <TooltipProvider>
+	            <Tooltip>
+	              <TooltipTrigger asChild>
                 <Button
                   variant="outline"
                   size="icon"

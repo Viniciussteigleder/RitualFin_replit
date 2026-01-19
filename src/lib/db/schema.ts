@@ -398,7 +398,6 @@ export const transactions = pgTable("transactions", {
   needsReview: boolean("needs_review").notNull().default(true),
   ruleIdApplied: varchar("rule_id_applied").references(() => rules.id),
   uploadId: varchar("upload_id"), 
-  batchId: varchar("batch_id").references(() => ingestionBatches.id),
   ingestionItemId: varchar("ingestion_item_id").references(() => ingestionItems.id),
   rawRowHash: text("raw_row_hash"),
   parserVersion: text("parser_version"),

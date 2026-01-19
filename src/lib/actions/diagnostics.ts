@@ -418,7 +418,7 @@ async function runImportDiagnostics(userId: string, scope: DiagnosticsScope) {
     checksPassed++;
   }
 
-  // BCH-002 (raw-backed-ish): sum mismatch parsed vs DB, requires batch_id on transactions
+  // BCH-002 (raw-backed-ish): sum mismatch parsed vs DB, uses upload_id (batch id) on transactions
   checksRun++;
   if (primaryBatchId) {
     const sums = await db.execute(sql`
@@ -438,7 +438,7 @@ async function runImportDiagnostics(userId: string, scope: DiagnosticsScope) {
         COUNT(t.id)::int AS db_count
       FROM ingestion_batches ib
       LEFT JOIN ingestion_items ii ON ii.batch_id = ib.id
-      LEFT JOIN transactions t ON t.batch_id = ib.id
+      LEFT JOIN transactions t ON t.upload_id = ib.id
       WHERE ib.user_id = ${userId}
         AND ib.id = ${primaryBatchId}
       GROUP BY ib.id
@@ -698,7 +698,7 @@ async function resolveScopeBatchIds(userId: string, scope: DiagnosticsScope): Pr
     const rows = await db.execute(sql`
       SELECT DISTINCT ib.id
       FROM ingestion_batches ib
-      JOIN transactions t ON t.batch_id = ib.id
+      JOIN transactions t ON t.upload_id = ib.id
       WHERE ib.user_id = ${userId}
         AND t.payment_date >= ${from}
         AND t.payment_date <= ${to}
@@ -1562,7 +1562,7 @@ export async function getAffectedRecords(
       const rows = await db.execute(sql`
         SELECT
           t.id AS id,
-          t.batch_id,
+          t.upload_id AS batch_id,
           t.ingestion_item_id,
           t.key_desc,
           t.amount AS db_amount,
@@ -1572,7 +1572,7 @@ export async function getAffectedRecords(
         FROM transactions t
         LEFT JOIN ingestion_items ii ON ii.id = t.ingestion_item_id
         WHERE t.user_id = ${userId}
-          AND t.batch_id = ${primaryBatchId}
+          AND t.upload_id = ${primaryBatchId}
         ORDER BY ABS(t.amount) DESC
         LIMIT ${limit}
       `);

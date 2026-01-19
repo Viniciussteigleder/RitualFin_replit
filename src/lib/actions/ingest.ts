@@ -611,7 +611,6 @@ export async function commitBatchCore(userId: string, batchId: string) {
             fixVar: ((hierarchy.fixVarDefault as any) || (categorization.fixVar as any) || "Variável") as any,
             ruleIdApplied: resolution.ruleIdApplied && !resolution.ruleIdApplied.startsWith("seed-") ? resolution.ruleIdApplied : null,
             uploadId: batch.id,
-            batchId: batch.id,
             ingestionItemId: item.id,
             rawRowHash,
             parserVersion: batch.parserVersion ?? null,

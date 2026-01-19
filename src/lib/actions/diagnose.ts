@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { rules } from "@/lib/db/schema";
 import { eq, sql, isNull, isNotNull, and } from "drizzle-orm";
+import { auditDataIntegrity } from "./categorization";
 
 export async function diagnoseAppCategoryIssues() {
   const session = await auth();
@@ -64,6 +65,7 @@ export async function diagnoseAppCategoryIssues() {
     specificIds: {
       e4c24e3f: allRules.find(r => r.id.startsWith("e4c24e3f")),
       ba583849: allRules.find(r => r.id.startsWith("ba583849")),
-    }
+    },
+    integrity: await auditDataIntegrity()
   };
 }
