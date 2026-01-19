@@ -102,6 +102,17 @@ export function matchRules(descNorm: string, rules: Rule[], settings: UserSettin
     };
   }
 
+  // M3 Fix: High-priority rules (>= 700) auto-confirm regardless of settings
+  if (applied.priority >= 700) {
+    return {
+      needsReview: false,
+      matches,
+      appliedRule: applied,
+      confidence,
+      reason: `Regra de alta prioridade (${applied.priority}) - aplicada automaticamente`,
+    };
+  }
+
   const meetsThreshold = confidence >= confidenceThreshold;
   const autoApply = autoConfirmHighConfidence && meetsThreshold;
 

@@ -56,18 +56,22 @@ function SortableHeader({
     );
 }
 
-export function TransactionList({ 
-    transactions: initialTransactions, 
-    initialFilters = {}, 
+export function TransactionList({
+    transactions: initialTransactions,
+    initialFilters = {},
     aliasMap = {},
     initialHasMore = false,
-    initialNextCursor = null
-}: { 
-    transactions: any[], 
-    initialFilters?: TransactionFilters, 
+    initialNextCursor = null,
+    allCategories = [],
+    allAccounts = []
+}: {
+    transactions: any[],
+    initialFilters?: TransactionFilters,
     aliasMap?: Record<string, string>,
     initialHasMore?: boolean,
-    initialNextCursor?: string | null
+    initialNextCursor?: string | null,
+    allCategories?: string[],
+    allAccounts?: string[]
 }) {
     const [transactions, setTransactions] = useState(initialTransactions);
     const [hasMore, setHasMore] = useState(initialHasMore);
@@ -308,8 +312,8 @@ export function TransactionList({
                 search={search}
                 onSearchChange={setSearch}
                 onFilterChange={setFilters}
-                availableCategories={Array.from(new Set(transactions.map(t => t.category1).filter(Boolean)))}
-                availableAccounts={Array.from(new Set(transactions.map(t => t.source).filter(Boolean)))}
+                availableCategories={allCategories.length > 0 ? allCategories : Array.from(new Set(transactions.map(t => t.category1).filter(Boolean)))}
+                availableAccounts={allAccounts.length > 0 ? allAccounts : Array.from(new Set(transactions.map(t => t.source).filter(Boolean)))}
                 isCompact={isCompact}
                 onToggleCompact={() => setIsCompact(!isCompact)}
                 hideCents={hideCents}

@@ -463,7 +463,11 @@ export async function commitBatchCore(userId: string, batchId: string) {
         const aliasMatch = matchAlias(keyDesc, userAliases);
 
         // 2. Deterministic Rule Categorization
-        const categorization = categorizeTransaction(keyDesc, effectiveRules);
+        // M2 Fix: Enable auto-confirm for high-confidence matches (priority >= 700 = 85%+ confidence)
+        const categorization = categorizeTransaction(keyDesc, effectiveRules, {
+            autoConfirmHighConfidence: true,
+            confidenceThreshold: 80
+        });
         let resolution = resolveLeafFromMatches({
             matches: (categorization as any).matches,
             openLeafId,

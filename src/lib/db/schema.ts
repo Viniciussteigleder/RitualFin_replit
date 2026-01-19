@@ -400,6 +400,11 @@ export const transactions = pgTable("transactions", {
   userAppCategoryIdx: index("idx_transactions_user_app_cat").on(table.userId, table.appCategoryName),
   userTypeIdx: index("idx_transactions_user_type").on(table.userId, table.type),
   userDisplayIdx: index("idx_transactions_user_display").on(table.userId, table.display),
+  // M9: Additional indexes for filter performance
+  userCat1Idx: index("idx_transactions_user_cat1").on(table.userId, table.category1),
+  userSourceIdx: index("idx_transactions_user_source").on(table.userId, table.source),
+  // Compound index for common date + category filter combination
+  userDateCat1Idx: index("idx_transactions_user_date_cat1").on(table.userId, table.paymentDate, table.category1),
 }));
 
 export const transactionsRelations = relations(transactions, ({ one, many }) => ({

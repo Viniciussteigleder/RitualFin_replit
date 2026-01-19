@@ -125,3 +125,151 @@ export async function applyCategorization() {
 
   return applyCategorizationCore(session.user.id);
 }
+
+/**
+ * M6: Diagnose inconsistent transactions
+ * Finds transactions where appCategoryName != OPEN but category1 = OPEN
+ */
+export async function diagnoseInconsistentTransactions() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "Not authenticated", inconsistencies: [] };
+  }
+
+  const userId = session.user.id;
+
+  // Find transactions with inconsistent classification
+  const allTransactions = await db.query.transactions.findMany({
+    where: eq(transactions.userId, userId),
+  });
+
+  const inconsistencies = allTransactions.filter(tx => {
+    // Case 1: appCategoryName is set but category1 is OPEN
+    if (tx.appCategoryName && tx.appCategoryName !== "OPEN" && tx.category1 === "OPEN") {
+      return true;
+    }
+    // Case 2: category1 is set but appCategoryName is null/OPEN
+    if (tx.category1 && tx.category1 !== "OPEN" && (!tx.appCategoryName || tx.appCategoryName === "OPEN")) {
+      return true;
+    }
+    // Case 3: needsReview = true but has high-confidence strict rule match
+    if (tx.needsReview && tx.ruleIdApplied && tx.confidence && tx.confidence >= 85) {
+      return true;
+    }
+    return false;
+  });
+
+  return {
+    success: true,
+    total: allTransactions.length,
+    inconsistentCount: inconsistencies.length,
+    inconsistencies: inconsistencies.map(tx => ({
+      id: tx.id,
+      descNorm: tx.descNorm,
+      category1: tx.category1,
+      appCategoryName: tx.appCategoryName,
+      needsReview: tx.needsReview,
+      confidence: tx.confidence,
+      ruleIdApplied: tx.ruleIdApplied,
+    }))
+  };
+}
+
+/**
+ * M7: Fix inconsistent transactions by re-categorizing them
+ */
+export async function fixInconsistentTransactions() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "Not authenticated" };
+  }
+
+  const userId = session.user.id;
+
+  // First diagnose
+  const diagnosis = await diagnoseInconsistentTransactions();
+  if (!diagnosis.success) {
+    return diagnosis;
+  }
+
+  if (diagnosis.inconsistentCount === 0) {
+    return { success: true, message: "No inconsistencies found", fixed: 0 };
+  }
+
+  // Re-run categorization for inconsistent transactions only
+  const userRules = await db.query.rules.findMany({
+    where: eq(rules.userId, userId),
+  });
+
+  const userAliases = await db.query.aliasAssets.findMany({
+    where: eq(aliasAssets.userId, userId),
+  });
+
+  const ensured = await ensureOpenCategoryCore(userId);
+  const openLeafId = ensured.openLeafId;
+  if (!openLeafId) {
+    return { success: false, error: "OPEN leafId not available" };
+  }
+
+  const { byLeafId: taxonomyByLeafId, byPathKey: taxonomyByPathKey } = await buildLeafHierarchyMaps(userId);
+  const openHierarchy = taxonomyByLeafId.get(openLeafId);
+  if (!openHierarchy) {
+    return { success: false, error: "OPEN leaf hierarchy not found" };
+  }
+
+  let fixed = 0;
+
+  for (const inconsistency of diagnosis.inconsistencies) {
+    const tx = await db.query.transactions.findFirst({
+      where: eq(transactions.id, inconsistency.id),
+    });
+
+    if (!tx) continue;
+
+    const keyDesc = tx.keyDesc || tx.descNorm || tx.descRaw || "";
+    const aliasMatch = matchAlias(keyDesc, userAliases);
+    const categorization = categorizeTransaction(keyDesc, userRules, {
+      autoConfirmHighConfidence: true,
+      confidenceThreshold: 80
+    });
+
+    const resolution = resolveLeafFromMatches({
+      matches: (categorization as any).matches,
+      openLeafId,
+      taxonomyByLeafId,
+      taxonomyByPathKey,
+      confidence: categorization.confidence ?? 0,
+      needsReview: categorization.needsReview ?? true,
+      ruleIdApplied: (categorization as any).ruleIdApplied ?? null,
+      matchedKeyword: (categorization as any).matchedKeyword ?? null,
+    });
+
+    const hierarchy = taxonomyByLeafId.get(resolution.leafId) ?? openHierarchy;
+
+    await db
+      .update(transactions)
+      .set({
+        category1: hierarchy.category1 as any,
+        category2: hierarchy.category2,
+        category3: hierarchy.category3,
+        leafId: resolution.leafId,
+        appCategoryId: hierarchy.appCategoryId,
+        appCategoryName: hierarchy.appCategoryName ?? hierarchy.category1,
+        needsReview: resolution.needsReview,
+        confidence: resolution.confidence,
+        ruleIdApplied: resolution.ruleIdApplied,
+        matchedKeyword: resolution.matchedKeyword,
+        aliasDesc: aliasMatch ? aliasMatch.aliasDesc : tx.aliasDesc,
+      })
+      .where(eq(transactions.id, tx.id));
+
+    fixed++;
+  }
+
+  return {
+    success: true,
+    total: diagnosis.inconsistentCount,
+    fixed,
+    message: `Fixed ${fixed} of ${diagnosis.inconsistentCount} inconsistent transactions`
+  };
+}
