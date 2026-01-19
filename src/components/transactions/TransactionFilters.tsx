@@ -36,7 +36,7 @@ export function TransactionFilters({
     onViewModeChange
 }: TransactionFiltersProps) {
     return (
-        <div className="flex flex-col gap-6 bg-card p-6 md:p-8 rounded-[2.5rem] border border-border shadow-sm transition-all duration-300 hover:shadow-md mt-4">
+        <div className="flex flex-col gap-6 bg-card p-6 md:p-8 rounded-[2.5rem] border border-border shadow-sm transition-shadow duration-200 hover:shadow-md mt-4">
             
             {/* Top Row: Search and Primary Controls */}
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
@@ -44,7 +44,7 @@ export function TransactionFilters({
                     <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-emerald-600 transition-colors" />
                     <Input
                         placeholder="Buscar por estabelecimento, valor ou categoria..."
-                        className="pl-14 h-14 bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-emerald-500/20 focus:ring-4 focus:ring-emerald-500/10 rounded-2xl transition-all text-base font-medium placeholder:text-muted-foreground/70"
+                        className="pl-14 h-14 bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-emerald-500/20 focus:ring-4 focus:ring-emerald-500/10 rounded-2xl transition-[background-color,border-color,box-shadow] text-base font-medium placeholder:text-muted-foreground/70"
                         value={search}
                         onChange={(e) => onSearchChange(e.target.value)}
                     />
@@ -56,7 +56,7 @@ export function TransactionFilters({
                         <button
                             onClick={() => onViewModeChange("day")}
                             className={cn(
-                                "px-4 h-12 rounded-xl text-sm font-bold transition-all duration-300",
+                                "px-4 h-12 rounded-xl text-sm font-bold transition-[background-color,color] duration-200",
                                 viewMode === "day" 
                                     ? "bg-white dark:bg-card text-foreground shadow-sm" 
                                     : "text-muted-foreground hover:text-foreground hover:bg-white/50"
@@ -67,7 +67,7 @@ export function TransactionFilters({
                         <button
                             onClick={() => onViewModeChange("week")}
                             className={cn(
-                                "px-4 h-12 rounded-xl text-sm font-bold transition-all duration-300",
+                                "px-4 h-12 rounded-xl text-sm font-bold transition-[background-color,color] duration-200",
                                 viewMode === "week" 
                                     ? "bg-white dark:bg-card text-foreground shadow-sm" 
                                     : "text-muted-foreground hover:text-foreground hover:bg-white/50"

@@ -53,7 +53,7 @@ const SpendAveragesChart = dynamicImport(
   }
 );
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60; // Revalidate every minute for dashboard
 
 const ACCOUNT_FILTER_MAP: Record<string, string> = {
   "American Express": "Amex",

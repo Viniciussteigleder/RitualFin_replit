@@ -38,7 +38,7 @@ export const TransactionRow = memo(function TransactionRow({
     return (
         <div
             className={cn(
-                "group flex flex-col md:grid md:grid-cols-[40px_80px_2.5fr_1fr_2fr_80px_80px] gap-2 md:gap-3 items-stretch md:items-center hover:bg-secondary/40 transition-all duration-200 cursor-pointer border-transparent",
+                "group flex flex-col md:grid md:grid-cols-[40px_80px_2.5fr_1fr_2fr_80px_80px] gap-2 md:gap-3 items-stretch md:items-center hover:bg-secondary/40 transition-[background-color] duration-150 cursor-pointer border-transparent",
                 isCompact ? "px-4 py-2 md:px-6" : "px-4 py-4 md:px-6",
                 isSelected && "bg-primary/5 border-l-4 border-l-primary"
             )}
@@ -163,7 +163,8 @@ export const TransactionRow = memo(function TransactionRow({
                 {/* Action Button - Edit only (opens drawer) */}
                 <div className="hidden md:flex items-center justify-center">
                     <button
-                        className="p-2.5 hover:bg-secondary rounded-xl transition-all duration-200 text-muted-foreground hover:text-foreground active:scale-95"
+                        className="p-2.5 hover:bg-secondary rounded-xl transition-[background-color] duration-150 text-muted-foreground hover:text-foreground"
+                        style={{ contain: "layout style" }}
                         onClick={(e) => onEditClick(transaction, e)}
                         title="Editar transação"
                     >

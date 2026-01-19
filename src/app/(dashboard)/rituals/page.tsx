@@ -76,4 +76,4 @@ export default async function RitualsPage() {
   );
 }
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 600; // Revalidate every 10 minutes

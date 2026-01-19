@@ -112,7 +112,7 @@ export function ReRunRulesButton() {
         <div onClick={startProcess}>
             <Button 
                 variant="outline" 
-                className="gap-2 font-medium border-emerald-500/20 hover:bg-emerald-50 text-emerald-700 transition-all hover:scale-105 active:scale-95"
+                className="gap-2 font-medium border-emerald-500/20 hover:bg-emerald-50 text-emerald-700 transition-[background-color] duration-150"
                 title="Reaplicar regras em transações não manuais"
                 disabled={isPending}
             >

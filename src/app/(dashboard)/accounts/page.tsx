@@ -162,4 +162,4 @@ export default async function AccountsPage() {
   );
 }
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 600; // Revalidate every 10 minutes
