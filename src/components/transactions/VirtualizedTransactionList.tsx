@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useMemo } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { TransactionRow } from "./TransactionRow";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -34,14 +34,16 @@ export function VirtualizedTransactionList({
 }: VirtualizedTransactionListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
-  // Flatten all transactions with date headers
-  const flatItems = sortedDateKeys.flatMap((dateKey) => {
-    const txs = groupedTransactions[dateKey];
-    return [
-      { type: "header" as const, dateKey, id: `header-${dateKey}` },
-      ...txs.map((tx) => ({ type: "transaction" as const, data: tx, id: tx.id })),
-    ];
-  });
+  // Flatten all transactions with date headers - Memoized for performance
+  const flatItems = useMemo(() => {
+    return sortedDateKeys.flatMap((dateKey) => {
+      const txs = groupedTransactions[dateKey];
+      return [
+        { type: "header" as const, dateKey, id: `header-${dateKey}` },
+        ...txs.map((tx) => ({ type: "transaction" as const, data: tx, id: tx.id })),
+      ];
+    });
+  }, [sortedDateKeys, groupedTransactions]);
 
   const virtualizer = useVirtualizer({
     count: flatItems.length,
