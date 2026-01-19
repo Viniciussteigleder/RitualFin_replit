@@ -1014,6 +1014,163 @@ async function runTaxonomyDiagnostics(userId: string) {
 // AUTO-FIX FUNCTIONS
 // ============================================================================
 
+// ============================================================================
+// HISTORY TRACKING
+// ============================================================================
+
+// In-memory history (in production, store in DB)
+const diagnosticHistory: Map<string, DiagnosticResult[]> = new Map();
+
+export async function getDiagnosticHistory(): Promise<DiagnosticResult[]> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  return diagnosticHistory.get(session.user.id) || [];
+}
+
+export async function saveDiagnosticResult(result: DiagnosticResult): Promise<void> {
+  const session = await auth();
+  if (!session?.user?.id) return;
+
+  const userId = session.user.id;
+  const history = diagnosticHistory.get(userId) || [];
+
+  // Keep last 10 results
+  history.unshift(result);
+  if (history.length > 10) history.pop();
+
+  diagnosticHistory.set(userId, history);
+}
+
+// ============================================================================
+// EXPORT FUNCTIONS
+// ============================================================================
+
+export async function exportDiagnosticsCSV(result: DiagnosticResult): Promise<string> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const lines: string[] = [];
+
+  // Header
+  lines.push("ID,Categoria,Severidade,Título,Descrição,Afetados,Recomendação,Auto-Fix");
+
+  // Data
+  for (const issue of result.issues) {
+    lines.push([
+      issue.id,
+      `"${issue.category.name}"`,
+      issue.severity,
+      `"${issue.title}"`,
+      `"${issue.description}"`,
+      issue.affectedCount,
+      `"${issue.recommendation}"`,
+      issue.autoFixable ? "Sim" : "Não"
+    ].join(","));
+  }
+
+  return lines.join("\n");
+}
+
+export async function exportDiagnosticsJSON(result: DiagnosticResult): Promise<string> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  return JSON.stringify(result, null, 2);
+}
+
+// ============================================================================
+// BULK FIX
+// ============================================================================
+
+export async function bulkFixIssues(issueIds: string[]): Promise<{
+  success: boolean;
+  results: Array<{ id: string; success: boolean; message: string; fixed: number }>
+}> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const results: Array<{ id: string; success: boolean; message: string; fixed: number }> = [];
+
+  for (const issueId of issueIds) {
+    try {
+      const result = await autoFixIssue(issueId);
+      results.push({ id: issueId, ...result });
+    } catch (error: any) {
+      results.push({ id: issueId, success: false, message: error.message, fixed: 0 });
+    }
+  }
+
+  return { success: results.every(r => r.success), results };
+}
+
+// ============================================================================
+// GET AFFECTED RECORDS (for drill-down)
+// ============================================================================
+
+export async function getAffectedRecords(issueId: string, limit: number = 50): Promise<any[]> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const userId = session.user.id;
+
+  switch (issueId) {
+    case "CAT-001":
+      const cat001 = await db.execute(sql`
+        SELECT t.id, t.key_desc, t.amount, t.payment_date, t.leaf_id, t.app_category_name
+        FROM transactions t
+        JOIN taxonomy_leaf tl ON t.leaf_id = tl.leaf_id
+        WHERE t.user_id = ${userId}
+        AND tl.nivel_3_pt = 'OPEN'
+        AND t.app_category_name IS NOT NULL
+        AND t.app_category_name != 'OPEN'
+        LIMIT ${limit}
+      `);
+      return cat001.rows;
+
+    case "CAT-002":
+      const cat002 = await db.execute(sql`
+        SELECT t.id, t.key_desc, t.amount, t.payment_date, t.leaf_id, t.category_1
+        FROM transactions t
+        JOIN taxonomy_leaf tl ON t.leaf_id = tl.leaf_id
+        WHERE t.user_id = ${userId}
+        AND tl.nivel_3_pt = 'OPEN'
+        AND t.category_1 IS NOT NULL
+        AND CAST(t.category_1 AS text) != 'OPEN'
+        LIMIT ${limit}
+      `);
+      return cat002.rows;
+
+    case "FIN-001":
+      const fin001 = await db.execute(sql`
+        SELECT id, key_desc, amount, payment_date, type, category_1
+        FROM transactions
+        WHERE user_id = ${userId}
+        AND LOWER(key_desc) LIKE '%gehalt%'
+        AND amount < 0
+        LIMIT ${limit}
+      `);
+      return fin001.rows;
+
+    case "FIN-002":
+      const fin002 = await db.execute(sql`
+        SELECT id, key_desc, amount, payment_date, type
+        FROM transactions
+        WHERE user_id = ${userId}
+        AND ((type = 'Receita' AND amount < 0) OR (type = 'Despesa' AND amount > 0))
+        LIMIT ${limit}
+      `);
+      return fin002.rows;
+
+    default:
+      return [];
+  }
+}
+
+// ============================================================================
+// AUTO-FIX FUNCTIONS
+// ============================================================================
+
 export async function autoFixIssue(issueId: string): Promise<{ success: boolean; message: string; fixed: number }> {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
