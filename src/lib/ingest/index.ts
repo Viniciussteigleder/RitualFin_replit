@@ -4,13 +4,15 @@ import { parseMilesMoreCSV } from "./parsers/miles-more";
 import { parseAmexActivityCSV } from "./parsers/amex";
 
 export async function parseIngestionFile(buffer: Buffer | string, filename?: string, userId?: string): Promise<ParseResult> {
-    const fileContent = typeof buffer === "string" ? stripBom(buffer) : decodeBuffer(buffer);
+    const decoded = typeof buffer === "string" ? { content: stripBom(buffer), encoding: undefined as string | undefined } : decodeBuffer(buffer);
+    const fileContent = decoded.content;
     const headerLine = findHeaderLine(fileContent);
     const normalized = normalizeForDetect(headerLine ?? fileContent);
     
     // Simple heuristic detection
     if (normalized.includes("miles & more gold credit card") || normalized.includes("authorised on") || normalized.includes("processed on") || filename?.toLowerCase().includes("miles")) {
-        return parseMilesMoreCSV(fileContent);
+        const result = await parseMilesMoreCSV(fileContent);
+        return attachEncoding(result, decoded.encoding);
     }
     
     const headerLooksLikeSparkasse =
@@ -18,7 +20,8 @@ export async function parseIngestionFile(buffer: Buffer | string, filename?: str
         (normalized.includes("auftragskonto") || normalized.includes("verwendungszweck") || normalized.includes("begunstigter/zahlungspflichtiger")) &&
         (normalized.includes("betrag") || normalized.includes("waehrung"));
     if (headerLooksLikeSparkasse || filename?.toLowerCase().includes("sparkasse")) {
-        return parseSparkasseCSV(fileContent);
+        const result = await parseSparkasseCSV(fileContent);
+        return attachEncoding(result, decoded.encoding);
     }
     
     // Amex exports can be comma- or semicolon-separated (and sometimes UTF-16).
@@ -27,10 +30,11 @@ export async function parseIngestionFile(buffer: Buffer | string, filename?: str
         normalized.includes("betrag") &&
         (normalized.includes("beschreibung") || normalized.includes("karteninhaber") || normalized.includes("kartennummer"));
     if (headerLooksLikeAmex || normalized.includes("paypal *") || filename?.toLowerCase().includes("amex")) {
-        return parseAmexActivityCSV(fileContent);
+        const result = await parseAmexActivityCSV(fileContent);
+        return attachEncoding(result, decoded.encoding);
     }
     
-    return {
+    return attachEncoding({
         success: false,
         errors: ["Unknown CSV format. Could not detect Sparkasse, M&M, or Amex headers."],
         transactions: [],
@@ -51,14 +55,14 @@ export async function parseIngestionFile(buffer: Buffer | string, filename?: str
             hasMultiline: false,
             headersFound: headerLine ? splitHeaderColumns(headerLine) : [],
         },
-    };
+    }, decoded.encoding);
 }
 
 function stripBom(input: string): string {
     return input.replace(/^\uFEFF/, "");
 }
 
-function decodeBuffer(buffer: Buffer): string {
+function decodeBuffer(buffer: Buffer): { content: string; encoding: string } {
     // Heuristic: if there are a lot of NUL bytes, it's likely UTF-16LE.
     const sample = buffer.subarray(0, Math.min(buffer.length, 1024));
     let nulCount = 0;
@@ -72,10 +76,21 @@ function decodeBuffer(buffer: Buffer): string {
     if (encoding === "utf8") {
         const replacementCount = (decoded.match(/\uFFFD/g) || []).length;
         if (replacementCount > 5) {
-            return stripBom(buffer.toString("latin1"));
+            return { content: stripBom(buffer.toString("latin1")), encoding: "latin1" };
         }
     }
-    return decoded;
+    return { content: decoded, encoding };
+}
+
+function attachEncoding(result: ParseResult, encoding: string | undefined): ParseResult {
+    if (!encoding) return result;
+    return {
+        ...result,
+        meta: {
+            ...(result.meta ?? { delimiter: ",", warnings: [], hasMultiline: false }),
+            encoding,
+        },
+    };
 }
 
 function findHeaderLine(content: string): string | null {

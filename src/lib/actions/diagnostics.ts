@@ -198,6 +198,53 @@ async function runImportDiagnostics(userId: string) {
   let checksRun = 0;
   let checksPassed = 0;
 
+  // Check 0: Missing provenance linkage (raw-backed via batch + fingerprint join)
+  checksRun++;
+  const missingLinks = await db.execute(sql`
+    SELECT
+      t.id AS transaction_id,
+      t.key_desc,
+      t.amount,
+      t.payment_date,
+      t.upload_id AS batch_id,
+      ii.id AS ingestion_item_id,
+      ii.raw_row_hash
+    FROM transactions t
+    JOIN ingestion_items ii
+      ON ii.batch_id = t.upload_id
+     AND ii.item_fingerprint = t.key
+    WHERE t.user_id = ${userId}
+      AND t.upload_id IS NOT NULL
+      AND t.ingestion_item_id IS NULL
+    LIMIT 20
+  `);
+
+  if (missingLinks.rows.length > 0) {
+    issues.push({
+      id: "BCH-001",
+      category: CATEGORIES.imports,
+      severity: "high",
+      title: "Transações sem link de evidência (raw-backed)",
+      description:
+        "Existem transações importadas que conseguem ser reconciliadas com uma linha bruta (batch_id + fingerprint), mas não possuem linkage persistido (ingestion_item_id / transaction_evidence_link).",
+      affectedCount: missingLinks.rows.length,
+      samples: missingLinks.rows.slice(0, 5).map((r: any) => ({
+        transactionId: r.transaction_id,
+        batchId: r.batch_id,
+        ingestionItemId: r.ingestion_item_id,
+        rawRowHash: r.raw_row_hash,
+        keyDesc: r.key_desc,
+        amount: r.amount,
+        paymentDate: r.payment_date,
+      })),
+      recommendation:
+        "Execute o backfill de proveniência (admin) para preencher ingestion_item_id e criar transaction_evidence_link. Depois re-execute os diagnósticos.",
+      autoFixable: false,
+    });
+  } else {
+    checksPassed++;
+  }
+
   // Check 1: Column shift detection (date in keyDesc)
   checksRun++;
   const dateInKeyDesc = await db.execute(sql`

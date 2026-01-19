@@ -189,6 +189,18 @@ export const ingestionBatches = pgTable("ingestion_batches", {
   sourceType: ingestionSourceTypeEnum("source_type").notNull(),
   status: ingestionBatchStatusEnum("status").notNull().default("processing"),
   filename: text("filename"),
+  fileHashSha256: text("file_hash_sha256"),
+  fileSizeBytes: integer("file_size_bytes"),
+  encoding: text("encoding"),
+  delimiter: text("delimiter"),
+  quoteChar: text("quote_char"),
+  decimalSep: text("decimal_sep"),
+  thousandsSep: text("thousands_sep"),
+  dateFormat: text("date_format"),
+  parserVersion: text("parser_version"),
+  normalizationVersion: text("normalization_version"),
+  rulesVersion: text("rules_version"),
+  taxonomyVersion: text("taxonomy_version"),
   importedAt: timestamp("imported_at").notNull().defaultNow(), // NEW
   sourceSystem: text("source_system"), // NEW
   sourceFormat: text("source_format"), // NEW
@@ -209,7 +221,10 @@ export const ingestionBatchesRelations = relations(ingestionBatches, ({ one, man
 export const ingestionItems = pgTable("ingestion_items", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   batchId: varchar("batch_id").notNull().references(() => ingestionBatches.id, { onDelete: "cascade" }),
+  rowIndex: integer("row_index"),
   rawPayload: jsonb("raw_payload").notNull(), 
+  rawColumnsJson: jsonb("raw_columns_json"),
+  rawRowHash: text("raw_row_hash"),
   parsedPayload: jsonb("parsed_payload"), 
   itemFingerprint: text("item_fingerprint").notNull(), 
   status: text("status").notNull().default("pending"), 
@@ -383,6 +398,13 @@ export const transactions = pgTable("transactions", {
   needsReview: boolean("needs_review").notNull().default(true),
   ruleIdApplied: varchar("rule_id_applied").references(() => rules.id),
   uploadId: varchar("upload_id"), 
+  batchId: varchar("batch_id").references(() => ingestionBatches.id),
+  ingestionItemId: varchar("ingestion_item_id").references(() => ingestionItems.id),
+  rawRowHash: text("raw_row_hash"),
+  parserVersion: text("parser_version"),
+  normalizationVersion: text("normalization_version"),
+  rulesVersion: text("rules_version"),
+  taxonomyVersion: text("taxonomy_version"),
   confidence: integer("confidence"),
   suggestedKeyword: text("suggested_keyword"),
   matchedKeyword: text("matched_keyword"), // Which keyword from the rule matched this transaction
