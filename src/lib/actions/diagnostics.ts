@@ -336,7 +336,7 @@ async function runImportDiagnostics(userId: string) {
     checksPassed++;
   }
 
-  const status = issues.some(i => i.severity === "critical") ? "critical"
+  const status: CategoryResult["status"] = issues.some(i => i.severity === "critical") ? "critical"
                : issues.some(i => i.severity === "high") ? "warning" : "healthy";
 
   return {
@@ -506,7 +506,7 @@ async function runRuleDiagnostics(userId: string) {
     checksPassed++;
   }
 
-  const status = issues.some(i => i.severity === "critical") ? "critical"
+  const status: CategoryResult["status"] = issues.some(i => i.severity === "critical") ? "critical"
                : issues.some(i => i.severity === "high") ? "warning" : "healthy";
 
   return {
@@ -685,7 +685,7 @@ async function runCategorizationDiagnostics(userId: string) {
     checksPassed++;
   }
 
-  const status = issues.some(i => i.severity === "critical") ? "critical"
+  const status: CategoryResult["status"] = issues.some(i => i.severity === "critical") ? "critical"
                : issues.some(i => i.severity === "high") ? "warning" : "healthy";
 
   return {
@@ -841,7 +841,7 @@ async function runFinancialDiagnostics(userId: string) {
     checksPassed++;
   }
 
-  const status = issues.some(i => i.severity === "critical") ? "critical"
+  const status: CategoryResult["status"] = issues.some(i => i.severity === "critical") ? "critical"
                : issues.some(i => i.severity === "high") ? "warning" : "healthy";
 
   return {
@@ -994,7 +994,7 @@ async function runTaxonomyDiagnostics(userId: string) {
     checksPassed++;
   }
 
-  const status = issues.some(i => i.severity === "critical") ? "critical"
+  const status: CategoryResult["status"] = issues.some(i => i.severity === "critical") ? "critical"
                : issues.some(i => i.severity === "high") ? "warning" : "healthy";
 
   return {
