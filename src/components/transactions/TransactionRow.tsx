@@ -1,11 +1,12 @@
 "use client";
 
+import { memo } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Edit3, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { 
-    formatDate, 
+import {
+    formatDate,
     formatAmount
 } from "@/lib/utils/transaction-formatters";
 import { CategoryIcon } from "@/components/ui/category-icon";
@@ -21,7 +22,8 @@ interface TransactionRowProps {
     aliasMap?: Record<string, string>;
 }
 
-export function TransactionRow({
+// Memoized to prevent unnecessary re-renders
+export const TransactionRow = memo(function TransactionRow({
     transaction,
     isCompact = false,
     hideCents = false,
@@ -36,7 +38,7 @@ export function TransactionRow({
     return (
         <div
             className={cn(
-                "group flex flex-col md:grid md:grid-cols-[40px_80px_2.5fr_1fr_1.2fr_1fr_80px] gap-2 md:gap-3 items-stretch md:items-center hover:bg-secondary/40 transition-all duration-200 cursor-pointer border-transparent",
+                "group flex flex-col md:grid md:grid-cols-[40px_80px_2.5fr_1fr_1.2fr_1fr_80px] gap-2 md:gap-3 items-stretch md:items-center hover:bg-secondary/40 transition-colors duration-150 cursor-pointer border-transparent",
                 isCompact ? "px-4 py-2 md:px-6" : "px-4 py-4 md:px-6",
                 isSelected && "bg-primary/5 border-l-4 border-l-primary"
             )}
@@ -46,10 +48,10 @@ export function TransactionRow({
             <div className="hidden md:flex justify-center" onClick={(e) => {
                 e.stopPropagation();
             }}>
-                <Checkbox 
-                    checked={isSelected} 
-                    onCheckedChange={(checked) => onToggleSelect(transaction.id, { preventDefault: () => {}, stopPropagation: () => {} } as any)} 
-                    className="h-4 w-4 rounded border-2" 
+                <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={() => onToggleSelect(transaction.id, { preventDefault: () => {}, stopPropagation: () => {} } as any)}
+                    className="h-4 w-4 rounded border-2"
                 />
             </div>
 
@@ -64,32 +66,29 @@ export function TransactionRow({
                 <div className="md:hidden" onClick={(e) => {
                     e.stopPropagation();
                 }}>
-                    <Checkbox 
-                        checked={isSelected} 
-                        onCheckedChange={() => onToggleSelect(transaction.id, { preventDefault: () => {}, stopPropagation: () => {} } as any)} 
-                        className="h-4 w-4 rounded border-2" 
+                    <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => onToggleSelect(transaction.id, { preventDefault: () => {}, stopPropagation: () => {} } as any)}
+                        className="h-4 w-4 rounded border-2"
                     />
                 </div>
 
                 {/* Logo/Avatar - Rectangle/flexible */}
                 <div className="flex flex-row items-center gap-3 min-w-0 flex-1">
                     {transaction.aliasDesc && aliasMap[transaction.aliasDesc] ? (
-                        <>
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                                src={aliasMap[transaction.aliasDesc]}
-                                alt={transaction.aliasDesc}
-                                className={cn(
-                                    "object-contain border border-border bg-white flex-shrink-0 rounded-lg transition-transform duration-200 group-hover:scale-110",
-                                    isCompact ? "w-8 h-8" : "w-10 h-8"
-                                )}
-                            />
-                        </>
+                        <img
+                            src={aliasMap[transaction.aliasDesc]}
+                            alt={transaction.aliasDesc}
+                            loading="lazy"
+                            className={cn(
+                                "object-contain border border-border bg-white flex-shrink-0 rounded-lg",
+                                isCompact ? "w-8 h-8" : "w-10 h-8"
+                            )}
+                        />
                     ) : (
                         <CategoryIcon
                             category={transaction.category1}
                             size={isCompact ? "sm" : "md"}
-                            className="transition-transform duration-200 group-hover:scale-110"
                         />
                     )}
 
@@ -154,7 +153,7 @@ export function TransactionRow({
                 {/* Action Button - Edit only (opens drawer) */}
                 <div className="hidden md:flex items-center justify-center">
                     <button
-                        className="p-2.5 hover:bg-secondary rounded-xl transition-all duration-200 text-muted-foreground hover:text-foreground hover:scale-110 active:scale-95"
+                        className="p-2.5 hover:bg-secondary rounded-xl transition-colors duration-150 text-muted-foreground hover:text-foreground"
                         onClick={(e) => onEditClick(transaction, e)}
                         title="Editar transação"
                     >
@@ -164,4 +163,4 @@ export function TransactionRow({
             </div>
         </div>
     );
-}
+});

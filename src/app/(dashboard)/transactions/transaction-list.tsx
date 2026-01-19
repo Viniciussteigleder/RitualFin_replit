@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import {
@@ -90,50 +90,49 @@ export function TransactionList({
     // Debounce search to reduce server calls
     const debouncedSearch = useDebouncedValue(search, 300);
 
-    // Refetch transactions when filters change (server-side filtering)
-    useEffect(() => {
-        const refetchWithFilters = async () => {
-            if (isRefetching) return;
-            
-            setIsRefetching(true);
-            try {
-                const result = await getTransactionsForList({
-                    limit: 50,
-                    sources: filters.accounts,
-                    search: debouncedSearch || undefined,
-                    categories: filters.categories,
-                    minAmount: filters.minAmount,
-                    maxAmount: filters.maxAmount,
-                    dateFrom: filters.dateFrom,
-                    dateTo: filters.dateTo,
-                });
-                
-                setTransactions(result.items.map(tx => ({
-                    ...tx,
-                    date: tx.paymentDate,
-                    description: tx.descNorm || tx.descRaw
-                })));
-                setHasMore(result.hasMore);
-                setNextCursor(result.nextCursor);
-            } catch (error) {
-                console.error('Failed to refetch transactions:', error);
-            } finally {
-                setIsRefetching(false);
-            }
-        };
+    // Helper to refetch transactions with current filters
+    const refetchTransactions = useCallback(async () => {
+        setIsRefetching(true);
+        try {
+            const result = await getTransactionsForList({
+                limit: 50,
+                sources: filters.accounts,
+                search: debouncedSearch || undefined,
+                categories: filters.categories,
+                minAmount: filters.minAmount,
+                maxAmount: filters.maxAmount,
+                dateFrom: filters.dateFrom,
+                dateTo: filters.dateTo,
+            });
 
-        refetchWithFilters();
+            setTransactions(result.items.map(tx => ({
+                ...tx,
+                date: tx.paymentDate,
+                description: tx.descNorm || tx.descRaw
+            })));
+            setHasMore(result.hasMore);
+            setNextCursor(result.nextCursor);
+        } catch (error) {
+            console.error('Failed to refetch transactions:', error);
+        } finally {
+            setIsRefetching(false);
+        }
     }, [debouncedSearch, filters]);
 
+    // Refetch transactions when filters change (server-side filtering)
+    useEffect(() => {
+        refetchTransactions();
+    }, [refetchTransactions]);
+
     // Handle sorting (client-side for now, can be moved to server later)
-    const handleSort = (field: SortField) => {
+    const handleSort = useCallback((field: SortField) => {
         if (sortField === field) {
-            setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+            setSortDirection(prev => prev === "asc" ? "desc" : "asc");
         } else {
             setSortField(field);
             setSortDirection("desc");
         }
-    };
+    }, [sortField]);
 
     // Sort and group transactions (now operating on server-filtered data)
     const sortedTransactions = useMemo(() => {
@@ -172,102 +171,137 @@ export function TransactionList({
         );
     }, [groupedTransactions, sortDirection]);
 
-    const toggleSelect = (id: string) => {
-        const newSelected = new Set(selectedIds);
-        if (newSelected.has(id)) {
-            newSelected.delete(id);
-        } else {
-            newSelected.add(id);
-        }
-        setSelectedIds(newSelected);
-    };
+    // Memoize available categories/accounts
+    const availableCategories = useMemo(() => {
+        return allCategories.length > 0
+            ? allCategories
+            : Array.from(new Set(transactions.map(t => t.category1).filter(Boolean)));
+    }, [allCategories, transactions]);
 
-    const toggleSelectAll = () => {
-        if (selectedIds.size === transactions.length && transactions.length > 0) {
-            setSelectedIds(new Set());
-        } else {
-            setSelectedIds(new Set(transactions.map(tx => tx.id)));
-        }
-    };
+    const availableAccounts = useMemo(() => {
+        return allAccounts.length > 0
+            ? allAccounts
+            : Array.from(new Set(transactions.map(t => t.source).filter(Boolean)));
+    }, [allAccounts, transactions]);
 
-    const handleConfirm = async (id: string) => {
+    // Memoized event handlers
+    const toggleSelect = useCallback((id: string) => {
+        setSelectedIds(prev => {
+            const newSelected = new Set(prev);
+            if (newSelected.has(id)) {
+                newSelected.delete(id);
+            } else {
+                newSelected.add(id);
+            }
+            return newSelected;
+        });
+    }, []);
+
+    const toggleSelectAll = useCallback(() => {
+        setSelectedIds(prev => {
+            if (prev.size === transactions.length && transactions.length > 0) {
+                return new Set();
+            } else {
+                return new Set(transactions.map(tx => tx.id));
+            }
+        });
+    }, [transactions]);
+
+    const handleConfirm = useCallback(async (id: string) => {
         try {
             await confirmTransaction(id);
             toast.success("Transação confirmada");
             if (selectedTx?.id === id) setSelectedTx(null);
+            // Optimistic update: remove needsReview flag
+            setTransactions(prev => prev.map(tx =>
+                tx.id === id ? { ...tx, needsReview: false } : tx
+            ));
         } catch (error) {
             toast.error("Erro ao confirmar transação");
         }
-    };
+    }, [selectedTx?.id]);
 
-    const handleDelete = async (id: string) => {
+    const handleDelete = useCallback(async (id: string) => {
         if (!confirm("Tem certeza que deseja deletar esta transação?")) return;
         try {
             await deleteTransaction(id);
             toast.success("Transação deletada");
             if (selectedTx?.id === id) setSelectedTx(null);
+            // Optimistic update: remove from list
+            setTransactions(prev => prev.filter(tx => tx.id !== id));
         } catch (error) {
             toast.error("Erro ao deletar transação");
         }
-    };
+    }, [selectedTx?.id]);
 
-    const handleLeafUpdate = async (id: string, leafId: string) => {
+    const handleLeafUpdate = useCallback(async (id: string, leafId: string) => {
         try {
             await updateTransactionCategory(id, { leafId });
             toast.success("Classificação atualizada");
         } catch (error) {
             toast.error("Erro ao atualizar classificação");
         }
-    };
+    }, []);
 
-    // Bulk action handlers
-    const handleBulkConfirm = async () => {
+    // Bulk action handlers - refetch instead of reload
+    const handleBulkConfirm = useCallback(async () => {
         const ids = Array.from(selectedIds);
         try {
             const result = await bulkConfirmTransactions(ids);
             if (result.success) {
                 toast.success(`${result.data.updated} transações confirmadas!`);
                 setSelectedIds(new Set());
-                window.location.reload();
+                // Optimistic update instead of page reload
+                setTransactions(prev => prev.map(tx =>
+                    ids.includes(tx.id) ? { ...tx, needsReview: false } : tx
+                ));
             } else {
                 toast.error(result.error);
             }
         } catch (error) {
             toast.error("Erro ao confirmar transações");
         }
-    };
+    }, [selectedIds]);
 
-    const handleBulkDelete = async () => {
+    const handleBulkDelete = useCallback(async () => {
         const ids = Array.from(selectedIds);
         if (!confirm(`Tem certeza que deseja eliminar ${ids.length} transações?`)) {
             return;
         }
-        
+
         try {
             const result = await bulkDeleteTransactions(ids);
             if (result.success) {
                 toast.success(`${result.data.deleted} transações eliminadas!`);
                 setSelectedIds(new Set());
-                window.location.reload();
+                // Optimistic update instead of page reload
+                setTransactions(prev => prev.filter(tx => !ids.includes(tx.id)));
             } else {
                 toast.error(result.error);
             }
         } catch (error) {
             toast.error("Erro ao eliminar transações");
         }
-    };
+    }, [selectedIds]);
 
-    const handleLoadMore = async () => {
+    // Fix: Include ALL filters in load more pagination
+    const handleLoadMore = useCallback(async () => {
         if (!nextCursor || isLoadingMore) return;
-        
+
         setIsLoadingMore(true);
         try {
-            const result = await getTransactionsForList({ 
-                limit: 50, 
+            const result = await getTransactionsForList({
+                limit: 50,
                 cursor: nextCursor,
-                sources: filters.accounts 
+                sources: filters.accounts,
+                search: debouncedSearch || undefined,
+                categories: filters.categories,
+                minAmount: filters.minAmount,
+                maxAmount: filters.maxAmount,
+                dateFrom: filters.dateFrom,
+                dateTo: filters.dateTo,
             });
-            
+
             setTransactions(prev => [...prev, ...result.items.map(tx => ({
                 ...tx,
                 date: tx.paymentDate,
@@ -280,8 +314,9 @@ export function TransactionList({
         } finally {
             setIsLoadingMore(false);
         }
-    };
-    const handleBulkExport = async () => {
+    }, [nextCursor, isLoadingMore, filters, debouncedSearch]);
+
+    const handleBulkExport = useCallback(async () => {
         const ids = selectedIds.size > 0 ? Array.from(selectedIds) : undefined;
         try {
             const result = await exportTransactions(ids);
@@ -293,7 +328,7 @@ export function TransactionList({
                 link.download = result.data.filename;
                 link.click();
                 URL.revokeObjectURL(url);
-                
+
                 toast.success("Exportação concluída!");
                 if (selectedIds.size > 0) {
                     setSelectedIds(new Set());
@@ -304,7 +339,12 @@ export function TransactionList({
         } catch (error) {
             toast.error("Erro ao exportar transações");
         }
-    };
+    }, [selectedIds]);
+
+    const handleEditClick = useCallback((tx: any) => setSelectedTx(tx), []);
+    const handleRowClick = useCallback((tx: any) => setSelectedTx(tx), []);
+    const handleClearSelection = useCallback(() => setSelectedIds(new Set()), []);
+    const handleClearFilters = useCallback(() => { setSearch(""); setFilters({}); }, []);
 
     return (
         <div className="space-y-6 pb-32">
@@ -312,8 +352,8 @@ export function TransactionList({
                 search={search}
                 onSearchChange={setSearch}
                 onFilterChange={setFilters}
-                availableCategories={allCategories.length > 0 ? allCategories : Array.from(new Set(transactions.map(t => t.category1).filter(Boolean)))}
-                availableAccounts={allAccounts.length > 0 ? allAccounts : Array.from(new Set(transactions.map(t => t.source).filter(Boolean)))}
+                availableCategories={availableCategories}
+                availableAccounts={availableAccounts}
                 isCompact={isCompact}
                 onToggleCompact={() => setIsCompact(!isCompact)}
                 hideCents={hideCents}
@@ -343,8 +383,8 @@ export function TransactionList({
                     hideCents={hideCents}
                     selectedIds={selectedIds}
                     onToggleSelect={toggleSelect}
-                    onEditClick={(tx) => setSelectedTx(tx)}
-                    onClick={(tx) => setSelectedTx(tx)}
+                    onEditClick={handleEditClick}
+                    onClick={handleRowClick}
                     aliasMap={aliasMap}
                 />
             ) : (
@@ -364,10 +404,10 @@ export function TransactionList({
                             <p className="text-base text-muted-foreground mt-3 font-medium max-w-md mx-auto">
                                 Tente ajustar seus filtros ou remover termos de busca.
                             </p>
-                            <Button 
-                                variant="outline" 
+                            <Button
+                                variant="outline"
                                 className="mt-8 rounded-2xl h-12 px-8 font-bold border-border hover:bg-secondary transition-all"
-                                onClick={() => { setSearch(""); setFilters({}); }}
+                                onClick={handleClearFilters}
                             >
                                 Limpar Filtros
                             </Button>
@@ -382,8 +422,8 @@ export function TransactionList({
                                 hideCents={hideCents}
                                 selectedIds={selectedIds}
                                 onToggleSelect={toggleSelect}
-                                onEditClick={(tx) => setSelectedTx(tx)}
-                                onClick={(tx) => setSelectedTx(tx)}
+                                onEditClick={handleEditClick}
+                                onClick={handleRowClick}
                                 aliasMap={aliasMap}
                             />
                         ))
@@ -394,9 +434,9 @@ export function TransactionList({
 
             {hasMore && (
                 <div className="flex justify-center pt-4 pb-8">
-                    <Button 
-                        variant="outline" 
-                        onClick={handleLoadMore} 
+                    <Button
+                        variant="outline"
+                        onClick={handleLoadMore}
                         disabled={isLoadingMore}
                         className="rounded-2xl h-12 px-12 font-bold border-border hover:bg-secondary transition-all shadow-sm"
                     >
@@ -412,7 +452,7 @@ export function TransactionList({
                 </div>
             )}
 
-            <TransactionDrawer 
+            <TransactionDrawer
                 transaction={selectedTx}
                 open={!!selectedTx}
                 onOpenChange={(open) => !open && setSelectedTx(null)}
@@ -426,7 +466,7 @@ export function TransactionList({
                 onClassifyAll={handleBulkConfirm}
                 onExport={handleBulkExport}
                 onDelete={handleBulkDelete}
-                onClearSelection={() => setSelectedIds(new Set())}
+                onClearSelection={handleClearSelection}
             />
         </div>
     );
