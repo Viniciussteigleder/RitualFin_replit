@@ -36,7 +36,7 @@ async function addPerformanceIndexes() {
     console.log('Creating index: idx_transactions_user_category...');
     await db.execute(sql`
       CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_transactions_user_category 
-      ON transactions(user_id, category1, payment_date DESC)
+      ON transactions(user_id, category_1, payment_date DESC)
     `);
     console.log('✅ idx_transactions_user_category created\n');
 
