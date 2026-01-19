@@ -46,7 +46,6 @@ export async function backfillTransactionProvenanceForUser(limit: number = 5000)
     await db
       .update(transactions)
       .set({
-        batchId: item.batchId,
         ingestionItemId: item.id,
         rawRowHash: item.rawRowHash ?? null,
       })
@@ -86,7 +85,6 @@ export async function backfillTransactionProvenanceForUser(limit: number = 5000)
 export async function getProvenanceCoverageForUser(): Promise<{
   totalTransactions: number;
   withUploadId: number;
-  withBatchId: number;
   withIngestionItemId: number;
   withEvidenceLink: number;
 }> {
@@ -99,7 +97,6 @@ export async function getProvenanceCoverageForUser(): Promise<{
     SELECT
       COUNT(*)::int AS total_transactions,
       COUNT(*) FILTER (WHERE upload_id IS NOT NULL)::int AS with_upload_id,
-      COUNT(*) FILTER (WHERE batch_id IS NOT NULL)::int AS with_batch_id,
       COUNT(*) FILTER (WHERE ingestion_item_id IS NOT NULL)::int AS with_ingestion_item_id,
       COUNT(DISTINCT tel.transaction_id)::int AS with_evidence_link
     FROM transactions t
@@ -111,7 +108,6 @@ export async function getProvenanceCoverageForUser(): Promise<{
   return {
     totalTransactions: row?.total_transactions ?? 0,
     withUploadId: row?.with_upload_id ?? 0,
-    withBatchId: row?.with_batch_id ?? 0,
     withIngestionItemId: row?.with_ingestion_item_id ?? 0,
     withEvidenceLink: row?.with_evidence_link ?? 0,
   };

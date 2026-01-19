@@ -65,7 +65,7 @@ export default async function DiagnosePage() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center bg-white p-3 rounded-lg border shadow-sm">
                   <span className="text-sm font-medium">Total Issues</span>
-                  <Badge variant={diagnosis.integrity?.summary?.totalIssues > 0 ? "destructive" : "secondary"} className="font-bold">
+                  <Badge variant={(diagnosis.integrity?.summary?.totalIssues ?? 0) > 0 ? "destructive" : "secondary"} className="font-bold">
                     {diagnosis.integrity?.summary?.totalIssues ?? 0}
                   </Badge>
                 </div>
