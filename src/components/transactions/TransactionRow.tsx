@@ -32,13 +32,11 @@ export function TransactionRow({
     aliasMap = {}
 }: TransactionRowProps) {
     const isNegative = Number(transaction.amount) < 0;
-    const score = transaction.confidence || transaction.score || (transaction.needsReview ? 40 : 98);
-    const scoreText = score >= 90 ? "text-emerald-600" : score >= 60 ? "text-amber-600" : "text-slate-500";
 
     return (
         <div
             className={cn(
-                "group flex flex-col md:grid md:grid-cols-[40px_80px_2.5fr_1fr_1.2fr_1fr_80px_80px] gap-2 md:gap-3 items-stretch md:items-center hover:bg-secondary/40 transition-all duration-200 cursor-pointer border-transparent",
+                "group flex flex-col md:grid md:grid-cols-[40px_80px_2.5fr_1fr_1.2fr_1fr_80px] gap-2 md:gap-3 items-stretch md:items-center hover:bg-secondary/40 transition-all duration-200 cursor-pointer border-transparent",
                 isCompact ? "px-4 py-2 md:px-6" : "px-4 py-4 md:px-6",
                 isSelected && "bg-primary/5 border-l-4 border-l-primary"
             )}
@@ -151,11 +149,6 @@ export function TransactionRow({
                     {transaction.category2 && (
                         <span className="truncate text-[10px] text-muted-foreground/70">{transaction.category2}</span>
                     )}
-                </div>
-
-                {/* Desktop AI Score - percentage only */}
-                <div className="hidden md:flex items-center justify-center">
-                    <span className={cn("text-xs font-bold", scoreText)}>{score}%</span>
                 </div>
 
                 {/* Action Button - Edit only (opens drawer) */}

@@ -179,21 +179,23 @@ export async function exportTransactions(
     const headers = [
       "Data",
       "Descrição",
+      "Key Desc",
       "Valor",
       "Nível 1",
-      "Nível 2", 
+      "Nível 2",
       "Nível 3",
       "App Category",
       "Keyword Matched",
       "Tipo",
       "Fixo/Variável",
       "Origem",
-      "Status",  
+      "Status",
     ];
 
     const rows = txList.rows.map((tx: any) => [
       new Date(tx.payment_date).toLocaleDateString("pt-PT"),
       tx.alias_desc || tx.desc_norm || tx.desc_raw,
+      tx.key_desc || "",
       tx.amount.toString(),
       tx.level_1 || "OPEN",
       tx.level_2 || "OPEN",

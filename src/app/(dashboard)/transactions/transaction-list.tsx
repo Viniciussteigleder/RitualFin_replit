@@ -30,7 +30,7 @@ import { TransactionDrawer } from "@/components/transactions/transaction-drawer"
 import { TransactionFilters } from "@/components/transactions/filter-panel";
 import { VirtualizedTransactionList } from "@/components/transactions/VirtualizedTransactionList";
 
-type SortField = "date" | "amount" | "category" | "confidence";
+type SortField = "date" | "amount" | "category";
 type SortDirection = "asc" | "desc";
 
 function SortableHeader({
@@ -144,9 +144,6 @@ export function TransactionList({
                     break;
                 case "category":
                     comparison = (a.category1 || "").localeCompare(b.category1 || "");
-                    break;
-                case "confidence":
-                    comparison = (a.confidence || 0) - (b.confidence || 0);
                     break;
             }
             return sortDirection === "asc" ? comparison : -comparison;
@@ -321,7 +318,7 @@ export function TransactionList({
             />
 
             {/* Table Header (Desktop Only) */}
-            <div className="hidden md:grid grid-cols-[40px_80px_2.5fr_1fr_1.2fr_1fr_80px_80px] gap-3 px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-wider bg-secondary/50 rounded-t-3xl border border-border backdrop-blur-sm">
+            <div className="hidden md:grid grid-cols-[40px_80px_2.5fr_1fr_1.2fr_1fr_80px] gap-3 px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-wider bg-secondary/50 rounded-t-3xl border border-border backdrop-blur-sm">
                 <div className="flex justify-center">
                     <Checkbox checked={selectedIds.size === transactions.length && transactions.length > 0} onCheckedChange={toggleSelectAll} className="h-4 w-4 rounded border-2" />
                 </div>
@@ -330,7 +327,6 @@ export function TransactionList({
                 <SortableHeader field="amount" sortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Valor</SortableHeader>
                 <SortableHeader field="category" sortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Categoria</SortableHeader>
                 <div>Cat 1 / Cat 2</div>
-                <SortableHeader field="confidence" sortField={sortField} sortDirection={sortDirection} onSort={handleSort}>AI %</SortableHeader>
                 <div className="text-center">Ações</div>
             </div>
 
