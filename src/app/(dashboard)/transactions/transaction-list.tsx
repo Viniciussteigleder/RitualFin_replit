@@ -403,7 +403,7 @@ export function TransactionList({
             />
 
             {/* Table Header (Desktop Only) */}
-            <div className="hidden md:grid grid-cols-[40px_80px_2.5fr_1fr_2fr_80px_80px] gap-3 px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-wider bg-secondary/50 rounded-t-3xl border border-border backdrop-blur-sm">
+            <div className="hidden md:grid grid-cols-[40px_80px_2.5fr_1fr_2fr_80px_80px] gap-3 px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-wider bg-secondary/80 rounded-t-3xl border border-border">
                 <div className="flex justify-center">
                     <Checkbox checked={selectedIds.size === transactions.length && transactions.length > 0} onCheckedChange={toggleSelectAll} className="h-4 w-4 rounded border-2" />
                 </div>
