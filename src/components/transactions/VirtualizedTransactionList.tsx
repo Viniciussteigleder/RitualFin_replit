@@ -4,6 +4,8 @@ import { useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { TransactionRow } from "./TransactionRow";
 import { Checkbox } from "@/components/ui/checkbox";
+import { format, endOfWeek } from "date-fns";
+import { pt } from "date-fns/locale";
 
 interface VirtualizedTransactionListProps {
   groupedTransactions: Record<string, any[]>;
@@ -15,6 +17,7 @@ interface VirtualizedTransactionListProps {
   onEditClick: (tx: any) => void;
   onClick: (tx: any) => void;
   aliasMap: Record<string, string>;
+  viewMode?: "day" | "week";
 }
 
 export function VirtualizedTransactionList({
@@ -27,6 +30,7 @@ export function VirtualizedTransactionList({
   onEditClick,
   onClick,
   aliasMap,
+  viewMode = "day",
 }: VirtualizedTransactionListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -81,13 +85,19 @@ export function VirtualizedTransactionList({
                 className="px-6 py-4 bg-secondary/30 border-b border-border"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold text-foreground">
-                    {new Date(item.dateKey).toLocaleDateString("pt-PT", {
-                      weekday: "long",
-                      day: "2-digit",
-                      month: "long",
-                      year: "numeric",
-                    })}
+                  <span className="text-sm font-bold text-foreground capitalize">
+                    {viewMode === "week" ? (
+                        <>
+                            Semana de {format(new Date(item.dateKey), "d 'de' MMMM", { locale: pt })} a {format(endOfWeek(new Date(item.dateKey), { weekStartsOn: 1 }), "d 'de' MMMM", { locale: pt })}
+                        </>
+                    ) : (
+                        new Date(item.dateKey).toLocaleDateString("pt-PT", {
+                            weekday: "long",
+                            day: "2-digit",
+                            month: "long",
+                            year: "numeric",
+                        })
+                    )}
                   </span>
                   <span className="text-xs font-medium text-muted-foreground">
                     {groupedTransactions[item.dateKey].length} transações

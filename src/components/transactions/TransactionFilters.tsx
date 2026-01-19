@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { FilterPanel as FilterPanelComp } from "@/components/transactions/filter-panel";
 import { cn } from "@/lib/utils";
 
-interface TransactionFiltersProps {
+export interface TransactionFiltersProps {
     search: string;
     onSearchChange: (value: string) => void;
     onFilterChange: (filters: any) => void;
@@ -17,6 +17,8 @@ interface TransactionFiltersProps {
     hideCents: boolean;
     onToggleHideCents: () => void;
     onExport: () => void;
+    viewMode: "day" | "week";
+    onViewModeChange: (mode: "day" | "week") => void;
 }
 
 export function TransactionFilters({
@@ -29,55 +31,98 @@ export function TransactionFilters({
     onToggleCompact,
     hideCents,
     onToggleHideCents,
-    onExport
+    onExport,
+    viewMode,
+    onViewModeChange
 }: TransactionFiltersProps) {
     return (
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-card p-6 rounded-[2.5rem] border border-border shadow-sm transition-all duration-300 hover:shadow-md mt-4">
-            <div className="w-full lg:flex-1 max-w-lg">
-                <div className="relative group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+        <div className="flex flex-col gap-6 bg-card p-6 md:p-8 rounded-[2.5rem] border border-border shadow-sm transition-all duration-300 hover:shadow-md mt-4">
+            
+            {/* Top Row: Search and Primary Controls */}
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                <div className="w-full lg:flex-1 relative group max-w-xl">
+                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-emerald-600 transition-colors" />
                     <Input
-                        placeholder="Buscar estabelecimento, valor ou categoria..."
-                        className="pl-12 h-14 bg-secondary/50 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-all text-sm font-medium"
+                        placeholder="Buscar por estabelecimento, valor ou categoria..."
+                        className="pl-14 h-14 bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-emerald-500/20 focus:ring-4 focus:ring-emerald-500/10 rounded-2xl transition-all text-base font-medium placeholder:text-muted-foreground/70"
                         value={search}
                         onChange={(e) => onSearchChange(e.target.value)}
                     />
                 </div>
+                
+                <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                    {/* View Toggle */}
+                     <div className="flex items-center p-1 bg-secondary/40 rounded-2xl border border-border/50">
+                        <button
+                            onClick={() => onViewModeChange("day")}
+                            className={cn(
+                                "px-4 h-12 rounded-xl text-sm font-bold transition-all duration-300",
+                                viewMode === "day" 
+                                    ? "bg-white dark:bg-card text-foreground shadow-sm" 
+                                    : "text-muted-foreground hover:text-foreground hover:bg-white/50"
+                            )}
+                        >
+                            Dia
+                        </button>
+                        <button
+                            onClick={() => onViewModeChange("week")}
+                            className={cn(
+                                "px-4 h-12 rounded-xl text-sm font-bold transition-all duration-300",
+                                viewMode === "week" 
+                                    ? "bg-white dark:bg-card text-foreground shadow-sm" 
+                                    : "text-muted-foreground hover:text-foreground hover:bg-white/50"
+                            )}
+                        >
+                            Semana
+                        </button>
+                    </div>
+
+                    <FilterPanelComp
+                        categories={availableCategories}
+                        accounts={availableAccounts}
+                        onFilterChange={onFilterChange}
+                    />
+
+                    <Button 
+                        variant="outline" 
+                        size="icon"
+                        className="h-14 w-14 border-border hover:bg-secondary rounded-2xl text-foreground" 
+                        onClick={onExport}
+                        title="Exportar dados"
+                    >
+                        <FileText className="h-5 w-5" />
+                    </Button>
+                </div>
             </div>
-            <div className="flex flex-wrap gap-3 w-full lg:w-auto">
-                <FilterPanelComp
-                    categories={availableCategories}
-                    accounts={availableAccounts}
-                    onFilterChange={onFilterChange}
-                />
+
+            {/* Bottom Row: View Options (Compact/Cents) - Optional, keeps UI clean */}
+            {/* Can be hidden or moved to a settings dropdown if too cluttered, but keeping for now as requested */}
+            <div className="flex items-center gap-2 pt-2 border-t border-border/40">
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest mr-auto">Opções de Visualização</span>
+                
                 <Button
-                    variant="outline"
+                    variant="ghost"
+                    size="sm"
                     className={cn(
-                        "h-14 px-6 border-border rounded-2xl text-foreground font-bold gap-2 text-sm transition-all",
-                        isCompact && "bg-primary text-white border-transparent"
+                        "h-9 px-3 text-xs font-bold rounded-xl text-muted-foreground hover:text-foreground",
+                        isCompact && "bg-secondary text-foreground"
                     )}
                     onClick={onToggleCompact}
                 >
-                    <LayoutGrid className="h-4 w-4" />
-                    {isCompact ? "Normal" : "Compacta"}
+                    <LayoutGrid className="h-3.5 w-3.5 mr-2" />
+                    {isCompact ? "Compacto" : "Expandido"}
                 </Button>
+
                 <Button
-                    variant="outline"
+                    variant="ghost"
+                    size="sm"
                     className={cn(
-                        "h-14 px-4 border-border rounded-2xl text-foreground font-medium gap-2 text-sm transition-all",
-                        hideCents && "bg-secondary"
+                        "h-9 px-3 text-xs font-bold rounded-xl text-muted-foreground hover:text-foreground",
+                        hideCents && "bg-secondary text-foreground"
                     )}
                     onClick={onToggleHideCents}
                 >
-                    {hideCents ? "€123" : "€123,45"}
-                </Button>
-                <Button 
-                    variant="outline" 
-                    className="h-14 px-6 border-border hover:bg-secondary rounded-2xl text-foreground font-bold gap-2 text-sm" 
-                    onClick={onExport}
-                >
-                    <FileText className="h-4 w-4" />
-                    Exportar
+                    {hideCents ? "00" : "00,00"}
                 </Button>
             </div>
         </div>

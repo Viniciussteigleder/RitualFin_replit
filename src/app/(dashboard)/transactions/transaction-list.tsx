@@ -9,6 +9,8 @@ import {
     ChevronUp,
     Loader2
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { startOfWeek } from "date-fns";
 import { TransactionFilters as TransactionFiltersComp } from "@/components/transactions/TransactionFilters";
 import { TransactionGroup } from "@/components/transactions/TransactionGroup";
 import { BulkActionsBar as BulkActionsBarComp } from "@/components/transactions/bulk-actions-bar";
@@ -30,7 +32,7 @@ import { TransactionDrawer } from "@/components/transactions/transaction-drawer"
 import { TransactionFilters } from "@/components/transactions/filter-panel";
 import { VirtualizedTransactionList } from "@/components/transactions/VirtualizedTransactionList";
 
-type SortField = "date" | "amount" | "category";
+type SortField = "date" | "amount" | "category" | "confidence";
 type SortDirection = "asc" | "desc";
 
 function SortableHeader({
@@ -86,6 +88,8 @@ export function TransactionList({
     const [sortField, setSortField] = useState<SortField>("date");
     const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
     const [isRefetching, setIsRefetching] = useState(false);
+    const [viewMode, setViewMode] = useState<"day" | "week">("day");
+    const router = useRouter();
 
     // Debounce search to reduce server calls
     const debouncedSearch = useDebouncedValue(search, 300);
@@ -125,14 +129,18 @@ export function TransactionList({
     }, [refetchTransactions]);
 
     // Handle sorting (client-side for now, can be moved to server later)
+    // Handle sorting (client-side for now, can be moved to server later)
     const handleSort = useCallback((field: SortField) => {
-        if (sortField === field) {
-            setSortDirection(prev => prev === "asc" ? "desc" : "asc");
-        } else {
-            setSortField(field);
-            setSortDirection("desc");
-        }
-    }, [sortField]);
+        setSortField(prevField => {
+            if (prevField === field) {
+                setSortDirection(prevDirection => prevDirection === "asc" ? "desc" : "asc");
+                return prevField;
+            } else {
+                setSortDirection("desc");
+                return field;
+            }
+        });
+    }, []);
 
     // Sort and group transactions (now operating on server-filtered data)
     const sortedTransactions = useMemo(() => {
@@ -148,6 +156,9 @@ export function TransactionList({
                 case "category":
                     comparison = (a.category1 || "").localeCompare(b.category1 || "");
                     break;
+                case "confidence":
+                    comparison = (a.confidence || 0) - (b.confidence || 0);
+                    break;
             }
             return sortDirection === "asc" ? comparison : -comparison;
         });
@@ -156,12 +167,19 @@ export function TransactionList({
 
     const groupedTransactions = useMemo(() => {
         return sortedTransactions.reduce((acc: Record<string, any[]>, tx: any) => {
-            const dateKey = new Date(tx.date).toISOString().split('T')[0];
+            let dateKey;
+            if (viewMode === "week") {
+                // Group by start of week (Monday)
+                dateKey = startOfWeek(new Date(tx.date), { weekStartsOn: 1 }).toISOString().split('T')[0];
+            } else {
+                dateKey = new Date(tx.date).toISOString().split('T')[0];
+            }
+            
             if (!acc[dateKey]) acc[dateKey] = [];
             acc[dateKey].push(tx);
             return acc;
         }, {} as Record<string, any[]>);
-    }, [sortedTransactions]);
+    }, [sortedTransactions, viewMode]);
 
     const sortedDateKeys = useMemo(() => {
         return Object.keys(groupedTransactions).sort((a, b) =>
@@ -255,13 +273,14 @@ export function TransactionList({
                 setTransactions(prev => prev.map(tx =>
                     ids.includes(tx.id) ? { ...tx, needsReview: false } : tx
                 ));
+                router.refresh();
             } else {
                 toast.error(result.error);
             }
         } catch (error) {
             toast.error("Erro ao confirmar transações");
         }
-    }, [selectedIds]);
+    }, [selectedIds, router]);
 
     const handleBulkDelete = useCallback(async () => {
         const ids = Array.from(selectedIds);
@@ -276,13 +295,14 @@ export function TransactionList({
                 setSelectedIds(new Set());
                 // Optimistic update instead of page reload
                 setTransactions(prev => prev.filter(tx => !ids.includes(tx.id)));
+                router.refresh();
             } else {
                 toast.error(result.error);
             }
         } catch (error) {
             toast.error("Erro ao eliminar transações");
         }
-    }, [selectedIds]);
+    }, [selectedIds, router]);
 
     // Fix: Include ALL filters in load more pagination
     const handleLoadMore = useCallback(async () => {
@@ -359,18 +379,21 @@ export function TransactionList({
                 hideCents={hideCents}
                 onToggleHideCents={() => setHideCents(!hideCents)}
                 onExport={handleBulkExport}
+                viewMode={viewMode}
+                onViewModeChange={setViewMode}
             />
 
             {/* Table Header (Desktop Only) */}
-            <div className="hidden md:grid grid-cols-[40px_80px_2.5fr_1fr_1.2fr_1fr_80px] gap-3 px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-wider bg-secondary/50 rounded-t-3xl border border-border backdrop-blur-sm">
+            <div className="hidden md:grid grid-cols-[40px_80px_2.5fr_1fr_2fr_80px_80px] gap-3 px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-wider bg-secondary/50 rounded-t-3xl border border-border backdrop-blur-sm">
                 <div className="flex justify-center">
                     <Checkbox checked={selectedIds.size === transactions.length && transactions.length > 0} onCheckedChange={toggleSelectAll} className="h-4 w-4 rounded border-2" />
                 </div>
                 <SortableHeader field="date" sortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Data</SortableHeader>
                 <div>Estabelecimento</div>
                 <SortableHeader field="amount" sortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Valor</SortableHeader>
-                <SortableHeader field="category" sortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Categoria</SortableHeader>
-                <div>Cat 1 / Cat 2</div>
+                <SortableHeader field="category" sortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Classificação</SortableHeader>
+                {/* Merged Cat1/Cat2 into Classification */}
+                <SortableHeader field="confidence" sortField={sortField} sortDirection={sortDirection} onSort={handleSort}>AI %</SortableHeader>
                 <div className="text-center">Ações</div>
             </div>
 
@@ -386,6 +409,7 @@ export function TransactionList({
                     onEditClick={handleEditClick}
                     onClick={handleRowClick}
                     aliasMap={aliasMap}
+                    viewMode={viewMode}
                 />
             ) : (
                 <div className="bg-card border border-border border-t-0 rounded-b-3xl overflow-hidden shadow-sm">
@@ -396,7 +420,7 @@ export function TransactionList({
                             <p className="text-sm text-muted-foreground font-medium">Atualizando transações...</p>
                         </div>
                     ) : transactions.length === 0 ? (
-                        <div className="text-center py-32 flex flex-col items-center animate-in fade-in zoom-in duration-500">
+                        <div className="text-center py-32 flex flex-col items-center">
                             <div className="w-24 h-24 rounded-[3rem] bg-gradient-to-br from-secondary to-secondary/30 flex items-center justify-center mb-8 shadow-xl text-muted-foreground/40">
                                 <Search className="h-12 w-12" />
                             </div>
@@ -425,6 +449,10 @@ export function TransactionList({
                                 onEditClick={handleEditClick}
                                 onClick={handleRowClick}
                                 aliasMap={aliasMap}
+                                // viewMode prop might not be needed for simple group if headers are handled differently
+                                // but if TransactionGroup renders header, we need it. 
+                                // Let's check TransactionGroup usage. 
+                                // It seems TransactionGroup is used when NOT virtualized (less than 100 items).
                             />
                         ))
                     )}
