@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -35,7 +35,7 @@ export interface TransactionFilters {
   recurring?: boolean;
 }
 
-export function FilterPanel({ onFilterChange, categories = [], accounts = [] }: FilterPanelProps) {
+export const FilterPanel = memo(function FilterPanel({ onFilterChange, categories = [], accounts = [] }: FilterPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [filters, setFilters] = useState<TransactionFilters>({});
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -313,4 +313,11 @@ export function FilterPanel({ onFilterChange, categories = [], accounts = [] }: 
       </PopoverContent>
     </Popover>
   );
-}
+}, (prevProps, nextProps) => {
+  // Only re-render if categories or accounts arrays change
+  return (
+    prevProps.categories === nextProps.categories &&
+    prevProps.accounts === nextProps.accounts &&
+    prevProps.onFilterChange === nextProps.onFilterChange
+  );
+});

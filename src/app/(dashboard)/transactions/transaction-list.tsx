@@ -123,10 +123,24 @@ export function TransactionList({
         }
     }, [debouncedSearch, filters]);
 
+    // Debounced refetch to batch filter changes
+    const debouncedRefetch = useMemo(
+        () => {
+            let timeoutId: NodeJS.Timeout;
+            return () => {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => {
+                    refetchTransactions();
+                }, 300); // 300ms debounce
+            };
+        },
+        [refetchTransactions]
+    );
+
     // Refetch transactions when filters change (server-side filtering)
     useEffect(() => {
-        refetchTransactions();
-    }, [refetchTransactions]);
+        debouncedRefetch();
+    }, [debouncedRefetch]);
 
     // Handle sorting (client-side for now, can be moved to server later)
     // Handle sorting (client-side for now, can be moved to server later)
