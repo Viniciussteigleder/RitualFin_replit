@@ -33,15 +33,15 @@ export default async function SettingsPage() {
 
       <Tabs defaultValue="profile" className="w-full">
         <div className="overflow-x-auto pb-4 -mx-1 px-1">
-          <TabsList className="inline-flex bg-secondary/50 p-1.5 h-auto rounded-[2rem] gap-2 border border-border min-w-full sm:min-w-0">
-            <TabsTrigger value="profile" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-all">Perfil</TabsTrigger>
-            <TabsTrigger value="preferences" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-all">Preferências</TabsTrigger>
-            <TabsTrigger value="assistant" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-all text-amber-600 data-[state=active]:text-amber-600">Assistente</TabsTrigger>
-            <TabsTrigger value="notifications" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-all">Notificações</TabsTrigger>
-            <TabsTrigger value="data" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-all">Dados</TabsTrigger>
-            <TabsTrigger value="security" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-all">Segurança</TabsTrigger>
-            <TabsTrigger value="danger" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-all text-destructive data-[state=active]:text-destructive">Perigo</TabsTrigger>
-          </TabsList>
+	          <TabsList className="inline-flex bg-secondary/50 p-1.5 h-auto rounded-[2rem] gap-2 border border-border min-w-full sm:min-w-0">
+	            <TabsTrigger value="profile" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-[background-color,color,box-shadow,opacity] duration-150">Perfil</TabsTrigger>
+	            <TabsTrigger value="preferences" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-[background-color,color,box-shadow,opacity] duration-150">Preferências</TabsTrigger>
+	            <TabsTrigger value="assistant" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-[background-color,color,box-shadow,opacity] duration-150 text-amber-600 data-[state=active]:text-amber-600">Assistente</TabsTrigger>
+	            <TabsTrigger value="notifications" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-[background-color,color,box-shadow,opacity] duration-150">Notificações</TabsTrigger>
+	            <TabsTrigger value="data" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-[background-color,color,box-shadow,opacity] duration-150">Dados</TabsTrigger>
+	            <TabsTrigger value="security" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-[background-color,color,box-shadow,opacity] duration-150">Segurança</TabsTrigger>
+	            <TabsTrigger value="danger" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest transition-[background-color,color,box-shadow,opacity] duration-150 text-destructive data-[state=active]:text-destructive">Perigo</TabsTrigger>
+	          </TabsList>
         </div>
 
         <div className="mt-10 max-w-3xl">
@@ -67,13 +67,13 @@ export default async function SettingsPage() {
                 <div className="grid gap-6">
                   <div className="space-y-3">
                     <Label htmlFor="name" className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Nome Completo</Label>
-                    <Input id="name" placeholder="Seu nome aqui" className="h-14 bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-all" />
+	                    <Input id="name" placeholder="Seu nome aqui" className="h-14 bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-[background-color,border-color,box-shadow,color,opacity] duration-150" />
                   </div>
                   <div className="space-y-3">
                     <Label htmlFor="email" className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">E-mail</Label>
-                    <Input id="email" type="email" placeholder="email@exemplo.com" className="h-14 bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-all" />
+	                    <Input id="email" type="email" placeholder="email@exemplo.com" className="h-14 bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-[background-color,border-color,box-shadow,color,opacity] duration-150" />
                   </div>
-                  <Button className="w-full h-14 bg-foreground text-background font-bold rounded-2xl mt-4 shadow-xl shadow-foreground/5 hover:opacity-95 transition-all">Salvar Alterações</Button>
+	                  <Button className="w-full h-14 bg-foreground text-background font-bold rounded-2xl mt-4 shadow-xl shadow-foreground/5 hover:opacity-95 transition-[background-color,box-shadow,opacity] duration-150">Salvar Alterações</Button>
                 </div>
               </div>
             </div>
@@ -148,11 +148,11 @@ export default async function SettingsPage() {
                     <Label htmlFor="confirmDelete" className="text-[10px] font-black text-destructive uppercase tracking-widest ml-1">
                       Digite &quot;EXCLUIR&quot; para confirmar
                     </Label>
-                    <Input
-                      id="confirmDelete"
-                      placeholder="EXCLUIR"
-                      className="h-14 bg-destructive/5 border-destructive/20 focus:bg-white dark:focus:bg-card focus:border-destructive/40 focus:ring-4 focus:ring-destructive/5 rounded-2xl transition-all font-bold placeholder:text-destructive/30"
-                    />
+	                    <Input
+	                      id="confirmDelete"
+	                      placeholder="EXCLUIR"
+	                      className="h-14 bg-destructive/5 border-destructive/20 focus:bg-white dark:focus:bg-card focus:border-destructive/40 focus:ring-4 focus:ring-destructive/5 rounded-2xl transition-[background-color,border-color,box-shadow,color,opacity] duration-150 font-bold placeholder:text-destructive/30"
+	                    />
                   </div>
                   <Button variant="destructive" className="w-full h-14 bg-destructive text-white font-bold rounded-2xl shadow-xl shadow-destructive/10 mt-4">
                     Confirmar Exclusão de Dados

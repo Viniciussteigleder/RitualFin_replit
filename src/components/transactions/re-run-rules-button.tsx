@@ -123,9 +123,9 @@ export function ReRunRulesButton() {
         <DialogContent className="sm:max-w-md border-emerald-100 dark:border-emerald-900 shadow-2xl">
             <DialogHeader>
                 <DialogTitle className="flex items-center gap-3 text-xl">
-                    <div className={cn("p-2 rounded-full bg-emerald-100 text-emerald-600 transition-all duration-500", isPending ? "rotate-180" : "")}>
-                         {isPending ? <RefreshCw className="w-6 h-6 animate-spin" /> : <CheckCircle2 className="w-6 h-6" />}
-                    </div>
+	                    <div className={cn("p-2 rounded-full bg-emerald-100 text-emerald-600 transition-[transform,background-color,color] duration-500", isPending ? "rotate-180" : "")}>
+	                         {isPending ? <RefreshCw className="w-6 h-6 animate-spin" /> : <CheckCircle2 className="w-6 h-6" />}
+	                    </div>
                     <span className="font-display tracking-tight text-foreground">Atualizando Inteligência</span>
                 </DialogTitle>
                 <DialogDescription className="text-base pt-2">
@@ -139,10 +139,10 @@ export function ReRunRulesButton() {
                         <span>{Math.round(progress)}%</span>
                     </div>
                     <div className="h-3 bg-secondary rounded-full overflow-hidden border border-border">
-                        <div 
-                            className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-700 ease-out shadow-[0_0_10px_rgba(16,185,129,0.5)]" 
-                            style={{ width: `${progress}%` }}
-                        />
+	                        <div 
+	                            className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-[width] duration-700 ease-out shadow-[0_0_10px_rgba(16,185,129,0.5)]" 
+	                            style={{ width: `${progress}%` }}
+	                        />
                     </div>
                 </div>
                 <div className="bg-secondary/50 p-4 rounded-xl flex gap-3 items-start">

@@ -45,10 +45,10 @@ export default async function RitualsPage() {
         </div>
 
         <div className="flex items-center gap-6">
-          <div className="flex flex-col items-end mr-2 bg-secondary/30 p-4 rounded-3xl border border-border px-6 transition-all duration-300 hover:shadow-md hover:scale-105">
-            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">
-              Sequência Atual
-            </span>
+	          <div className="flex flex-col items-end mr-2 bg-secondary/30 p-4 rounded-3xl border border-border px-6 transition-[box-shadow,transform,background-color,opacity] duration-200 hover:shadow-md hover:scale-105">
+	            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">
+	              Sequência Atual
+	            </span>
             <div className="flex items-center gap-2">
               <span className="text-2xl font-bold text-amber-500 tracking-tighter">
                 {maxStreak} {maxStreak === 1 ? "Dia" : "Dias"}

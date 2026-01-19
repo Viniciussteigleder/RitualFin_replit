@@ -89,7 +89,7 @@ export function AIAnalystChat({ currentScreen = "transactions" }: AIAnalystChatP
     return (
         <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-                 <Button variant="outline" className="h-14 lg:h-auto gap-4 bg-secondary/50 p-4 rounded-3xl border border-border backdrop-blur-sm shadow-sm px-6 hover:bg-secondary cursor-pointer transition-[background-color] duration-150 group">
+	                 <Button variant="outline" className="h-14 lg:h-auto gap-4 bg-secondary/50 p-4 rounded-3xl border border-border shadow-sm px-6 hover:bg-secondary cursor-pointer transition-[background-color] duration-150 group">
                    <div className="flex flex-col items-end mr-2">
                      <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Analista IA</span>
                      <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">Perguntar</span>
@@ -198,9 +198,9 @@ export function AIAnalystChat({ currentScreen = "transactions" }: AIAnalystChatP
 
                 <div className="p-4 border-t border-border bg-background">
                     <form
-                        className="flex items-center gap-2 bg-secondary p-2 rounded-2xl border-2 border-transparent focus-within:border-primary/20 transition-all"
-                        onSubmit={(e) => { e.preventDefault(); handleSend(); }}
-                    >
+	                        className="flex items-center gap-2 bg-secondary p-2 rounded-2xl border-2 border-transparent focus-within:border-primary/20 transition-[border-color,box-shadow] duration-150"
+	                        onSubmit={(e) => { e.preventDefault(); handleSend(); }}
+	                    >
                         <Input
                             className="flex-1 border-none bg-transparent shadow-none focus-visible:ring-0 h-10 font-medium"
                             placeholder="Faça uma pergunta sobre suas finanças..."

@@ -158,7 +158,7 @@ export function TransactionDrawer({
                                 if (onConfirm) onConfirm(transaction.id);
                             }
                         }}
-                        className="flex items-center justify-between p-3 bg-white dark:bg-card border border-amber-200 dark:border-amber-800 rounded-xl hover:border-amber-400 hover:shadow-md transition-all text-left group"
+                        className="flex items-center justify-between p-3 bg-white dark:bg-card border border-amber-200 dark:border-amber-800 rounded-xl hover:border-amber-400 hover:shadow-md transition-[border-color,box-shadow] duration-200 text-left group"
                     >
                         <div>
                             <div className="font-bold text-sm flex items-center gap-2">

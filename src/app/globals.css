@@ -188,6 +188,12 @@
   }
 }
 
+/* -------------------------------------------------------
+   UI performance fixes (flag-gated)
+   Default: enabled
+   Disable via: NEXT_PUBLIC_UI_PERF_FIXES=0 or localStorage.UI_PERF_FIXES="0"
+-------------------------------------------------------- */
+
 @layer utilities {
   .ritual-icon-button {
     /* Dimensions handled by utility classes */
@@ -196,7 +202,9 @@
     align-items: center;
     justify-content: center;
     border: none;
-    transition: all 0.2s;
+    transition-property: filter, box-shadow, transform;
+    transition-duration: 0.2s;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02), 0 1px 0 rgba(0, 0, 0, 0.02);
     background-size: 200% 200%;
@@ -217,7 +225,9 @@
     border-radius: 15px;
     border: 1px solid hsl(var(--border));
     background: hsl(var(--card));
-    transition: all 0.3s;
+    transition-property: transform, border-color, box-shadow;
+    transition-duration: 0.3s;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02), 0 1px 0 rgba(0, 0, 0, 0.02);
   }
 
@@ -243,7 +253,8 @@
   .bg-cat-soft { background-color: color-mix(in srgb, var(--cat-color) 12%, transparent); }
 
   .transition-premium {
-    transition: all 0.3s;
+    transition-property: background-color, color, border-color, box-shadow, opacity, transform;
+    transition-duration: 0.3s;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 

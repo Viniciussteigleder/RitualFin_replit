@@ -31,6 +31,8 @@ import { toast } from "sonner";
 import { TransactionDrawer } from "@/components/transactions/transaction-drawer";
 import { TransactionFilters } from "@/components/transactions/filter-panel";
 import { VirtualizedTransactionList } from "@/components/transactions/VirtualizedTransactionList";
+import { FlickerProfiler } from "@/components/perf/flicker-profiler";
+import { isDebugFlickerEnabledRuntime } from "@/lib/perf/ui-perf-flags";
 
 type SortField = "date" | "amount" | "category" | "confidence";
 type SortDirection = "asc" | "desc";
@@ -91,8 +93,42 @@ export function TransactionList({
     const [viewMode, setViewMode] = useState<"day" | "week">("day");
     const router = useRouter();
 
-    // Prevent automatic scroll on mount/hydration
+    // Debug-only: allow deterministic, local mock data for flicker reproduction in E2E runs
     useEffect(() => {
+        if (!isDebugFlickerEnabledRuntime()) return;
+        if (window.localStorage.getItem("DEBUG_FLICKER_MOCK_DATA") !== "1") return;
+        if (transactions.length > 0) return;
+
+        const now = Date.now();
+        const mock = Array.from({ length: 240 }).map((_, i) => {
+            const d = new Date(now - i * 86400000);
+            const dateKey = d.toISOString();
+            return {
+                id: `mock-${i}`,
+                paymentDate: dateKey,
+                date: dateKey,
+                descRaw: `Mock Transaction ${i}`,
+                descNorm: `Mock Transaction ${i}`,
+                simpleDesc: `Mock ${i}`,
+                amount: i % 2 === 0 ? -(i + 1) * 1.23 : (i + 1) * 2.34,
+                category1: i % 3 === 0 ? "FOOD" : i % 3 === 1 ? "TRANSPORT" : "UTILITIES",
+                confidence: (i % 100) / 100,
+                needsReview: false,
+                manualOverride: false,
+                conflictFlag: false,
+                source: i % 2 === 0 ? "MOCK-A" : "MOCK-B",
+            };
+        });
+        setTransactions(mock as any);
+        setHasMore(false);
+        setNextCursor(null);
+    }, [transactions.length]);
+
+    // NOTE: Avoid forcing scroll position on mount; this can create visible "jump" flicker.
+    // Kept behind the perf flag as a rollback lever in case someone depended on the old behavior.
+    useEffect(() => {
+        const fixesOn = window.localStorage.getItem("UI_PERF_FIXES") === "1" || process.env.NEXT_PUBLIC_UI_PERF_FIXES === "1";
+        if (fixesOn) return;
         window.scrollTo(0, 0);
     }, []); // Run once on mount
 
@@ -386,7 +422,8 @@ export function TransactionList({
     const handleClearFilters = useCallback(() => { setSearch(""); setFilters({}); }, []);
 
     return (
-        <div className="space-y-6 pb-32">
+      <FlickerProfiler id="TransactionList">
+        <div className="space-y-6 pb-32" data-testid="transactions-list">
             <TransactionFiltersComp
                 search={search}
                 onSearchChange={setSearch}
@@ -447,11 +484,11 @@ export function TransactionList({
                             <p className="text-base text-muted-foreground mt-3 font-medium max-w-md mx-auto">
                                 Tente ajustar seus filtros ou remover termos de busca.
                             </p>
-                            <Button
+                              <Button
                                 variant="outline"
-                                className="mt-8 rounded-2xl h-12 px-8 font-bold border-border hover:bg-secondary transition-all"
+                                className="mt-8 rounded-2xl h-12 px-8 font-bold border-border hover:bg-secondary transition-[background-color,color,border-color,box-shadow] duration-150"
                                 onClick={handleClearFilters}
-                            >
+                              >
                                 Limpar Filtros
                             </Button>
                         </div>
@@ -485,7 +522,7 @@ export function TransactionList({
                         variant="outline"
                         onClick={handleLoadMore}
                         disabled={isLoadingMore}
-                        className="rounded-2xl h-12 px-12 font-bold border-border hover:bg-secondary transition-all shadow-sm"
+                        className="rounded-2xl h-12 px-12 font-bold border-border hover:bg-secondary transition-[background-color,color,border-color,box-shadow] duration-150 shadow-sm"
                     >
                         {isLoadingMore ? (
                             <>
@@ -516,5 +553,6 @@ export function TransactionList({
                 onClearSelection={handleClearSelection}
             />
         </div>
+      </FlickerProfiler>
     );
 }

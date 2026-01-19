@@ -61,6 +61,7 @@ export function VirtualizedTransactionList({
       ref={parentRef}
       className="bg-card border border-border border-t-0 rounded-b-3xl overflow-auto shadow-sm"
       style={{ height: "calc(100vh - 400px)", minHeight: "500px" }}
+      data-testid="transactions-virtualized-scroll"
     >
       <div
         style={{

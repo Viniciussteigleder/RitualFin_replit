@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { sendChatMessage } from "@/lib/actions/ai-chat";
 import { SAMPLE_QUESTIONS } from "@/lib/constants/ai-questions";
 import Image from "next/image";
+import { isUiPerfFixesEnabledEnv, uiPerfFixesRuntimeOverride } from "@/lib/perf/ui-perf-flags";
 import { usePathname } from "next/navigation";
 
 type Message = {
@@ -228,13 +229,25 @@ export function FloatingAssistant() {
         );
     };
 
+    const [uiPerfFixes, setUiPerfFixes] = useState(isUiPerfFixesEnabledEnv());
+
+    useEffect(() => {
+        const override = uiPerfFixesRuntimeOverride();
+        if (override === "1") setUiPerfFixes(true);
+        if (override === "0") setUiPerfFixes(false);
+    }, []);
+
     return (
         <>
             {/* Floating Button - Tablet and Desktop */}
             <div className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-40 hidden sm:flex flex-col items-end gap-3">
                 {/* Tooltip hint */}
                 {!open && (
-                    <div className="bg-card/95 backdrop-blur-sm border border-border rounded-2xl px-4 py-2 shadow-xl animate-in fade-in slide-in-from-right-2 duration-500">
+                    <div
+                        className={cn(
+                            "bg-card/95 border border-border rounded-2xl px-4 py-2 shadow-xl animate-in fade-in slide-in-from-right-2 duration-500"
+                        )}
+                    >
                         <div className="flex items-center gap-2 text-sm">
                             <Sparkles className="h-4 w-4 text-amber-500" />
                             <span className="font-medium">Assistente IA</span>
@@ -250,8 +263,10 @@ export function FloatingAssistant() {
                     onClick={() => setOpen(true)}
                     className={cn(
                         "h-16 w-16 rounded-full shadow-2xl relative overflow-hidden group",
-                        "bg-card/90 backdrop-blur-sm border border-border",
-                        "transition-all duration-300 hover:scale-110 hover:shadow-xl",
+                        "bg-card/90 border border-border",
+                        uiPerfFixes
+                            ? "transition-[background-color,box-shadow,transform] duration-200 hover:scale-105 hover:shadow-xl"
+                            : "transition-[background-color,box-shadow,transform] duration-200 hover:scale-105 hover:shadow-xl",
                         "hover:bg-card"
                     )}
                 >
@@ -416,7 +431,7 @@ export function FloatingAssistant() {
                                                 key={i}
                                                 onClick={() => handleSend(question)}
                                                 disabled={isPending}
-                                                className="group px-4 py-3 text-sm font-medium bg-secondary/50 hover:bg-amber-500/10 rounded-xl border border-border hover:border-amber-500/30 transition-all text-left disabled:opacity-50 flex items-center justify-between"
+                                                className="group px-4 py-3 text-sm font-medium bg-secondary/50 hover:bg-amber-500/10 rounded-xl border border-border hover:border-amber-500/30 transition-[background-color,border-color,color,box-shadow,opacity] duration-150 text-left disabled:opacity-50 flex items-center justify-between"
                                             >
                                                 <span>{question}</span>
                                                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-amber-500 transition-colors" />
@@ -457,9 +472,9 @@ export function FloatingAssistant() {
                     </ScrollArea>
 
                     {/* Input Area */}
-                    <div className="p-4 border-t border-border bg-card/50 backdrop-blur-sm">
+                    <div className="p-4 border-t border-border bg-card/50">
                         <form
-                            className="flex items-center gap-2 bg-secondary p-2 rounded-2xl border-2 border-transparent focus-within:border-amber-500/30 focus-within:ring-4 focus-within:ring-amber-500/10 transition-all"
+                            className="flex items-center gap-2 bg-secondary p-2 rounded-2xl border-2 border-transparent focus-within:border-amber-500/30 focus-within:ring-4 focus-within:ring-amber-500/10 transition-[border-color,box-shadow] duration-150"
                             onSubmit={(e) => { e.preventDefault(); handleSend(); }}
                         >
                             <Input
@@ -473,7 +488,7 @@ export function FloatingAssistant() {
                             <Button
                                 size="icon"
                                 className={cn(
-                                    "rounded-xl h-12 w-12 shrink-0 transition-all",
+                                    "rounded-xl h-12 w-12 shrink-0 transition-[background-color,color,box-shadow,transform,opacity] duration-150",
                                     input.trim() && !isPending
                                         ? "bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 shadow-lg"
                                         : ""

@@ -32,11 +32,11 @@ export function DashboardHeader() {
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full xl:w-auto">
           <ReRunRulesButton />
 
-          <div className="flex items-center bg-card rounded-2xl shadow-sm p-1.5 border border-border w-full sm:w-auto justify-between sm:justify-start transition-all duration-300 hover:shadow-md">
-            <button
-                onClick={() => handleMonthChange('prev')}
-                className="p-2 hover:bg-secondary rounded-xl text-muted-foreground transition-all duration-200 hover:scale-110 active:scale-95"
-            >
+	          <div className="flex items-center bg-card rounded-2xl shadow-sm p-1.5 border border-border w-full sm:w-auto justify-between sm:justify-start transition-[box-shadow,border-color,background-color,color,opacity] duration-150 hover:shadow-md">
+	            <button
+	                onClick={() => handleMonthChange('prev')}
+	                className="p-2 hover:bg-secondary rounded-xl text-muted-foreground transition-[background-color,color,transform,opacity] duration-150 hover:scale-110 active:scale-95"
+	            >
               <ChevronLeft className="h-5 w-5" />
             </button>
             <div className="flex items-center justify-center gap-2 px-6 min-w-[140px]">
@@ -45,10 +45,10 @@ export function DashboardHeader() {
                 {format(currentDate, "MMMM yyyy", { locale: pt })}
               </span>
             </div>
-            <button
-                onClick={() => handleMonthChange('next')}
-                className="p-2 hover:bg-secondary rounded-xl text-muted-foreground transition-all duration-200 hover:scale-110 active:scale-95"
-            >
+	            <button
+	                onClick={() => handleMonthChange('next')}
+	                className="p-2 hover:bg-secondary rounded-xl text-muted-foreground transition-[background-color,color,transform,opacity] duration-150 hover:scale-110 active:scale-95"
+	            >
               <ChevronRight className="h-5 w-5" />
             </button>
           </div>

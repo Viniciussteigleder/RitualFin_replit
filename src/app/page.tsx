@@ -185,14 +185,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
              </div>
              
              <div className="space-y-3">
-                 <div className="flex flex-col gap-1 w-full bg-secondary h-2.5 rounded-full overflow-hidden relative">
-                    <div 
-                        className={cn(
-                          "h-full transition-all duration-1000 ease-out",
-                          remainingBudget > 0 ? "bg-primary" : "bg-destructive"
-                        )} 
-                        style={{ width: `${Math.max(0, Math.min((remainingBudget / monthlyGoal) * 100, 100))}%` }}
-                    ></div>
+	                 <div className="flex flex-col gap-1 w-full bg-secondary h-2.5 rounded-full overflow-hidden relative">
+	                    <div 
+	                        className={cn(
+	                          "h-full transition-[width] duration-700 ease-out",
+	                          remainingBudget > 0 ? "bg-primary" : "bg-destructive"
+	                        )} 
+	                        style={{ width: `${Math.max(0, Math.min((remainingBudget / monthlyGoal) * 100, 100))}%` }}
+	                    ></div>
                  </div>
                  <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">
                     <span className="flex items-center gap-2">
@@ -317,8 +317,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                 : "—";
               
               return (
-                <Card key={account.id} className="rounded-2xl bg-card border-border shadow-sm hover:shadow-lg transition-all group overflow-hidden">
-                  <CardContent className="p-5 flex flex-col gap-4">
+	                <Card key={account.id} className="rounded-2xl bg-card border-border shadow-sm hover:shadow-lg transition-[box-shadow,border-color,background-color,opacity] duration-150 group overflow-hidden">
+	                  <CardContent className="p-5 flex flex-col gap-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
                         <AccountLogo

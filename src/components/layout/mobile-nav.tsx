@@ -25,7 +25,7 @@ export function MobileNav() {
         if (item.isCenter) {
           return (
             <div key={item.href} className="relative -top-5">
-              <button className="w-14 h-14 rounded-full bg-primary shadow-lg shadow-primary/40 flex items-center justify-center text-[#111816] hover:scale-105 active:scale-95 transition-all">
+              <button className="w-14 h-14 rounded-full bg-primary shadow-lg shadow-primary/40 flex items-center justify-center text-[#111816] hover:scale-105 active:scale-95 transition-[transform,box-shadow,background-color,opacity] duration-150">
                 <Plus className="h-8 w-8" />
               </button>
             </div>

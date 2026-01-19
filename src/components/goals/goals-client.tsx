@@ -221,12 +221,12 @@ export function GoalsClient({ projection, upcomingEvents, currentMonth }: GoalsC
               </span>
               <span className="text-xs font-bold text-foreground">{confidence}%</span>
             </div>
-            <div className="w-full h-3 bg-secondary rounded-full overflow-hidden shadow-inner">
-              <div
-                className="h-full bg-primary rounded-full transition-all duration-500"
-                style={{ width: `${confidence}%` }}
-              />
-            </div>
+	            <div className="w-full h-3 bg-secondary rounded-full overflow-hidden shadow-inner">
+	              <div
+	                className="h-full bg-primary rounded-full transition-[width] duration-500"
+	                style={{ width: `${confidence}%` }}
+	              />
+	            </div>
           </div>
         </div>
       </div>
@@ -258,13 +258,13 @@ export function GoalsClient({ projection, upcomingEvents, currentMonth }: GoalsC
               </div>
             ))}
             {calendarDays.map((item, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "bg-card min-h-[80px] p-2 flex flex-col relative",
-                  item.day && "hover:bg-secondary/20 transition-all"
-                )}
-              >
+	              <div
+	                key={i}
+	                className={cn(
+	                  "bg-card min-h-[80px] p-2 flex flex-col relative",
+	                  item.day && "hover:bg-secondary/20 transition-[background-color] duration-150"
+	                )}
+	              >
                 {item.day && (
                   <>
                     <span className="text-xs font-bold text-muted-foreground">{item.day}</span>
@@ -307,10 +307,10 @@ export function GoalsClient({ projection, upcomingEvents, currentMonth }: GoalsC
           ) : (
             <div className="flex flex-col gap-4">
               {upcomingEvents.slice(0, 5).map((event) => (
-                <div
-                  key={event.id}
-                  className="bg-card p-6 rounded-2xl border border-border shadow-sm flex items-center justify-between hover:shadow-lg transition-all"
-                >
+	                <div
+	                  key={event.id}
+	                  className="bg-card p-6 rounded-2xl border border-border shadow-sm flex items-center justify-between hover:shadow-lg transition-[box-shadow,border-color,background-color,color,opacity] duration-150"
+	                >
                   <div className="flex items-center gap-4">
                     <div
                       className={cn(
@@ -348,10 +348,10 @@ export function GoalsClient({ projection, upcomingEvents, currentMonth }: GoalsC
           {/* Create Goal Dialog */}
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button
-                variant="ghost"
-                className="w-full py-6 border-2 border-dashed border-border rounded-2xl text-muted-foreground hover:bg-secondary hover:border-primary/30 hover:text-primary transition-all font-bold gap-3"
-              >
+	              <Button
+	                variant="ghost"
+	                className="w-full py-6 border-2 border-dashed border-border rounded-2xl text-muted-foreground hover:bg-secondary hover:border-primary/30 hover:text-primary transition-[background-color,border-color,color,opacity] duration-150 font-bold gap-3"
+	              >
                 <Plus className="h-5 w-5" />
                 Definir Meta do Mês
               </Button>

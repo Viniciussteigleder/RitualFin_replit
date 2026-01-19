@@ -192,12 +192,12 @@ export function BudgetsClient({ budgets, currentMonth }: BudgetsClientProps) {
     <TooltipProvider>
       <div className="flex flex-col gap-8">
         {/* Month Navigation */}
-        <div className="flex items-center justify-between bg-secondary/30 backdrop-blur-sm p-4 rounded-2xl border border-border/50">
-          <Button variant="ghost" size="icon" onClick={() => changeMonth(-1)} className="rounded-xl hover:bg-white/50 transition-all">
+        <div className="flex items-center justify-between bg-secondary/30 p-4 rounded-2xl border border-border/50">
+          <Button variant="ghost" size="icon" onClick={() => changeMonth(-1)} className="rounded-xl hover:bg-white/50 transition-[background-color,color,opacity] duration-150">
             <ChevronLeft className="h-5 w-5" />
           </Button>
           <span className="text-lg font-bold capitalize">{formatMonth(selectedMonth)}</span>
-          <Button variant="ghost" size="icon" onClick={() => changeMonth(1)} className="rounded-xl hover:bg-white/50 transition-all">
+          <Button variant="ghost" size="icon" onClick={() => changeMonth(1)} className="rounded-xl hover:bg-white/50 transition-[background-color,color,opacity] duration-150">
             <ChevronRight className="h-5 w-5" />
           </Button>
         </div>
@@ -207,21 +207,21 @@ export function BudgetsClient({ budgets, currentMonth }: BudgetsClientProps) {
           <TabsList className="bg-secondary/50 p-1 rounded-2xl border border-border h-auto w-full grid grid-cols-3">
             <TabsTrigger
               value="budgets"
-              className="rounded-xl px-4 py-2.5 text-xs font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"
+              className="rounded-xl px-4 py-2.5 text-xs font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm transition-[background-color,color,box-shadow,opacity] duration-150"
             >
               <Target className="h-4 w-4 mr-2" />
               Orçamentos
             </TabsTrigger>
             <TabsTrigger
               value="proposals"
-              className="rounded-xl px-4 py-2.5 text-xs font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"
+              className="rounded-xl px-4 py-2.5 text-xs font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm transition-[background-color,color,box-shadow,opacity] duration-150"
             >
               <Sparkles className="h-4 w-4 mr-2" />
               Sugestões IA
             </TabsTrigger>
             <TabsTrigger
               value="comparison"
-              className="rounded-xl px-4 py-2.5 text-xs font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"
+              className="rounded-xl px-4 py-2.5 text-xs font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm transition-[background-color,color,box-shadow,opacity] duration-150"
             >
               <BarChart3 className="h-4 w-4 mr-2" />
               Comparativo
@@ -233,17 +233,17 @@ export function BudgetsClient({ budgets, currentMonth }: BudgetsClientProps) {
             {/* Summary Cards */}
             {filteredBudgets.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <Card className="p-6 rounded-2xl bg-gradient-to-br from-white to-gray-50/50 border-border/50 hover:shadow-lg transition-all duration-300">
+                <Card className="p-6 rounded-2xl bg-gradient-to-br from-white to-gray-50/50 border-border/50 hover:shadow-lg transition-[box-shadow,border-color,background-color,opacity] duration-150">
                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Total Orçado</p>
                   <p className="text-2xl font-bold tracking-tight">{formatCurrency(totalBudgeted)}</p>
                 </Card>
-                <Card className="p-6 rounded-2xl bg-gradient-to-br from-white to-gray-50/50 border-border/50 hover:shadow-lg transition-all duration-300">
+                <Card className="p-6 rounded-2xl bg-gradient-to-br from-white to-gray-50/50 border-border/50 hover:shadow-lg transition-[box-shadow,border-color,background-color,opacity] duration-150">
                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Total Gasto</p>
                   <p className={cn("text-2xl font-bold tracking-tight", overallPercentage > 100 && "text-destructive")}>
                     {formatCurrency(totalSpent)}
                   </p>
                 </Card>
-                <Card className="p-6 rounded-2xl bg-gradient-to-br from-white to-gray-50/50 border-border/50 hover:shadow-lg transition-all duration-300">
+                <Card className="p-6 rounded-2xl bg-gradient-to-br from-white to-gray-50/50 border-border/50 hover:shadow-lg transition-[box-shadow,border-color,background-color,opacity] duration-150">
                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Status</p>
                   <div className="flex items-center gap-2">
                     <div
@@ -271,7 +271,7 @@ export function BudgetsClient({ budgets, currentMonth }: BudgetsClientProps) {
                   variant="outline"
                   onClick={handleCopyToNext}
                   disabled={isPending}
-                  className="rounded-xl gap-2 hover:bg-white/50 transition-all"
+                  className="rounded-xl gap-2 hover:bg-white/50 transition-[background-color,color,opacity] duration-150"
                 >
                   <Copy className="h-4 w-4" />
                   Copiar para Próximo Mês
@@ -298,7 +298,7 @@ export function BudgetsClient({ budgets, currentMonth }: BudgetsClientProps) {
                     <BudgetDialog
                       mode="create"
                       trigger={
-                        <Button className="h-14 px-10 bg-primary text-white rounded-2xl font-bold transition-all shadow-xl hover:scale-105 active:scale-95">
+                        <Button className="h-14 px-10 bg-primary text-white rounded-2xl font-bold transition-[background-color,box-shadow,transform,opacity] duration-150 shadow-xl hover:scale-105 active:scale-95">
                           <Plus className="h-5 w-5 mr-2" />
                           Criar Orçamento
                         </Button>
@@ -325,13 +325,13 @@ export function BudgetsClient({ budgets, currentMonth }: BudgetsClientProps) {
                   const isNearLimit = percentage > 80 && percentage <= 100;
 
                   return (
-                    <div
-                      key={budget.id}
-                      className={cn(
-                        "bg-card border border-border rounded-[2rem] p-7 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group relative",
-                        isOverBudget && "border-destructive/30 bg-destructive/5"
-                      )}
-                    >
+	                    <div
+	                      key={budget.id}
+	                      className={cn(
+	                        "bg-card border border-border rounded-[2rem] p-7 shadow-sm hover:shadow-xl transition-[box-shadow,border-color,background-color,color,opacity] duration-200 overflow-hidden group relative",
+	                        isOverBudget && "border-destructive/30 bg-destructive/5"
+	                      )}
+	                    >
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div className="flex-1 space-y-5">
                           <div className="flex items-center justify-between">
@@ -397,7 +397,7 @@ export function BudgetsClient({ budgets, currentMonth }: BudgetsClientProps) {
                                 {/* Spent amount */}
                                 <div
                                   className={cn(
-                                    "absolute top-0 left-0 h-full transition-all duration-700 ease-out flex items-center justify-end pr-2",
+                                    "absolute top-0 left-0 h-full transition-[width,opacity] duration-700 ease-out flex items-center justify-end pr-2",
                                     isOverBudget ? "bg-destructive" : isNearLimit ? "bg-orange-400" : "bg-emerald-500"
                                   )}
                                   style={{ width: `${Math.min(percentage, 100)}%` }}
@@ -500,11 +500,11 @@ export function BudgetsClient({ budgets, currentMonth }: BudgetsClientProps) {
 
                   {proposals.categories.map((cat) => (
                     <div
-                      key={cat.category1}
-                      className={cn(
-                        "bg-card border border-border rounded-xl p-5 hover:shadow-md transition-all cursor-pointer",
-                        expandedCategory === cat.category1 && "border-primary/30 ring-1 ring-primary/10"
-                      )}
+	                      key={cat.category1}
+	                      className={cn(
+	                        "bg-card border border-border rounded-xl p-5 hover:shadow-md transition-[box-shadow,border-color,background-color,color,opacity] duration-150 cursor-pointer",
+	                        expandedCategory === cat.category1 && "border-primary/30 ring-1 ring-primary/10"
+	                      )}
                       onClick={() => handleToggleBreakdown(cat.category1)}
                     >
                       <div className="flex items-center justify-between">
@@ -607,11 +607,11 @@ export function BudgetsClient({ budgets, currentMonth }: BudgetsClientProps) {
 
                 {/* Apply Button */}
                 <div className="flex justify-end pt-4">
-                  <Button
-                    onClick={handleApplyProposals}
-                    disabled={applyingProposals}
-                    className="h-12 px-8 bg-primary text-white rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-all"
-                  >
+	                  <Button
+	                    onClick={handleApplyProposals}
+	                    disabled={applyingProposals}
+	                    className="h-12 px-8 bg-primary text-white rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-[background-color,box-shadow,transform,opacity] duration-150"
+	                  >
                     {applyingProposals ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -660,7 +660,7 @@ export function BudgetsClient({ budgets, currentMonth }: BudgetsClientProps) {
                 {comparison.map((row) => (
                   <div
                     key={row.category1}
-                    className="grid grid-cols-4 gap-4 px-4 py-4 bg-card border border-border rounded-xl hover:shadow-md transition-all"
+                    className="grid grid-cols-4 gap-4 px-4 py-4 bg-card border border-border rounded-xl hover:shadow-md transition-[box-shadow,border-color,background-color,color,opacity] duration-150"
                   >
                     <div className="flex items-center gap-2">
                       <Target className="h-4 w-4 text-muted-foreground" />

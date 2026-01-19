@@ -248,10 +248,10 @@ export function RulesManager({ initialRules }: { initialRules: any[] }) {
                 )}
 
                 {filteredRules.map(rule => (
-                    <div key={rule.id} className="group relative bg-card border border-border rounded-[2rem] p-8 shadow-sm hover:shadow-xl hover:border-primary/30 transition-all duration-300 flex flex-col xl:flex-row gap-8 items-start xl:items-center overflow-hidden">
+                    <div key={rule.id} className="group relative bg-card border border-border rounded-[2rem] p-8 shadow-sm hover:shadow-xl hover:border-primary/30 transition-[border-color,box-shadow,background-color,color,opacity] duration-200 flex flex-col xl:flex-row gap-8 items-start xl:items-center overflow-hidden">
                         {/* Status bar on the side */}
                         <div className={cn(
-                            "absolute left-0 top-0 bottom-0 w-1.5 transition-all duration-300",
+                            "absolute left-0 top-0 bottom-0 w-1.5 transition-[background-color,box-shadow,opacity] duration-200",
                             rule.active ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]" : "bg-neutral-500"
                         )} />
 
@@ -313,7 +313,7 @@ export function RulesManager({ initialRules }: { initialRules: any[] }) {
                              <Button 
                                 variant="secondary" 
                                 size="sm" 
-                                className="rounded-xl h-11 px-5 font-bold gap-2 text-xs bg-secondary hover:bg-secondary/70 border border-border/50 transition-all hover:scale-105 active:scale-95" 
+                                className="rounded-xl h-11 px-5 font-bold gap-2 text-xs bg-secondary hover:bg-secondary/70 border border-border/50 transition-[background-color,border-color,color,box-shadow,transform,opacity] duration-150 hover:scale-105 active:scale-95" 
                                 onClick={() => openEdit(rule)}
                              >
                                 <Edit2 className="h-3.5 w-3.5" /> Ajustar
@@ -321,7 +321,7 @@ export function RulesManager({ initialRules }: { initialRules: any[] }) {
                              <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                className="h-11 w-11 text-muted-foreground hover:text-destructive rounded-xl hover:bg-destructive/5 transition-all" 
+                                className="h-11 w-11 text-muted-foreground hover:text-destructive rounded-xl hover:bg-destructive/5 transition-[background-color,color,opacity] duration-150" 
                                 onClick={() => handleDelete(rule.id)}
                              >
                                 <Trash2 className="h-4 w-4" />

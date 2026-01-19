@@ -303,10 +303,10 @@ export default function RulesClient({ initialRules, taxonomyOptions = [] }: Rule
               </Button>
 
               {/* Nova Regra - Navigate to Confirm page */}
-              <Button
-                onClick={() => window.location.href = '/confirm'}
-                className="h-14 px-8 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold rounded-2xl shadow-xl shadow-violet-500/30 gap-2 transition-all"
-              >
+	              <Button
+	                onClick={() => window.location.href = '/confirm'}
+	                className="h-14 px-8 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold rounded-2xl shadow-xl shadow-violet-500/30 gap-2 transition-[background-color,box-shadow,transform,opacity] duration-150"
+	              >
                 <Plus className="h-5 w-5" />
                 Nova Regra
               </Button>
@@ -428,14 +428,14 @@ export default function RulesClient({ initialRules, taxonomyOptions = [] }: Rule
               {!collapsedGroups.has(category) && (
               <div className="space-y-2">
                 {categoryRules.map((rule) => (
-                  <Card
-                    key={rule.id}
-                    className={`rounded-2xl border transition-all duration-300 hover:shadow-lg ${
-                      expandedRule === rule.id
-                        ? "border-violet-300 dark:border-violet-700 shadow-md"
-                        : "border-border hover:border-violet-200 dark:hover:border-violet-800"
-                    }`}
-                  >
+	                  <Card
+	                    key={rule.id}
+	                    className={`rounded-2xl border transition-[box-shadow,border-color,background-color,color,opacity] duration-150 hover:shadow-lg ${
+	                      expandedRule === rule.id
+	                        ? "border-violet-300 dark:border-violet-700 shadow-md"
+	                        : "border-border hover:border-violet-200 dark:hover:border-violet-800"
+	                    }`}
+	                  >
                     <CardContent className="p-6">
                       {/* Compact View */}
                       <div className="flex items-center justify-between gap-4">

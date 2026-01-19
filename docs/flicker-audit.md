@@ -1,0 +1,265 @@
+# Flicker Audit Report
+
+Generated: 2026-01-19T20:25:53.155Z
+
+## Totals (all src/)
+
+- transition-all: 133
+- transition-transform: 28
+- hover:scale: 25
+- backdrop-blur*: 22
+- hover:border-*: 19
+- sticky: 6
+- hover:translate: 3
+
+## Top 10 files by hotspot count
+
+- 21	src/components/budgets/budgets-client.tsx
+- 15	src/components/analytics/analytics-drill-down.tsx
+- 13	src/app/(dashboard)/settings/page.tsx
+- 11	src/components/analytics/analytics-filters.tsx
+- 11	src/components/rituals/rituals-client.tsx
+- 9	src/components/assistant/floating-assistant.tsx
+- 9	src/components/layout/sidebar.tsx
+- 6	src/app/(dashboard)/uploads/forms.tsx
+- 6	src/components/confirm/rule-discovery-card.tsx
+- 6	src/components/dashboard/SpendAveragesChart.tsx
+
+## Occurrences (file:line)
+
+- backdrop-blur*	src/app/(dashboard)/admin/rules/rules-studio-client.tsx:150	<Card className="border-border bg-card/50 backdrop-blur-sm">
+- transition-all	src/app/(dashboard)/admin/rules/rules-studio-client.tsx:171	className="group flex items-center justify-between p-3 rounded-xl border border-border bg-card hover:border-primary/50 hover:bg-primary/5 cursor-pointer transition-all"
+- hover:border-*	src/app/(dashboard)/admin/rules/rules-studio-client.tsx:171	className="group flex items-center justify-between p-3 rounded-xl border border-border bg-card hover:border-primary/50 hover:bg-primary/5 cursor-pointer transition-all"
+- transition-all	src/app/(dashboard)/agenda/agenda-client.tsx:66	"rounded-2xl border-border bg-card shadow-sm hover:shadow-md transition-all group overflow-hidden",
+- hover:border-*	src/app/(dashboard)/agenda/agenda-client.tsx:69	status === 'upcoming' && "hover:border-primary/50"
+- backdrop-blur*	src/app/(dashboard)/analytics/analytics-content.tsx:241	<div className="bg-card/80 backdrop-blur-xl rounded-2xl p-4 shadow-sm border border-border">
+- transition-all	src/app/(dashboard)/analytics/analytics-content.tsx:246	className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-emerald-50/60 transition-all duration-300 text-muted-foreground hover:text-emerald-700 font-bold"
+- transition-all	src/app/(dashboard)/analytics/analytics-content.tsx:257	className="px-3 py-1.5 rounded-lg hover:bg-emerald-50/60 transition-all duration-300 text-muted-foreground hover:text-emerald-700 font-black"
+- transition-all	src/app/(dashboard)/analytics/analytics-content.tsx:267	className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 text-emerald-800 hover:bg-emerald-100/80 transition-all duration-300 font-black shadow-sm"
+- transition-transform	src/app/(dashboard)/analytics/page.tsx:30	<div className="p-3 bg-emerald-500/10 rounded-2xl transition-transform duration-300 hover:scale-110">
+- hover:scale	src/app/(dashboard)/analytics/page.tsx:30	<div className="p-3 bg-emerald-500/10 rounded-2xl transition-transform duration-300 hover:scale-110">
+- transition-transform	src/app/(dashboard)/budgets/page.tsx:28	<div className="p-3 bg-emerald-500/10 rounded-2xl transition-transform duration-300 hover:scale-110">
+- hover:scale	src/app/(dashboard)/budgets/page.tsx:28	<div className="p-3 bg-emerald-500/10 rounded-2xl transition-transform duration-300 hover:scale-110">
+- transition-all	src/app/(dashboard)/calendar/calendar-client.tsx:80	"p-2 border-r border-b border-border last:border-r-0 transition-all group/day cursor-pointer min-h-[120px] relative flex flex-col justify-between",
+- transition-all	src/app/(dashboard)/calendar/calendar-client.tsx:182	<div key={tx.id} className="flex items-center justify-between p-3 bg-secondary/30 rounded-xl border border-transparent hover:border-border transition-all">
+- hover:border-*	src/app/(dashboard)/calendar/calendar-client.tsx:182	<div key={tx.id} className="flex items-center justify-between p-3 bg-secondary/30 rounded-xl border border-transparent hover:border-border transition-all">
+- transition-transform	src/app/(dashboard)/goals/page.tsx:59	<div className="p-3 bg-primary/10 rounded-2xl transition-transform duration-300 hover:scale-110">
+- hover:scale	src/app/(dashboard)/goals/page.tsx:59	<div className="p-3 bg-primary/10 rounded-2xl transition-transform duration-300 hover:scale-110">
+- transition-all	src/app/(dashboard)/imports/[batchId]/preview/page.tsx:110	"rounded-[2.5rem] border-primary/20 bg-primary/5 shadow-none overflow-hidden group transition-all duration-500",
+- transition-transform	src/app/(dashboard)/imports/[batchId]/preview/page.tsx:116	"w-16 h-16 rounded-3xl text-white flex items-center justify-center shadow-xl group-hover:rotate-6 transition-transform",
+- transition-all	src/app/(dashboard)/imports/[batchId]/preview/preview-client.tsx:321	className="rounded-xl font-bold gap-2 px-10 h-12 hover:bg-primary/5 hover:text-primary transition-all"
+- transition-all	src/app/(dashboard)/imports/[batchId]/preview/preview-client.tsx:342	<Button variant="secondary" className="h-16 w-full sm:w-auto px-10 rounded-2xl font-bold text-muted-foreground hover:text-foreground transition-all" asChild>
+- transition-all	src/app/(dashboard)/imports/[batchId]/preview/preview-client.tsx:352	"w-full sm:max-w-md h-16 text-white transition-all rounded-2xl font-bold shadow-2xl gap-3 text-lg border-none",
+- hover:scale	src/app/(dashboard)/imports/[batchId]/preview/preview-client.tsx:355	: "bg-primary hover:scale-105 active:scale-95 shadow-primary/20"
+- transition-transform	src/app/(dashboard)/rituals/page.tsx:35	<div className="p-3 bg-amber-500/10 rounded-2xl transition-transform duration-300 hover:scale-110">
+- hover:scale	src/app/(dashboard)/rituals/page.tsx:35	<div className="p-3 bg-amber-500/10 rounded-2xl transition-transform duration-300 hover:scale-110">
+- transition-all	src/app/(dashboard)/rituals/page.tsx:48	<div className="flex flex-col items-end mr-2 bg-secondary/30 p-4 rounded-3xl border border-border px-6 transition-all duration-300 hover:shadow-md hover:scale-105">
+- hover:scale	src/app/(dashboard)/rituals/page.tsx:48	<div className="flex flex-col items-end mr-2 bg-secondary/30 p-4 rounded-3xl border border-border px-6 transition-all duration-300 hover:shadow-md hover:scale-105">
+- transition-transform	src/app/(dashboard)/rules/page.tsx:28	<div className="p-3 bg-primary/10 rounded-2xl transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 shadow-inner">
+- hover:scale	src/app/(dashboard)/rules/page.tsx:28	<div className="p-3 bg-primary/10 rounded-2xl transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 shadow-inner">
+- transition-all	src/app/(dashboard)/settings/exclusions/exclusions-client.tsx:257	"flex items-center gap-2 px-4 py-2 rounded-lg border transition-all",
+- transition-all	src/app/(dashboard)/settings/exclusions/exclusions-client.tsx:300	"p-4 rounded-xl border bg-card transition-all",
+- transition-all	src/app/(dashboard)/settings/page.tsx:37	<TabsTrigger value="profile" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-wides
+- transition-all	src/app/(dashboard)/settings/page.tsx:38	<TabsTrigger value="preferences" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-w
+- transition-all	src/app/(dashboard)/settings/page.tsx:39	<TabsTrigger value="assistant" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-wid
+- transition-all	src/app/(dashboard)/settings/page.tsx:40	<TabsTrigger value="notifications" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking
+- transition-all	src/app/(dashboard)/settings/page.tsx:41	<TabsTrigger value="data" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest t
+- transition-all	src/app/(dashboard)/settings/page.tsx:42	<TabsTrigger value="security" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-wide
+- transition-all	src/app/(dashboard)/settings/page.tsx:43	<TabsTrigger value="danger" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[11px] font-black uppercase tracking-widest
+- transition-transform	src/app/(dashboard)/settings/page.tsx:53	<div className="w-24 h-24 rounded-2xl bg-secondary flex items-center justify-center text-muted-foreground/30 shadow-inner group-hover:scale-105 transition-transform duration-500">
+- hover:scale	src/app/(dashboard)/settings/page.tsx:53	<div className="w-24 h-24 rounded-2xl bg-secondary flex items-center justify-center text-muted-foreground/30 shadow-inner group-hover:scale-105 transition-transform duration-500">
+- transition-all	src/app/(dashboard)/settings/page.tsx:70	<Input id="name" placeholder="Seu nome aqui" className="h-14 bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl 
+- transition-all	src/app/(dashboard)/settings/page.tsx:74	<Input id="email" type="email" placeholder="email@exemplo.com" className="h-14 bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-prim
+- transition-all	src/app/(dashboard)/settings/page.tsx:76	<Button className="w-full h-14 bg-foreground text-background font-bold rounded-2xl mt-4 shadow-xl shadow-foreground/5 hover:opacity-95 transition-all">Salvar Alterações</Button>
+- transition-all	src/app/(dashboard)/settings/page.tsx:154	className="h-14 bg-destructive/5 border-destructive/20 focus:bg-white dark:focus:bg-card focus:border-destructive/40 focus:ring-4 focus:ring-destructive/5 rounded-2xl transition-all font-bold placehol
+- transition-all	src/app/(dashboard)/uploads/forms.tsx:141	"border-2 border-dashed rounded-2xl p-12 text-center transition-all cursor-pointer group",
+- hover:border-*	src/app/(dashboard)/uploads/forms.tsx:142	isDragging ? "border-primary bg-primary/5 scale-[0.99]" : "border-border hover:border-border/80 hover:bg-secondary/50",
+- transition-all	src/app/(dashboard)/uploads/forms.tsx:180	"p-4 rounded-full bg-secondary text-muted-foreground transition-all group-hover:scale-110 group-hover:bg-primary/10 group-hover:text-primary",
+- hover:scale	src/app/(dashboard)/uploads/forms.tsx:180	"p-4 rounded-full bg-secondary text-muted-foreground transition-all group-hover:scale-110 group-hover:bg-primary/10 group-hover:text-primary",
+- transition-all	src/app/(dashboard)/uploads/forms.tsx:198	<Button variant="outline" className="mt-2 rounded-xl border-border font-bold px-8 shadow-sm group-hover:bg-card group-hover:border-primary group-hover:text-primary transition-all">
+- hover:border-*	src/app/(dashboard)/uploads/forms.tsx:198	<Button variant="outline" className="mt-2 rounded-xl border-border font-bold px-8 shadow-sm group-hover:bg-card group-hover:border-primary group-hover:text-primary transition-all">
+- transition-all	src/app/(dashboard)/uploads/upload-client.tsx:18	className="rounded-2xl px-4 py-3 md:px-10 md:py-4 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[10px] md:text-[11px] font-black uppercase tracking-[
+- transition-all	src/app/(dashboard)/uploads/upload-client.tsx:26	className="rounded-2xl px-4 py-3 md:px-10 md:py-4 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[10px] md:text-[11px] font-black uppercase tracking-[
+- hover:border-*	src/app/(dashboard)/uploads/upload-client.tsx:63	<div className="bg-secondary/40 rounded-[2rem] p-10 border-2 border-dashed border-border group hover:border-primary/50 transition-colors">
+- hover:border-*	src/app/(dashboard)/uploads/upload-client.tsx:92	<div className="bg-secondary/40 rounded-[2rem] p-10 border-2 border-dashed border-border group hover:border-primary/50 transition-colors">
+- transition-all	src/app/page.tsx:191	"h-full transition-all duration-1000 ease-out",
+- transition-all	src/app/page.tsx:320	<Card key={account.id} className="rounded-2xl bg-card border-border shadow-sm hover:shadow-lg transition-all group overflow-hidden">
+- transition-transform	src/app/page.tsx:388	<ArrowRight className="h-3.5 w-3.5 ml-2 group-hover/btn:translate-x-1 transition-transform" />
+- transition-transform	src/components/analytics/analytics-drill-down.tsx:82	<CategoryIcon category={item.category} size="md" className="transition-transform group-hover:scale-105" />
+- hover:scale	src/components/analytics/analytics-drill-down.tsx:82	<CategoryIcon category={item.category} size="md" className="transition-transform group-hover:scale-105" />
+- transition-all	src/components/analytics/analytics-drill-down.tsx:101	className="h-full rounded-full transition-all duration-700 ease-out group-hover:opacity-80"
+- transition-all	src/components/analytics/analytics-drill-down.tsx:114	className="flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-all duration-300 shadow-sm hover:shadow-md flex-shrink-0"
+- backdrop-blur*	src/components/analytics/analytics-drill-down.tsx:142	<div className="bg-card/80 backdrop-blur-xl rounded-3xl p-8 shadow-sm border border-border">
+- transition-all	src/components/analytics/analytics-drill-down.tsx:154	className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-800 rounded-xl hover:bg-emerald-100/80 transition-all duration-300 font-black shadow-sm"
+- transition-all	src/components/analytics/analytics-drill-down.tsx:176	className="group relative flex items-center justify-between p-4 rounded-2xl bg-background/60 border border-border hover:border-emerald-200/60 hover:shadow-sm transition-all duration-300"
+- hover:border-*	src/components/analytics/analytics-drill-down.tsx:176	className="group relative flex items-center justify-between p-4 rounded-2xl bg-background/60 border border-border hover:border-emerald-200/60 hover:shadow-sm transition-all duration-300"
+- hover:border-*	src/components/analytics/analytics-drill-down.tsx:180	<div className="flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-secondary/40 group-hover:bg-emerald-50/60 transition-colors border border-border group-hover:border-emerald-200/60">
+- backdrop-blur*	src/components/analytics/analytics-drill-down.tsx:245	<div className="bg-card/80 backdrop-blur-xl rounded-3xl p-8 shadow-sm border border-border text-center py-16">
+- transition-all	src/components/analytics/analytics-drill-down.tsx:262	<div className="bg-card/80 backdrop-blur-xl rounded-3xl p-8 shadow-sm border border-border hover:shadow-md transition-all duration-500">
+- backdrop-blur*	src/components/analytics/analytics-drill-down.tsx:262	<div className="bg-card/80 backdrop-blur-xl rounded-3xl p-8 shadow-sm border border-border hover:shadow-md transition-all duration-500">
+- transition-all	src/components/analytics/analytics-drill-down.tsx:273	className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-800 rounded-xl hover:bg-emerald-100/80 transition-all duration-300 font-black"
+- transition-all	src/components/analytics/analytics-drill-down.tsx:309	className="hover:opacity-80 transition-all duration-300"
+- backdrop-blur*	src/components/analytics/analytics-drill-down.tsx:339	<div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
+- backdrop-blur*	src/components/analytics/analytics-filters.tsx:81	<div className="bg-card/80 backdrop-blur-xl rounded-3xl shadow-sm border border-border overflow-hidden">
+- transition-all	src/components/analytics/analytics-filters.tsx:85	className="w-full flex items-center justify-between p-6 hover:bg-secondary/30 transition-all duration-300"
+- transition-all	src/components/analytics/analytics-filters.tsx:107	className="flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground hover:text-red-600 hover:bg-red-50/60 rounded-xl transition-all duration-300 font-bold"
+- transition-transform	src/components/analytics/analytics-filters.tsx:114	className={`w-5 h-5 text-muted-foreground transition-transform duration-300 ${
+- transition-all	src/components/analytics/analytics-filters.tsx:139	className="px-4 py-2.5 bg-background border border-border rounded-xl hover:border-emerald-500 hover:bg-emerald-50/50 transition-all duration-300 text-sm font-bold text-foreground hover:text-emerald-80
+- hover:border-*	src/components/analytics/analytics-filters.tsx:139	className="px-4 py-2.5 bg-background border border-border rounded-xl hover:border-emerald-500 hover:bg-emerald-50/50 transition-all duration-300 text-sm font-bold text-foreground hover:text-emerald-80
+- transition-all	src/components/analytics/analytics-filters.tsx:160	className="w-full px-4 py-2.5 border border-border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300 bg-background font-semibold"
+- transition-all	src/components/analytics/analytics-filters.tsx:175	className="w-full px-4 py-2.5 border border-border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300 bg-background font-semibold"
+- transition-all	src/components/analytics/analytics-filters.tsx:188	className="w-full px-4 py-2.5 border border-border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300 bg-background font-semibold appearance-none curso
+- transition-all	src/components/analytics/analytics-filters.tsx:215	"flex-1 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200",
+- transition-all	src/components/analytics/analytics-filters.tsx:243	"flex-1 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200",
+- backdrop-blur*	src/components/analytics/analytics-insights.tsx:11	<div className="rounded-2xl border border-border bg-background/95 backdrop-blur-sm shadow-xl px-4 py-3">
+- backdrop-blur*	src/components/analytics/analytics-insights.tsx:28	<div className="bg-card/80 backdrop-blur-xl rounded-3xl shadow-sm border border-border overflow-hidden">
+- backdrop-blur*	src/components/analytics/analytics-insights.tsx:76	<div className="bg-card/80 backdrop-blur-xl rounded-3xl shadow-sm border border-border overflow-hidden">
+- transition-all	src/components/analytics/analytics-insights.tsx:89	className="group flex flex-col gap-3 p-4 rounded-2xl bg-background/60 border border-border hover:border-emerald-200/60 hover:shadow-sm transition-all duration-300"
+- hover:border-*	src/components/analytics/analytics-insights.tsx:89	className="group flex flex-col gap-3 p-4 rounded-2xl bg-background/60 border border-border hover:border-emerald-200/60 hover:shadow-sm transition-all duration-300"
+- backdrop-blur*	src/components/assistant/floating-assistant.tsx:249	!uiPerfFixes && "backdrop-blur-sm"
+- transition-all	src/components/assistant/floating-assistant.tsx:268	uiPerfFixes ? "transition-[background-color,box-shadow,transform] duration-200 hover:scale-105 hover:shadow-xl" : "backdrop-blur-sm transition-all duration-300 hover:scale-110 hover:shadow-xl",
+- backdrop-blur*	src/components/assistant/floating-assistant.tsx:268	uiPerfFixes ? "transition-[background-color,box-shadow,transform] duration-200 hover:scale-105 hover:shadow-xl" : "backdrop-blur-sm transition-all duration-300 hover:scale-110 hover:shadow-xl",
+- hover:scale	src/components/assistant/floating-assistant.tsx:268	uiPerfFixes ? "transition-[background-color,box-shadow,transform] duration-200 hover:scale-105 hover:shadow-xl" : "backdrop-blur-sm transition-all duration-300 hover:scale-110 hover:shadow-xl",
+- transition-all	src/components/assistant/floating-assistant.tsx:433	className="group px-4 py-3 text-sm font-medium bg-secondary/50 hover:bg-amber-500/10 rounded-xl border border-border hover:border-amber-500/30 transition-all text-left disabled:opacity-50 flex items-c
+- hover:border-*	src/components/assistant/floating-assistant.tsx:433	className="group px-4 py-3 text-sm font-medium bg-secondary/50 hover:bg-amber-500/10 rounded-xl border border-border hover:border-amber-500/30 transition-all text-left disabled:opacity-50 flex items-c
+- backdrop-blur*	src/components/assistant/floating-assistant.tsx:474	<div className={cn("p-4 border-t border-border bg-card/50", !uiPerfFixes && "backdrop-blur-sm")}>
+- transition-all	src/components/assistant/floating-assistant.tsx:476	className="flex items-center gap-2 bg-secondary p-2 rounded-2xl border-2 border-transparent focus-within:border-amber-500/30 focus-within:ring-4 focus-within:ring-amber-500/10 transition-all"
+- transition-all	src/components/assistant/floating-assistant.tsx:490	"rounded-xl h-12 w-12 shrink-0 transition-all",
+- transition-all	src/components/budgets/budget-dialog.tsx:119	<Button className="h-14 px-8 bg-foreground text-background hover:scale-105 transition-all rounded-2xl font-bold shadow-xl shadow-foreground/5 gap-2">
+- hover:scale	src/components/budgets/budget-dialog.tsx:119	<Button className="h-14 px-8 bg-foreground text-background hover:scale-105 transition-all rounded-2xl font-bold shadow-xl shadow-foreground/5 gap-2">
+- backdrop-blur*	src/components/budgets/budgets-client.tsx:195	<div className="flex items-center justify-between bg-secondary/30 backdrop-blur-sm p-4 rounded-2xl border border-border/50">
+- transition-all	src/components/budgets/budgets-client.tsx:196	<Button variant="ghost" size="icon" onClick={() => changeMonth(-1)} className="rounded-xl hover:bg-white/50 transition-all">
+- transition-all	src/components/budgets/budgets-client.tsx:200	<Button variant="ghost" size="icon" onClick={() => changeMonth(1)} className="rounded-xl hover:bg-white/50 transition-all">
+- transition-all	src/components/budgets/budgets-client.tsx:210	className="rounded-xl px-4 py-2.5 text-xs font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"
+- transition-all	src/components/budgets/budgets-client.tsx:217	className="rounded-xl px-4 py-2.5 text-xs font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"
+- transition-all	src/components/budgets/budgets-client.tsx:224	className="rounded-xl px-4 py-2.5 text-xs font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"
+- transition-all	src/components/budgets/budgets-client.tsx:236	<Card className="p-6 rounded-2xl bg-gradient-to-br from-white to-gray-50/50 border-border/50 hover:shadow-lg transition-all duration-300">
+- transition-all	src/components/budgets/budgets-client.tsx:240	<Card className="p-6 rounded-2xl bg-gradient-to-br from-white to-gray-50/50 border-border/50 hover:shadow-lg transition-all duration-300">
+- transition-all	src/components/budgets/budgets-client.tsx:246	<Card className="p-6 rounded-2xl bg-gradient-to-br from-white to-gray-50/50 border-border/50 hover:shadow-lg transition-all duration-300">
+- transition-all	src/components/budgets/budgets-client.tsx:274	className="rounded-xl gap-2 hover:bg-white/50 transition-all"
+- transition-all	src/components/budgets/budgets-client.tsx:301	<Button className="h-14 px-10 bg-primary text-white rounded-2xl font-bold transition-all shadow-xl hover:scale-105 active:scale-95">
+- hover:scale	src/components/budgets/budgets-client.tsx:301	<Button className="h-14 px-10 bg-primary text-white rounded-2xl font-bold transition-all shadow-xl hover:scale-105 active:scale-95">
+- transition-all	src/components/budgets/budgets-client.tsx:331	"bg-card border border-border rounded-[2rem] p-7 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group relative",
+- transition-transform	src/components/budgets/budgets-client.tsx:341	"w-11 h-11 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110",
+- hover:scale	src/components/budgets/budgets-client.tsx:341	"w-11 h-11 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110",
+- transition-all	src/components/budgets/budgets-client.tsx:400	"absolute top-0 left-0 h-full transition-all duration-700 ease-out flex items-center justify-end pr-2",
+- transition-all	src/components/budgets/budgets-client.tsx:505	"bg-card border border-border rounded-xl p-5 hover:shadow-md transition-all cursor-pointer",
+- transition-transform	src/components/budgets/budgets-client.tsx:519	"h-4 w-4 text-muted-foreground transition-transform duration-300",
+- transition-all	src/components/budgets/budgets-client.tsx:613	className="h-12 px-8 bg-primary text-white rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-all"
+- hover:scale	src/components/budgets/budgets-client.tsx:613	className="h-12 px-8 bg-primary text-white rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-all"
+- transition-all	src/components/budgets/budgets-client.tsx:663	className="grid grid-cols-4 gap-4 px-4 py-4 bg-card border border-border rounded-xl hover:shadow-md transition-all"
+- backdrop-blur*	src/components/confirm/confirm-tabs.tsx:244	<TabsList className="w-full justify-start gap-2 rounded-3xl p-2 bg-card/70 border border-border shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/50">
+- transition-all	src/components/confirm/rule-discovery-card.tsx:254	<div className="bg-card border border-border/60 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300 group relative overflow-hidden">
+- transition-all	src/components/confirm/rule-discovery-card.tsx:367	"flex-1 py-2 px-3 text-sm font-medium transition-all flex items-center justify-center gap-1",
+- transition-all	src/components/confirm/rule-discovery-card.tsx:380	"flex-1 py-2 px-3 text-sm font-medium transition-all flex items-center justify-center gap-1",
+- transition-all	src/components/confirm/rule-discovery-card.tsx:400	"flex-1 py-2 px-3 text-sm font-medium transition-all flex items-center justify-center gap-1",
+- transition-all	src/components/confirm/rule-discovery-card.tsx:413	"flex-1 py-2 px-3 text-sm font-medium transition-all flex items-center justify-center gap-1",
+- transition-all	src/components/confirm/rule-discovery-card.tsx:522	"h-11 px-8 font-bold transition-all duration-300 shadow-md rounded-xl",
+- backdrop-blur*	src/components/dashboard/CategoryChart.tsx:31	<div className="rounded-2xl border border-border bg-background/95 backdrop-blur-sm shadow-xl px-4 py-3">
+- transition-all	src/components/dashboard/CategoryChart.tsx:86	className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${viewLimit === opt ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground
+- transition-transform	src/components/dashboard/CategoryChart.tsx:145	<CategoryIcon category={item.name} size="md" className="transition-transform group-hover:scale-110" />
+- hover:scale	src/components/dashboard/CategoryChart.tsx:145	<CategoryIcon category={item.name} size="md" className="transition-transform group-hover:scale-110" />
+- transition-all	src/components/dashboard/CategoryChart.tsx:156	className="h-full rounded-full transition-all duration-1000"
+- transition-all	src/components/dashboard/DashboardHeader.tsx:35	<div className="flex items-center bg-card rounded-2xl shadow-sm p-1.5 border border-border w-full sm:w-auto justify-between sm:justify-start transition-all duration-300 hover:shadow-md">
+- transition-all	src/components/dashboard/DashboardHeader.tsx:38	className="p-2 hover:bg-secondary rounded-xl text-muted-foreground transition-all duration-200 hover:scale-110 active:scale-95"
+- hover:scale	src/components/dashboard/DashboardHeader.tsx:38	className="p-2 hover:bg-secondary rounded-xl text-muted-foreground transition-all duration-200 hover:scale-110 active:scale-95"
+- transition-all	src/components/dashboard/DashboardHeader.tsx:50	className="p-2 hover:bg-secondary rounded-xl text-muted-foreground transition-all duration-200 hover:scale-110 active:scale-95"
+- hover:scale	src/components/dashboard/DashboardHeader.tsx:50	className="p-2 hover:bg-secondary rounded-xl text-muted-foreground transition-all duration-200 hover:scale-110 active:scale-95"
+- transition-all	src/components/dashboard/ForecastCard.tsx:22	<Card className="rounded-[2rem] border-border bg-foreground text-background shadow-xl hover:-translate-y-1 transition-all overflow-hidden relative">
+- hover:translate	src/components/dashboard/ForecastCard.tsx:22	<Card className="rounded-[2rem] border-border bg-foreground text-background shadow-xl hover:-translate-y-1 transition-all overflow-hidden relative">
+- backdrop-blur*	src/components/dashboard/ForecastCard.tsx:28	<div className="bg-white/10 backdrop-blur-sm p-1 rounded-xl flex items-center">
+- transition-all	src/components/dashboard/ForecastCard.tsx:31	className={`px-3 py-1 rounded-lg text-[10px] font-bold transition-all ${view === "daily" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+- transition-all	src/components/dashboard/ForecastCard.tsx:37	className={`px-3 py-1 rounded-lg text-[10px] font-bold transition-all ${view === "weekly" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+- backdrop-blur*	src/components/dashboard/QuickReviewCard.tsx:46	<Badge variant="outline" className="bg-secondary/50 backdrop-blur-sm border-primary/20 text-[10px] font-black uppercase tracking-widest gap-1 px-3 py-1">
+- backdrop-blur*	src/components/dashboard/QuickReviewCard.tsx:85	<div className="flex flex-col items-center gap-2 mt-4 bg-secondary/30 px-6 py-4 rounded-3xl border border-border/50 backdrop-blur-sm">
+- transition-all	src/components/dashboard/QuickReviewCard.tsx:100	className="flex-1 h-16 rounded-2xl border-border hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all font-bold gap-2 text-base"
+- hover:border-*	src/components/dashboard/QuickReviewCard.tsx:100	className="flex-1 h-16 rounded-2xl border-border hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all font-bold gap-2 text-base"
+- transition-all	src/components/dashboard/QuickReviewCard.tsx:107	className="flex-1 h-16 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 text-base shadow-lg shadow-emerald-500/20 active:scale-95 transition-all"
+- transition-transform	src/components/dashboard/QuickReviewFeed.tsx:94	<ArrowRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+- hover:translate	src/components/dashboard/QuickReviewFeed.tsx:94	<ArrowRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+- backdrop-blur*	src/components/dashboard/SpendAveragesChart.tsx:22	<div className="rounded-2xl border border-border bg-background/95 backdrop-blur-sm shadow-xl px-4 py-3">
+- transition-all	src/components/dashboard/SpendAveragesChart.tsx:114	"px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all",
+- transition-all	src/components/dashboard/SpendAveragesChart.tsx:135	"px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all",
+- transition-all	src/components/dashboard/SpendAveragesChart.tsx:150	"px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all",
+- transition-all	src/components/dashboard/SpendAveragesChart.tsx:179	"h-10 px-4 rounded-2xl border text-[10px] font-black uppercase tracking-widest transition-all",
+- transition-all	src/components/dashboard/SpendAveragesChart.tsx:198	"px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all",
+- transition-all	src/components/dashboard/recent-transactions-list.tsx:32	className="flex items-center justify-between group/item cursor-pointer hover:bg-secondary p-4 rounded-3xl transition-all duration-300"
+- transition-all	src/components/goals/goals-client.tsx:226	className="h-full bg-primary rounded-full transition-all duration-500"
+- transition-all	src/components/goals/goals-client.tsx:265	item.day && "hover:bg-secondary/20 transition-all"
+- transition-all	src/components/goals/goals-client.tsx:312	className="bg-card p-6 rounded-2xl border border-border shadow-sm flex items-center justify-between hover:shadow-lg transition-all"
+- transition-all	src/components/goals/goals-client.tsx:353	className="w-full py-6 border-2 border-dashed border-border rounded-2xl text-muted-foreground hover:bg-secondary hover:border-primary/30 hover:text-primary transition-all font-bold gap-3"
+- hover:border-*	src/components/goals/goals-client.tsx:353	className="w-full py-6 border-2 border-dashed border-border rounded-2xl text-muted-foreground hover:bg-secondary hover:border-primary/30 hover:text-primary transition-all font-bold gap-3"
+- transition-all	src/components/imports/import-wizard.tsx:87	"flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all",
+- transition-all	src/components/layout/mobile-nav.tsx:28	<button className="w-14 h-14 rounded-full bg-primary shadow-lg shadow-primary/40 flex items-center justify-center text-[#111816] hover:scale-105 active:scale-95 transition-all">
+- hover:scale	src/components/layout/mobile-nav.tsx:28	<button className="w-14 h-14 rounded-full bg-primary shadow-lg shadow-primary/40 flex items-center justify-center text-[#111816] hover:scale-105 active:scale-95 transition-all">
+- transition-all	src/components/layout/sidebar.tsx:84	"flex items-center justify-between px-3 py-2 rounded-xl transition-all group focus-ring relative overflow-hidden",
+- transition-transform	src/components/layout/sidebar.tsx:98	className={cn("transition-transform group-hover:scale-[1.05]", "w-8 h-8 rounded-lg shadow-sm")} // 32px box
+- transition-transform	src/components/layout/sidebar.tsx:147	"fixed md:sticky top-0 left-0 z-50 h-screen bg-sidebar border-r border-border transition-transform duration-300 ease-in-out md:translate-x-0 w-72 p-6 flex flex-col justify-between",
+- sticky	src/components/layout/sidebar.tsx:147	"fixed md:sticky top-0 left-0 z-50 h-screen bg-sidebar border-r border-border transition-transform duration-300 ease-in-out md:translate-x-0 w-72 p-6 flex flex-col justify-between",
+- transition-all	src/components/layout/sidebar.tsx:248	"flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-muted-foreground hover:bg-secondary hover:text-foreground font-medium group text-sm focus-ring",
+- transition-transform	src/components/layout/sidebar.tsx:252	<Settings className="h-5 w-5 text-muted-foreground/60 group-hover:text-foreground group-hover:rotate-45 transition-transform" />
+- transition-all	src/components/layout/sidebar.tsx:257	className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-muted-foreground hover:bg-destructive/10 hover:text-destructive font-medium group text-sm w-full text-left focus-ring"
+- transition-transform	src/components/layout/sidebar.tsx:259	<LogOut className="h-5 w-5 text-muted-foreground/60 group-hover:text-destructive group-hover:-translate-x-1 transition-transform" />
+- hover:translate	src/components/layout/sidebar.tsx:259	<LogOut className="h-5 w-5 text-muted-foreground/60 group-hover:text-destructive group-hover:-translate-x-1 transition-transform" />
+- sticky	src/components/perf/flicker-instrumentation.tsx:147	'[data-testid="transactions-sticky-date-header"]',
+- sticky	src/components/perf/flicker-instrumentation.tsx:178	stickyInsideTransformedAncestor: style.position === "sticky" && Boolean(transformedAncestor),
+- transition-all	src/components/rituals/rituals-client.tsx:223	"flex items-center justify-between p-4 rounded-xl border transition-all",
+- transition-all	src/components/rituals/rituals-client.tsx:287	"flex items-center justify-between p-4 rounded-xl border group/goal transition-all shadow-sm",
+- transition-all	src/components/rituals/rituals-client.tsx:297	"w-5 h-5 rounded-md flex items-center justify-center transition-all border",
+- hover:border-*	src/components/rituals/rituals-client.tsx:298	goal.completed ? "bg-emerald-500 border-emerald-500 text-white" : "border-muted-foreground/30 hover:border-primary"
+- transition-all	src/components/rituals/rituals-client.tsx:303	<span className={cn("font-medium text-sm transition-all", goal.completed && "text-muted-foreground line-through")}>
+- transition-all	src/components/rituals/rituals-client.tsx:309	className="opacity-0 group-hover/goal:opacity-100 p-1.5 hover:bg-red-500/10 hover:text-red-500 rounded-lg text-muted-foreground transition-all"
+- transition-all	src/components/rituals/rituals-client.tsx:357	<Card className="rounded-[2.5rem] bg-card border-border shadow-sm overflow-hidden group hover:shadow-lg transition-all duration-500">
+- transition-transform	src/components/rituals/rituals-client.tsx:362	"w-24 h-24 rounded-[2rem] flex items-center justify-center shrink-0 transition-transform group-hover:rotate-6",
+- transition-all	src/components/rituals/rituals-client.tsx:380	<button className="p-2 hover:bg-secondary rounded-xl text-muted-foreground transition-all">
+- transition-all	src/components/rituals/rituals-client.tsx:480	className="h-16 px-10 bg-primary text-white font-bold rounded-2xl shadow-xl shadow-primary/20 hover:scale-105 transition-all text-base gap-3"
+- hover:scale	src/components/rituals/rituals-client.tsx:480	className="h-16 px-10 bg-primary text-white font-bold rounded-2xl shadow-xl shadow-primary/20 hover:scale-105 transition-all text-base gap-3"
+- transition-all	src/components/rules/rules-manager.tsx:251	<div key={rule.id} className="group relative bg-card border border-border rounded-[2rem] p-8 shadow-sm hover:shadow-xl hover:border-primary/30 transition-all duration-300 flex flex-col xl:flex-row gap
+- hover:border-*	src/components/rules/rules-manager.tsx:251	<div key={rule.id} className="group relative bg-card border border-border rounded-[2rem] p-8 shadow-sm hover:shadow-xl hover:border-primary/30 transition-all duration-300 flex flex-col xl:flex-row gap
+- transition-all	src/components/rules/rules-manager.tsx:254	"absolute left-0 top-0 bottom-0 w-1.5 transition-all duration-300",
+- transition-all	src/components/rules/rules-manager.tsx:316	className="rounded-xl h-11 px-5 font-bold gap-2 text-xs bg-secondary hover:bg-secondary/70 border border-border/50 transition-all hover:scale-105 active:scale-95"
+- hover:scale	src/components/rules/rules-manager.tsx:316	className="rounded-xl h-11 px-5 font-bold gap-2 text-xs bg-secondary hover:bg-secondary/70 border border-border/50 transition-all hover:scale-105 active:scale-95"
+- transition-all	src/components/rules/rules-manager.tsx:324	className="h-11 w-11 text-muted-foreground hover:text-destructive rounded-xl hover:bg-destructive/5 transition-all"
+- transition-all	src/components/settings/assistant-settings-form.tsx:144	className="min-h-[200px] bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-all resize-none font-mono
+- transition-all	src/components/settings/assistant-settings-form.tsx:186	className="min-h-[120px] bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-all resize-none font-mono
+- transition-all	src/components/settings/assistant-settings-form.tsx:215	className="min-h-[120px] bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-all resize-none font-mono
+- transition-all	src/components/settings/assistant-settings-form.tsx:244	className="min-h-[120px] bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-all resize-none font-mono
+- transition-all	src/components/settings/assistant-settings-form.tsx:313	className="h-14 bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-all"
+- transition-all	src/components/settings/assistant-settings-form.tsx:368	className="flex-1 h-14 bg-foreground text-background font-bold rounded-2xl shadow-xl shadow-foreground/5 hover:opacity-95 transition-all"
+- transition-all	src/components/settings/rules-client.tsx:308	className="h-14 px-8 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold rounded-2xl shadow-xl shadow-violet-500/30 gap-2 transition-all"
+- transition-all	src/components/settings/rules-client.tsx:433	className={`rounded-2xl border transition-all duration-300 hover:shadow-lg ${
+- hover:border-*	src/components/settings/rules-client.tsx:436	: "border-border hover:border-violet-200 dark:hover:border-violet-800"
+- transition-transform	src/components/transactions/AIAnalystChat.tsx:98	<div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center border-2 border-background transition-transform duration-150"><Sparkles className="h-4 w-4 text-emerald-500" /
+- sticky	src/components/transactions/TransactionGroup.tsx:37	className="bg-secondary/80 px-6 py-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest sticky top-0 z-10 border-y border-border/50"
+- sticky	src/components/transactions/TransactionGroup.tsx:38	data-testid="transactions-sticky-date-header"
+- transition-transform	src/components/transactions/transaction-detail-content.tsx:350	<CheckCircle2 className="h-7 w-7 transition-transform group-hover:scale-110" />
+- hover:scale	src/components/transactions/transaction-detail-content.tsx:350	<CheckCircle2 className="h-7 w-7 transition-transform group-hover:scale-110" />
+- hover:border-*	src/components/transactions/transaction-drawer.tsx:161	className="flex items-center justify-between p-3 bg-white dark:bg-card border border-amber-200 dark:border-amber-800 rounded-xl hover:border-amber-400 hover:shadow-md transition-[border-color,box-shad
+- transition-all	src/components/ui/accordion.tsx:29	"flex flex-1 items-center justify-between py-4 text-sm font-medium transition-all hover:underline text-left [&[data-state=open]>svg]:rotate-180",
+- transition-transform	src/components/ui/accordion.tsx:35	<ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
+- transition-transform	src/components/ui/animated.tsx:116	scale: "hover:scale-[1.02] transition-transform duration-300",
+- transition-transform	src/components/ui/animated.tsx:180	"inline-block transition-transform duration-150",
+- transition-all	src/components/ui/animated.tsx:221	"h-full rounded-full transition-all duration-700 ease-out",
+- transition-all	src/components/ui/animated.tsx:287	"transition-all duration-500 ease-out",
+- transition-all	src/components/ui/category-badge.tsx:46	"inline-flex items-center rounded-lg font-semibold uppercase tracking-wide transition-all",
+- transition-all	src/components/ui/category-badge.tsx:65	"inline-flex items-center rounded-lg font-semibold uppercase tracking-wide border-2 bg-transparent transition-all",
+- transition-all	src/components/ui/category-badge.tsx:84	"inline-flex items-center rounded-lg font-semibold uppercase tracking-wide transition-all",
+- backdrop-blur*	src/components/ui/category-icon.tsx:46	"bg-white/70 dark:bg-white/5 backdrop-blur-sm overflow-hidden",
+- transition-transform	src/components/ui/empty-state.tsx:133	<div className="w-20 h-20 bg-secondary/50 rounded-[2rem] flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 transition-transform duration-300">
+- hover:scale	src/components/ui/empty-state.tsx:133	<div className="w-20 h-20 bg-secondary/50 rounded-[2rem] flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 transition-transform duration-300">
+- transition-all	src/components/ui/empty-state.tsx:154	<Button className="h-12 px-8 rounded-xl font-bold gap-2 shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all">
+- hover:scale	src/components/ui/empty-state.tsx:154	<Button className="h-12 px-8 rounded-xl font-bold gap-2 shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all">
+- transition-all	src/components/ui/empty-state.tsx:162	className="h-12 px-8 rounded-xl font-bold gap-2 shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+- hover:scale	src/components/ui/empty-state.tsx:162	className="h-12 px-8 rounded-xl font-bold gap-2 shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+- transition-all	src/components/ui/input-otp.tsx:42	"relative flex h-9 w-9 items-center justify-center border-y border-r border-input text-sm shadow-sm transition-all first:rounded-l-md first:border-l last:rounded-r-md",
+- transition-all	src/components/ui/progress.tsx:21	className="h-full w-full flex-1 bg-primary transition-all"
+- transition-all	src/components/ui/sidebar.tsx:304	"hover:after:bg-sidebar-border absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 transition-all ease-linear group-data-[side=left]:-right-4 group-data-[side=right]:left-0 after:absolute after:inset-
+- transition-transform	src/components/ui/sidebar.tsx:439	"text-sidebar-foreground ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground absolute top-3.5 right-3 flex aspect-square w-5 items-center justify-center rounded-md p-0 outli
+- transition-transform	src/components/ui/sidebar.tsx:574	"text-sidebar-foreground ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground peer-hover/menu-button:text-sidebar-accent-foreground absolute top-1.5 right-1 flex aspect-squar
+- transition-all	src/components/ui/status-banner.tsx:65	"flex items-center gap-3 px-4 py-3 rounded-lg border text-sm font-medium transition-all animate-in fade-in slide-in-from-top-2 duration-300",
+- transition-transform	src/components/ui/switch.tsx:20	"pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0"
+- transition-all	src/components/ui/tabs.tsx:30	"inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:
+- transition-all	src/components/ui/toast.tsx:26	"group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-6 pr-8 shadow-lg transition-all data-[swipe=cancel]:translate-x-0 data-[swipe
+- hover:border-*	src/components/ui/toast.tsx:63	"inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium ring-offset-background transition-colors hover:bg-secondary focus:outline-none focus:rin
+- backdrop-blur*	src/lib/design-tokens.ts:143	glass: 'bg-card/80 backdrop-blur-md border border-border/50 shadow-lg',
+- sticky	src/lib/design-tokens.ts:172	sticky: 1100,

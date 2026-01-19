@@ -42,6 +42,8 @@ export const TransactionRow = memo(function TransactionRow({
                 isCompact ? "px-4 py-2 md:px-6" : "px-4 py-4 md:px-6",
                 isSelected && "bg-primary/5 border-l-4 border-l-primary"
             )}
+            data-testid="transaction-row"
+            data-txid={transaction.id}
             onClick={() => onClick(transaction)}
         >
             {/* Column: Checkbox */}

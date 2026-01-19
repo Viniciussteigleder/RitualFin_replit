@@ -62,7 +62,7 @@ export function StatusBanner({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 px-4 py-3 rounded-lg border text-sm font-medium transition-all animate-in fade-in slide-in-from-top-2 duration-300",
+        "flex items-center gap-3 px-4 py-3 rounded-lg border text-sm font-medium transition-[opacity,transform] duration-300 animate-in fade-in slide-in-from-top-2",
         config.bg,
         config.border,
         config.text,

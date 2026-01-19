@@ -33,7 +33,10 @@ export function TransactionGroup({
 
     return (
         <div className="contents">
-            <div className="bg-secondary/80 px-6 py-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest sticky top-0 z-10 border-y border-border/50">
+            <div
+                className="bg-secondary/80 px-6 py-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest sticky top-0 z-10 border-y border-border/50"
+                data-testid="transactions-sticky-date-header"
+            >
                 {displayDate}
             </div>
             {transactions.map((tx) => (

@@ -238,12 +238,12 @@ export function AnalyticsContent() {
         <TabsContent value="drilldown" className="mt-0 space-y-6">
           {/* Breadcrumb Navigation */}
           {levels.length > 1 && (
-            <div className="bg-card/80 backdrop-blur-xl rounded-2xl p-4 shadow-sm border border-border">
+            <div className="bg-card/95 rounded-2xl p-4 shadow-sm border border-border">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-sm flex-wrap">
                   <button
                     onClick={() => handleBreadcrumbClick(-1)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-emerald-50/60 transition-all duration-300 text-muted-foreground hover:text-emerald-700 font-bold"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-emerald-50/60 transition-[background-color,color,opacity] duration-150 text-muted-foreground hover:text-emerald-700 font-bold"
                   >
                     <Home className="w-4 h-4" />
                     <span>Início</span>
@@ -254,7 +254,7 @@ export function AnalyticsContent() {
                       <ChevronRight className="w-4 h-4 text-gray-300" />
                       <button
                         onClick={() => handleBreadcrumbClick(index + 1)}
-                        className="px-3 py-1.5 rounded-lg hover:bg-emerald-50/60 transition-all duration-300 text-muted-foreground hover:text-emerald-700 font-black"
+                        className="px-3 py-1.5 rounded-lg hover:bg-emerald-50/60 transition-[background-color,color,opacity] duration-150 text-muted-foreground hover:text-emerald-700 font-black"
                       >
                         {level.parentValue}
                       </button>
@@ -264,7 +264,7 @@ export function AnalyticsContent() {
 
                 <button
                   onClick={() => scrollToLevel(levels.length - 1)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 text-emerald-800 hover:bg-emerald-100/80 transition-all duration-300 font-black shadow-sm"
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 text-emerald-800 hover:bg-emerald-100/80 transition-[background-color,color,box-shadow,opacity] duration-150 font-black shadow-sm"
                   title="Ir para o próximo nível"
                 >
                   Próximo nível

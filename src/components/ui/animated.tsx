@@ -218,7 +218,7 @@ export function AnimatedProgress({
     <div className={cn("h-2 bg-secondary rounded-full overflow-hidden", className)}>
       <div
         className={cn(
-          "h-full rounded-full transition-all duration-700 ease-out",
+          "h-full rounded-full transition-[width,opacity] duration-700 ease-out",
           barClassName || "bg-primary"
         )}
         style={{ width: `${Math.min(width, 100)}%` }}
@@ -284,7 +284,7 @@ export function FadeInView({
     <div
       ref={setRef}
       className={cn(
-        "transition-all duration-500 ease-out",
+        "transition-[opacity,transform] duration-500 ease-out",
         isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
         className
       )}

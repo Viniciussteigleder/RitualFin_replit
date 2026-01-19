@@ -43,7 +43,7 @@ export function CategoryIcon({
     <div
       className={cn(
         "relative inline-flex items-center justify-center border shadow-sm",
-        "bg-white/70 dark:bg-white/5 backdrop-blur-sm overflow-hidden",
+        "bg-white/70 dark:bg-white/5 overflow-hidden",
         SIZE_STYLES[size].box,
         className
       )}

@@ -136,12 +136,12 @@ export function CSVForm({ onUploadSuccess }: { onUploadSuccess?: (batchId: strin
                 </div>
             )}
 
-        <div
-            className={cn(
-                "border-2 border-dashed rounded-2xl p-12 text-center transition-all cursor-pointer group",
-                isDragging ? "border-primary bg-primary/5 scale-[0.99]" : "border-border hover:border-border/80 hover:bg-secondary/50",
-                isUploading && "opacity-50 pointer-events-none"
-            )}
+	        <div
+	            className={cn(
+	                "border-2 border-dashed rounded-2xl p-12 text-center transition-[background-color,border-color,box-shadow,color,transform,opacity] duration-200 cursor-pointer group",
+	                isDragging ? "border-primary bg-primary/5 scale-[0.99]" : "border-border hover:border-border/80 hover:bg-secondary/50",
+	                isUploading && "opacity-50 pointer-events-none"
+	            )}
             role="button"
             tabIndex={0}
             aria-disabled={isUploading}
@@ -176,10 +176,10 @@ export function CSVForm({ onUploadSuccess }: { onUploadSuccess?: (batchId: strin
             />
             
             <div className="flex flex-col items-center gap-4">
-                <div className={cn(
-                    "p-4 rounded-full bg-secondary text-muted-foreground transition-all group-hover:scale-110 group-hover:bg-primary/10 group-hover:text-primary",
-                    isDragging && "scale-110 bg-primary/20 text-primary"
-                )}>
+	                <div className={cn(
+	                    "p-4 rounded-full bg-secondary text-muted-foreground transition-[background-color,color,transform,opacity] duration-150 group-hover:scale-110 group-hover:bg-primary/10 group-hover:text-primary",
+	                    isDragging && "scale-110 bg-primary/20 text-primary"
+	                )}>
                     {isUploading ? (
                         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                     ) : (
@@ -194,11 +194,11 @@ export function CSVForm({ onUploadSuccess }: { onUploadSuccess?: (batchId: strin
                         Suporta Miles & More, Amex e Sparkasse. (Máx. 10MB)
                     </p>
                 </div>
-                {!isUploading && (
-                    <Button variant="outline" className="mt-2 rounded-xl border-border font-bold px-8 shadow-sm group-hover:bg-card group-hover:border-primary group-hover:text-primary transition-all">
-                        Selecionar arquivo
-                    </Button>
-                )}
+	                {!isUploading && (
+	                    <Button variant="outline" className="mt-2 rounded-xl border-border font-bold px-8 shadow-sm group-hover:bg-card group-hover:border-primary group-hover:text-primary transition-[background-color,color,border-color,box-shadow,opacity] duration-150">
+	                        Selecionar arquivo
+	                    </Button>
+	                )}
             </div>
         </div>
         </div>

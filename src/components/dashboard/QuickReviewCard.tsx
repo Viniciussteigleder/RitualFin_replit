@@ -43,7 +43,7 @@ export function QuickReviewCard({
                     <div className="relative z-10 flex flex-col items-center justify-between h-full p-8 text-center">
                         {/* Header: AI Confidence Badge */}
                         <div className="w-full flex justify-between items-center mb-4">
-                            <Badge variant="outline" className="bg-secondary/50 backdrop-blur-sm border-primary/20 text-[10px] font-black uppercase tracking-widest gap-1 px-3 py-1">
+                            <Badge variant="outline" className="bg-secondary/50 border-primary/20 text-[10px] font-black uppercase tracking-widest gap-1 px-3 py-1">
                                 <Brain className="w-3 h-3 text-primary" />
                                 Sugestão IA
                             </Badge>
@@ -82,7 +82,7 @@ export function QuickReviewCard({
                                 </p>
                             </div>
 
-                            <div className="flex flex-col items-center gap-2 mt-4 bg-secondary/30 px-6 py-4 rounded-3xl border border-border/50 backdrop-blur-sm">
+                            <div className="flex flex-col items-center gap-2 mt-4 bg-secondary/30 px-6 py-4 rounded-3xl border border-border/50">
                                 <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">Mover para</span>
                                 <div className="flex items-center gap-2">
                                     <CategoryIcon category={transaction.category1} size="sm" />
@@ -97,14 +97,14 @@ export function QuickReviewCard({
                         <div className="flex gap-4 w-full mt-8">
                             <Button 
                                 variant="outline" 
-                                className="flex-1 h-16 rounded-2xl border-border hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all font-bold gap-2 text-base" 
+                                className="flex-1 h-16 rounded-2xl border-border hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-[background-color,color,border-color,box-shadow,opacity] duration-150 font-bold gap-2 text-base" 
                                 onClick={() => onSkip(transaction)}
                             >
                                 <X className="w-5 h-5" />
                                 Editar
                             </Button>
                             <Button 
-                                className="flex-1 h-16 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 text-base shadow-lg shadow-emerald-500/20 active:scale-95 transition-all" 
+                                className="flex-1 h-16 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 text-base shadow-lg shadow-emerald-500/20 active:scale-95 transition-[background-color,box-shadow,transform,opacity] duration-150" 
                                 onClick={() => onConfirm(transaction.id)}
                             >
                                 <Check className="w-5 h-5" />
