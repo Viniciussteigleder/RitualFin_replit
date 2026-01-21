@@ -2294,14 +2294,31 @@ function IssueCard({
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>Confirmar Correção Automática</AlertDialogTitle>
-                    <AlertDialogDescription className="space-y-2">
-                      <p>
-                        Você está prestes a corrigir automaticamente o problema <strong>{issue.id}</strong>:
-                      </p>
-                      <p className="font-medium">{issue.title}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Esta ação afetará {issue.affectedCount} registros e não pode ser desfeita.
-                      </p>
+                    <AlertDialogDescription className="space-y-4">
+                      <div>
+                        <p className="mb-2">
+                          Você está prestes a corrigir automaticamente o problema <strong>{issue.id}</strong>:
+                        </p>
+                        <p className="font-medium text-foreground">{issue.title}</p>
+                      </div>
+
+                      {issue.autoFixCriteria && issue.autoFixCriteria.length > 0 && (
+                        <div className="bg-muted p-3 rounded-md text-sm">
+                          <p className="font-semibold mb-2 text-foreground">Critérios para Correção:</p>
+                          <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
+                            {issue.autoFixCriteria.map((criteria, i) => (
+                              <li key={i}>{criteria}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-2 text-amber-600 bg-amber-50 dark:bg-amber-950/30 p-2 rounded border border-amber-200 dark:border-amber-800">
+                        <AlertTriangle className="h-4 w-4 shrink-0" />
+                        <p className="text-xs font-medium">
+                          Esta ação afetará {issue.affectedCount} registros e não pode ser desfeita.
+                        </p>
+                      </div>
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>

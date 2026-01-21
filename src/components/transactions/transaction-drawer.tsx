@@ -8,11 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/utils";
 import { 
   Calendar, Building2, Tag, FileText, ExternalLink, Edit, Trash2, CheckCircle2, AlertTriangle,
-  Hash, Database, Upload, Zap, Clock, Info
+  Hash, Database, Upload, Zap, Clock, Info, Loader2
 } from "lucide-react";
 import { CATEGORY_CONFIGS } from "@/lib/constants/categories";
 import { useState } from "react";
 import { CategoryIcon } from "@/components/ui/category-icon";
+import { diagnoseTransaction, TransactionDiagnosticResult } from "@/lib/actions/diagnostics";
 
 type Transaction = {
   id: string;
@@ -81,6 +82,21 @@ export function TransactionDrawer({
 }: TransactionDrawerProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [isDiagnosing, setIsDiagnosing] = useState(false);
+  const [diagnosticResult, setDiagnosticResult] = useState<TransactionDiagnosticResult | null>(null);
+
+  const handleDiagnostic = async () => {
+    if (!transaction) return;
+    setIsDiagnosing(true);
+    try {
+      const result = await diagnoseTransaction(transaction.id);
+      setDiagnosticResult(result);
+    } catch (error) {
+      console.error("Diagnostic failed", error);
+    } finally {
+      setIsDiagnosing(false);
+    }
+  };
 
   if (!transaction) return null;
 
@@ -468,6 +484,69 @@ export function TransactionDrawer({
 
             {/* Tab 4: Debug/Technical */}
             <TabsContent value="debug" className="space-y-4 mt-4">
+              {/* Diagnostic Section */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Integridade de Dados
+                </h3>
+                <div className="bg-secondary/30 rounded-2xl p-4 border border-border space-y-3">
+                  {!diagnosticResult ? (
+                    <Button 
+                      onClick={handleDiagnostic} 
+                      disabled={isDiagnosing} 
+                      variant="outline" 
+                      className="w-full bg-background/50 hover:bg-background border-dashed"
+                    >
+                      {isDiagnosing ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <Zap className="h-4 w-4 mr-2"/>}
+                      Executar Diagnóstico Individual
+                    </Button>
+                  ) : (
+                    <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                      <div className={`flex items-center gap-2 font-bold p-2 rounded-lg ${
+                        diagnosticResult.integrity.passed 
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' 
+                          : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                      }`}>
+                        {diagnosticResult.integrity.passed ? <CheckCircle2 className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}
+                        {diagnosticResult.integrity.passed ? "Integridade Verificada" : "Falha na Verificação"}
+                      </div>
+                      
+                      {/* Checks */}
+                      <div className="bg-background rounded-lg border p-3 space-y-2 text-xs font-mono">
+                        {diagnosticResult.integrity.checks.map(check => (
+                          <div key={check.field} className="flex justify-between items-center border-b border-border/50 last:border-0 pb-1.5 last:pb-0">
+                            <span className="uppercase text-muted-foreground font-semibold">{check.field}</span>
+                            <span className={check.passed ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
+                              {check.passed 
+                                ? 'OK' 
+                                : `DB:${check.dbValue} ≠ RAW:${check.rawValue}`}
+                            </span>
+                          </div>
+                        ))}
+                        
+                        {!diagnosticResult.integrity.lineage.hasIngestionItem && (
+                          <div className="text-red-600 font-bold mt-2 flex items-center gap-1">
+                             <AlertTriangle className="h-3 w-3" />
+                             Sem vínculo com ingestion_item (Orphan)
+                          </div>
+                        )}
+                        {!diagnosticResult.integrity.lineage.hasUploadId && (
+                          <div className="text-amber-600 font-bold mt-1 flex items-center gap-1">
+                             <AlertTriangle className="h-3 w-3" />
+                             Sem Upload ID
+                          </div>
+                        )}
+                      </div>
+                      
+                      <Button onClick={() => setDiagnosticResult(null)} variant="ghost" size="sm" className="w-full text-xs h-7">
+                        Limpar Resultado
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className="space-y-3">
                 <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                   <Database className="h-4 w-4" />

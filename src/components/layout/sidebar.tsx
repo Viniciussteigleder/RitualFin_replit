@@ -52,7 +52,7 @@ export function Sidebar() {
   
   // Group States (Default Open)
   const [coreOpen, setCoreOpen] = useState(true);
-  const [strategyOpen, setStrategyOpen] = useState(true);
+  const [strategyOpen, setStrategyOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
 
   const locale = useLocale();

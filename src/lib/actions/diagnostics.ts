@@ -59,6 +59,7 @@ export interface DiagnosticIssue {
   includeInHealthScore?: boolean;
   howWeKnow?: string;
   approach?: string;
+  autoFixCriteria?: string[]; // Clear criteria for when this fix is applied
 }
 
 export interface DiagnosticCategory {
@@ -1603,8 +1604,8 @@ async function runFinancialDiagnostics(userId: string) {
         amount: r.amount,
         type: r.type
       })),
-      recommendation: "Corrija o tipo ou o sinal do valor",
-      autoFixable: true
+      recommendation: "Ambiguidade detectada: não sabemos se o erro está no Tipo ou no Sinal. Corrija manualmente.",
+      autoFixable: false
     });
   }
   recordCheck("FIN-002", "Consistência de sinal (Receita/Despesa)", fin002Passed);
@@ -1629,7 +1630,7 @@ async function runFinancialDiagnostics(userId: string) {
       category: CATEGORIES.financial,
       severity: "medium",
       title: "Transações Grandes Pendentes",
-      description: "Transações > €1000 aguardando revisão",
+      description: "Transações > €1000 aguardando revisão. Importante verificar se catagorização automática foi correta para valores altos.",
       affectedCount: largeUnreviewed.rows.length,
       samples: largeUnreviewed.rows.slice(0, 5).map((r: any) => ({
         id: r.id,
@@ -1637,20 +1638,20 @@ async function runFinancialDiagnostics(userId: string) {
         amount: r.amount,
         date: r.payment_date
       })),
-      recommendation: "Revise e confirme transações de alto valor",
-      autoFixable: false
+      recommendation: "Clique em 'Ver Todas', revise os detalhes e marque 'Revisado' se estiver tudo certo.",
+      autoFixable: false,
+      autoFixCriteria: ["Valor > €1000", "Status = Pendente de Revisão", "Sem confirmação manual"]
     });
   }
   recordCheck("FIN-003", "Transações grandes revisadas", fin003Passed);
 
-  // Check 4: Potential duplicates (same amount, date, similar description)
+  // Check 4: Potential duplicates (same amount, date, description)
   let fin004Passed = true;
   const potentialDupes = await db.execute(sql`
-    SELECT payment_date::date as tx_date, amount, COUNT(*) as count,
-           ARRAY_AGG(DISTINCT SUBSTRING(key_desc, 1, 30)) as descriptions
+    SELECT payment_date::date as tx_date, amount, key_desc, COUNT(*) as count
     FROM transactions
     WHERE user_id = ${userId}
-    GROUP BY payment_date::date, amount
+    GROUP BY payment_date::date, amount, key_desc
     HAVING COUNT(*) > 1 AND ABS(amount) > 10
     ORDER BY count DESC
     LIMIT 10
@@ -1662,17 +1663,18 @@ async function runFinancialDiagnostics(userId: string) {
       id: "FIN-004",
       category: CATEGORIES.financial,
       severity: "medium",
-      title: "Possíveis Duplicatas",
-      description: "Transações com mesmo valor e data",
+      title: "Possíveis Duplicatas Exatas",
+      description: "Transações idênticas (mesma data, valor E descrição).",
       affectedCount: potentialDupes.rows.length,
       samples: potentialDupes.rows.slice(0, 5).map((r: any) => ({
         date: r.tx_date,
         amount: r.amount,
         count: r.count,
-        descriptions: r.descriptions?.slice(0, 2)
+        keyDesc: r.key_desc?.substring(0, 50)
       })),
-      recommendation: "Revise e remova duplicatas se confirmado",
-      autoFixable: false
+      recommendation: "Verifique os registros originais. Se forem duplicatas reais, apague as cópias extras.",
+      autoFixable: false,
+      autoFixCriteria: ["Mesma Data", "Mesmo Valor", "Mesma Descrição (key_desc)", "Count > 1"]
     });
   }
   recordCheck("FIN-004", "Verificação de duplicatas", fin004Passed);
@@ -1856,8 +1858,9 @@ async function runFinancialDiagnostics(userId: string) {
         merchantAvg: parseFloat(r.merchant_avg || "0").toFixed(2),
         ratio: (Math.abs(r.amount) / parseFloat(r.merchant_avg || "1")).toFixed(1) + "x"
       })),
-      recommendation: "Compare com o CSV original - possível erro de parsing",
-      autoFixable: false
+      recommendation: "Compare com o CSV original - possível erro de parsing ou fraude identificada.",
+      autoFixable: false,
+      autoFixCriteria: ["Valor > 10x Média do Estabelecimento", "Mínimo 3 transações históricas"]
     });
   }
   recordCheck("FIN-007", "Consistência por comerciante", fin007Passed);
@@ -1901,7 +1904,7 @@ async function runFinancialDiagnostics(userId: string) {
   }
   recordCheck("FIN-008", "Padrões de descrição válidos", fin008Passed);
 
-  // Check 9: Positive amount for category "Interno" (should usually be transfers/expenses)
+  // Check 9: Positive amount for category "Interno" (should usually be transfers/expenses or balanced)
   let fin009Passed = true;
   const positiveInterno = await db.execute(sql`
     SELECT id, key_desc, amount, category_1
@@ -1910,6 +1913,9 @@ async function runFinancialDiagnostics(userId: string) {
     AND category_1 = 'Interno'
     AND amount > 0
     AND key_desc NOT LIKE '%ZAHLUNG ERHALTEN%'
+    AND key_desc NOT LIKE '%RÜCKLASTSCHRIFT%' -- Return debits (failed payment returns)
+    AND key_desc NOT LIKE '%GUTSCHRIFT%'       -- Generic credit/refund
+    AND key_desc NOT LIKE '%RETURN%'
     LIMIT 10
   `);
 
@@ -1919,12 +1925,13 @@ async function runFinancialDiagnostics(userId: string) {
       id: "FIN-009",
       category: CATEGORIES.financial,
       severity: "medium",
-      title: "Transação Interna Positiva",
-      description: "Transferência interna com valor positivo sem ser recebimento confirmado",
+      title: "Transação Interna Positiva Atípica",
+      description: "Transferência interna positiva sem indicação clara de retorno (Gutschrift/Return). Pode ser um estorno de pagamento falhado.",
       affectedCount: positiveInterno.rows.length,
       samples: positiveInterno.rows.slice(0, 5),
-      recommendation: "Verifique se é um estorno ou erro de sinal",
-      autoFixable: false
+      recommendation: "Verifique se é um reembolso/estorno legítimo (ex: Sparkasse return) e categorize apropriadamente, ou ajuste o sinal se for erro.",
+      autoFixable: false,
+      autoFixCriteria: ["Categoria = Interno", "Valor > 0", "Não contém 'RÜCKLASTSCHRIFT/GUTSCHRIFT'"]
     });
   }
   recordCheck("FIN-009", "Sinais de transações internas íntegros", fin009Passed);
@@ -2550,6 +2557,7 @@ export async function getAffectedRecords(
   const primaryBatchId = batchIds[0];
 
   switch (issueId) {
+    // --- FILE / BATCH CHECKS ---
     case "FILE-001":
     case "FILE-003":
     case "PAR-013":
@@ -2557,15 +2565,10 @@ export async function getAffectedRecords(
       if (!primaryBatchId) return [];
       const rows = await db.execute(sql`
         SELECT
-          ii.id AS id,
-          ii.batch_id,
-          ii.row_index,
-          ii.raw_columns_json,
-          ii.parsed_payload
+          ii.id AS id, ii.batch_id, ii.row_index, ii.raw_columns_json, ii.parsed_payload
         FROM ingestion_items ii
         JOIN ingestion_batches ib ON ii.batch_id = ib.id
-        WHERE ib.user_id = ${userId}
-          AND ii.batch_id = ${primaryBatchId}
+        WHERE ib.user_id = ${userId} AND ii.batch_id = ${primaryBatchId}
         LIMIT ${limit}
       `);
       return rows.rows;
@@ -2573,24 +2576,11 @@ export async function getAffectedRecords(
 
     case "BCH-001": {
       const rows = await db.execute(sql`
-        SELECT
-          t.id AS id,
-          t.upload_id AS batch_id,
-          t.key AS fingerprint,
-          t.key_desc,
-          t.amount,
-          t.payment_date,
-          ii.id AS ingestion_item_id,
-          ii.row_index,
-          ii.raw_columns_json,
-          ii.parsed_payload
+        SELECT t.id AS id, t.upload_id AS batch_id, t.key AS fingerprint, t.key_desc, t.amount, t.payment_date,
+               ii.id AS ingestion_item_id, ii.row_index, ii.raw_columns_json, ii.parsed_payload
         FROM transactions t
-        JOIN ingestion_items ii
-          ON ii.batch_id = t.upload_id
-         AND ii.item_fingerprint = t.key
-        WHERE t.user_id = ${userId}
-          AND t.upload_id IS NOT NULL
-          AND t.ingestion_item_id IS NULL
+        JOIN ingestion_items ii ON ii.batch_id = t.upload_id AND ii.item_fingerprint = t.key
+        WHERE t.user_id = ${userId} AND t.upload_id IS NOT NULL AND t.ingestion_item_id IS NULL
         LIMIT ${limit}
       `);
       return rows.rows;
@@ -2599,19 +2589,11 @@ export async function getAffectedRecords(
     case "BCH-002": {
       if (!primaryBatchId) return [];
       const rows = await db.execute(sql`
-        SELECT
-          t.id AS id,
-          t.upload_id AS batch_id,
-          t.ingestion_item_id,
-          t.key_desc,
-          t.amount AS db_amount,
-          t.payment_date,
-          ii.raw_columns_json,
-          ii.parsed_payload
+        SELECT t.id AS id, t.upload_id AS batch_id, t.ingestion_item_id, t.key_desc, t.amount AS db_amount, t.payment_date,
+               ii.raw_columns_json, ii.parsed_payload
         FROM transactions t
         LEFT JOIN ingestion_items ii ON ii.id = t.ingestion_item_id
-        WHERE t.user_id = ${userId}
-          AND t.upload_id = ${primaryBatchId}
+        WHERE t.user_id = ${userId} AND t.upload_id = ${primaryBatchId}
         ORDER BY ABS(t.amount) DESC
         LIMIT ${limit}
       `);
@@ -2623,29 +2605,25 @@ export async function getAffectedRecords(
         SELECT id, filename, created_at, status, file_hash_sha256
         FROM ingestion_batches
         WHERE user_id = ${userId}
-          AND file_hash_sha256 IN (
-            SELECT file_hash_sha256
-            FROM ingestion_batches
-            WHERE user_id = ${userId}
-              AND file_hash_sha256 IS NOT NULL
-            GROUP BY file_hash_sha256
-            HAVING COUNT(*) > 1
-          )
+        AND file_hash_sha256 IN (
+          SELECT file_hash_sha256 FROM ingestion_batches
+          WHERE user_id = ${userId} AND file_hash_sha256 IS NOT NULL
+          GROUP BY file_hash_sha256 HAVING COUNT(*) > 1
+        )
         ORDER BY created_at DESC
         LIMIT ${limit}
       `);
       return rows.rows;
     }
 
+    // --- CATEGORIZATION / TAXONOMY CHECKS ---
     case "CAT-001":
       const cat001 = await db.execute(sql`
         SELECT t.id, t.key_desc, t.amount, t.payment_date, t.leaf_id, t.app_category_name
         FROM transactions t
         JOIN taxonomy_leaf tl ON t.leaf_id = tl.leaf_id
-        WHERE t.user_id = ${userId}
-        AND tl.nivel_3_pt = 'OPEN'
-        AND t.app_category_name IS NOT NULL
-        AND t.app_category_name != 'OPEN'
+        WHERE t.user_id = ${userId} AND tl.nivel_3_pt = 'OPEN'
+        AND t.app_category_name IS NOT NULL AND t.app_category_name != 'OPEN'
         LIMIT ${limit}
       `);
       return cat001.rows;
@@ -2655,21 +2633,80 @@ export async function getAffectedRecords(
         SELECT t.id, t.key_desc, t.amount, t.payment_date, t.leaf_id, t.category_1
         FROM transactions t
         JOIN taxonomy_leaf tl ON t.leaf_id = tl.leaf_id
-        WHERE t.user_id = ${userId}
-        AND tl.nivel_3_pt = 'OPEN'
-        AND t.category_1 IS NOT NULL
-        AND CAST(t.category_1 AS text) != 'OPEN'
+        WHERE t.user_id = ${userId} AND tl.nivel_3_pt = 'OPEN'
+        AND t.category_1 IS NOT NULL AND CAST(t.category_1 AS text) != 'OPEN'
         LIMIT ${limit}
       `);
       return cat002.rows;
+      
+    case "TAX-001": // Broken hierarchy
+      const tax001 = await db.execute(sql`
+         SELECT tl.leaf_id, tl.nivel_3_pt, tl.level_2_id
+         FROM taxonomy_leaf tl
+         LEFT JOIN taxonomy_level_2 t2 ON tl.level_2_id = t2.level_2_id
+         WHERE tl.user_id = ${userId} AND t2.level_2_id IS NULL
+         LIMIT ${limit}
+      `);
+      return tax001.rows;
 
+    case "TAX-002": // Inconsistent OPEN
+      const tax002 = await db.execute(sql`
+        SELECT tl.leaf_id, tl.nivel_3_pt, t2.nivel_2_pt, t1.nivel_1_pt
+        FROM taxonomy_leaf tl
+        JOIN taxonomy_level_2 t2 ON tl.level_2_id = t2.level_2_id
+        JOIN taxonomy_level_1 t1 ON t2.level_1_id = t1.level_1_id
+        WHERE tl.user_id = ${userId}
+        AND (tl.nivel_3_pt = 'OPEN' OR t2.nivel_2_pt = 'OPEN' OR t1.nivel_1_pt = 'OPEN')
+        AND NOT (tl.nivel_3_pt = 'OPEN' AND t2.nivel_2_pt = 'OPEN' AND t1.nivel_1_pt = 'OPEN')
+        LIMIT ${limit}
+      `);
+      return tax002.rows;
+
+    case "TAX-003": // OPEN linked to wrong app_cat
+      const tax003 = await db.execute(sql`
+        SELECT acl.id as link_id, acl.leaf_id, ac.name as app_category_name
+        FROM app_category_leaf acl
+        JOIN taxonomy_leaf tl ON acl.leaf_id = tl.leaf_id
+        JOIN taxonomy_level_2 t2 ON tl.level_2_id = t2.level_2_id
+        JOIN taxonomy_level_1 t1 ON t2.level_1_id = t1.level_1_id
+        JOIN app_category ac ON acl.app_cat_id = ac.app_cat_id
+        WHERE acl.user_id = ${userId}
+        AND tl.nivel_3_pt = 'OPEN' AND t2.nivel_2_pt = 'OPEN' AND t1.nivel_1_pt = 'OPEN'
+        AND ac.name != 'OPEN'
+        LIMIT ${limit}
+      `);
+      return tax003.rows;
+      
+    case "TAX-005": // Display logic
+      const tax005 = await db.execute(sql`
+        SELECT id, category_1, category_2, display, internal_transfer
+        FROM transactions
+        WHERE user_id = ${userId}
+        AND (
+          (category_1 = 'Interno' AND (display != 'no' OR internal_transfer = false))
+          OR (category_2 = 'Karlsruhe' AND display != 'Casa Karlsruhe')
+          OR (category_1 != 'Interno' AND category_2 != 'Karlsruhe' AND display = 'no')
+        )
+        LIMIT ${limit}
+      `);
+      return tax005.rows;
+      
+    case "TAX-006": // Missing leaf
+      const tax006 = await db.execute(sql`
+        SELECT t.id, t.key_desc, t.leaf_id
+        FROM transactions t
+        LEFT JOIN taxonomy_leaf tl ON t.leaf_id = tl.leaf_id
+        WHERE t.user_id = ${userId} AND (t.leaf_id IS NULL OR tl.leaf_id IS NULL)
+        LIMIT ${limit}
+      `);
+      return tax006.rows;
+
+    // --- FINANCIAL CHECKS ---
     case "FIN-001":
       const fin001 = await db.execute(sql`
         SELECT id, key_desc, amount, payment_date, type, category_1
         FROM transactions
-        WHERE user_id = ${userId}
-        AND LOWER(key_desc) LIKE '%gehalt%'
-        AND amount < 0
+        WHERE user_id = ${userId} AND LOWER(key_desc) LIKE '%gehalt%' AND amount < 0
         LIMIT ${limit}
       `);
       return fin001.rows;
@@ -2683,6 +2720,250 @@ export async function getAffectedRecords(
         LIMIT ${limit}
       `);
       return fin002.rows;
+
+    case "FIN-003": // Large unreviewed
+       const fin003 = await db.execute(sql`
+         SELECT id, key_desc, amount, payment_date, needs_review
+         FROM transactions
+         WHERE user_id = ${userId}
+         AND ABS(amount) > 1000
+         AND needs_review = true
+         AND manual_override = false
+         ORDER BY ABS(amount) DESC
+         LIMIT ${limit}
+       `);
+       return fin003.rows;
+
+    case "FIN-004": // Duplicates
+      // For drill down, we want to show the actual transactions involved
+      const fin004 = await db.execute(sql`
+        WITH duplicates AS (
+           SELECT payment_date::date as d, amount as a, key_desc as k
+           FROM transactions
+           WHERE user_id = ${userId}
+           GROUP BY 1, 2, 3
+           HAVING COUNT(*) > 1 AND ABS(amount) > 10
+        )
+        SELECT t.id, t.key_desc, t.amount, t.payment_date, t.upload_id
+        FROM transactions t
+        JOIN duplicates d ON t.payment_date::date = d.d AND t.amount = d.a AND t.key_desc = d.k
+        WHERE t.user_id = ${userId}
+        ORDER BY t.payment_date DESC, t.amount DESC
+        LIMIT ${limit}
+      `);
+      return fin004.rows;
+
+    case "FIN-005": // Statistical Outliers
+      const statsResult = await db.execute(sql`
+         SELECT AVG(ABS(amount)) as avg, STDDEV(ABS(amount)) as std
+         FROM transactions WHERE user_id = ${userId} AND ABS(amount) > 1
+      `);
+      const avg = parseFloat((statsResult.rows[0] as any)?.avg || "0");
+      const std = parseFloat((statsResult.rows[0] as any)?.std || "0");
+      const threshold = avg + (4 * std);
+      if (std === 0) return [];
+      
+      const fin005 = await db.execute(sql`
+        SELECT t.id, t.key_desc, t.amount, t.payment_date, t.source,
+               tel.ingestion_item_id, ib.filename
+        FROM transactions t
+        LEFT JOIN transaction_evidence_link tel ON t.id = tel.transaction_id
+        LEFT JOIN ingestion_items ii ON tel.ingestion_item_id = ii.id
+        LEFT JOIN ingestion_batches ib ON ii.batch_id = ib.id
+        WHERE t.user_id = ${userId}
+        AND ABS(t.amount) > ${threshold}
+        ORDER BY ABS(t.amount) DESC
+        LIMIT ${limit}
+      `);
+      return fin005.rows;
+
+    case "FIN-006": // Retail anomalies
+      const fin006 = await db.execute(sql`
+        SELECT t.id, t.key_desc, t.amount, t.payment_date, t.source,
+               tel.ingestion_item_id, ib.filename
+        FROM transactions t
+        LEFT JOIN transaction_evidence_link tel ON t.id = tel.transaction_id
+        LEFT JOIN ingestion_items ii ON tel.ingestion_item_id = ii.id
+        LEFT JOIN ingestion_batches ib ON ii.batch_id = ib.id
+        WHERE t.user_id = ${userId}
+        AND ABS(t.amount) > 500
+        AND (LOWER(t.key_desc) LIKE '%rewe%' OR LOWER(t.key_desc) LIKE '%lidl%'
+             OR LOWER(t.key_desc) LIKE '%aldi%' OR LOWER(t.key_desc) LIKE '%edeka%')
+        ORDER BY ABS(t.amount) DESC
+        LIMIT ${limit}
+      `);
+      return fin006.rows;
+      
+    case "FIN-007": // Merchant outliers
+      const fin007 = await db.execute(sql`
+        WITH merchant_stats AS (
+          SELECT
+            CASE
+              WHEN LOWER(key_desc) LIKE '%rewe%' THEN 'REWE'
+              WHEN LOWER(key_desc) LIKE '%lidl%' THEN 'LIDL'
+              WHEN LOWER(key_desc) LIKE '%aldi%' THEN 'ALDI'
+              ELSE 'OTHER'
+            END as merchant,
+            AVG(ABS(amount)) as avg_amount
+          FROM transactions WHERE user_id = ${userId}
+          GROUP BY 1 HAVING COUNT(*) >= 3
+        )
+        SELECT t.id, t.key_desc, t.amount, t.payment_date, t.source,
+               ms.merchant, ms.avg_amount
+        FROM transactions t
+        JOIN merchant_stats ms ON (
+          CASE
+            WHEN LOWER(t.key_desc) LIKE '%rewe%' THEN 'REWE'
+            WHEN LOWER(t.key_desc) LIKE '%lidl%' THEN 'LIDL'
+            WHEN LOWER(t.key_desc) LIKE '%aldi%' THEN 'ALDI'
+            ELSE 'OTHER'
+          END = ms.merchant
+        )
+        WHERE t.user_id = ${userId} AND ms.merchant != 'OTHER' AND ABS(t.amount) > ms.avg_amount * 10
+        ORDER BY ABS(t.amount) DESC
+        LIMIT ${limit}
+      `);
+      return fin007.rows;
+      
+    case "FIN-008": // Suspicious patterns
+      const fin008 = await db.execute(sql`
+        SELECT t.id, t.key_desc, t.amount, t.payment_date, t.source
+        FROM transactions t
+        WHERE t.user_id = ${userId}
+        AND (
+          (LOWER(t.key_desc) LIKE '%sagt danke%' AND LOWER(t.key_desc) NOT LIKE '%lidl sagt danke%')
+          OR t.key_desc ~ '^\d{2}/\d{2}/\d{4}'
+          OR t.key_desc ~ '^\d{2}\.\d{2}\.\d{4}'
+          OR t.key_desc ~ '^-\d{5,}'
+        )
+        LIMIT ${limit}
+      `);
+      return fin008.rows;
+      
+   case "FIN-009": // Internal positive
+      const fin009 = await db.execute(sql`
+        SELECT id, key_desc, amount, category_1
+        FROM transactions
+        WHERE user_id = ${userId} AND category_1 = 'Interno' AND amount > 0
+        AND key_desc NOT LIKE '%ZAHLUNG ERHALTEN%'
+        AND key_desc NOT LIKE '%RÜCKLASTSCHRIFT%'
+        AND key_desc NOT LIKE '%GUTSCHRIFT%'
+        LIMIT ${limit}
+      `);
+      return fin009.rows;
+
+   case "FIN-010": // Alias mismatch
+      const fin010 = await db.execute(sql`
+        SELECT t.id, t.key_desc, t.alias_desc, aa.alias_desc as expected_alias
+        FROM transactions t
+        JOIN alias_assets aa ON t.user_id = aa.user_id
+        WHERE t.user_id = ${userId} AND t.alias_desc IS NOT NULL AND t.alias_desc != aa.alias_desc
+        AND aa.key_words_alias IS NOT NULL AND t.key_desc ILIKE '%' || aa.key_words_alias || '%'
+        LIMIT ${limit}
+      `);
+      return fin010.rows;
+      
+    case "FIN-011": // Missing key_desc
+      const fin011 = await db.execute(sql`
+        SELECT id, amount, payment_date
+        FROM transactions
+        WHERE user_id = ${userId} AND (key_desc IS NULL OR key_desc = '')
+        LIMIT ${limit}
+      `);
+      return fin011.rows;
+      
+    case "FIN-012": // Sign mismatch
+      const fin012 = await db.execute(sql`
+        SELECT id, key_desc, amount, type
+        FROM transactions
+        WHERE user_id = ${userId}
+        AND (
+          (type = 'Despesa' AND amount > 0 AND key_desc NOT ILIKE '%REVERSAL%' AND key_desc NOT ILIKE '%ESTORNO%')
+          OR (type = 'Receita' AND amount < 0)
+        )
+        LIMIT ${limit}
+      `);
+      return fin012.rows;
+
+    case "FIN-012b": // Semantic mismatch (salário as despesa)
+      const fin012b = await db.execute(sql`
+        SELECT id, key_desc, amount, type
+        FROM transactions
+        WHERE user_id = ${userId}
+        AND type = 'Despesa' 
+        AND (
+            key_desc ILIKE '%GEHALT%' OR key_desc ILIKE '%SALÁRIO%' OR key_desc ILIKE '%SALARIO%' 
+            OR key_desc ILIKE '%SALARY%' OR key_desc ILIKE '%LOHN%' 
+            OR key_desc ILIKE '%VENCIMENTO%' OR key_desc ILIKE '%RENDIMENTO%' OR key_desc ILIKE '%ORDENADO%'
+        )
+        LIMIT ${limit}
+      `);
+      return fin012b.rows;
+      
+    case "FIN-013": // App category mismatch
+      const fin013 = await db.execute(sql`
+        SELECT t.id, t.app_category_name, ac.name as db_name
+        FROM transactions t
+        JOIN app_category ac ON t.app_category_id = ac.app_cat_id
+        WHERE t.user_id = ${userId} AND t.app_category_name != ac.name
+        LIMIT ${limit}
+      `);
+      return fin013.rows;
+      
+    case "FIN-015": // Unclassified revenue
+      const fin015 = await db.execute(sql`
+        SELECT id, key_desc, amount, type, category_1, confidence
+        FROM transactions
+        WHERE user_id = ${userId}
+        AND (type IS NULL OR type NOT IN ('Receita', 'Despesa'))
+        AND (
+          key_desc ILIKE '%GEHALT%' OR key_desc ILIKE '%SALÁRIO%' OR key_desc ILIKE '%SALARIO%'
+          OR key_desc ILIKE '%SALARY%' OR key_desc ILIKE '%LOHN%'
+        )
+        LIMIT ${limit}
+      `);
+      return fin015.rows;
+
+    case "FIN-016": // Missing type
+      const fin016 = await db.execute(sql`
+        SELECT id, key_desc, amount, payment_date, type, category_1, confidence
+        FROM transactions
+        WHERE user_id = ${userId}
+        AND (type IS NULL OR type NOT IN ('Receita', 'Despesa'))
+        LIMIT ${limit}
+      `);
+      return fin016.rows;
+
+    // --- LINEAGE CHECKS ---
+    case "LIN-001": // Orphan transactions
+      const lin001 = await db.execute(sql`
+        SELECT t.id, t.key_desc, t.amount, t.payment_date, t.source, t.imported_at
+        FROM transactions t
+        LEFT JOIN transaction_evidence_link tel ON t.id = tel.transaction_id
+        WHERE t.user_id = ${userId} AND tel.transaction_id IS NULL
+        ORDER BY t.imported_at DESC
+        LIMIT ${limit}
+      `);
+      return lin001.rows;
+      
+    case "LIN-002": // Broken links
+      const lin002 = await db.execute(sql`
+        SELECT tel.transaction_id, tel.ingestion_item_id
+        FROM transaction_evidence_link tel
+        LEFT JOIN ingestion_items ii ON tel.ingestion_item_id = ii.id
+        WHERE ii.id IS NULL
+        LIMIT ${limit}
+      `);
+      return lin002.rows;
+      
+    case "LIN-004": // Missing batch
+       const lin004 = await db.execute(sql`
+        SELECT id, key_desc, amount, payment_date
+        FROM transactions
+        WHERE user_id = ${userId} AND upload_id IS NULL
+        LIMIT ${limit}
+       `);
+       return lin004.rows;
 
     case "IMP-007":
       const imp007 = await db.execute(sql`
@@ -2701,68 +2982,12 @@ export async function getAffectedRecords(
         JOIN ingestion_batches ib ON ii.batch_id = ib.id
         WHERE t.user_id = ${userId}
         AND (
-          ABS(COALESCE(t.amount, 0) - COALESCE(CAST(ii.parsed_payload->>'amount' AS DECIMAL), 0)) > 0.01
-          OR (t.key_desc IS DISTINCT FROM ii.parsed_payload->>'descNorm')
-          OR (DATE(t.payment_date) IS DISTINCT FROM DATE(CAST(ii.parsed_payload->>'paymentDate' AS TIMESTAMP)))
+          ABS(t.amount - CAST(ii.parsed_payload->>'amount' AS DECIMAL)) > 0.01
+          OR t.key_desc != ii.parsed_payload->>'descNorm'
         )
         LIMIT ${limit}
       `);
       return imp007.rows;
-
-    case "FIN-012b":
-      const fin012b = await db.execute(sql`
-        SELECT id, key_desc, amount, type
-        FROM transactions
-        WHERE user_id = ${userId}
-        AND (
-          (type = 'Despesa' AND (
-            key_desc ILIKE '%GEHALT%'
-            OR key_desc ILIKE '%SALÁRIO%'
-            OR key_desc ILIKE '%SALARIO%'
-            OR key_desc ILIKE '%SALARY%'
-            OR key_desc ILIKE '%LOHN%'
-            OR key_desc ILIKE '%VENCIMENTO%'
-          ))
-          OR (type = 'Receita' AND (
-            key_desc ILIKE '%ALUGUEL PAGO%'
-            OR key_desc ILIKE '%PAGAMENTO%'
-            OR key_desc ILIKE '%COMPRA%'
-          ))
-        )
-        LIMIT ${limit}
-      `);
-      return fin012b.rows;
-
-    case "FIN-015":
-      const fin015 = await db.execute(sql`
-        SELECT id, key_desc, amount, type, category_1, confidence, needs_review
-        FROM transactions
-        WHERE user_id = ${userId}
-        AND (type IS NULL OR type NOT IN ('Receita', 'Despesa'))
-        AND (
-          key_desc ILIKE '%GEHALT%'
-          OR key_desc ILIKE '%SALÁRIO%'
-          OR key_desc ILIKE '%SALARIO%'
-          OR key_desc ILIKE '%SALARY%'
-          OR key_desc ILIKE '%LOHN%'
-          OR key_desc ILIKE '%VENCIMENTO%'
-          OR key_desc ILIKE '%RENDIMENTO%'
-          OR key_desc ILIKE '%ORDENADO%'
-        )
-        LIMIT ${limit}
-      `);
-      return fin015.rows;
-
-    case "FIN-016":
-      const fin016 = await db.execute(sql`
-        SELECT id, key_desc, amount, payment_date, type, category_1, confidence
-        FROM transactions
-        WHERE user_id = ${userId}
-        AND (type IS NULL OR type NOT IN ('Receita', 'Despesa'))
-        LIMIT ${limit}
-      `);
-      return fin016.rows;
-
     default:
       return [];
   }
@@ -2804,14 +3029,6 @@ export async function autoFixIssue(issueId: string): Promise<{ success: boolean;
       `);
       return { success: true, message: "Categorias sincronizadas com OPEN", fixed: result2.rowCount || 0 };
 
-    case "FIN-002": // Type/amount sign mismatch
-      const result3 = await db.execute(sql`
-        UPDATE transactions
-        SET type = CASE WHEN amount > 0 THEN 'Receita' ELSE 'Despesa' END
-        WHERE user_id = ${userId}
-        AND ((type = 'Receita' AND amount < 0) OR (type = 'Despesa' AND amount > 0))
-      `);
-      return { success: true, message: "Tipos corrigidos baseado no sinal", fixed: result3.rowCount || 0 };
 
     case "TAX-003": // OPEN leaf linked to wrong app_category
       const result4 = await db.execute(sql`
@@ -3063,7 +3280,7 @@ export async function runDataLineageDiagnostics(userId: string) {
       category: { id: "lineage", name: "Rastreabilidade", icon: "Link", description: "Rastreabilidade de dados" },
       severity: "high",
       title: "Transações sem Vínculo de Evidência",
-      description: "Transações sem link para ingestion_item (não rastreáveis ao CSV original)",
+      description: `Detectadas ${orphanTransactions.rows.length} transações sem link para os dados brutos (ingestion_item). Isso impede a verificação de integridade (CSV vs Banco), pois não é possível rastrear o valor original.`,
       affectedCount: orphanTransactions.rows.length,
       samples: orphanTransactions.rows.slice(0, 5).map((r: any) => ({
         id: r.id,
@@ -3072,7 +3289,7 @@ export async function runDataLineageDiagnostics(userId: string) {
         source: r.source,
         importedAt: r.imported_at
       })),
-      recommendation: "Estas transações não podem ser verificadas contra o CSV original",
+      recommendation: "Transações órfãs não podem ter sua integridade validada. Considere reimportar se precisar de auditoria completa.",
       autoFixable: false
     });
   }
@@ -3155,7 +3372,7 @@ export async function runDataLineageDiagnostics(userId: string) {
       category: { id: "lineage", name: "Rastreabilidade", icon: "Link", description: "Rastreabilidade de dados" },
       severity: "high",
       title: "Transações sem Origem (upload_id null)",
-      description: "Transações persistidas que não estão vinculadas a nenhum batch de ingestão",
+      description: "Transações sem ID de batch (upload_id). Impossível saber de qual arquivo vieram.",
       affectedCount: missingBatchTx.rows.length,
       samples: missingBatchTx.rows.slice(0, 5).map((r: any) => ({
         id: r.id,
@@ -3163,7 +3380,7 @@ export async function runDataLineageDiagnostics(userId: string) {
         amount: r.amount,
         date: r.payment_date
       })),
-      recommendation: "Investigue a origem manual ou erro na ingestão",
+      recommendation: "Se foram criadas manualmente, isso é esperado. Se foram importadas, houve falha grave no vínculo com o arquivo de origem.",
       autoFixable: false
     });
   }
@@ -3600,4 +3817,113 @@ export async function getAffectedRecordsExtended(issueId: string, limit: number 
       // Fall back to original getAffectedRecords
       return getAffectedRecords(issueId, limit);
   }
+}
+
+// ============================================================================
+// SINGLE TRANSACTION DIAGNOSTICS
+// ============================================================================
+
+export interface TransactionDiagnosticResult {
+  success: boolean;
+  message: string;
+  integrity: {
+    passed: boolean; // Overall pass/fail
+    checks: {
+      field: string;
+      passed: boolean;
+      dbValue: any;
+      rawValue: any;
+    }[];
+    lineage: {
+      hasUploadId: boolean;
+      hasIngestionItem: boolean;
+      uploadId: string | null;
+      ingestionItemId: string | null;
+    };
+    rawPayload?: any;
+  };
+}
+
+export async function diagnoseTransaction(transactionId: string): Promise<TransactionDiagnosticResult> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  const userId = session.user.id;
+
+  // Fetch transaction and lineage data
+  const result = await db.execute(sql`
+    SELECT 
+      t.id, t.amount, t.payment_date, t.key_desc, t.type, t.upload_id,
+      tel.ingestion_item_id,
+      ii.parsed_payload
+    FROM transactions t
+    LEFT JOIN transaction_evidence_link tel ON t.id = tel.transaction_id
+    LEFT JOIN ingestion_items ii ON tel.ingestion_item_id = ii.id
+    WHERE t.id = ${transactionId} AND t.user_id = ${userId}
+  `);
+
+  if (result.rows.length === 0) {
+    return { success: false, message: "Transação não encontrada", integrity: { passed: false, checks: [], lineage: { hasUploadId: false, hasIngestionItem: false, uploadId: null, ingestionItemId: null } } };
+  }
+
+  const tx = result.rows[0] as any;
+  const raw = tx.parsed_payload || {};
+  
+  const checks = [];
+  let passed = true;
+
+  // check 1: Amount
+  if (raw.amount !== undefined) {
+    const dbAmount = Number(tx.amount);
+    const rawAmount = Number(raw.amount);
+    const amountMatch = Math.abs(dbAmount - rawAmount) < 0.01;
+    if (!amountMatch) passed = false;
+    checks.push({ field: "amount", passed: amountMatch, dbValue: dbAmount, rawValue: rawAmount });
+  }
+
+  // check 2: Date
+  if (raw.paymentDate || raw.date || raw.buchungstag) {
+    const rawDateStr = raw.paymentDate || raw.date || raw.buchungstag;
+    // Normalize dates for string comparison (rough check)
+    // db_date is typically Date object from pg driver
+    const dbDate = new Date(tx.payment_date).toISOString().split('T')[0];
+    let rawDateObj = new Date(rawDateStr);
+    
+    // Attempt to handle DD.MM.YYYY if JS Date failed
+    if (isNaN(rawDateObj.getTime()) && typeof rawDateStr === 'string' && rawDateStr.includes('.')) {
+       const parts = rawDateStr.split('.');
+       if (parts.length === 3) rawDateObj = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+    }
+
+    const rawDateFormatted = !isNaN(rawDateObj.getTime()) ? rawDateObj.toISOString().split('T')[0] : rawDateStr;
+    const dateMatch = dbDate === rawDateFormatted;
+    
+    if (!dateMatch) passed = false;
+    checks.push({ field: "payment_date", passed: dateMatch, dbValue: dbDate, rawValue: rawDateFormatted });
+  }
+
+  // check 3: Description (key_desc vs descNorm)
+  if (raw.descNorm || raw.description) {
+    const rawDesc = (raw.descNorm || raw.description || "").trim();
+    const dbDesc = (tx.key_desc || "").trim();
+    const descMatch = dbDesc === rawDesc; 
+    
+    if (!descMatch) passed = false;
+    checks.push({ field: "key_desc", passed: descMatch, dbValue: dbDesc, rawValue: rawDesc });
+  }
+
+  return {
+    success: true,
+    message: "Diagnóstico executado",
+    integrity: {
+      passed: passed && !!tx.ingestion_item_id,
+      checks,
+      lineage: {
+        hasUploadId: !!tx.upload_id,
+        hasIngestionItem: !!tx.ingestion_item_id,
+        uploadId: tx.upload_id,
+        ingestionItemId: tx.ingestion_item_id
+      },
+      rawPayload: raw
+    }
+  };
 }
