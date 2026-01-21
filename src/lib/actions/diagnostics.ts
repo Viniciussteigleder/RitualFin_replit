@@ -767,6 +767,54 @@ async function runImportDiagnostics(userId: string, scope: DiagnosticsScope) {
   }
   recordCheck("IMP-006", "Sem erros visíveis de encoding", imp006Passed);
 
+  // Check 7: Raw CSV to Database integrity verification
+  let imp007Passed = true;
+  const rawDbMismatch = await db.execute(sql`
+    SELECT t.id, t.key_desc, t.amount as db_amount, t.payment_date as db_date, t.type as db_type,
+           ii.parsed_payload->>'amount' as raw_amount,
+           ii.parsed_payload->>'paymentDate' as raw_date,
+           ii.parsed_payload->>'descNorm' as raw_desc,
+           ii.parsed_payload->>'type' as raw_type,
+           ii.id as ingestion_item_id,
+           ib.filename
+    FROM transactions t
+    JOIN transaction_evidence_link tel ON t.id = tel.transaction_id
+    JOIN ingestion_items ii ON tel.ingestion_item_id = ii.id
+    JOIN ingestion_batches ib ON ii.batch_id = ib.id
+    WHERE t.user_id = ${userId}
+    AND (
+      ABS(COALESCE(t.amount, 0) - COALESCE(CAST(ii.parsed_payload->>'amount' AS DECIMAL), 0)) > 0.01
+      OR (t.key_desc IS DISTINCT FROM ii.parsed_payload->>'descNorm')
+      OR (DATE(t.payment_date) IS DISTINCT FROM DATE(CAST(ii.parsed_payload->>'paymentDate' AS TIMESTAMP)))
+    )
+    LIMIT 100
+  `);
+
+  if (rawDbMismatch.rows.length > 0) {
+    imp007Passed = false;
+    issues.push({
+      id: "IMP-007",
+      category: CATEGORIES.imports,
+      severity: "critical",
+      title: "Divergência entre CSV e Banco de Dados",
+      description: "Dados armazenados no banco diferem dos dados originais do CSV",
+      affectedCount: rawDbMismatch.rows.length,
+      samples: rawDbMismatch.rows.slice(0, 5).map((r: any) => ({
+        id: r.id,
+        keyDesc: r.key_desc?.substring(0, 50),
+        dbAmount: r.db_amount,
+        rawAmount: r.raw_amount,
+        dbDate: r.db_date,
+        rawDate: r.raw_date,
+        filename: r.filename,
+        ingestionItemId: r.ingestion_item_id
+      })),
+      recommendation: "Investigar a origem da divergência - possível bug no parser ou corrupção de dados durante o commit",
+      autoFixable: false
+    });
+  }
+  recordCheck("IMP-007", "Integridade CSV-to-DB verificada", imp007Passed);
+
   const status: CategoryResult["status"] = issues.some(i => i.severity === "critical") ? "critical"
                : issues.some(i => i.severity === "high") ? "warning" : "healthy";
 
@@ -1835,6 +1883,51 @@ async function runFinancialDiagnostics(userId: string) {
   }
   recordCheck("FIN-012", "Integridade de sinal vs tipo", fin012Passed);
 
+  // Check 12b: Semantic type mismatch (keyword-based inference)
+  let fin012bPassed = true;
+  const semanticTypeMismatch = await db.execute(sql`
+    SELECT id, key_desc, amount, type
+    FROM transactions
+    WHERE user_id = ${userId}
+    AND (
+      (type = 'Despesa' AND (
+        key_desc ILIKE '%GEHALT%'
+        OR key_desc ILIKE '%SALÁRIO%'
+        OR key_desc ILIKE '%SALARIO%'
+        OR key_desc ILIKE '%SALARY%'
+        OR key_desc ILIKE '%LOHN%'
+        OR key_desc ILIKE '%VENCIMENTO%'
+      ))
+      OR (type = 'Receita' AND (
+        key_desc ILIKE '%ALUGUEL PAGO%'
+        OR key_desc ILIKE '%PAGAMENTO%'
+        OR key_desc ILIKE '%COMPRA%'
+      ))
+    )
+    LIMIT 20
+  `);
+
+  if (semanticTypeMismatch.rows.length > 0) {
+    fin012bPassed = false;
+    issues.push({
+      id: "FIN-012b",
+      category: CATEGORIES.financial,
+      severity: "high",
+      title: "Tipo Semântico Incorreto",
+      description: "Transações com palavras-chave que contradizem o tipo (ex: salário marcado como despesa)",
+      affectedCount: semanticTypeMismatch.rows.length,
+      samples: semanticTypeMismatch.rows.slice(0, 5).map((r: any) => ({
+        id: r.id,
+        keyDesc: r.key_desc?.substring(0, 80),
+        amount: r.amount,
+        type: r.type
+      })),
+      recommendation: "Corrija o tipo da transação ou verifique se há erro no parser de tipo",
+      autoFixable: true
+    });
+  }
+  recordCheck("FIN-012b", "Tipo semântico consistente com descrição", fin012bPassed);
+
   // Check 14: Merchant name consistency (frequency anomaly)
   let fin014Passed = true;
   const merchantAnomaly = await db.execute(sql`
@@ -2378,6 +2471,55 @@ export async function getAffectedRecords(
         LIMIT ${limit}
       `);
       return fin002.rows;
+
+    case "IMP-007":
+      const imp007 = await db.execute(sql`
+        SELECT t.id, t.key_desc, t.amount as db_amount, t.payment_date as db_date, t.type as db_type,
+               ii.parsed_payload->>'amount' as raw_amount,
+               ii.parsed_payload->>'paymentDate' as raw_date,
+               ii.parsed_payload->>'descNorm' as raw_desc,
+               ii.parsed_payload->>'type' as raw_type,
+               ii.id as ingestion_item_id,
+               ib.filename,
+               ii.raw_columns_json,
+               ii.parsed_payload
+        FROM transactions t
+        JOIN transaction_evidence_link tel ON t.id = tel.transaction_id
+        JOIN ingestion_items ii ON tel.ingestion_item_id = ii.id
+        JOIN ingestion_batches ib ON ii.batch_id = ib.id
+        WHERE t.user_id = ${userId}
+        AND (
+          ABS(COALESCE(t.amount, 0) - COALESCE(CAST(ii.parsed_payload->>'amount' AS DECIMAL), 0)) > 0.01
+          OR (t.key_desc IS DISTINCT FROM ii.parsed_payload->>'descNorm')
+          OR (DATE(t.payment_date) IS DISTINCT FROM DATE(CAST(ii.parsed_payload->>'paymentDate' AS TIMESTAMP)))
+        )
+        LIMIT ${limit}
+      `);
+      return imp007.rows;
+
+    case "FIN-012b":
+      const fin012b = await db.execute(sql`
+        SELECT id, key_desc, amount, type
+        FROM transactions
+        WHERE user_id = ${userId}
+        AND (
+          (type = 'Despesa' AND (
+            key_desc ILIKE '%GEHALT%'
+            OR key_desc ILIKE '%SALÁRIO%'
+            OR key_desc ILIKE '%SALARIO%'
+            OR key_desc ILIKE '%SALARY%'
+            OR key_desc ILIKE '%LOHN%'
+            OR key_desc ILIKE '%VENCIMENTO%'
+          ))
+          OR (type = 'Receita' AND (
+            key_desc ILIKE '%ALUGUEL PAGO%'
+            OR key_desc ILIKE '%PAGAMENTO%'
+            OR key_desc ILIKE '%COMPRA%'
+          ))
+        )
+        LIMIT ${limit}
+      `);
+      return fin012b.rows;
 
     default:
       return [];
