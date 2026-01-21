@@ -147,7 +147,7 @@ export default function RulesStudioClient() {
         <TabsContent value="studio">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="lg:col-span-4 space-y-6">
-              <Card className="border-border bg-card/50 backdrop-blur-sm">
+              <Card className="border-border bg-card/50">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Search className="h-5 w-5 text-primary" />
@@ -168,7 +168,7 @@ export default function RulesStudioClient() {
                         <div
                           key={s.token}
                           onClick={() => selectSuggestion(s)}
-                          className="group flex items-center justify-between p-3 rounded-xl border border-border bg-card hover:border-primary/50 hover:bg-primary/5 cursor-pointer transition-all"
+                          className="group flex items-center justify-between p-3 rounded-xl border border-border bg-card hover:border-primary/50 hover:bg-primary/5 cursor-pointer transition-[background-color,border-color,color,box-shadow,opacity] duration-150"
                         >
                           <div>
                             <div className="font-bold text-foreground group-hover:text-primary transition-colors">{s.token}</div>

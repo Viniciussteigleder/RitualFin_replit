@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { rules } from "@/lib/db/schema";
 import { eq, sql, isNull, isNotNull, and } from "drizzle-orm";
+import { auditDataIntegrity } from "./categorization";
 
 export async function diagnoseAppCategoryIssues() {
   const session = await auth();
@@ -49,6 +50,8 @@ export async function diagnoseAppCategoryIssues() {
   const withoutAppCatButHasCategories = withoutAppCat.filter(r => r.category1);
   const withoutAppCatButHasLeafId = withoutAppCat.filter(r => r.leafId);
 
+  const integrity = await auditDataIntegrity();
+
   return {
     total: allRules.length,
     withAppCategory: withAppCat.length,
@@ -64,6 +67,39 @@ export async function diagnoseAppCategoryIssues() {
     specificIds: {
       e4c24e3f: allRules.find(r => r.id.startsWith("e4c24e3f")),
       ba583849: allRules.find(r => r.id.startsWith("ba583849")),
-    }
+    },
+    integrity,
+    topics: [
+      {
+        id: "neural-engine",
+        title: "Neural Engine Coverage",
+        icon: "Brain",
+        rationale: "Ensures that automation rules are correctly mapped to App Categories for consistent reporting.",
+        summary: `${allRules.length} rules analyzed. ${withAppCat.length} fully mapped (${Math.round((withAppCat.length / (allRules.length || 1)) * 100)}%).`,
+        status: withoutAppCatButHasCategories.length > 0 ? "warning" : "success",
+        details: {
+          total: allRules.length,
+          mapped: withAppCat.length,
+          unmapped: withoutAppCat.length,
+          critical: withoutAppCatButHasCategories.length
+        }
+      },
+      {
+        id: "taxonomy",
+        title: "Taxonomy Architecture",
+        icon: "Network",
+        rationale: "Validates the 3-level hierarchy integrity and ensuring the OPEN fallback chain is consistent.",
+        summary: "Checks the structural integrity of Nível 1, 2, and 3 relationships.",
+        status: integrity.issues.some(i => i.table.includes("taxonomy")) ? "error" : "success",
+      },
+      {
+        id: "transactions",
+        title: "Transaction Alignment",
+        icon: "RefreshCw",
+        rationale: "Ensures transactions have consistent category names synchronized with their underlying taxonomy leaf.",
+        summary: "Sync check between database fields and taxonomy definitions.",
+        status: integrity.issues.some(i => i.table === "transactions") ? "error" : "success",
+      }
+    ]
   };
 }

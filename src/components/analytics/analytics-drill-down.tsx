@@ -98,7 +98,7 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
             </div>
             <div className="h-2 bg-secondary/60 rounded-full overflow-hidden">
               <div
-                className="h-full rounded-full transition-all duration-700 ease-out group-hover:opacity-80"
+                className="h-full rounded-full transition-[width,opacity] duration-700 ease-out group-hover:opacity-80"
                 style={{
                   width: `${Math.max(item.percentage, 2)}%`,
                   backgroundColor: item.color,
@@ -111,7 +111,7 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
           {hasChildren && (
             <button
               onClick={() => onDrillDown(level, item.category)}
-              className="flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-all duration-300 shadow-sm hover:shadow-md flex-shrink-0"
+              className="flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-[background-color,color,box-shadow,transform,opacity] duration-200 shadow-sm hover:shadow-md flex-shrink-0"
               title="Expandir próximo nível"
             >
               <ChevronRight className="w-5 h-5" />
@@ -139,7 +139,7 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
     );
 
     return (
-      <div className="bg-card/80 backdrop-blur-xl rounded-3xl p-8 shadow-sm border border-border">
+      <div className="bg-card/95 rounded-3xl p-8 shadow-sm border border-border">
         <div className="flex items-center justify-between mb-8">
           <div className="space-y-1">
             <h3 className="text-2xl font-black text-foreground tracking-tight">
@@ -151,7 +151,7 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
           </div>
           <button
             onClick={handleExportExcel}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-800 rounded-xl hover:bg-emerald-100/80 transition-all duration-300 font-black shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-800 rounded-xl hover:bg-emerald-100/80 transition-[background-color,color,box-shadow,opacity] duration-200 font-black shadow-sm"
           >
             <Download className="w-4 h-4" />
             Excel
@@ -173,7 +173,7 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
                 {groupedTransactions[dateKey].map((tx) => (
                   <div
                     key={tx.id}
-                    className="group relative flex items-center justify-between p-4 rounded-2xl bg-background/60 border border-border hover:border-emerald-200/60 hover:shadow-sm transition-all duration-300"
+                    className="group relative flex items-center justify-between p-4 rounded-2xl bg-background/60 border border-border hover:border-emerald-200/60 hover:shadow-sm transition-[border-color,box-shadow,background-color,color,opacity] duration-200"
                   >
                     <div className="flex items-center gap-4 flex-1">
                       {/* Date Box */}
@@ -242,7 +242,7 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
   // Show chart for category levels
   if (data.aggregates.length === 0) {
     return (
-      <div className="bg-card/80 backdrop-blur-xl rounded-3xl p-8 shadow-sm border border-border text-center py-16">
+      <div className="bg-card/95 rounded-3xl p-8 shadow-sm border border-border text-center py-16">
         <p className="text-muted-foreground">Nenhum dado encontrado para este período.</p>
       </div>
     );
@@ -259,7 +259,7 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
   const hasChildren = level !== "category3"; // Category 3 goes to transactions
 
   return (
-    <div className="bg-card/80 backdrop-blur-xl rounded-3xl p-8 shadow-sm border border-border hover:shadow-md transition-all duration-500">
+    <div className="bg-card/95 rounded-3xl p-8 shadow-sm border border-border hover:shadow-md transition-[box-shadow,border-color,background-color,color,opacity] duration-200">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -270,7 +270,7 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
         </div>
         <button
           onClick={handleExportExcel}
-          className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-800 rounded-xl hover:bg-emerald-100/80 transition-all duration-300 font-black"
+          className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-800 rounded-xl hover:bg-emerald-100/80 transition-[background-color,color,box-shadow,opacity] duration-200 font-black"
         >
           <Download className="w-4 h-4" />
           Excel
@@ -306,7 +306,7 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
                       key={index}
                       d={`M 100 100 L ${x1} ${y1} A 80 80 0 ${largeArc} 1 ${x2} ${y2} Z`}
                       fill={item.color}
-                      className="hover:opacity-80 transition-all duration-300"
+                      className="hover:opacity-80 transition-[opacity] duration-150"
                       style={{ transformOrigin: "center" }}
                     />
                   );
@@ -336,7 +336,7 @@ export function AnalyticsDrillDown({ data, onDrillDown, filters, title, level }:
       </div>
 
       {isPending && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
           <div className="bg-card rounded-2xl p-8 shadow-2xl border border-border">
             <div className="flex flex-col items-center gap-4">
               <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-600 border-t-transparent" />

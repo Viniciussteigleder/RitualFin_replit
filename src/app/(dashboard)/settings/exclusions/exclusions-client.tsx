@@ -254,7 +254,7 @@ export function ExclusionsClient({ initialRules }: ExclusionsClientProps) {
                     setFormData(p => ({ ...p, [key]: !p[key as keyof typeof p] }))
                   }
                   className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-lg border transition-all",
+                    "flex items-center gap-2 px-4 py-2 rounded-lg border transition-[background-color,color,border-color,box-shadow] duration-150 ease-out",
                     formData[key as keyof typeof formData]
                       ? "bg-amber-100 border-amber-300 text-amber-800"
                       : "bg-background border-border text-muted-foreground hover:bg-secondary"
@@ -294,13 +294,13 @@ export function ExclusionsClient({ initialRules }: ExclusionsClientProps) {
           </div>
         ) : (
           rules.map((rule) => (
-            <div
-              key={rule.id}
-              className={cn(
-                "p-4 rounded-xl border bg-card transition-all",
-                !rule.active && "opacity-50"
-              )}
-            >
+	            <div
+	              key={rule.id}
+	              className={cn(
+	                "p-4 rounded-xl border bg-card transition-[background-color,border-color,box-shadow,color,opacity] duration-150",
+	                !rule.active && "opacity-50"
+	              )}
+	            >
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <Switch

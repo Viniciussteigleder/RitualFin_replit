@@ -318,7 +318,7 @@ export function PreviewClient({ batchId, initialItems, diagnostics, canProceed }
             <div className="p-8 border-t border-border bg-secondary/5 flex justify-center">
               <Button 
                 variant="outline" 
-                className="rounded-xl font-bold gap-2 px-10 h-12 hover:bg-primary/5 hover:text-primary transition-all"
+                className="rounded-xl font-bold gap-2 px-10 h-12 hover:bg-primary/5 hover:text-primary transition-[background-color,color,border-color,box-shadow,opacity] duration-150"
                 onClick={handleLoadMore}
               >
                 Carregar Mais 100 Registros
@@ -339,22 +339,22 @@ export function PreviewClient({ batchId, initialItems, diagnostics, canProceed }
 
       {/* Actions */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-6 px-2">
-        <Button variant="secondary" className="h-16 w-full sm:w-auto px-10 rounded-2xl font-bold text-muted-foreground hover:text-foreground transition-all" asChild>
-           <Link href="/uploads">
-              ← Sair sem Salvar
-           </Link>
-        </Button>
-        {canProceed && (
-          <Button 
-            onClick={handleConfirm}
-            disabled={isSubmitting || isAllDuplicates}
-            className={cn(
-              "w-full sm:max-w-md h-16 text-white transition-all rounded-2xl font-bold shadow-2xl gap-3 text-lg border-none",
-              isAllDuplicates 
-                ? "bg-muted cursor-not-allowed opacity-50" 
-                : "bg-primary hover:scale-105 active:scale-95 shadow-primary/20"
-            )}
-          >
+	      <Button variant="secondary" className="h-16 w-full sm:w-auto px-10 rounded-2xl font-bold text-muted-foreground hover:text-foreground transition-[background-color,color,box-shadow,opacity] duration-150" asChild>
+	         <Link href="/uploads">
+	            ← Sair sem Salvar
+	         </Link>
+	      </Button>
+	        {canProceed && (
+	          <Button 
+	            onClick={handleConfirm}
+	            disabled={isSubmitting || isAllDuplicates}
+	            className={cn(
+	              "w-full sm:max-w-md h-16 text-white transition-[background-color,box-shadow,transform,opacity] duration-150 rounded-2xl font-bold shadow-2xl gap-3 text-lg border-none",
+	              isAllDuplicates 
+	                ? "bg-muted cursor-not-allowed opacity-50" 
+	                : "bg-primary hover:scale-105 active:scale-95 shadow-primary/20"
+	            )}
+	          >
             {isSubmitting ? (
               <span className="flex items-center gap-2 animate-pulse">Processando...</span>
             ) : isAllDuplicates ? (

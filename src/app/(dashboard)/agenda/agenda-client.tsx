@@ -61,13 +61,13 @@ export function AgendaClient({ initialEvents }: AgendaClientProps) {
     const dueDate = new Date(event.nextDueDate);
     const isRecurring = event.recurrence !== 'none';
 
-    return (
-      <Card key={event.id} className={cn(
-        "rounded-2xl border-border bg-card shadow-sm hover:shadow-md transition-all group overflow-hidden",
-        status === 'overdue' && "border-l-4 border-l-red-500",
-        status === 'today' && "border-l-4 border-l-amber-500",
-        status === 'upcoming' && "hover:border-primary/50"
-      )}>
+	  return (
+	    <Card key={event.id} className={cn(
+	        "rounded-2xl border-border bg-card shadow-sm hover:shadow-md transition-[box-shadow,border-color,background-color,color,opacity] duration-200 group overflow-hidden",
+	        status === 'overdue' && "border-l-4 border-l-red-500",
+	        status === 'today' && "border-l-4 border-l-amber-500",
+	        status === 'upcoming' && "hover:border-primary/50"
+	      )}>
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row items-center gap-6">
             <div className={cn(

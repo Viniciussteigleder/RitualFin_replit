@@ -186,14 +186,14 @@ export function TransactionDetailContent({ transaction, onClose, onConfirm }: Tr
 	                        {new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(Math.abs(Number(tx.amount)))}
 	                    </div>
 
-                    {/* Category & Confidence Grid */}
-                    <div className="w-full grid grid-cols-2 gap-5 mb-10">
-                        <div 
-                            className="p-6 rounded-[2.5rem] text-left border relative overflow-hidden group transition-all"
-                            style={{ 
-                                backgroundColor: `${config.color}10`, 
-                                borderColor: `${config.color}40` 
-                            }}
+	                    {/* Category & Confidence Grid */}
+	                    <div className="w-full grid grid-cols-2 gap-5 mb-10">
+	                        <div 
+	                            className="p-6 rounded-[2.5rem] text-left border relative overflow-hidden group transition-[background-color,border-color,box-shadow,color,opacity] duration-200"
+	                            style={{ 
+	                                backgroundColor: `${config.color}10`, 
+	                                borderColor: `${config.color}40` 
+	                            }}
                         >
                             <p 
                                 className="text-[9px] font-black uppercase tracking-[0.2em] mb-3 relative z-10"
@@ -328,12 +328,12 @@ export function TransactionDetailContent({ transaction, onClose, onConfirm }: Tr
                                             />
                                         </div>
                                     </div>
-                                </div>
-                                <Button 
-                                    className="h-16 bg-foreground text-background hover:opacity-90 rounded-[1.5rem] font-bold shadow-xl shadow-black/5 flex items-center justify-center gap-3 transition-all active:scale-95"
-                                    onClick={handleCreateRule}
-                                    disabled={!keyword}
-                                >
+	                                </div>
+	                                <Button 
+	                                    className="h-16 bg-foreground text-background hover:opacity-90 rounded-[1.5rem] font-bold shadow-xl shadow-black/5 flex items-center justify-center gap-3 transition-[opacity,transform] duration-150 active:scale-95"
+	                                    onClick={handleCreateRule}
+	                                    disabled={!keyword}
+	                                >
                                     Salvar e Aplicar Regra
                                     <ChevronRight className="w-5 h-5" />
                                 </Button>
@@ -342,19 +342,19 @@ export function TransactionDetailContent({ transaction, onClose, onConfirm }: Tr
                     </div>
 
                     {/* Fixed Actions at Bottom */}
-                    <div className="w-full grid grid-cols-1 gap-4 mt-12 shrink-0">
-                        <Button 
-                            className="w-full h-20 bg-primary text-white hover:opacity-95 rounded-[2rem] font-black uppercase tracking-[0.2em] shadow-2xl shadow-primary/20 gap-4 text-base transition-all active:scale-95 group"
-	                            onClick={() => handleConfirm(tx.id)}
-	                        >
+	                    <div className="w-full grid grid-cols-1 gap-4 mt-12 shrink-0">
+	                        <Button 
+	                            className="w-full h-20 bg-primary text-white hover:opacity-95 rounded-[2rem] font-black uppercase tracking-[0.2em] shadow-2xl shadow-primary/20 gap-4 text-base transition-[opacity,transform] duration-150 active:scale-95 group"
+		                            onClick={() => handleConfirm(tx.id)}
+		                        >
                             <CheckCircle2 className="h-7 w-7 transition-transform group-hover:scale-110" />
                             Confirmar Transação
                         </Button>
-                        <Button variant="ghost" className="w-full h-14 text-muted-foreground rounded-2xl font-bold transition-all text-[10px] uppercase tracking-[0.3em] hover:bg-secondary/50" onClick={onClose}>
-                            Ignorar por agora
-                        </Button>
-                    </div>
-                </div>
+	                        <Button variant="ghost" className="w-full h-14 text-muted-foreground rounded-2xl font-bold transition-[background-color,color,opacity] duration-150 text-[10px] uppercase tracking-[0.3em] hover:bg-secondary/50" onClick={onClose}>
+	                            Ignorar por agora
+	                        </Button>
+	                    </div>
+	                </div>
             </div>
         </DrawerContent>
     );

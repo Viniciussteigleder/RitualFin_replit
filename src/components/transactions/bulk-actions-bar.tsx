@@ -60,7 +60,7 @@ export function BulkActionsBar({
           </button>
 
           <button 
-             className="bg-white dark:bg-[#111816] text-[#111816] dark:text-primary px-5 py-2 rounded-full text-xs font-black transition-all hover:scale-105 active:scale-95 flex items-center gap-2 shadow-lg"
+             className="bg-white dark:bg-[#111816] text-[#111816] dark:text-primary px-5 py-2 rounded-full text-xs font-black transition-[background-color,color] duration-150 flex items-center gap-2 shadow-lg"
              onClick={onClassifyAll}
           >
             <CheckCircle2 className="h-4 w-4" />

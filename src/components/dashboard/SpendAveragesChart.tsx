@@ -19,7 +19,7 @@ function SpendAveragesTooltip({ active, payload }: any) {
   if (!row?.name) return null;
 
   return (
-    <div className="rounded-2xl border border-border bg-background/95 backdrop-blur-sm shadow-xl px-4 py-3">
+    <div className="rounded-2xl border border-border bg-background/95 shadow-xl px-4 py-3">
       <div className="flex items-center gap-3">
         <CategoryIcon category={row.name} size="sm" />
         <div className="flex flex-col">
@@ -107,14 +107,14 @@ export function SpendAveragesChart({
           {availableMonths.length ? (
             <div className="flex bg-secondary rounded-xl p-1 gap-1">
               {availableMonths.map((m) => (
-                <button
+	                <button
                   key={m}
                   onClick={() => setMonthsKey(m)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all",
-                    monthsKey === m ? "bg-white shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
+	                  className={cn(
+	                    "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-[background-color,color,box-shadow,opacity] duration-150",
+	                    monthsKey === m ? "bg-white shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+	                  )}
+	                >
                   {m}M
                 </button>
               ))}
@@ -128,14 +128,14 @@ export function SpendAveragesChart({
               ["category2", "Cat 2"],
               ["category3", "Cat 3"],
             ] as const).map(([key, label]) => (
-              <button
+	              <button
                 key={key}
                 onClick={() => setLevel(key)}
-                className={cn(
-                  "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all",
-                  level === key ? "bg-white shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
+	                className={cn(
+	                  "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-[background-color,color,box-shadow,opacity] duration-150",
+	                  level === key ? "bg-white shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+	                )}
+	              >
                 {label}
               </button>
             ))}
@@ -143,14 +143,14 @@ export function SpendAveragesChart({
 
           <div className="flex bg-secondary rounded-xl p-1 gap-1">
             {[5, 8, 12, "all"].map((opt) => (
-              <button
+	              <button
                 key={String(opt)}
                 onClick={() => setLimit(opt as any)}
-                className={cn(
-                  "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all",
-                  limit === opt ? "bg-white shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
+	                className={cn(
+	                  "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-[background-color,color,box-shadow,opacity] duration-150",
+	                  limit === opt ? "bg-white shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+	                )}
+	              >
                 {opt === "all" ? "Todas" : `Top ${opt}`}
               </button>
             ))}
@@ -172,16 +172,16 @@ export function SpendAveragesChart({
                 placeholder="Buscar categoria…"
                 className="h-10 w-full lg:w-72 rounded-2xl bg-secondary/30 border-border font-medium"
               />
-              <button
+	              <button
                 type="button"
                 onClick={() => setShowOpen((v) => !v)}
-                className={cn(
-                  "h-10 px-4 rounded-2xl border text-[10px] font-black uppercase tracking-widest transition-all",
-                  showOpen
-                    ? "bg-secondary border-border text-foreground"
-                    : "bg-transparent border-border text-muted-foreground hover:text-foreground hover:bg-secondary/40"
-                )}
-              >
+	                className={cn(
+	                  "h-10 px-4 rounded-2xl border text-[10px] font-black uppercase tracking-widest transition-[background-color,border-color,color,box-shadow,opacity] duration-150",
+	                  showOpen
+	                    ? "bg-secondary border-border text-foreground"
+	                    : "bg-transparent border-border text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+	                )}
+	              >
                 {showOpen ? "Mostrar OPEN" : "Ocultar OPEN"}
               </button>
             </div>
@@ -191,14 +191,14 @@ export function SpendAveragesChart({
                 ["average", "Ordenar: Média"],
                 ["total", "Ordenar: Total"],
               ] as const).map(([k, label]) => (
-                <button
+	                <button
                   key={k}
                   onClick={() => setSortKey(k)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all",
-                    sortKey === k ? "bg-white shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
+	                  className={cn(
+	                    "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-[background-color,color,box-shadow,opacity] duration-150",
+	                    sortKey === k ? "bg-white shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+	                  )}
+	                >
                   {label}
                 </button>
               ))}

@@ -25,6 +25,9 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
             <Link href="/settings/taxonomy">
                 <Button variant="ghost" className="rounded-xl font-bold hover:bg-secondary">Taxonomy</Button>
             </Link>
+            <Link href="/admin/diagnostics">
+                <Button variant="ghost" className="rounded-xl font-bold hover:bg-secondary">Diagnóstico</Button>
+            </Link>
         </nav>
         <div className="flex-1 w-full max-w-full">{children}</div>
       </div>

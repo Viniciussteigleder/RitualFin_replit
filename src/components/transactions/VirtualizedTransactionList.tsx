@@ -1,9 +1,11 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useMemo } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { TransactionRow } from "./TransactionRow";
 import { Checkbox } from "@/components/ui/checkbox";
+import { format, endOfWeek } from "date-fns";
+import { pt } from "date-fns/locale";
 
 interface VirtualizedTransactionListProps {
   groupedTransactions: Record<string, any[]>;
@@ -15,6 +17,7 @@ interface VirtualizedTransactionListProps {
   onEditClick: (tx: any) => void;
   onClick: (tx: any) => void;
   aliasMap: Record<string, string>;
+  viewMode?: "day" | "week";
 }
 
 export function VirtualizedTransactionList({
@@ -27,17 +30,20 @@ export function VirtualizedTransactionList({
   onEditClick,
   onClick,
   aliasMap,
+  viewMode = "day",
 }: VirtualizedTransactionListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
-  // Flatten all transactions with date headers
-  const flatItems = sortedDateKeys.flatMap((dateKey) => {
-    const txs = groupedTransactions[dateKey];
-    return [
-      { type: "header" as const, dateKey, id: `header-${dateKey}` },
-      ...txs.map((tx) => ({ type: "transaction" as const, data: tx, id: tx.id })),
-    ];
-  });
+  // Flatten all transactions with date headers - Memoized for performance
+  const flatItems = useMemo(() => {
+    return sortedDateKeys.flatMap((dateKey) => {
+      const txs = groupedTransactions[dateKey];
+      return [
+        { type: "header" as const, dateKey, id: `header-${dateKey}` },
+        ...txs.map((tx) => ({ type: "transaction" as const, data: tx, id: tx.id })),
+      ];
+    });
+  }, [sortedDateKeys, groupedTransactions]);
 
   const virtualizer = useVirtualizer({
     count: flatItems.length,
@@ -55,6 +61,7 @@ export function VirtualizedTransactionList({
       ref={parentRef}
       className="bg-card border border-border border-t-0 rounded-b-3xl overflow-auto shadow-sm"
       style={{ height: "calc(100vh - 400px)", minHeight: "500px" }}
+      data-testid="transactions-virtualized-scroll"
     >
       <div
         style={{
@@ -81,13 +88,19 @@ export function VirtualizedTransactionList({
                 className="px-6 py-4 bg-secondary/30 border-b border-border"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold text-foreground">
-                    {new Date(item.dateKey).toLocaleDateString("pt-PT", {
-                      weekday: "long",
-                      day: "2-digit",
-                      month: "long",
-                      year: "numeric",
-                    })}
+                  <span className="text-sm font-bold text-foreground capitalize">
+                    {viewMode === "week" ? (
+                        <>
+                            Semana de {format(new Date(item.dateKey), "d 'de' MMMM", { locale: pt })} a {format(endOfWeek(new Date(item.dateKey), { weekStartsOn: 1 }), "d 'de' MMMM", { locale: pt })}
+                        </>
+                    ) : (
+                        new Date(item.dateKey).toLocaleDateString("pt-PT", {
+                            weekday: "long",
+                            day: "2-digit",
+                            month: "long",
+                            year: "numeric",
+                        })
+                    )}
                   </span>
                   <span className="text-xs font-medium text-muted-foreground">
                     {groupedTransactions[item.dateKey].length} transações

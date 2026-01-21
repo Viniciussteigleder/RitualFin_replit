@@ -51,8 +51,10 @@ export function PageHeader({
       className={cn(
         "flex flex-col md:flex-row md:items-center justify-between gap-6",
         "bg-card p-6 md:p-8 rounded-2xl border border-border",
+        "relative z-10", // Prevent positioning issues
         className
       )}
+      style={{ top: 0, visibility: 'visible', display: 'flex' }} // Force visibility
     >
       <div className="flex flex-col gap-3">
         {/* Icon + Title Row */}
@@ -95,6 +97,7 @@ export function PageContainer({ children, className }: PageContainerProps) {
     <div
       className={cn(
         "max-w-7xl mx-auto flex flex-col gap-6 pb-24 px-1",
+        "relative", // Establish positioning context
         className
       )}
     >

@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { ingestionBatches, ingestionItems, transactions, rules, aliasAssets, sourceCsvSparkasse, sourceCsvMm, sourceCsvAmex, transactionEvidenceLink } from "@/lib/db/schema";
 import { parseIngestionFile } from "@/lib/ingest";
 import { generateFingerprint } from "@/lib/ingest/fingerprint";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { categorizeTransaction, AI_SEED_RULES, matchAlias } from "@/lib/rules/engine";
 import { ensureOpenCategoryCore } from "@/lib/actions/setup-open";
@@ -12,6 +12,7 @@ import { buildLeafHierarchyMaps } from "@/lib/taxonomy/hierarchy";
 import { resolveLeafFromMatches } from "@/lib/rules/leaf-resolution";
 import { logger } from "@/lib/ingest/logger";
 import { rateLimit } from "@/lib/security/rate-limit";
+import { createHash } from "node:crypto";
 
 type UploadIngestionResult =
   | {
@@ -99,14 +100,36 @@ function chunk<T>(items: T[], size: number): T[][] {
   return chunks;
 }
 
+function stableStringify(value: unknown): string {
+  if (value === null || value === undefined) return "null";
+  if (typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
+  const obj = value as Record<string, unknown>;
+  const keys = Object.keys(obj).sort();
+  return `{${keys.map((k) => `${JSON.stringify(k)}:${stableStringify(obj[k])}`).join(",")}}`;
+}
+
+function sha256Hex(input: string | Buffer): string {
+  return createHash("sha256").update(input).digest("hex");
+}
+
 // Core function for scripting/internal use
 export async function uploadIngestionFileCore(userId: string, buffer: Buffer, filename: string): Promise<UploadIngestionResult> {
+  const fileHashSha256 = sha256Hex(buffer);
+  const fileSizeBytes = buffer.length;
+  const parserVersion = "v1";
+  const normalizationVersion = "v1";
+
   // 1. Create Ingestion Batch
   const [batch] = await db.insert(ingestionBatches).values({
     userId,
     filename,
     status: "processing",
     sourceType: "csv",
+    fileHashSha256,
+    fileSizeBytes,
+    parserVersion,
+    normalizationVersion,
   }).returning();
 
   // import { sourceCsvSparkasse, sourceCsvMm, sourceCsvAmex } from "@/lib/db/schema"; <-- MOVED TO TOP
@@ -220,13 +243,19 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
         return { tx, fingerprint, isUnique: isUniqueRow };
       });
 
-      const itemValues = prepared.map(({ tx, fingerprint, isUnique }) => {
-        const payload = txForDb(tx);
+      const itemValues = prepared.map(({ tx, fingerprint, isUnique }, idx) => {
+        const parsedPayload = txForDb(tx);
+        const rawColumnsJson = (tx as any)?.metadata && typeof (tx as any)?.metadata === "object" ? (tx as any).metadata : null;
+        const rawPayload = rawColumnsJson ?? parsedPayload;
+        const rawRowHash = sha256Hex(stableStringify(rawPayload));
         return {
           batchId: batch.id,
+          rowIndex: idx + 1,
           itemFingerprint: fingerprint,
-          rawPayload: payload,
-          parsedPayload: payload,
+          rawPayload,
+          rawColumnsJson,
+          rawRowHash,
+          parsedPayload,
           status: isUnique ? "pending" : "duplicate",
           source: result.format || "unknown",
         };
@@ -322,6 +351,10 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
         .set({
           status: "preview",
           sourceFormat: result.format ?? null,
+          encoding: result.meta?.encoding ?? null,
+          delimiter: result.meta?.delimiter ?? null,
+          parserVersion,
+          normalizationVersion,
           diagnosticsJson: {
             rowsTotal: result.rowsTotal,
             newCount,
@@ -442,6 +475,53 @@ export async function commitBatchCore(userId: string, batchId: string) {
 
     const effectiveRules = [...userRules, ...seedRules];
 
+    const rulesVersion = sha256Hex(stableStringify(
+      effectiveRules
+        .map((r: any) => ({
+          id: r.id,
+          active: !!r.active,
+          strict: !!r.strict,
+          priority: Number(r.priority ?? 0),
+          type: r.type ?? null,
+          fixVar: r.fixVar ?? null,
+          category1: r.category1 ?? null,
+          category2: r.category2 ?? null,
+          category3: (r as any).category3 ?? null,
+          leafId: r.leafId ?? null,
+          keyWords: r.keyWords ?? null,
+          keyWordsNegative: r.keyWordsNegative ?? null,
+          isSystem: !!r.isSystem,
+        }))
+        .sort((a, b) => String(a.id).localeCompare(String(b.id)))
+    ));
+
+    const taxonomyRows = await db.execute(sql`
+      SELECT
+        tl.leaf_id,
+        tl.nivel_3_pt,
+        t2.level_2_id,
+        t2.nivel_2_pt,
+        t1.level_1_id,
+        t1.nivel_1_pt,
+        ac.app_cat_id,
+        ac.name AS app_category_name
+      FROM taxonomy_leaf tl
+      JOIN taxonomy_level_2 t2 ON tl.level_2_id = t2.level_2_id
+      JOIN taxonomy_level_1 t1 ON t2.level_1_id = t1.level_1_id
+      LEFT JOIN app_category_leaf acl ON acl.leaf_id = tl.leaf_id AND acl.user_id = ${userId}
+      LEFT JOIN app_category ac ON ac.app_cat_id = acl.app_cat_id
+      WHERE tl.user_id = ${userId}
+      ORDER BY tl.leaf_id ASC
+    `);
+    const taxonomyVersion = sha256Hex(stableStringify(taxonomyRows.rows));
+
+    await db.update(ingestionBatches)
+      .set({
+        rulesVersion,
+        taxonomyVersion,
+      })
+      .where(eq(ingestionBatches.id, batch.id));
+
     let importedCount = 0;
 
     const ensured = await ensureOpenCategoryCore(userId);
@@ -508,6 +588,7 @@ export async function commitBatchCore(userId: string, batchId: string) {
         }
 
         const amountNum = Number.parseFloat(data.amount);
+        const rawRowHash = (item as any).rawRowHash ?? sha256Hex(stableStringify((item as any).rawPayload ?? (item as any).parsedPayload ?? {}));
 
         // Prepare Transaction
         const newTx = {
@@ -530,6 +611,12 @@ export async function commitBatchCore(userId: string, batchId: string) {
             fixVar: ((hierarchy.fixVarDefault as any) || (categorization.fixVar as any) || "Variável") as any,
             ruleIdApplied: resolution.ruleIdApplied && !resolution.ruleIdApplied.startsWith("seed-") ? resolution.ruleIdApplied : null,
             uploadId: batch.id,
+            ingestionItemId: item.id,
+            rawRowHash,
+            parserVersion: batch.parserVersion ?? null,
+            normalizationVersion: batch.normalizationVersion ?? null,
+            rulesVersion,
+            taxonomyVersion,
             source: (["Sparkasse", "Amex", "M&M"].includes(data.source) ? data.source : null) as any,
             key: data.key || item.itemFingerprint, 
             leafId: resolution.leafId,
@@ -546,8 +633,26 @@ export async function commitBatchCore(userId: string, batchId: string) {
             classificationCandidates: resolution.status === "CONFLICT" ? resolution.candidates : null
         };
 
-        // Insert Transaction
-        await db.insert(transactions).values(newTx).onConflictDoNothing();
+        // Insert Transaction + evidence link (raw-data-first provenance)
+        const inserted = await db.insert(transactions).values(newTx).onConflictDoNothing().returning({ id: transactions.id });
+        const txId =
+          inserted[0]?.id ??
+          (await db.query.transactions.findFirst({
+            where: and(eq(transactions.userId, userId), eq(transactions.key, newTx.key)),
+            columns: { id: true },
+          }))?.id;
+
+        if (txId) {
+          await db
+            .insert(transactionEvidenceLink)
+            .values({
+              transactionId: txId,
+              ingestionItemId: item.id,
+              matchConfidence: 100,
+              isPrimary: true,
+            })
+            .onConflictDoNothing();
+        }
 
         // Update Item Status
         await db.update(ingestionItems)

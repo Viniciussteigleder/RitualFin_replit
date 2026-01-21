@@ -29,7 +29,7 @@ export function BulkConfirmButton({ count }: { count: number }) {
             onClick={handleBulkConfirm}
             disabled={isPending || count === 0}
             className={cn(
-                "h-auto py-8 px-8 rounded-[2rem] flex flex-col items-center gap-2 transition-all border-0 shadow-lg",
+                "h-auto py-8 px-8 rounded-[2rem] flex flex-col items-center gap-2 transition-[background-color,box-shadow,color] duration-200 border-0 shadow-lg",
                 isPending ? "bg-secondary text-muted-foreground" : "bg-gradient-to-br from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white shadow-emerald-500/20"
             )}
         >

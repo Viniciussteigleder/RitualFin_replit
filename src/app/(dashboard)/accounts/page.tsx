@@ -65,7 +65,7 @@ export default async function AccountsPage() {
         }
         actions={
           <Link href="/admin/import">
-            <Button className="h-12 px-6 bg-foreground text-background hover:scale-105 transition-all rounded-xl font-bold shadow-lg gap-2">
+            <Button className="h-12 px-6 bg-foreground text-background hover:bg-foreground/90 transition-colors rounded-xl font-bold shadow-lg gap-2">
               <PlusCircle className="h-4 w-4" />
               Conectar Conta
             </Button>
@@ -86,7 +86,7 @@ export default async function AccountsPage() {
               <p className="text-muted-foreground max-w-[360px] font-medium leading-relaxed px-6">
                 Para começar a organizar sua vida financeira, você precisa adicionar seus bancos ou cartões.
               </p>
-              <Button className="mt-12 h-16 px-12 bg-primary text-white rounded-2xl font-bold transition-all shadow-xl hover:scale-105 active:scale-95" asChild>
+              <Button className="mt-12 h-16 px-12 bg-primary text-white rounded-2xl font-bold transition-colors shadow-xl hover:bg-primary/90" asChild>
                 <Link href="/admin/import">Adicionar Minha Primeira Conta</Link>
               </Button>
             </div>
@@ -102,7 +102,7 @@ export default async function AccountsPage() {
               account.name;
 
             return (
-              <div key={account.id} className="group relative bg-card border border-border rounded-[2.5rem] p-10 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 overflow-hidden flex flex-col gap-10">
+              <div key={account.id} className="group relative bg-card border border-border rounded-[2.5rem] p-10 shadow-sm hover:shadow-xl transition-shadow duration-300 overflow-hidden flex flex-col gap-10">
                 <div className="flex justify-between items-start">
                   <div className="flex flex-col gap-1">
                     <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-2">
@@ -116,10 +116,10 @@ export default async function AccountsPage() {
                   
                   <AccountLogo
                     institution={institution}
-                    className={cn("h-16 w-16 shadow-lg transition-all duration-500 group-hover:rotate-6")}
+                    className={cn("h-16 w-16 shadow-lg")}
                     fallback={
                       <div
-                        className={cn("p-5 rounded-[1.5rem] text-white shadow-lg transition-all duration-500 group-hover:rotate-6")}
+                        className={cn("p-5 rounded-[1.5rem] text-white shadow-lg")}
                         style={{ backgroundColor: account.color || "#091E16" }}
                         aria-hidden="true"
                       >
@@ -140,7 +140,7 @@ export default async function AccountsPage() {
                       </span>
                     </div>
                     <Link href={`/transactions?accounts=${encodeURIComponent(ACCOUNT_FILTER_MAP[account.name] || account.name)}`}>
-                        <Button variant="secondary" size="icon" className="h-14 w-14 rounded-2xl bg-secondary/50 border-none hover:bg-secondary hover:scale-110 transition-all">
+                        <Button variant="secondary" size="icon" className="h-14 w-14 rounded-2xl bg-secondary/50 border-none hover:bg-secondary transition-colors">
                             <Settings2 className="h-6 w-6 text-muted-foreground" />
                         </Button>
                     </Link>
@@ -162,4 +162,4 @@ export default async function AccountsPage() {
   );
 }
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 600; // Revalidate every 10 minutes

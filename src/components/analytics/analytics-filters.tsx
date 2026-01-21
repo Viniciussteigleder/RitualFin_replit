@@ -78,11 +78,11 @@ export function AnalyticsFiltersPanel({
   ).length;
 
   return (
-    <div className="bg-card/80 backdrop-blur-xl rounded-3xl shadow-sm border border-border overflow-hidden">
+    <div className="bg-card/95 rounded-3xl shadow-sm border border-border overflow-hidden">
       {/* Filter Header */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-6 hover:bg-secondary/30 transition-all duration-300"
+        className="w-full flex items-center justify-between p-6 hover:bg-secondary/30 transition-[background-color,color] duration-150"
       >
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center">
@@ -99,12 +99,12 @@ export function AnalyticsFiltersPanel({
         </div>
         <div className="flex items-center gap-3">
           {activeFilterCount > 0 && (
-            <button
+              <button
               onClick={(e) => {
                 e.stopPropagation();
                 clearFilters();
               }}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground hover:text-red-600 hover:bg-red-50/60 rounded-xl transition-all duration-300 font-bold"
+              className="flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground hover:text-red-600 hover:bg-red-50/60 rounded-xl transition-[background-color,color,opacity] duration-150 font-bold"
             >
               <RotateCcw className="w-4 h-4" />
               Limpar
@@ -136,7 +136,7 @@ export function AnalyticsFiltersPanel({
                 <button
                   key={period.value}
                   onClick={() => setQuickPeriod(period.value)}
-                  className="px-4 py-2.5 bg-background border border-border rounded-xl hover:border-emerald-500 hover:bg-emerald-50/50 transition-all duration-300 text-sm font-bold text-foreground hover:text-emerald-800"
+                  className="px-4 py-2.5 bg-background border border-border rounded-xl hover:border-emerald-500 hover:bg-emerald-50/50 transition-[background-color,border-color,color,box-shadow,opacity] duration-150 text-sm font-bold text-foreground hover:text-emerald-800"
                 >
                   {period.label}
                 </button>
@@ -157,7 +157,7 @@ export function AnalyticsFiltersPanel({
                 onChange={(e) =>
                   updateFilter("startDate", e.target.value ? new Date(e.target.value) : null)
                 }
-                className="w-full px-4 py-2.5 border border-border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300 bg-background font-semibold"
+                className="w-full px-4 py-2.5 border border-border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-[border-color,box-shadow,background-color] duration-150 bg-background font-semibold"
               />
             </div>
 
@@ -172,7 +172,7 @@ export function AnalyticsFiltersPanel({
                 onChange={(e) =>
                   updateFilter("endDate", e.target.value ? new Date(e.target.value) : null)
                 }
-                className="w-full px-4 py-2.5 border border-border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300 bg-background font-semibold"
+                className="w-full px-4 py-2.5 border border-border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-[border-color,box-shadow,background-color] duration-150 bg-background font-semibold"
               />
             </div>
 
@@ -185,7 +185,7 @@ export function AnalyticsFiltersPanel({
               <select
                 value={filters.accountId || ""}
                 onChange={(e) => updateFilter("accountId", e.target.value || null)}
-                className="w-full px-4 py-2.5 border border-border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300 bg-background font-semibold appearance-none cursor-pointer"
+                className="w-full px-4 py-2.5 border border-border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-[border-color,box-shadow,background-color] duration-150 bg-background font-semibold appearance-none cursor-pointer"
               >
                 <option value="">Todas as contas</option>
                 {accounts.map((account) => (
@@ -212,7 +212,7 @@ export function AnalyticsFiltersPanel({
                     type="button"
                     onClick={() => updateFilter("type", opt.value || null)}
                     className={cn(
-                      "flex-1 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200",
+                      "flex-1 px-3 py-2 rounded-lg text-sm font-semibold transition-[background-color,color,box-shadow,opacity] duration-150",
                       (filters.type || "") === opt.value
                         ? "bg-emerald-50 text-emerald-800 shadow-sm"
                         : "text-muted-foreground hover:bg-secondary/40"
@@ -240,7 +240,7 @@ export function AnalyticsFiltersPanel({
                     type="button"
                     onClick={() => updateFilter("fixVar", opt.value || null)}
                     className={cn(
-                      "flex-1 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200",
+                      "flex-1 px-3 py-2 rounded-lg text-sm font-semibold transition-[background-color,color,box-shadow,opacity] duration-150",
                       (filters.fixVar || "") === opt.value
                         ? "bg-emerald-50 text-emerald-800 shadow-sm"
                         : "text-muted-foreground hover:bg-secondary/40"

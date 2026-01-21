@@ -28,7 +28,7 @@ function CategoryChartTooltip({
   const percent = total > 0 ? Math.round((entry.value / total) * 100) : 0;
 
   return (
-    <div className="rounded-2xl border border-border bg-background/95 backdrop-blur-sm shadow-xl px-4 py-3">
+    <div className="rounded-2xl border border-border bg-background/95 shadow-xl px-4 py-3">
       <div className="flex items-center gap-3">
         <CategoryIcon category={entry.name} size="sm" />
         <div className="flex flex-col">
@@ -80,11 +80,11 @@ export function CategoryChart({ data, total }: { data: CategoryData[], total: nu
             <h3 className="text-xl font-bold text-foreground font-display">Gastos por Categoria</h3>
             <div className="flex bg-secondary rounded-lg p-1 gap-1">
                 {[5, 8, 'all'].map((opt) => (
-                    <button
-                        key={opt}
-                        onClick={() => setViewLimit(opt as any)}
-                        className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${viewLimit === opt ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                    >
+	                    <button
+	                        key={opt}
+	                        onClick={() => setViewLimit(opt as any)}
+	                        className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-[background-color,color,box-shadow,opacity] duration-150 ${viewLimit === opt ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+	                    >
                         {opt === 'all' ? 'Todas' : `Top ${opt}`}
                     </button>
                 ))}
@@ -151,12 +151,12 @@ export function CategoryChart({ data, total }: { data: CategoryData[], total: nu
                             </div>
                         </div>
                         {/* Semantic Progress Bar */}
-                        <div className="h-1.5 w-full bg-secondary/50 rounded-full overflow-hidden">
-                            <div 
-                                className="h-full rounded-full transition-all duration-1000" 
-                                style={{ width: `${percent}%`, backgroundColor: config.color }}
-                            />
-                        </div>
+	                        <div className="h-1.5 w-full bg-secondary/50 rounded-full overflow-hidden">
+	                            <div 
+	                                className="h-full rounded-full transition-[width,opacity] duration-700 ease-out" 
+	                                style={{ width: `${percent}%`, backgroundColor: config.color }}
+	                            />
+	                        </div>
                     </div>
                 )
             })}

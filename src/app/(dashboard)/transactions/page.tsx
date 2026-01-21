@@ -5,6 +5,7 @@ import { AIAnalystChat } from "@/components/transactions/AIAnalystChat";
 import { ReRunRulesButton } from "@/components/transactions/re-run-rules-button";
 import { Wallet } from "lucide-react";
 import { PageHeader, PageContainer } from "@/components/ui/page-header";
+import { FlickerInstrumentation } from "@/components/perf/flicker-instrumentation";
 
 export default async function TransactionsPage({
   searchParams
@@ -41,34 +42,42 @@ export default async function TransactionsPage({
   };
 
   return (
-    <PageContainer>
-      <PageHeader
-        icon={Wallet}
-        iconColor="violet"
-        title="Extrato"
-        subtitle="Explore, filtre e gerencie seu histórico financeiro com precisão."
-        actions={
-          <div className="flex items-center gap-3">
-            <ReRunRulesButton />
-            <AIAnalystChat />
-          </div>
-        }
-      />
+    <div data-ui-perf-scope="transactions">
+      <PageContainer>
+        <FlickerInstrumentation />
+        <div data-testid="transactions-page-header">
+          <PageHeader
+            icon={Wallet}
+            iconColor="violet"
+            title="Extrato"
+            subtitle="Explore, filtre e gerencie seu histórico financeiro com precisão."
+            actions={
+              <div className="flex items-center gap-3">
+                <ReRunRulesButton />
+                <AIAnalystChat />
+              </div>
+            }
+          />
+        </div>
 
-      <TransactionList
-        transactions={transactions.map((tx: any) => ({
-          ...tx,
-          date: tx.paymentDate,
-          description: tx.descNorm || tx.descRaw
-        }))}
-        initialFilters={initialFilters}
-        aliasMap={aliasMap}
-        initialHasMore={hasMore}
-        initialNextCursor={nextCursor}
-        allCategories={filterOptions.categories as string[]}
-        allAccounts={filterOptions.accounts as string[]}
-      />
-    </PageContainer>
+        <TransactionList
+          transactions={transactions.map((tx: any) => ({
+            ...tx,
+            date: tx.paymentDate,
+            description: tx.descNorm || tx.descRaw
+          }))}
+          initialFilters={initialFilters}
+          aliasMap={aliasMap}
+          initialHasMore={hasMore}
+          initialNextCursor={nextCursor}
+          appCategories={filterOptions.appCategories}
+          categories1={filterOptions.categories1}
+          categories2={filterOptions.categories2}
+          categories3={filterOptions.categories3}
+          allAccounts={filterOptions.accounts as string[]}
+        />
+      </PageContainer>
+    </div>
   );
 }
 

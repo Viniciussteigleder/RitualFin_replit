@@ -2,7 +2,7 @@ import { getIngestionBatches, commitBatch, rollbackBatch } from "@/lib/actions/i
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Undo2, CheckCircle2, AlertCircle, Clock, FileText, Play, Info } from "lucide-react";
+import { Undo2, CheckCircle2, AlertCircle, Clock, FileText, Play, Info, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
@@ -81,6 +81,18 @@ export async function BatchList() {
                                          batch.status === "error" ? "Erro" :
                                          batch.status === "processing" ? "Processando" : batch.status}
                                     </Badge>
+
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="rounded-lg px-3 h-8 text-xs font-medium"
+                                        asChild
+                                    >
+                                        <Link href={`/admin/diagnostics?batchId=${batch.id}`}>
+                                            <Shield className="h-3 w-3 mr-1" />
+                                            Diagnóstico
+                                        </Link>
+                                    </Button>
 
                                     {(batch.status === "preview" || batch.status === "processing" || batch.status === "error") && (
                                         <Button

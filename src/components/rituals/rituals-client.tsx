@@ -216,16 +216,16 @@ export function RitualsClient({ streak, dailyTasks, weeklyTasks, monthlyTasks, i
           <div className="space-y-3">
             <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Checklist do Sistema</p>
             {tasks.map((task) => (
-              <Link
-                key={task.id}
-                href={task.link}
-                className={cn(
-                  "flex items-center justify-between p-4 rounded-xl border transition-all",
-                  task.completed
-                    ? "bg-emerald-500/5 border-emerald-500/20"
-                    : "bg-secondary/30 border-border hover:bg-secondary/50"
-                )}
-              >
+	              <Link
+	                key={task.id}
+	                href={task.link}
+	                className={cn(
+	                  "flex items-center justify-between p-4 rounded-xl border transition-[background-color,border-color,color,box-shadow,opacity] duration-150",
+	                  task.completed
+	                    ? "bg-emerald-500/5 border-emerald-500/20"
+	                    : "bg-secondary/30 border-border hover:bg-secondary/50"
+	                )}
+	              >
                 <div className="flex items-center gap-3">
                   {task.completed ? (
                     <CheckCircle2 className="h-5 w-5 text-emerald-500" />
@@ -281,33 +281,33 @@ export function RitualsClient({ streak, dailyTasks, weeklyTasks, monthlyTasks, i
           )}
 
           {periodGoals.map((goal) => (
-            <div
-              key={goal.id}
-              className={cn(
-                "flex items-center justify-between p-4 rounded-xl border group/goal transition-all shadow-sm",
-                goal.completed
-                  ? "bg-emerald-500/5 border-emerald-500/20"
-                  : "bg-background border-border"
-              )}
-            >
+	            <div
+	              key={goal.id}
+	              className={cn(
+	                "flex items-center justify-between p-4 rounded-xl border group/goal transition-[background-color,border-color,color,box-shadow,opacity] duration-150 shadow-sm",
+	                goal.completed
+	                  ? "bg-emerald-500/5 border-emerald-500/20"
+	                  : "bg-background border-border"
+	              )}
+	            >
               <div className="flex items-center gap-3">
-                <button 
-                  onClick={() => handleToggleGoal(goal.id, !goal.completed)}
-                  className={cn(
-                    "w-5 h-5 rounded-md flex items-center justify-center transition-all border",
-                    goal.completed ? "bg-emerald-500 border-emerald-500 text-white" : "border-muted-foreground/30 hover:border-primary"
-                  )}
-                >
+	                <button 
+	                  onClick={() => handleToggleGoal(goal.id, !goal.completed)}
+	                  className={cn(
+	                    "w-5 h-5 rounded-md flex items-center justify-center transition-[background-color,border-color,color,opacity] duration-150 border",
+	                    goal.completed ? "bg-emerald-500 border-emerald-500 text-white" : "border-muted-foreground/30 hover:border-primary"
+	                  )}
+	                >
                   {goal.completed && <Check className="h-3.5 w-3.5" />}
                 </button>
-                <span className={cn("font-medium text-sm transition-all", goal.completed && "text-muted-foreground line-through")}>
-                  {goal.goalText}
-                </span>
+	                <span className={cn("font-medium text-sm transition-[color,opacity] duration-150", goal.completed && "text-muted-foreground line-through")}>
+	                  {goal.goalText}
+	                </span>
               </div>
-              <button 
-                onClick={() => handleDeleteGoal(goal.id)}
-                className="opacity-0 group-hover/goal:opacity-100 p-1.5 hover:bg-red-500/10 hover:text-red-500 rounded-lg text-muted-foreground transition-all"
-              >
+	              <button 
+	                onClick={() => handleDeleteGoal(goal.id)}
+	                className="opacity-0 group-hover/goal:opacity-100 p-1.5 hover:bg-red-500/10 hover:text-red-500 rounded-lg text-muted-foreground transition-[background-color,color,opacity] duration-150"
+	              >
                 <Trash className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -354,7 +354,7 @@ export function RitualsClient({ streak, dailyTasks, weeklyTasks, monthlyTasks, i
 
         return (
           <TabsContent key={period} value={period} className="focus-visible:outline-none flex flex-col gap-6">
-            <Card className="rounded-[2.5rem] bg-card border-border shadow-sm overflow-hidden group hover:shadow-lg transition-all duration-500">
+	            <Card className="rounded-[2.5rem] bg-card border-border shadow-sm overflow-hidden group hover:shadow-lg transition-[box-shadow,border-color,background-color,opacity] duration-200">
               <CardContent className="p-10">
                 <div className="flex flex-col md:flex-row gap-10">
                   <div
@@ -375,12 +375,12 @@ export function RitualsClient({ streak, dailyTasks, weeklyTasks, monthlyTasks, i
                           {config.description}
                         </p>
                       </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button className="p-2 hover:bg-secondary rounded-xl text-muted-foreground transition-all">
-                            <MoreHorizontal className="h-6 w-6" />
-                          </button>
-                        </DropdownMenuTrigger>
+	                        <DropdownMenu>
+	                        <DropdownMenuTrigger asChild>
+	                          <button className="p-2 hover:bg-secondary rounded-xl text-muted-foreground transition-[background-color,color,opacity] duration-150">
+	                            <MoreHorizontal className="h-6 w-6" />
+	                          </button>
+	                        </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="rounded-2xl">
                           <DropdownMenuItem
                             className="rounded-xl font-bold"
@@ -477,7 +477,7 @@ export function RitualsClient({ streak, dailyTasks, weeklyTasks, monthlyTasks, i
                     <Button
                       onClick={() => handleCompleteRitual(period)}
                       disabled={completingRitual === period}
-                      className="h-16 px-10 bg-primary text-white font-bold rounded-2xl shadow-xl shadow-primary/20 hover:scale-105 transition-all text-base gap-3"
+                      className="h-16 px-10 bg-primary text-white font-bold rounded-2xl shadow-xl shadow-primary/20 hover:scale-105 transition-[background-color,box-shadow,transform,opacity] duration-150 text-base gap-3"
                     >
                       {completingRitual === period ? (
                         <>

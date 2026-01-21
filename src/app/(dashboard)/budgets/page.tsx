@@ -53,4 +53,4 @@ export default async function BudgetsPage() {
   );
 }
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 600; // Revalidate every 10 minutes

@@ -24,7 +24,9 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
-  experimental: {},
+  experimental: {
+    scrollRestoration: false, // Disable automatic scroll restoration
+  },
   // @ts-ignore - Next.js 16/Turbopack custom experimental key
   turbopack: {
     root: process.cwd(),
@@ -51,7 +53,7 @@ const nextConfig: NextConfig = {
             value: 'nosniff'
           },
           {
-            key: 'Content-Security-Policy-Report-Only',
+            key: process.env.NODE_ENV === 'production' ? 'Content-Security-Policy' : 'Content-Security-Policy-Report-Only',
             value: cspReportOnly,
           },
           {

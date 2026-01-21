@@ -140,7 +140,7 @@ export const buttonSizes = {
 export const cardVariants = {
   default: 'bg-card border border-border shadow-sm',
   primary: 'bg-primary/5 border border-primary/20 shadow-sm',
-  glass: 'bg-card/80 backdrop-blur-md border border-border/50 shadow-lg',
+  glass: 'bg-card/90 border border-border/50 shadow-lg',
   elevated: 'bg-card border border-border shadow-lg',
 } as const;
 

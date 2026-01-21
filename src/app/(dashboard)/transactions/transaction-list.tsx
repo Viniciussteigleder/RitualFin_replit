@@ -9,6 +9,8 @@ import {
     ChevronUp,
     Loader2
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { startOfWeek } from "date-fns";
 import { TransactionFilters as TransactionFiltersComp } from "@/components/transactions/TransactionFilters";
 import { TransactionGroup } from "@/components/transactions/TransactionGroup";
 import { BulkActionsBar as BulkActionsBarComp } from "@/components/transactions/bulk-actions-bar";
@@ -18,7 +20,8 @@ import {
     confirmTransaction,
     deleteTransaction,
     updateTransactionCategory,
-    getTransactionsForList
+    getTransactionsForList,
+    getTransactionDetail
 } from "@/lib/actions/transactions";
 import {
     bulkConfirmTransactions,
@@ -29,8 +32,10 @@ import { toast } from "sonner";
 import { TransactionDrawer } from "@/components/transactions/transaction-drawer";
 import { TransactionFilters } from "@/components/transactions/filter-panel";
 import { VirtualizedTransactionList } from "@/components/transactions/VirtualizedTransactionList";
+import { FlickerProfiler } from "@/components/perf/flicker-profiler";
+import { isDebugFlickerEnabledRuntime } from "@/lib/perf/ui-perf-flags";
 
-type SortField = "date" | "amount" | "category";
+type SortField = "date" | "amount" | "category" | "confidence";
 type SortDirection = "asc" | "desc";
 
 function SortableHeader({
@@ -62,7 +67,10 @@ export function TransactionList({
     aliasMap = {},
     initialHasMore = false,
     initialNextCursor = null,
-    allCategories = [],
+    appCategories = [],
+    categories1 = [],
+    categories2 = [],
+    categories3 = [],
     allAccounts = []
 }: {
     transactions: any[],
@@ -70,7 +78,10 @@ export function TransactionList({
     aliasMap?: Record<string, string>,
     initialHasMore?: boolean,
     initialNextCursor?: string | null,
-    allCategories?: string[],
+    appCategories?: string[],
+    categories1?: string[],
+    categories2?: string[],
+    categories3?: string[],
     allAccounts?: string[]
 }) {
     const [transactions, setTransactions] = useState(initialTransactions);
@@ -86,6 +97,47 @@ export function TransactionList({
     const [sortField, setSortField] = useState<SortField>("date");
     const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
     const [isRefetching, setIsRefetching] = useState(false);
+    const [viewMode, setViewMode] = useState<"day" | "week">("day");
+    const router = useRouter();
+
+    // Debug-only: allow deterministic, local mock data for flicker reproduction in E2E runs
+    useEffect(() => {
+        if (!isDebugFlickerEnabledRuntime()) return;
+        if (window.localStorage.getItem("DEBUG_FLICKER_MOCK_DATA") !== "1") return;
+        if (transactions.length > 0) return;
+
+        const now = Date.now();
+        const mock = Array.from({ length: 240 }).map((_, i) => {
+            const d = new Date(now - i * 86400000);
+            const dateKey = d.toISOString();
+            return {
+                id: `mock-${i}`,
+                paymentDate: dateKey,
+                date: dateKey,
+                descRaw: `Mock Transaction ${i}`,
+                descNorm: `Mock Transaction ${i}`,
+                simpleDesc: `Mock ${i}`,
+                amount: i % 2 === 0 ? -(i + 1) * 1.23 : (i + 1) * 2.34,
+                category1: i % 3 === 0 ? "FOOD" : i % 3 === 1 ? "TRANSPORT" : "UTILITIES",
+                confidence: (i % 100) / 100,
+                needsReview: false,
+                manualOverride: false,
+                conflictFlag: false,
+                source: i % 2 === 0 ? "MOCK-A" : "MOCK-B",
+            };
+        });
+        setTransactions(mock as any);
+        setHasMore(false);
+        setNextCursor(null);
+    }, [transactions.length]);
+
+    // NOTE: Avoid forcing scroll position on mount; this can create visible "jump" flicker.
+    // Kept behind the perf flag as a rollback lever in case someone depended on the old behavior.
+    useEffect(() => {
+        const fixesOn = window.localStorage.getItem("UI_PERF_FIXES") === "1" || process.env.NEXT_PUBLIC_UI_PERF_FIXES === "1";
+        if (fixesOn) return;
+        window.scrollTo(0, 0);
+    }, []); // Run once on mount
 
     // Debounce search to reduce server calls
     const debouncedSearch = useDebouncedValue(search, 300);
@@ -98,11 +150,16 @@ export function TransactionList({
                 limit: 50,
                 sources: filters.accounts,
                 search: debouncedSearch || undefined,
-                categories: filters.categories,
+                appCategories: filters.appCategories,
+                categories1: filters.categories1,
+                categories2: filters.categories2,
+                categories3: filters.categories3,
                 minAmount: filters.minAmount,
                 maxAmount: filters.maxAmount,
                 dateFrom: filters.dateFrom,
                 dateTo: filters.dateTo,
+                fixVar: filters.fixVar,
+                recurring: filters.recurring,
             });
 
             setTransactions(result.items.map(tx => ({
@@ -119,20 +176,38 @@ export function TransactionList({
         }
     }, [debouncedSearch, filters]);
 
+    // Debounced refetch to batch filter changes
+    const debouncedRefetch = useMemo(
+        () => {
+            let timeoutId: NodeJS.Timeout;
+            return () => {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => {
+                    refetchTransactions();
+                }, 300); // 300ms debounce
+            };
+        },
+        [refetchTransactions]
+    );
+
     // Refetch transactions when filters change (server-side filtering)
     useEffect(() => {
-        refetchTransactions();
-    }, [refetchTransactions]);
+        debouncedRefetch();
+    }, [debouncedRefetch]);
 
     // Handle sorting (client-side for now, can be moved to server later)
+    // Handle sorting (client-side for now, can be moved to server later)
     const handleSort = useCallback((field: SortField) => {
-        if (sortField === field) {
-            setSortDirection(prev => prev === "asc" ? "desc" : "asc");
-        } else {
-            setSortField(field);
-            setSortDirection("desc");
-        }
-    }, [sortField]);
+        setSortField(prevField => {
+            if (prevField === field) {
+                setSortDirection(prevDirection => prevDirection === "asc" ? "desc" : "asc");
+                return prevField;
+            } else {
+                setSortDirection("desc");
+                return field;
+            }
+        });
+    }, []);
 
     // Sort and group transactions (now operating on server-filtered data)
     const sortedTransactions = useMemo(() => {
@@ -148,6 +223,9 @@ export function TransactionList({
                 case "category":
                     comparison = (a.category1 || "").localeCompare(b.category1 || "");
                     break;
+                case "confidence":
+                    comparison = (a.confidence || 0) - (b.confidence || 0);
+                    break;
             }
             return sortDirection === "asc" ? comparison : -comparison;
         });
@@ -156,12 +234,19 @@ export function TransactionList({
 
     const groupedTransactions = useMemo(() => {
         return sortedTransactions.reduce((acc: Record<string, any[]>, tx: any) => {
-            const dateKey = new Date(tx.date).toISOString().split('T')[0];
+            let dateKey;
+            if (viewMode === "week") {
+                // Group by start of week (Monday)
+                dateKey = startOfWeek(new Date(tx.date), { weekStartsOn: 1 }).toISOString().split('T')[0];
+            } else {
+                dateKey = new Date(tx.date).toISOString().split('T')[0];
+            }
+            
             if (!acc[dateKey]) acc[dateKey] = [];
             acc[dateKey].push(tx);
             return acc;
         }, {} as Record<string, any[]>);
-    }, [sortedTransactions]);
+    }, [sortedTransactions, viewMode]);
 
     const sortedDateKeys = useMemo(() => {
         return Object.keys(groupedTransactions).sort((a, b) =>
@@ -170,13 +255,6 @@ export function TransactionList({
                 : new Date(a).getTime() - new Date(b).getTime()
         );
     }, [groupedTransactions, sortDirection]);
-
-    // Memoize available categories/accounts
-    const availableCategories = useMemo(() => {
-        return allCategories.length > 0
-            ? allCategories
-            : Array.from(new Set(transactions.map(t => t.category1).filter(Boolean)));
-    }, [allCategories, transactions]);
 
     const availableAccounts = useMemo(() => {
         return allAccounts.length > 0
@@ -255,13 +333,14 @@ export function TransactionList({
                 setTransactions(prev => prev.map(tx =>
                     ids.includes(tx.id) ? { ...tx, needsReview: false } : tx
                 ));
+                router.refresh();
             } else {
                 toast.error(result.error);
             }
         } catch (error) {
             toast.error("Erro ao confirmar transações");
         }
-    }, [selectedIds]);
+    }, [selectedIds, router]);
 
     const handleBulkDelete = useCallback(async () => {
         const ids = Array.from(selectedIds);
@@ -276,13 +355,14 @@ export function TransactionList({
                 setSelectedIds(new Set());
                 // Optimistic update instead of page reload
                 setTransactions(prev => prev.filter(tx => !ids.includes(tx.id)));
+                router.refresh();
             } else {
                 toast.error(result.error);
             }
         } catch (error) {
             toast.error("Erro ao eliminar transações");
         }
-    }, [selectedIds]);
+    }, [selectedIds, router]);
 
     // Fix: Include ALL filters in load more pagination
     const handleLoadMore = useCallback(async () => {
@@ -295,11 +375,16 @@ export function TransactionList({
                 cursor: nextCursor,
                 sources: filters.accounts,
                 search: debouncedSearch || undefined,
-                categories: filters.categories,
+                appCategories: filters.appCategories,
+                categories1: filters.categories1,
+                categories2: filters.categories2,
+                categories3: filters.categories3,
                 minAmount: filters.minAmount,
                 maxAmount: filters.maxAmount,
                 dateFrom: filters.dateFrom,
                 dateTo: filters.dateTo,
+                fixVar: filters.fixVar,
+                recurring: filters.recurring,
             });
 
             setTransactions(prev => [...prev, ...result.items.map(tx => ({
@@ -341,36 +426,69 @@ export function TransactionList({
         }
     }, [selectedIds]);
 
-    const handleEditClick = useCallback((tx: any) => setSelectedTx(tx), []);
-    const handleRowClick = useCallback((tx: any) => setSelectedTx(tx), []);
+    const handleEditClick = useCallback(async (tx: any) => {
+        // Upgrade the transaction object with full details (taxonomy etc)
+        setSelectedTx(tx); // Set immediately for UI responsiveness
+        try {
+            const fullTx = await getTransactionDetail(tx.id);
+            if (fullTx) {
+                setSelectedTx(fullTx);
+                // Also update in main list so subsequent opens are fast
+                setTransactions(prev => prev.map(item => item.id === tx.id ? { ...item, ...fullTx } : item));
+            }
+        } catch (error) {
+            console.error("Failed to fetch transaction details:", error);
+        }
+    }, []);
+
+    const handleRowClick = useCallback(async (tx: any) => {
+        setSelectedTx(tx);
+        try {
+            const fullTx = await getTransactionDetail(tx.id);
+            if (fullTx) {
+                setSelectedTx(fullTx);
+                setTransactions(prev => prev.map(item => item.id === tx.id ? { ...item, ...fullTx } : item));
+            }
+        } catch (error) {
+            console.error("Failed to fetch transaction details:", error);
+        }
+    }, []);
     const handleClearSelection = useCallback(() => setSelectedIds(new Set()), []);
     const handleClearFilters = useCallback(() => { setSearch(""); setFilters({}); }, []);
 
     return (
-        <div className="space-y-6 pb-32">
+      <FlickerProfiler id="TransactionList">
+        <div className="space-y-6 pb-32" data-testid="transactions-list">
             <TransactionFiltersComp
                 search={search}
                 onSearchChange={setSearch}
                 onFilterChange={setFilters}
-                availableCategories={availableCategories}
+                appCategories={appCategories}
+                categories1={categories1}
+                categories2={categories2}
+                categories3={categories3}
                 availableAccounts={availableAccounts}
                 isCompact={isCompact}
                 onToggleCompact={() => setIsCompact(!isCompact)}
                 hideCents={hideCents}
                 onToggleHideCents={() => setHideCents(!hideCents)}
                 onExport={handleBulkExport}
+                viewMode={viewMode}
+                onViewModeChange={setViewMode}
+                initialFilters={filters}
             />
 
             {/* Table Header (Desktop Only) */}
-            <div className="hidden md:grid grid-cols-[40px_80px_2.5fr_1fr_1.2fr_1fr_80px] gap-3 px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-wider bg-secondary/50 rounded-t-3xl border border-border backdrop-blur-sm">
+            <div className="hidden md:grid grid-cols-[40px_80px_2.5fr_1fr_2fr_80px_80px] gap-3 px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-wider bg-secondary/80 rounded-t-3xl border border-border">
                 <div className="flex justify-center">
                     <Checkbox checked={selectedIds.size === transactions.length && transactions.length > 0} onCheckedChange={toggleSelectAll} className="h-4 w-4 rounded border-2" />
                 </div>
                 <SortableHeader field="date" sortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Data</SortableHeader>
                 <div>Estabelecimento</div>
                 <SortableHeader field="amount" sortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Valor</SortableHeader>
-                <SortableHeader field="category" sortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Categoria</SortableHeader>
-                <div>Cat 1 / Cat 2</div>
+                <SortableHeader field="category" sortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Classificação</SortableHeader>
+                {/* Merged Cat1/Cat2 into Classification */}
+                <SortableHeader field="confidence" sortField={sortField} sortDirection={sortDirection} onSort={handleSort}>AI %</SortableHeader>
                 <div className="text-center">Ações</div>
             </div>
 
@@ -386,6 +504,7 @@ export function TransactionList({
                     onEditClick={handleEditClick}
                     onClick={handleRowClick}
                     aliasMap={aliasMap}
+                    viewMode={viewMode}
                 />
             ) : (
                 <div className="bg-card border border-border border-t-0 rounded-b-3xl overflow-hidden shadow-sm">
@@ -396,7 +515,7 @@ export function TransactionList({
                             <p className="text-sm text-muted-foreground font-medium">Atualizando transações...</p>
                         </div>
                     ) : transactions.length === 0 ? (
-                        <div className="text-center py-32 flex flex-col items-center animate-in fade-in zoom-in duration-500">
+                        <div className="text-center py-32 flex flex-col items-center">
                             <div className="w-24 h-24 rounded-[3rem] bg-gradient-to-br from-secondary to-secondary/30 flex items-center justify-center mb-8 shadow-xl text-muted-foreground/40">
                                 <Search className="h-12 w-12" />
                             </div>
@@ -404,11 +523,11 @@ export function TransactionList({
                             <p className="text-base text-muted-foreground mt-3 font-medium max-w-md mx-auto">
                                 Tente ajustar seus filtros ou remover termos de busca.
                             </p>
-                            <Button
+                              <Button
                                 variant="outline"
-                                className="mt-8 rounded-2xl h-12 px-8 font-bold border-border hover:bg-secondary transition-all"
+                                className="mt-8 rounded-2xl h-12 px-8 font-bold border-border hover:bg-secondary transition-[background-color,color,border-color,box-shadow] duration-150"
                                 onClick={handleClearFilters}
-                            >
+                              >
                                 Limpar Filtros
                             </Button>
                         </div>
@@ -425,6 +544,10 @@ export function TransactionList({
                                 onEditClick={handleEditClick}
                                 onClick={handleRowClick}
                                 aliasMap={aliasMap}
+                                // viewMode prop might not be needed for simple group if headers are handled differently
+                                // but if TransactionGroup renders header, we need it. 
+                                // Let's check TransactionGroup usage. 
+                                // It seems TransactionGroup is used when NOT virtualized (less than 100 items).
                             />
                         ))
                     )}
@@ -438,7 +561,7 @@ export function TransactionList({
                         variant="outline"
                         onClick={handleLoadMore}
                         disabled={isLoadingMore}
-                        className="rounded-2xl h-12 px-12 font-bold border-border hover:bg-secondary transition-all shadow-sm"
+                        className="rounded-2xl h-12 px-12 font-bold border-border hover:bg-secondary transition-[background-color,color,border-color,box-shadow] duration-150 shadow-sm"
                     >
                         {isLoadingMore ? (
                             <>
@@ -469,5 +592,6 @@ export function TransactionList({
                 onClearSelection={handleClearSelection}
             />
         </div>
+      </FlickerProfiler>
     );
 }

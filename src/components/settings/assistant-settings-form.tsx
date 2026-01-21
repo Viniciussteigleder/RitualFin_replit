@@ -137,12 +137,12 @@ export function AssistantSettingsForm() {
             <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
               Contexto do Sistema e Dados
             </Label>
-            <Textarea
+	            <Textarea
               value={databaseContext}
               onChange={(e) => setDatabaseContext(e.target.value)}
               placeholder={DEFAULT_DATABASE_CONTEXT.substring(0, 200) + "..."}
-              className="min-h-[200px] bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-all resize-none font-mono text-xs"
-            />
+	              className="min-h-[200px] bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-[background-color,border-color,box-shadow,color,opacity] duration-150 resize-none font-mono text-xs"
+	            />
             <p className="text-xs text-muted-foreground ml-1">
               Define a estrutura do banco de dados, tabelas, categorias e como o assistente deve interpretar os dados
             </p>
@@ -179,12 +179,12 @@ export function AssistantSettingsForm() {
                 Padrao
               </Button>
             </div>
-            <Textarea
+	            <Textarea
               value={analysisPrompt}
               onChange={(e) => setAnalysisPrompt(e.target.value)}
               placeholder={DEFAULT_ANALYSIS_PROMPT}
-              className="min-h-[120px] bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-all resize-none font-mono text-xs"
-            />
+	              className="min-h-[120px] bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-[background-color,border-color,box-shadow,color,opacity] duration-150 resize-none font-mono text-xs"
+	            />
             <p className="text-xs text-muted-foreground ml-1">
               Usado quando o usuario pergunta sobre gastos, categorias ou comparacoes
             </p>
@@ -208,12 +208,12 @@ export function AssistantSettingsForm() {
                 Padrao
               </Button>
             </div>
-            <Textarea
+	            <Textarea
               value={advicePrompt}
               onChange={(e) => setAdvicePrompt(e.target.value)}
               placeholder={DEFAULT_ADVICE_PROMPT}
-              className="min-h-[120px] bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-all resize-none font-mono text-xs"
-            />
+	              className="min-h-[120px] bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-[background-color,border-color,box-shadow,color,opacity] duration-150 resize-none font-mono text-xs"
+	            />
             <p className="text-xs text-muted-foreground ml-1">
               Usado quando o usuario pede sugestoes, dicas ou como economizar
             </p>
@@ -237,12 +237,12 @@ export function AssistantSettingsForm() {
                 Padrao
               </Button>
             </div>
-            <Textarea
+	            <Textarea
               value={summaryPrompt}
               onChange={(e) => setSummaryPrompt(e.target.value)}
               placeholder={DEFAULT_SUMMARY_PROMPT}
-              className="min-h-[120px] bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-all resize-none font-mono text-xs"
-            />
+	              className="min-h-[120px] bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-[background-color,border-color,box-shadow,color,opacity] duration-150 resize-none font-mono text-xs"
+	            />
             <p className="text-xs text-muted-foreground ml-1">
               Usado quando o usuario pede visao geral, status ou situacao financeira
             </p>
@@ -304,14 +304,14 @@ export function AssistantSettingsForm() {
             <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
               Tamanho Maximo da Resposta (tokens)
             </Label>
-            <Input
+	            <Input
               type="number"
               min={100}
               max={2000}
               value={maxResponseLength}
               onChange={(e) => setMaxResponseLength(Number(e.target.value))}
-              className="h-14 bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-all"
-            />
+	              className="h-14 bg-secondary/30 border-transparent focus:bg-white dark:focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-[background-color,border-color,box-shadow,color,opacity] duration-150"
+	            />
           </div>
 
           <Separator className="bg-border/50" />
@@ -362,11 +362,11 @@ export function AssistantSettingsForm() {
 
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-4">
-        <Button
-          onClick={handleSave}
-          disabled={isPending}
-          className="flex-1 h-14 bg-foreground text-background font-bold rounded-2xl shadow-xl shadow-foreground/5 hover:opacity-95 transition-all"
-        >
+	        <Button
+	          onClick={handleSave}
+	          disabled={isPending}
+	          className="flex-1 h-14 bg-foreground text-background font-bold rounded-2xl shadow-xl shadow-foreground/5 hover:opacity-95 transition-[background-color,box-shadow,opacity] duration-150"
+	        >
           {isPending ? (
             <Loader2 className="h-5 w-5 animate-spin mr-2" />
           ) : (

@@ -82,14 +82,14 @@ export function ImportWizard({ onComplete, children }: ImportWizardProps) {
 
                 return (
                   <div key={step.id} className="flex items-center">
-                    <div
-                      className={cn(
-                        "flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all",
-                        isCompleted && "bg-emerald-600 border-emerald-600 text-white",
-                        isActive && "bg-indigo-600 border-indigo-600 text-white",
-                        !isActive && !isCompleted && "bg-white border-slate-200 text-slate-400"
-                      )}
-                    >
+	                    <div
+	                      className={cn(
+	                        "flex items-center justify-center w-10 h-10 rounded-full border-2 transition-[background-color,border-color,color,box-shadow,opacity] duration-150",
+	                        isCompleted && "bg-emerald-600 border-emerald-600 text-white",
+	                        isActive && "bg-indigo-600 border-indigo-600 text-white",
+	                        !isActive && !isCompleted && "bg-white border-slate-200 text-slate-400"
+	                      )}
+	                    >
                       {isCompleted ? (
                         <Check className="h-5 w-5" />
                       ) : (

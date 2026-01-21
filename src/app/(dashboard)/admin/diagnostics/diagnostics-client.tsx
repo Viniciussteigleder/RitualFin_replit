@@ -96,6 +96,8 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { ReRunRulesButton } from "@/components/transactions/re-run-rules-button";
 import {
   runFullDiagnostics,
   autoFixIssue,
@@ -109,12 +111,15 @@ import {
   investigateTransaction,
   findSuspiciousTransactions,
   simulateReimport,
+  getRecentBatchesForDiagnostics,
+  type DiagnosticsScope,
   DiagnosticResult,
   DiagnosticIssue,
   Severity,
   TransactionLineage,
   ReimportSimulationResult
 } from "@/lib/actions/diagnostics";
+import { DIAGNOSTIC_STAGES, type DiagnosticStage } from "@/lib/diagnostics/catalog";
 
 /**
  * DIAGNOSTICS CLIENT COMPONENT v2.0
@@ -220,9 +225,11 @@ type SortDirection = "asc" | "desc";
 // ============================================================================
 
 export function DiagnosticsClient() {
+  const searchParams = useSearchParams();
   // State
   const [result, setResult] = useState<DiagnosticResult | null>(null);
   const [history, setHistory] = useState<DiagnosticResult[]>([]);
+  const [recentBatches, setRecentBatches] = useState<Array<{ id: string; filename: string | null; createdAt: string }>>([]);
   const [isPending, startTransition] = useTransition();
   const [isRunning, setIsRunning] = useState(false);
   const [runProgress, setRunProgress] = useState(0);
@@ -235,6 +242,10 @@ export function DiagnosticsClient() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<SortOption>("severity");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+
+  // Scope + stage
+  const [scope, setScope] = useState<DiagnosticsScope>({ kind: "all_recent", recentBatches: 10 });
+  const [stageFilter, setStageFilter] = useState<DiagnosticStage | "all">("all");
 
   // Multi-select
   const [selectedIssues, setSelectedIssues] = useState<Set<string>>(new Set());
@@ -282,7 +293,15 @@ export function DiagnosticsClient() {
   // Load history on mount
   useEffect(() => {
     getDiagnosticHistory().then(setHistory).catch(console.error);
+    getRecentBatchesForDiagnostics(20).then(setRecentBatches).catch(console.error);
   }, []);
+
+  useEffect(() => {
+    const batchId = searchParams.get("batchId");
+    if (batchId) {
+      setScope({ kind: "batch", batchId });
+    }
+  }, [searchParams]);
 
   // Run diagnostics
   const runDiagnostics = useCallback(async () => {
@@ -297,7 +316,7 @@ export function DiagnosticsClient() {
 
     startTransition(async () => {
       try {
-        const data = await runFullDiagnostics();
+        const data = await runFullDiagnostics(scope);
         setResult(data);
         setRunProgress(100);
 
@@ -315,7 +334,7 @@ export function DiagnosticsClient() {
         setIsRunning(false);
       }
     });
-  }, [announce]);
+  }, [announce, scope]);
 
   // Auto-fix with confirmation
   const handleAutoFix = useCallback(async (issueId: string) => {
@@ -395,7 +414,7 @@ export function DiagnosticsClient() {
     setIsDrillDownLoading(true);
 
     try {
-      const records = await getAffectedRecords(issue.id);
+      const records = await getAffectedRecords(issue.id, { scope, limit: 100 });
       setDrillDownData(records);
     } catch (error) {
       console.error("Drill-down failed:", error);
@@ -403,7 +422,7 @@ export function DiagnosticsClient() {
     } finally {
       setIsDrillDownLoading(false);
     }
-  }, []);
+  }, [scope]);
 
   // Investigate transaction
   const handleInvestigate = useCallback(async () => {
@@ -487,6 +506,11 @@ export function DiagnosticsClient() {
     // Category filter
     if (categoryFilter !== "all") {
       issues = issues.filter(i => i.category.id === categoryFilter);
+    }
+
+    // Stage filter
+    if (stageFilter !== "all") {
+      issues = issues.filter(i => i.stage === stageFilter);
     }
 
     // Tab filter
@@ -587,11 +611,13 @@ export function DiagnosticsClient() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* History Button */}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
+	        <div className="flex items-center gap-2">
+	          <ReRunRulesButton />
+
+	          {/* History Button */}
+	          <TooltipProvider>
+	            <Tooltip>
+	              <TooltipTrigger asChild>
                 <Button
                   variant="outline"
                   size="icon"
@@ -683,6 +709,172 @@ export function DiagnosticsClient() {
           </Button>
         </div>
       </header>
+
+      {/* Catalog + Scope */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <ChevronsUpDown className="h-4 w-4" />
+            Catálogo (raw-data-first) e Escopo
+          </CardTitle>
+          <CardDescription>
+            Selecione o estágio e o recorte (batch/data). Checks sem evidência raw ficam como DB-only e não entram no score.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Escopo</p>
+              <Select
+                value={scope.kind}
+                onValueChange={(v) => {
+                  if (v === "batch") {
+                    setScope({ kind: "batch", batchId: recentBatches[0]?.id ?? "" });
+                  } else if (v === "date_range") {
+                    const today = new Date().toISOString().slice(0, 10);
+                    setScope({ kind: "date_range", from: today, to: today });
+                  } else {
+                    setScope({ kind: "all_recent", recentBatches: 10 });
+                  }
+                }}
+              >
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue placeholder="Selecione o escopo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all_recent">Últimos batches</SelectItem>
+                  <SelectItem value="batch">Um batch</SelectItem>
+                  <SelectItem value="date_range">Período</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Detalhe</p>
+              {scope.kind === "batch" ? (
+                <Select
+                  value={scope.batchId}
+                  onValueChange={(batchId) => setScope({ kind: "batch", batchId })}
+                >
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue placeholder="Selecione o batch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {recentBatches.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {(b.filename || "Batch").slice(0, 40)} ({b.id.slice(0, 8)})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : scope.kind === "all_recent" ? (
+                <Select
+                  value={String(scope.recentBatches ?? 10)}
+                  onValueChange={(v) => setScope({ kind: "all_recent", recentBatches: Number(v) })}
+                >
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[5, 10, 20, 50].map((n) => (
+                      <SelectItem key={n} value={String(n)}>
+                        {n} batches
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  <Input
+                    type="date"
+                    value={scope.from}
+                    onChange={(e) => setScope({ ...scope, from: e.target.value })}
+                    className="rounded-xl"
+                  />
+                  <Input
+                    type="date"
+                    value={scope.to}
+                    onChange={(e) => setScope({ ...scope, to: e.target.value })}
+                    className="rounded-xl"
+                  />
+                </div>
+              )}
+              <p className="text-[11px] text-muted-foreground">
+                Dica: execute por batch para evidência mais forte e drilldown mais rápido.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Filtro de estágio</p>
+              <Select value={stageFilter} onValueChange={(v) => setStageFilter(v as any)}>
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {DIAGNOSTIC_STAGES.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.titlePt}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-7 gap-2">
+            <Button
+              type="button"
+              variant={stageFilter === "all" ? "default" : "outline"}
+              className="rounded-xl justify-start gap-2"
+              onClick={() => setStageFilter("all")}
+            >
+              <Shield className="h-4 w-4" />
+              Todos
+            </Button>
+            {DIAGNOSTIC_STAGES.map((stage) => {
+              const Icon = stage.icon;
+              const selected = stageFilter === stage.id;
+              return (
+                <Button
+                  key={stage.id}
+                  type="button"
+                  variant={selected ? "default" : "outline"}
+                  className="rounded-xl justify-start gap-2"
+                  onClick={() => setStageFilter(stage.id)}
+                >
+                  <Icon className="h-4 w-4" />
+                  {stage.titlePt}
+                </Button>
+              );
+            })}
+          </div>
+
+          {stageFilter !== "all" && (
+            <div className="rounded-xl border bg-muted/30 p-3">
+              {(() => {
+                const stage = DIAGNOSTIC_STAGES.find((s) => s.id === stageFilter);
+                if (!stage) return null;
+                const Icon = stage.icon;
+                return (
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-background border">
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-sm font-medium">{stage.titlePt}</div>
+                      <div className="text-sm text-muted-foreground">{stage.descriptionPt}</div>
+                      <div className="text-sm text-muted-foreground">
+                        <span className="font-medium text-foreground">Abordagem:</span> {stage.approachPt}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Progress Bar (during run) */}
       <AnimatePresence>
@@ -1080,16 +1272,112 @@ export function DiagnosticsClient() {
                   <div key={idx} className="p-3 bg-muted rounded-lg">
                     <div className="flex items-center justify-between gap-4 mb-2">
                       <span className="font-mono text-xs text-muted-foreground">ID: {record.id}</span>
-                      <Link
-                        href={`/transactions?search=${record.id}`}
-                        className="text-xs text-primary hover:underline flex items-center gap-1"
-                      >
-                        Ver transação <ExternalLink className="h-3 w-3" />
-                      </Link>
+                      {(record.key_desc !== undefined || record.amount !== undefined || record.db_amount !== undefined) ? (
+                        <Link
+                          href={`/transactions?search=${record.id}`}
+                          className="text-xs text-primary hover:underline flex items-center gap-1"
+                        >
+                          Ver transação <ExternalLink className="h-3 w-3" />
+                        </Link>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Sem transação vinculada</span>
+                      )}
                     </div>
-                    <pre className="text-xs font-mono overflow-x-auto whitespace-pre-wrap">
-                      {JSON.stringify(record, null, 2)}
-                    </pre>
+                    {(() => {
+                      const raw = record.raw_columns_json ?? record.rawColumns ?? null;
+                      const parsed = record.parsed_payload ?? record.parsedPayload ?? null;
+                      const dbAmount = Number(record.db_amount ?? record.amount ?? record.dbAmount);
+                      const parsedAmount = Number(parsed?.amount ?? parsed?.betrag ?? parsed?.Amount);
+                      const dbKeyDesc = record.key_desc ?? record.keyDesc ?? record.key_desc;
+                      const parsedKeyDesc = parsed?.keyDesc ?? parsed?.descNorm ?? parsed?.description;
+                      const dbDate = record.payment_date ?? record.paymentDate;
+                      const parsedDate = parsed?.paymentDate ?? parsed?.date ?? parsed?.buchungstag ?? parsed?.datum;
+
+                      const amountMismatch =
+                        Number.isFinite(dbAmount) &&
+                        Number.isFinite(parsedAmount) &&
+                        Math.abs(dbAmount - parsedAmount) > 0.01;
+
+                      const keyDescMismatch =
+                        typeof dbKeyDesc === "string" &&
+                        typeof parsedKeyDesc === "string" &&
+                        dbKeyDesc.trim() !== parsedKeyDesc.trim();
+
+                      return (
+                        <div className="space-y-3">
+                          {(raw || parsed) && (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                              <div className="bg-background rounded-lg border p-2">
+                                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                                  Raw
+                                </div>
+                                <pre className="text-xs font-mono overflow-x-auto whitespace-pre-wrap">
+                                  {JSON.stringify(raw, null, 2)}
+                                </pre>
+                              </div>
+                              <div className="bg-background rounded-lg border p-2">
+                                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                                  Parsed
+                                </div>
+                                <pre className="text-xs font-mono overflow-x-auto whitespace-pre-wrap">
+                                  {JSON.stringify(parsed, null, 2)}
+                                </pre>
+                              </div>
+                              <div className="bg-background rounded-lg border p-2">
+                                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                                  DB
+                                </div>
+                                <pre className="text-xs font-mono overflow-x-auto whitespace-pre-wrap">
+                                  {JSON.stringify(
+                                    {
+                                      id: record.id,
+                                      batchId: record.batch_id ?? record.batchId,
+                                      ingestionItemId: record.ingestion_item_id ?? record.ingestionItemId,
+                                      paymentDate: dbDate,
+                                      amount: record.db_amount ?? record.amount,
+                                      keyDesc: dbKeyDesc,
+                                    },
+                                    null,
+                                    2
+                                  )}
+                                </pre>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="bg-background rounded-lg border p-2">
+                            <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                              Diff (campo-a-campo)
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+                              <div className="text-muted-foreground">Campo</div>
+                              <div className="text-muted-foreground">Parsed</div>
+                              <div className="text-muted-foreground">DB</div>
+
+                              <div className="font-medium">amount</div>
+                              <div className={amountMismatch ? "text-rose-600 dark:text-rose-400 font-medium" : ""}>
+                                {Number.isFinite(parsedAmount) ? parsedAmount : String(parsedAmount)}
+                              </div>
+                              <div className={amountMismatch ? "text-rose-600 dark:text-rose-400 font-medium" : ""}>
+                                {Number.isFinite(dbAmount) ? dbAmount : String(dbAmount)}
+                              </div>
+
+                              <div className="font-medium">paymentDate</div>
+                              <div>{String(parsedDate ?? "")}</div>
+                              <div>{String(dbDate ?? "")}</div>
+
+                              <div className="font-medium">keyDesc</div>
+                              <div className={keyDescMismatch ? "text-rose-600 dark:text-rose-400 font-medium" : ""}>
+                                {String(parsedKeyDesc ?? "").slice(0, 140)}
+                              </div>
+                              <div className={keyDescMismatch ? "text-rose-600 dark:text-rose-400 font-medium" : ""}>
+                                {String(dbKeyDesc ?? "").slice(0, 140)}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 ))}
               </div>
@@ -1827,6 +2115,11 @@ function IssueCard({
               <Badge variant="outline" className="text-xs font-mono shrink-0">
                 {issue.id}
               </Badge>
+              {issue.confidenceLabel && issue.confidenceLabel !== "raw-backed" && (
+                <Badge variant="secondary" className="text-xs shrink-0">
+                  {issue.confidenceLabel}
+                </Badge>
+              )}
               {issue.autoFixable && !fixResult?.success && (
                 <Badge variant="secondary" className="text-xs gap-1 shrink-0">
                   <Wrench className="h-3 w-3" aria-hidden="true" />
@@ -1864,6 +2157,23 @@ function IssueCard({
               {issue.recommendation}
             </p>
           </div>
+
+          {(issue.howWeKnow || issue.approach) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {issue.howWeKnow && (
+                <div className="bg-muted/40 rounded-lg p-3 border">
+                  <p className="text-sm font-medium mb-1">Como sabemos</p>
+                  <p className="text-sm text-muted-foreground">{issue.howWeKnow}</p>
+                </div>
+              )}
+              {issue.approach && (
+                <div className="bg-muted/40 rounded-lg p-3 border">
+                  <p className="text-sm font-medium mb-1">Abordagem</p>
+                  <p className="text-sm text-muted-foreground">{issue.approach}</p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Samples */}
           {issue.samples.length > 0 && (

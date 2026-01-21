@@ -19,22 +19,22 @@ export function ForecastCard({ dailyForecast }: { dailyForecast: number }) {
   const label = view === "daily" ? "Gasto médio diário (30 dias)" : "Projeção de gasto semanal";
 
   return (
-    <Card className="rounded-[2rem] border-border bg-foreground text-background shadow-xl hover:-translate-y-1 transition-all overflow-hidden relative">
+    <Card className="rounded-[2rem] border-border bg-foreground text-background shadow-xl hover:-translate-y-1 transition-[transform,box-shadow,opacity] duration-200 overflow-hidden relative">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-transparent opacity-40"></div>
       <CardContent className="p-8 relative z-10">
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-primary-foreground/60 uppercase tracking-widest">Previsão</span>
-            <div className="bg-white/10 backdrop-blur-sm p-1 rounded-xl flex items-center">
+            <div className="bg-white/10 p-1 rounded-xl flex items-center">
               <button 
                 onClick={() => setView("daily")}
-                className={`px-3 py-1 rounded-lg text-[10px] font-bold transition-all ${view === "daily" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                className={`px-3 py-1 rounded-lg text-[10px] font-bold transition-[background-color,color,opacity] duration-150 ${view === "daily" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
               >
                 Diária
               </button>
               <button 
                 onClick={() => setView("weekly")}
-                className={`px-3 py-1 rounded-lg text-[10px] font-bold transition-all ${view === "weekly" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                className={`px-3 py-1 rounded-lg text-[10px] font-bold transition-[background-color,color,opacity] duration-150 ${view === "weekly" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
               >
                 Semanal
               </button>

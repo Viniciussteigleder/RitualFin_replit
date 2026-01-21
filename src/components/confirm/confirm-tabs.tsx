@@ -241,7 +241,7 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
 
   return (
     <Tabs defaultValue="rules" className="w-full">
-      <TabsList className="w-full justify-start gap-2 rounded-3xl p-2 bg-card/70 border border-border shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/50">
+      <TabsList className="w-full justify-start gap-2 rounded-3xl p-2 bg-card/80 border border-border shadow-sm">
         <TabsTrigger
           value="rules"
           className="rounded-2xl font-black gap-2 px-4 py-2 data-[state=active]:bg-emerald-600 data-[state=active]:text-white"
@@ -712,9 +712,9 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
               const display = tx.aliasDesc || tx.simpleDesc || tx.descNorm || tx.descRaw;
               const keyDesc = tx.keyDesc ?? tx.descNorm ?? tx.descRaw;
 
-              return (
-                <div className="bg-amber-50/50 border border-amber-100 rounded-[2.5rem] p-4 md:p-6 shadow-sm overflow-hidden">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+	              return (
+	                <div key={tx.id} className="bg-amber-50/50 border border-amber-100 rounded-[2.5rem] p-4 md:p-6 shadow-sm overflow-hidden">
+	                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                     {/* Left: transaction context */}
                     <div className="space-y-4">
                       <div className="flex items-start justify-between gap-4">

@@ -151,19 +151,19 @@ export function HeroEmptyState({
           {action && (
             action.href ? (
               <Link href={action.href}>
-                <Button className="h-12 px-8 rounded-xl font-bold gap-2 shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all">
+                <Button className="h-12 px-8 rounded-xl font-bold gap-2 shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-[transform,background-color,color,box-shadow,opacity] duration-150">
                   {action.label}
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
             ) : (
-              <Button
-                onClick={action.onClick}
-                className="h-12 px-8 rounded-xl font-bold gap-2 shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
-              >
-                {action.label}
-                <ArrowRight className="h-4 w-4" />
-              </Button>
+                <Button
+                  onClick={action.onClick}
+                  className="h-12 px-8 rounded-xl font-bold gap-2 shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-[transform,background-color,color,box-shadow,opacity] duration-150"
+                >
+                  {action.label}
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
             )
           )}
           {secondaryAction && (

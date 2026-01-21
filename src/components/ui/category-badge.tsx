@@ -43,7 +43,7 @@ export function CategoryBadge({
     return (
       <div
         className={cn(
-          "inline-flex items-center rounded-lg font-semibold uppercase tracking-wide transition-all",
+          "inline-flex items-center rounded-lg font-semibold uppercase tracking-wide transition-[background-color,color,border-color,box-shadow,opacity] duration-150",
           sizeClasses[size],
           className
         )}
@@ -62,7 +62,7 @@ export function CategoryBadge({
     return (
       <div
         className={cn(
-          "inline-flex items-center rounded-lg font-semibold uppercase tracking-wide border-2 bg-transparent transition-all",
+          "inline-flex items-center rounded-lg font-semibold uppercase tracking-wide border-2 bg-transparent transition-[background-color,color,border-color,box-shadow,opacity] duration-150",
           sizeClasses[size],
           className
         )}
@@ -81,7 +81,7 @@ export function CategoryBadge({
   return (
     <div
       className={cn(
-        "inline-flex items-center rounded-lg font-semibold uppercase tracking-wide transition-all",
+        "inline-flex items-center rounded-lg font-semibold uppercase tracking-wide transition-[background-color,color,border-color,box-shadow,opacity] duration-150",
         sizeClasses[size],
         className
       )}

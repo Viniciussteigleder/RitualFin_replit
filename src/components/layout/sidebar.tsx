@@ -25,7 +25,8 @@ import {
   Cog,
   LucideIcon,
   ListOrdered,
-  Shield
+  Shield,
+  BookOpen
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useState, useMemo } from "react";
@@ -83,7 +84,7 @@ export function Sidebar() {
         href={item.href}
         onClick={() => setIsOpen(false)}
         className={cn(
-            "flex items-center justify-between px-3 py-2 rounded-xl transition-all group focus-ring relative overflow-hidden",
+            "flex items-center justify-between px-3 py-2 rounded-xl transition-[background-color,color,border-color,box-shadow,opacity] duration-150 group focus-ring relative overflow-hidden",
             isActive
             ? "bg-primary/10 text-primary font-bold shadow-sm shadow-primary/5 border border-primary/20"
             : "text-muted-foreground hover:bg-secondary hover:text-foreground font-medium",
@@ -114,7 +115,10 @@ export function Sidebar() {
   return (
     <>
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-background border-b border-border z-50 flex items-center px-4 justify-between">
+      <div
+        className="md:hidden fixed top-0 left-0 right-0 h-16 bg-background border-b border-border z-50 flex items-center px-4 justify-between"
+        data-testid="mobile-header"
+      >
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center shadow-lg shadow-primary/5">
              <Sparkles className="h-6 w-6 text-primary" />
@@ -134,16 +138,19 @@ export function Sidebar() {
       {/* Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden"
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       {/* Sidebar Sidebar */}
-      <aside className={cn(
+      <aside
+        data-testid="sidebar"
+        className={cn(
         "fixed md:sticky top-0 left-0 z-50 h-screen bg-sidebar border-r border-border transition-transform duration-300 ease-in-out md:translate-x-0 w-72 p-6 flex flex-col justify-between",
         isOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
+      )}
+      >
         <div className="flex flex-col gap-8 h-full min-h-0">
           {/* Logo */}
           <div className="flex items-center gap-3 px-2 flex-shrink-0">
@@ -230,6 +237,7 @@ export function Sidebar() {
                           { id: "uploads", icon: Receipt, href: "/uploads", label: "Importar Arquivos" },
                           { id: "ai-rules", icon: Bot, href: "/settings/rules", label: "Regras de IA" },
                           { id: "diagnostics", icon: Shield, href: "/admin/diagnostics", label: "Diagnóstico" },
+                          { id: "como-funciona", icon: BookOpen, href: "/ajuda/como-funciona", label: "Como funciona" },
                       ].map(item => renderNavItem(item, false))}
                   </CollapsibleContent>
                 </div>
@@ -242,7 +250,7 @@ export function Sidebar() {
               href="/settings"
               onClick={() => setIsOpen(false)}
               className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-muted-foreground hover:bg-secondary hover:text-foreground font-medium group text-sm focus-ring",
+                "flex items-center gap-3 px-4 py-3 rounded-xl transition-[background-color,color,opacity] duration-150 text-muted-foreground hover:bg-secondary hover:text-foreground font-medium group text-sm focus-ring",
                 pathname === "/settings" && "bg-secondary text-foreground font-bold"
               )}
             >
@@ -251,7 +259,7 @@ export function Sidebar() {
             </Link>
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-muted-foreground hover:bg-destructive/10 hover:text-destructive font-medium group text-sm w-full text-left focus-ring"
+              className="flex items-center gap-3 px-4 py-3 rounded-xl transition-[background-color,color,opacity] duration-150 text-muted-foreground hover:bg-destructive/10 hover:text-destructive font-medium group text-sm w-full text-left focus-ring"
             >
               <LogOut className="h-5 w-5 text-muted-foreground/60 group-hover:text-destructive group-hover:-translate-x-1 transition-transform" />
               <span>{sidebarLabels.items.logout}</span>

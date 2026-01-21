@@ -77,7 +77,7 @@ export function CalendarClient({
                     <div
                       key={`${wIndex}-${dIndex}`}
                       className={cn(
-                        "p-2 border-r border-b border-border last:border-r-0 transition-all group/day cursor-pointer min-h-[120px] relative flex flex-col justify-between",
+                        "p-2 border-r border-b border-border last:border-r-0 transition-[background-color,color,box-shadow,border-color,opacity] duration-150 group/day cursor-pointer min-h-[120px] relative flex flex-col justify-between",
                         !day && "bg-secondary/10 pointer-events-none",
                         day && "hover:bg-primary/5",
                         isSelected && "bg-primary/5 ring-inset ring-2 ring-primary/20"
@@ -179,7 +179,7 @@ export function CalendarClient({
                           <div className="space-y-3">
                               <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Transações Realizadas</h4>
                               {selectedTransactions.map(tx => (
-                                  <div key={tx.id} className="flex items-center justify-between p-3 bg-secondary/30 rounded-xl border border-transparent hover:border-border transition-all">
+                                  <div key={tx.id} className="flex items-center justify-between p-3 bg-secondary/30 rounded-xl border border-transparent hover:border-border transition-[background-color,border-color,color,box-shadow,opacity] duration-150">
                                       <div className="flex flex-col overflow-hidden">
                                           <span className="text-sm font-bold truncate">{tx.descNorm || tx.descRaw}</span>
                                           <span className="text-[10px] text-muted-foreground">{tx.category1}</span>

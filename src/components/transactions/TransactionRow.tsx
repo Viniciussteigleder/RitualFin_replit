@@ -38,10 +38,12 @@ export const TransactionRow = memo(function TransactionRow({
     return (
         <div
             className={cn(
-                "group flex flex-col md:grid md:grid-cols-[40px_80px_2.5fr_1fr_1.2fr_1fr_80px] gap-2 md:gap-3 items-stretch md:items-center hover:bg-secondary/40 transition-colors duration-150 cursor-pointer border-transparent",
+                "group flex flex-col md:grid md:grid-cols-[40px_80px_2.5fr_1fr_2fr_80px_80px] gap-2 md:gap-3 items-stretch md:items-center hover:bg-secondary/40 transition-[background-color] duration-150 cursor-pointer border-transparent",
                 isCompact ? "px-4 py-2 md:px-6" : "px-4 py-4 md:px-6",
                 isSelected && "bg-primary/5 border-l-4 border-l-primary"
             )}
+            data-testid="transaction-row"
+            data-txid={transaction.id}
             onClick={() => onClick(transaction)}
         >
             {/* Column: Checkbox */}
@@ -76,15 +78,18 @@ export const TransactionRow = memo(function TransactionRow({
                 {/* Logo/Avatar - Rectangle/flexible */}
                 <div className="flex flex-row items-center gap-3 min-w-0 flex-1">
                     {transaction.aliasDesc && aliasMap[transaction.aliasDesc] ? (
-                        <img
-                            src={aliasMap[transaction.aliasDesc]}
-                            alt={transaction.aliasDesc}
-                            loading="lazy"
-                            className={cn(
-                                "object-contain border border-border bg-white flex-shrink-0 rounded-lg",
-                                isCompact ? "w-8 h-8" : "w-10 h-8"
-                            )}
-                        />
+                        <>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                                src={aliasMap[transaction.aliasDesc]}
+                                alt={transaction.aliasDesc}
+                                loading="lazy"
+                                className={cn(
+                                    "object-contain border border-border bg-white flex-shrink-0 rounded-lg",
+                                    isCompact ? "w-8 h-8" : "w-10 h-8"
+                                )}
+                            />
+                        </>
                     ) : (
                         <CategoryIcon
                             category={transaction.category1}
@@ -134,26 +139,34 @@ export const TransactionRow = memo(function TransactionRow({
                     {isNegative ? "-" : "+"} {formatAmount(Number(transaction.amount), hideCents)}
                 </div>
 
-                {/* Desktop Category (App Category) */}
-                <div className="hidden md:flex items-center">
-                    <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-bold border border-border bg-secondary/30">
-                        <CategoryIcon category={transaction.appCategoryName || transaction.category1 || "OPEN"} size="sm" />
-                        <span className="truncate max-w-[120px]">{transaction.appCategoryName || transaction.category1 || "OPEN"}</span>
+                {/* Desktop Classification (Merged) */}
+                <div className="hidden md:flex items-center gap-3 overflow-hidden">
+                    <div className="flex-shrink-0">
+                         <div className="flex items-center justify-center p-2 rounded-xl bg-secondary/30 border border-border">
+                            <CategoryIcon category={transaction.appCategoryName || transaction.category1 || "OPEN"} size="sm" />
+                         </div>
                     </div>
-                </div>
-
-                {/* Desktop Cat1 / Cat2 */}
-                <div className="hidden md:flex flex-col text-xs text-muted-foreground">
-                    <span className="truncate">{transaction.category1 || "-"}</span>
-                    {transaction.category2 && (
-                        <span className="truncate text-[10px] text-muted-foreground/70">{transaction.category2}</span>
-                    )}
+                    <div className="flex flex-col min-w-0">
+                        <span className="text-xs font-bold truncate">
+                            {transaction.appCategoryName || "Sem categoria"}
+                        </span>
+                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground truncate">
+                             <span className="truncate">{transaction.category1 || "-"}</span>
+                             {transaction.category2 && (
+                                <>
+                                    <span>›</span>
+                                    <span className="truncate text-muted-foreground/80">{transaction.category2}</span>
+                                </>
+                             )}
+                        </div>
+                    </div>
                 </div>
 
                 {/* Action Button - Edit only (opens drawer) */}
                 <div className="hidden md:flex items-center justify-center">
                     <button
-                        className="p-2.5 hover:bg-secondary rounded-xl transition-colors duration-150 text-muted-foreground hover:text-foreground"
+                        className="p-2.5 hover:bg-secondary rounded-xl transition-[background-color] duration-150 text-muted-foreground hover:text-foreground"
+                        style={{ contain: "layout style" }}
                         onClick={(e) => onEditClick(transaction, e)}
                         title="Editar transação"
                     >
@@ -162,5 +175,17 @@ export const TransactionRow = memo(function TransactionRow({
                 </div>
             </div>
         </div>
+    );
+}, (prevProps: TransactionRowProps, nextProps: TransactionRowProps) => {
+    // Custom comparison function for performance
+    return (
+        prevProps.transaction.id === nextProps.transaction.id &&
+        prevProps.transaction.date === nextProps.transaction.date &&
+        prevProps.transaction.amount === nextProps.transaction.amount &&
+        prevProps.transaction.category1 === nextProps.transaction.category1 &&
+        prevProps.isSelected === nextProps.isSelected &&
+        prevProps.isCompact === nextProps.isCompact &&
+        prevProps.hideCents === nextProps.hideCents &&
+        prevProps.aliasMap === nextProps.aliasMap
     );
 });

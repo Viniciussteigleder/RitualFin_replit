@@ -8,7 +8,7 @@ function MonthTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   const total = Number(payload[0]?.value || 0);
   return (
-    <div className="rounded-2xl border border-border bg-background/95 backdrop-blur-sm shadow-xl px-4 py-3">
+    <div className="rounded-2xl border border-border bg-background/95 shadow-xl px-4 py-3">
       <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{label}</div>
       <div className="text-sm font-bold text-foreground tabular-nums">{formatCurrency(total, { hideDecimals: true })}</div>
     </div>
@@ -25,7 +25,7 @@ export function MonthByMonthInsight({ rows }: { rows: MonthByMonthRow[] }) {
   });
 
   return (
-    <div className="bg-card/80 backdrop-blur-xl rounded-3xl shadow-sm border border-border overflow-hidden">
+    <div className="bg-card/95 rounded-3xl shadow-sm border border-border overflow-hidden">
       <div className="p-6 border-b border-border flex items-center justify-between gap-6">
         <div className="flex flex-col gap-1">
           <h3 className="text-lg font-black text-foreground">Mês a mês</h3>
@@ -73,7 +73,7 @@ export function TopListInsight({
   const max = Math.max(0, ...rows.map((r) => r.total));
 
   return (
-    <div className="bg-card/80 backdrop-blur-xl rounded-3xl shadow-sm border border-border overflow-hidden">
+    <div className="bg-card/95 rounded-3xl shadow-sm border border-border overflow-hidden">
       <div className="p-6 border-b border-border">
         <h3 className="text-lg font-black text-foreground">{title}</h3>
       </div>
@@ -86,7 +86,7 @@ export function TopListInsight({
             {rows.map((r) => (
               <div
                 key={r.name}
-                className="group flex flex-col gap-3 p-4 rounded-2xl bg-background/60 border border-border hover:border-emerald-200/60 hover:shadow-sm transition-all duration-300"
+                className="group flex flex-col gap-3 p-4 rounded-2xl bg-background/60 border border-border hover:border-emerald-200/60 hover:shadow-sm transition-[border-color,box-shadow,background-color,color,opacity] duration-200"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">

@@ -46,6 +46,16 @@ export default async function CalendarPage({
       gte(transactions.paymentDate, firstDay),
       lte(transactions.paymentDate, lastDay)
     ),
+    columns: {
+      id: true,
+      paymentDate: true,
+      amount: true,
+      descRaw: true,
+      descNorm: true,
+      type: true,
+      category1: true,
+      display: true,
+    },
   });
 
   const monthEvents = await db.query.calendarEvents.findMany({
@@ -111,7 +121,7 @@ export default async function CalendarPage({
       <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-8 bg-card p-10 rounded-[3rem] border border-border shadow-sm animate-fade-in-up">
         <div className="flex flex-col gap-3">
            <div className="flex items-center gap-3">
-               <div className="p-3 bg-blue-500/10 rounded-2xl transition-transform duration-300 hover:scale-110">
+               <div className="p-3 bg-blue-500/10 rounded-2xl">
                  <CalendarIcon className="h-8 w-8 text-blue-600 dark:text-blue-400" />
               </div>
               <h1 className="text-4xl font-bold text-foreground tracking-tight font-display">Calendário Financeiro</h1>
@@ -122,14 +132,14 @@ export default async function CalendarPage({
         </div>
 
         <div className="flex flex-col md:flex-row items-center gap-4 w-full xl:w-auto">
-          <div className="flex items-center bg-secondary/50 rounded-2xl p-1.5 border border-border transition-all duration-300 hover:shadow-md">
-            <Link href={`/calendar?month=${prevMonthStr}`} className="p-3 hover:bg-white dark:hover:bg-card rounded-2xl text-muted-foreground transition-all shadow-sm hover:scale-110 active:scale-95">
+          <div className="flex items-center bg-secondary/50 rounded-2xl p-1.5 border border-border">
+            <Link href={`/calendar?month=${prevMonthStr}`} className="p-3 hover:bg-white dark:hover:bg-card rounded-2xl text-muted-foreground transition-colors">
               <ChevronLeft className="h-5 w-5" />
             </Link>
             <div className="px-8 flex items-center gap-3 min-w-[180px] justify-center">
               <span className="text-lg font-bold text-foreground capitalize tracking-tight">{monthName}</span>
             </div>
-            <Link href={`/calendar?month=${nextMonthStr}`} className="p-3 hover:bg-white dark:hover:bg-card rounded-2xl text-muted-foreground transition-all shadow-sm hover:scale-110 active:scale-95">
+            <Link href={`/calendar?month=${nextMonthStr}`} className="p-3 hover:bg-white dark:hover:bg-card rounded-2xl text-muted-foreground transition-colors">
               <ChevronRight className="h-5 w-5" />
             </Link>
           </div>
@@ -149,4 +159,4 @@ export default async function CalendarPage({
   );
 }
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 3600; // Revalidate every hour

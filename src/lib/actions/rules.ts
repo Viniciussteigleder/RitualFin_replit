@@ -44,6 +44,10 @@ export async function getRuleSuggestions(limit: number = 10): Promise<RulePropos
       eq(transactions.userId, session.user.id),
       eq(transactions.leafId, ensured.openLeafId)
     ),
+    columns: {
+      descNorm: true,
+      descRaw: true,
+    },
     limit: 500 // Limit sample size for performance
   });
 
@@ -99,6 +103,14 @@ export async function simulateRule(keyword: string): Promise<SimulationResult> {
       // We search in descNorm
       like(transactions.descNorm, `%${keyword.toLowerCase()}%`)
     ),
+    columns: {
+      id: true,
+      paymentDate: true,
+      descNorm: true,
+      descRaw: true,
+      amount: true,
+      category1: true,
+    },
     limit: 50, // Get up to 50 samples
     orderBy: [desc(transactions.paymentDate)]
   });

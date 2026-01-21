@@ -116,7 +116,7 @@ export function BudgetDialog({ mode = "create", budget, trigger, onSuccess }: Bu
   };
 
   const defaultTrigger = mode === "create" ? (
-    <Button className="h-14 px-8 bg-foreground text-background hover:scale-105 transition-all rounded-2xl font-bold shadow-xl shadow-foreground/5 gap-2">
+    <Button className="h-14 px-8 bg-foreground text-background hover:scale-105 transition-[background-color,box-shadow,transform,opacity] duration-150 rounded-2xl font-bold shadow-xl shadow-foreground/5 gap-2">
       <PlusCircle className="h-5 w-5" />
       Novo Orçamento
     </Button>

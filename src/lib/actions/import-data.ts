@@ -125,6 +125,7 @@ export async function importCSVData() {
               eq(transactions.userId, userId),
               eq(transactions.key, txKey)
             ),
+            columns: { id: true },
           });
 
           if (existing) {

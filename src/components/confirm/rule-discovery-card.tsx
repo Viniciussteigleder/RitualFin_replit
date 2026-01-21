@@ -251,7 +251,7 @@ export function RuleDiscoveryCard({ candidate, taxonomyOptions, onApplied, onTax
   }
 
   return (
-    <div className="bg-card border border-border/60 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300 group relative overflow-hidden">
+    <div className="bg-card border border-border/60 rounded-3xl p-6 shadow-sm hover:shadow-md transition-[box-shadow,border-color,background-color,color,opacity] duration-150 group relative overflow-hidden">
       {/* Impact indicator */}
       <div className="absolute top-4 right-4 flex items-center gap-2">
         <Badge
@@ -360,28 +360,28 @@ export function RuleDiscoveryCard({ candidate, taxonomyOptions, onApplied, onTax
               <div className="space-y-2">
                 <label className="text-xs uppercase font-bold text-muted-foreground">Tipo</label>
                 <div className="flex rounded-lg border border-border overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => setType("Despesa")}
-                    className={cn(
-                      "flex-1 py-2 px-3 text-sm font-medium transition-all flex items-center justify-center gap-1",
-                      type === "Despesa"
-                        ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
-                        : "bg-background hover:bg-secondary text-muted-foreground"
-                    )}
+	                  <button
+	                    type="button"
+	                    onClick={() => setType("Despesa")}
+	                    className={cn(
+	                      "flex-1 py-2 px-3 text-sm font-medium transition-[background-color,color,opacity] duration-150 flex items-center justify-center gap-1",
+	                      type === "Despesa"
+	                        ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
+	                        : "bg-background hover:bg-secondary text-muted-foreground"
+	                    )}
                   >
                     <TrendingDown className="w-3.5 h-3.5" />
                     Despesa
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setType("Receita")}
-                    className={cn(
-                      "flex-1 py-2 px-3 text-sm font-medium transition-all flex items-center justify-center gap-1",
-                      type === "Receita"
-                        ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
-                        : "bg-background hover:bg-secondary text-muted-foreground"
-                    )}
+	                  <button
+	                    type="button"
+	                    onClick={() => setType("Receita")}
+	                    className={cn(
+	                      "flex-1 py-2 px-3 text-sm font-medium transition-[background-color,color,opacity] duration-150 flex items-center justify-center gap-1",
+	                      type === "Receita"
+	                        ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
+	                        : "bg-background hover:bg-secondary text-muted-foreground"
+	                    )}
                   >
                     <TrendingUp className="w-3.5 h-3.5" />
                     Receita
@@ -393,28 +393,28 @@ export function RuleDiscoveryCard({ candidate, taxonomyOptions, onApplied, onTax
               <div className="space-y-2">
                 <label className="text-xs uppercase font-bold text-muted-foreground">Frequência</label>
                 <div className="flex rounded-lg border border-border overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => setFixVar("Variável")}
-                    className={cn(
-                      "flex-1 py-2 px-3 text-sm font-medium transition-all flex items-center justify-center gap-1",
-                      fixVar === "Variável"
-                        ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300"
-                        : "bg-background hover:bg-secondary text-muted-foreground"
-                    )}
+	                  <button
+	                    type="button"
+	                    onClick={() => setFixVar("Variável")}
+	                    className={cn(
+	                      "flex-1 py-2 px-3 text-sm font-medium transition-[background-color,color,opacity] duration-150 flex items-center justify-center gap-1",
+	                      fixVar === "Variável"
+	                        ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300"
+	                        : "bg-background hover:bg-secondary text-muted-foreground"
+	                    )}
                   >
                     <Calendar className="w-3.5 h-3.5" />
                     Variável
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setFixVar("Fixo")}
-                    className={cn(
-                      "flex-1 py-2 px-3 text-sm font-medium transition-all flex items-center justify-center gap-1",
-                      fixVar === "Fixo"
-                        ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
-                        : "bg-background hover:bg-secondary text-muted-foreground"
-                    )}
+	                  <button
+	                    type="button"
+	                    onClick={() => setFixVar("Fixo")}
+	                    className={cn(
+	                      "flex-1 py-2 px-3 text-sm font-medium transition-[background-color,color,opacity] duration-150 flex items-center justify-center gap-1",
+	                      fixVar === "Fixo"
+	                        ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+	                        : "bg-background hover:bg-secondary text-muted-foreground"
+	                    )}
                   >
                     <Repeat className="w-3.5 h-3.5" />
                     Fixo
@@ -515,18 +515,18 @@ export function RuleDiscoveryCard({ candidate, taxonomyOptions, onApplied, onTax
           <p className="text-xs text-muted-foreground">
             Esta ação atualizará <strong>{candidate.count}</strong> transações semelhantes (se houver match).
           </p>
-          <Button
-            onClick={handleCreate}
-            disabled={isPending || !selectedLeafId}
-            className={cn(
-              "h-11 px-8 font-bold transition-all duration-300 shadow-md rounded-xl",
-              isPending
-                ? "bg-muted text-muted-foreground"
-                : !selectedLeafId
-                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                : "bg-emerald-600 hover:bg-emerald-700 text-white hover:scale-[1.02] active:scale-95"
-            )}
-          >
+	          <Button
+	            onClick={handleCreate}
+	            disabled={isPending || !selectedLeafId}
+	            className={cn(
+	              "h-11 px-8 font-bold transition-[background-color,box-shadow,transform,opacity] duration-150 shadow-md rounded-xl",
+	              isPending
+	                ? "bg-muted text-muted-foreground"
+	                : !selectedLeafId
+	                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+	                : "bg-emerald-600 hover:bg-emerald-700 text-white hover:scale-[1.02] active:scale-95"
+	            )}
+	          >
             {isPending ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />

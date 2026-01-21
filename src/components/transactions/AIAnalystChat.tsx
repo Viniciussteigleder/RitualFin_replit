@@ -89,13 +89,13 @@ export function AIAnalystChat({ currentScreen = "transactions" }: AIAnalystChatP
     return (
         <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-                 <Button variant="outline" className="h-14 lg:h-auto gap-4 bg-secondary/50 p-4 rounded-3xl border border-border backdrop-blur-sm shadow-sm px-6 hover:bg-secondary cursor-pointer transition-all group">
+	                 <Button variant="outline" className="h-14 lg:h-auto gap-4 bg-secondary/50 p-4 rounded-3xl border border-border shadow-sm px-6 hover:bg-secondary cursor-pointer transition-[background-color] duration-150 group">
                    <div className="flex flex-col items-end mr-2">
                      <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Analista IA</span>
                      <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">Perguntar</span>
                    </div>
                    <div className="flex -space-x-2">
-                      <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center border-2 border-background group-hover:scale-110 transition-transform"><Sparkles className="h-4 w-4 text-emerald-500" /></div>
+                      <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center border-2 border-background transition-transform duration-150"><Sparkles className="h-4 w-4 text-emerald-500" /></div>
                    </div>
                 </Button>
             </SheetTrigger>
@@ -198,9 +198,9 @@ export function AIAnalystChat({ currentScreen = "transactions" }: AIAnalystChatP
 
                 <div className="p-4 border-t border-border bg-background">
                     <form
-                        className="flex items-center gap-2 bg-secondary p-2 rounded-2xl border-2 border-transparent focus-within:border-primary/20 transition-all"
-                        onSubmit={(e) => { e.preventDefault(); handleSend(); }}
-                    >
+	                        className="flex items-center gap-2 bg-secondary p-2 rounded-2xl border-2 border-transparent focus-within:border-primary/20 transition-[border-color,box-shadow] duration-150"
+	                        onSubmit={(e) => { e.preventDefault(); handleSend(); }}
+	                    >
                         <Input
                             className="flex-1 border-none bg-transparent shadow-none focus-visible:ring-0 h-10 font-medium"
                             placeholder="Faça uma pergunta sobre suas finanças..."

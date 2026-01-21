@@ -29,7 +29,7 @@ export function RecentTransactionsList({ transactions }: RecentTransactionsListP
         {transactions.map((tx) => (
           <div 
             key={tx.id} 
-            className="flex items-center justify-between group/item cursor-pointer hover:bg-secondary p-4 rounded-3xl transition-all duration-300"
+            className="flex items-center justify-between group/item cursor-pointer hover:bg-secondary p-4 rounded-3xl transition-[background-color,color,box-shadow,opacity] duration-150"
             onClick={() => setSelectedTx(tx)}
           >
             <div className="flex flex-col">

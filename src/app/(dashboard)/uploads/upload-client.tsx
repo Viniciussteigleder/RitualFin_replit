@@ -15,7 +15,7 @@ export function UploadClient() {
               <TabsList className="bg-secondary/50 p-1.5 h-auto rounded-[1.5rem] gap-1 md:gap-2 border border-border flex-wrap justify-center">
                 <TabsTrigger
                   value="csv"
-                  className="rounded-2xl px-4 py-3 md:px-10 md:py-4 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[10px] md:text-[11px] font-black uppercase tracking-[0.1em] gap-2 md:gap-3 transition-all"
+                  className="rounded-2xl px-4 py-3 md:px-10 md:py-4 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[10px] md:text-[11px] font-black uppercase tracking-[0.1em] gap-2 md:gap-3 transition-[background-color,color,box-shadow,opacity] duration-150"
                 >
                   <FileText className="h-4 w-4" />
                   <span className="hidden sm:inline">Extrato Bancário</span>
@@ -23,7 +23,7 @@ export function UploadClient() {
                 </TabsTrigger>
                 <TabsTrigger
                   value="screenshot"
-                  className="rounded-2xl px-4 py-3 md:px-10 md:py-4 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[10px] md:text-[11px] font-black uppercase tracking-[0.1em] gap-2 md:gap-3 transition-all"
+                  className="rounded-2xl px-4 py-3 md:px-10 md:py-4 data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:shadow-xl text-[10px] md:text-[11px] font-black uppercase tracking-[0.1em] gap-2 md:gap-3 transition-[background-color,color,box-shadow,opacity] duration-150"
                 >
                   <Smartphone className="h-4 w-4" />
                   <span className="hidden sm:inline">Evidência (Print)</span>

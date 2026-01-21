@@ -105,11 +105,11 @@ export default async function ImportPreviewPage(props: { params: Promise<{ batch
       </div>
 
       {/* Parsing Insights */}
-      {diagnostics && (
-        <Card className={cn(
-          "rounded-[2.5rem] border-primary/20 bg-primary/5 shadow-none overflow-hidden group transition-all duration-500",
-          isAllDuplicates && "bg-orange-500/5 border-orange-200"
-        )}>
+	    {diagnostics && (
+	      <Card className={cn(
+	        "rounded-[2.5rem] border-primary/20 bg-primary/5 shadow-none overflow-hidden group transition-[border-color,background-color,box-shadow,opacity] duration-200",
+	        isAllDuplicates && "bg-orange-500/5 border-orange-200"
+	      )}>
           <CardContent className="p-10">
             <div className="flex items-start gap-8">
               <div className={cn(
