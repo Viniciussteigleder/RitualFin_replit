@@ -15,7 +15,15 @@ export async function diagnoseRuleMatch() {
 
   // 1. Fetch the transaction
   const tx = await db.query.transactions.findFirst({
-    where: (t, { like, or }) => or(like(t.id, "ccbd801b%"), like(t.descRaw, "%Hommer Fitness%"))
+    where: (t, { like, or }) => or(like(t.id, "ccbd801b%"), like(t.descRaw, "%Hommer Fitness%")),
+    columns: {
+      id: true,
+      descRaw: true,
+      descNorm: true,
+      amount: true,
+      leafId: true,
+      category1: true,
+    },
   });
 
   if (!tx) {

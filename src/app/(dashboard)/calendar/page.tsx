@@ -46,6 +46,16 @@ export default async function CalendarPage({
       gte(transactions.paymentDate, firstDay),
       lte(transactions.paymentDate, lastDay)
     ),
+    columns: {
+      id: true,
+      paymentDate: true,
+      amount: true,
+      descRaw: true,
+      descNorm: true,
+      type: true,
+      category1: true,
+      display: true,
+    },
   });
 
   const monthEvents = await db.query.calendarEvents.findMany({

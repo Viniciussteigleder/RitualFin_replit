@@ -230,7 +230,30 @@ export async function getAnalyticsData(
   let transactionsList;
   if (currentLevel === "transactions") {
     transactionsList = await db
-      .select()
+      .select({
+        id: transactions.id,
+        paymentDate: transactions.paymentDate,
+        descRaw: transactions.descRaw,
+        descNorm: transactions.descNorm,
+        keyDesc: transactions.keyDesc,
+        simpleDesc: transactions.simpleDesc,
+        aliasDesc: transactions.aliasDesc,
+        amount: transactions.amount,
+        currency: transactions.currency,
+        type: transactions.type,
+        fixVar: transactions.fixVar,
+        appCategoryName: transactions.appCategoryName,
+        category1: transactions.category1,
+        category2: transactions.category2,
+        category3: transactions.category3,
+        confidence: transactions.confidence,
+        needsReview: transactions.needsReview,
+        manualOverride: transactions.manualOverride,
+        classifiedBy: transactions.classifiedBy,
+        recurringFlag: transactions.recurringFlag,
+        source: transactions.source,
+        display: transactions.display,
+      })
       .from(transactions)
       .where(and(...conditions))
       .orderBy(desc(transactions.paymentDate))

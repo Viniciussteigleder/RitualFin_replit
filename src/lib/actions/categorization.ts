@@ -39,6 +39,17 @@ export async function applyCategorizationCore(userId: string) {
     // Get all transactions
     const allTransactions = await db.query.transactions.findMany({
       where: eq(transactions.userId, userId),
+      columns: {
+        id: true,
+        manualOverride: true,
+        classifiedBy: true,
+        keyDesc: true,
+        descNorm: true,
+        descRaw: true,
+        type: true,
+        fixVar: true,
+        aliasDesc: true,
+      },
     });
 
     let categorized = 0;
@@ -141,6 +152,16 @@ export async function diagnoseInconsistentTransactions() {
   // Find transactions with inconsistent classification
   const allTransactions = await db.query.transactions.findMany({
     where: eq(transactions.userId, userId),
+    columns: {
+      id: true,
+      descNorm: true,
+      descRaw: true,
+      category1: true,
+      appCategoryName: true,
+      needsReview: true,
+      confidence: true,
+      ruleIdApplied: true,
+    },
   });
 
   const inconsistencies = allTransactions.filter(tx => {
@@ -222,6 +243,13 @@ export async function fixInconsistentTransactions() {
   for (const inconsistency of diagnosis.inconsistencies) {
     const tx = await db.query.transactions.findFirst({
       where: eq(transactions.id, inconsistency.id),
+      columns: {
+        id: true,
+        keyDesc: true,
+        descNorm: true,
+        descRaw: true,
+        aliasDesc: true,
+      },
     });
 
     if (!tx) continue;
