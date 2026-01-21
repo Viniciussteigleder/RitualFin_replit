@@ -163,80 +163,124 @@ const CATEGORIES = {
 
 export async function runFullDiagnostics(scope: DiagnosticsScope = { kind: "all_recent", recentBatches: 10 }): Promise<DiagnosticResult> {
   const startTime = Date.now();
-  const session = await auth();
-  if (!session?.user?.id) throw new Error("Unauthorized");
-  const userId = session.user.id;
+  try {
+    const session = await auth();
+    if (!session?.user?.id) throw new Error("Unauthorized");
+    const userId = session.user.id;
+    console.log(`[DIAGNOSTICS] Run for userId: ${userId}`);
 
-  // Run all diagnostic checks in parallel
-  const [
-    importRes,
-    ruleRes,
-    catRes,
-    finRes,
-    taxRes,
-    linRes
-  ] = await Promise.all([
-    runImportDiagnostics(userId, scope),
-    runRuleDiagnostics(userId),
-    runCategorizationDiagnostics(userId),
-    runFinancialDiagnostics(userId),
-    runTaxonomyDiagnostics(userId),
-    runDataLineageDiagnostics(userId)
-  ]);
+    const totalTxResult = await db.execute(sql`SELECT COUNT(*) as count FROM transactions WHERE user_id = ${userId}`);
+    const totalTxs = (totalTxResult.rows[0] as any)?.count;
+    console.log(`[DIAGNOSTICS] Total transactions found: ${totalTxs}`);
 
-  const rawIssues = [
-    ...importRes.issues,
-    ...ruleRes.issues,
-    ...catRes.issues,
-    ...finRes.issues,
-    ...taxRes.issues,
-    ...linRes.issues
-  ];
+    // Run all diagnostic checks in parallel
+    const [
+      importRes,
+      ruleRes,
+      catRes,
+      finRes,
+      taxRes,
+      linRes
+    ] = await Promise.all([
+      runImportDiagnostics(userId, scope),
+      runRuleDiagnostics(userId),
+      runCategorizationDiagnostics(userId),
+      runFinancialDiagnostics(userId),
+      runTaxonomyDiagnostics(userId),
+      runDataLineageDiagnostics(userId)
+    ]);
 
-  const enrichedIssues = rawIssues.map(enrichIssueFromCatalog);
+    const rawIssues = [
+      ...importRes.issues,
+      ...ruleRes.issues,
+      ...catRes.issues,
+      ...finRes.issues,
+      ...taxRes.issues,
+      ...linRes.issues
+    ];
 
-  // Calculate summary
-  const critical = enrichedIssues.filter(i => i.severity === "critical").length;
-  const high = enrichedIssues.filter(i => i.severity === "high").length;
-  const medium = enrichedIssues.filter(i => i.severity === "medium").length;
-  const low = enrichedIssues.filter(i => i.severity === "low").length;
-  const info = enrichedIssues.filter(i => i.severity === "info").length;
+    const enrichedIssues = rawIssues.map(enrichIssueFromCatalog);
 
-  const scoreEligible = enrichedIssues.filter((i) => i.includeInHealthScore !== false);
-  const scoreCritical = scoreEligible.filter(i => i.severity === "critical").length;
-  const scoreHigh = scoreEligible.filter(i => i.severity === "high").length;
-  const scoreMedium = scoreEligible.filter(i => i.severity === "medium").length;
-  const scoreLow = scoreEligible.filter(i => i.severity === "low").length;
+    // Calculate summary
+    const critical = enrichedIssues.filter(i => i.severity === "critical").length;
+    const high = enrichedIssues.filter(i => i.severity === "high").length;
+    const medium = enrichedIssues.filter(i => i.severity === "medium").length;
+    const low = enrichedIssues.filter(i => i.severity === "low").length;
+    const info = enrichedIssues.filter(i => i.severity === "info").length;
 
-  // Health score: 100 - (critical*25 + high*10 + medium*5 + low*2)
-  const healthScore = Math.max(
-    0,
-    Math.min(100, 100 - (scoreCritical * 25) - (scoreHigh * 10) - (scoreMedium * 5) - (scoreLow * 2))
-  );
+    const scoreEligible = enrichedIssues.filter((i) => i.includeInHealthScore !== false);
+    const scoreCritical = scoreEligible.filter(i => i.severity === "critical").length;
+    const scoreHigh = scoreEligible.filter(i => i.severity === "high").length;
+    const scoreMedium = scoreEligible.filter(i => i.severity === "medium").length;
+    const scoreLow = scoreEligible.filter(i => i.severity === "low").length;
 
-  return {
-    success: true,
-    timestamp: new Date().toISOString(),
-    duration: Date.now() - startTime,
-    summary: {
-      totalIssues: rawIssues.length,
-      critical,
-      high,
-      medium,
-      low,
-      info,
-      healthScore
-    },
-    categories: {
-      imports: importRes.categoryResult,
-      rules: ruleRes.categoryResult,
-      categorization: catRes.categoryResult,
-      financial: finRes.categoryResult,
-      taxonomy: taxRes.categoryResult,
-      lineage: linRes.categoryResult
-    },
-    issues: enrichedIssues
-  };
+    // Health score: 100 - (critical*25 + high*10 + medium*5 + low*2)
+    const healthScore = Math.max(
+      0,
+      Math.min(100, 100 - (scoreCritical * 25) - (scoreHigh * 10) - (scoreMedium * 5) - (scoreLow * 2))
+    );
+
+    return {
+      success: true,
+      timestamp: new Date().toISOString(),
+      duration: Date.now() - startTime,
+      summary: {
+        totalIssues: rawIssues.length,
+        critical,
+        high,
+        medium,
+        low,
+        info,
+        healthScore
+      },
+      categories: {
+        imports: importRes.categoryResult,
+        rules: ruleRes.categoryResult,
+        categorization: catRes.categoryResult,
+        financial: finRes.categoryResult,
+        taxonomy: taxRes.categoryResult,
+        lineage: linRes.categoryResult
+      },
+      issues: enrichedIssues
+    };
+  } catch (error: any) {
+    console.error("[DIAGNOSTICS] runFullDiagnostics failed:", error);
+    return {
+      success: false,
+      timestamp: new Date().toISOString(),
+      duration: Date.now() - startTime,
+      summary: {
+        totalIssues: 0,
+        critical: 0,
+        high: 0,
+        medium: 0,
+        low: 0,
+        info: 0,
+        healthScore: 0
+      },
+      categories: {
+        imports: { name: "Imports", icon: "FileUp", status: "critical", issueCount: 0, checksRun: 0, checksPassed: 0, checks: [] },
+        rules: { name: "Rules", icon: "Sparkles", status: "critical", issueCount: 0, checksRun: 0, checksPassed: 0, checks: [] },
+        categorization: { name: "Categorization", icon: "Tags", status: "critical", issueCount: 0, checksRun: 0, checksPassed: 0, checks: [] },
+        financial: { name: "Financial", icon: "DollarSign", status: "critical", issueCount: 0, checksRun: 0, checksPassed: 0, checks: [] },
+        taxonomy: { name: "Taxonomy", icon: "GitBranch", status: "critical", issueCount: 0, checksRun: 0, checksPassed: 0, checks: [] },
+        lineage: { name: "Lineage", icon: "Link", status: "critical", issueCount: 0, checksRun: 0, checksPassed: 0, checks: [] }
+      },
+      issues: [
+        {
+          id: "SYS-001",
+          category: CATEGORIES.financial,
+          severity: "critical",
+          title: "Erro Interno no Sistema de Diagnóstico",
+          description: error.message || "Ocorreu um erro inesperado ao executar os diagnósticos.",
+          affectedCount: 0,
+          samples: [],
+          recommendation: "Por favor, verifique os logs do servidor para mais detalhes.",
+          autoFixable: false
+        }
+      ]
+    };
+  }
 }
 
 // ============================================================================
@@ -1242,7 +1286,7 @@ async function runCategorizationDiagnostics(userId: string) {
     SELECT COUNT(*) as count
     FROM transactions
     WHERE user_id = ${userId}
-    AND rule_id IS NULL 
+    AND rule_id_applied IS NULL 
     AND (category_1 != 'OPEN' OR app_category_name != 'OPEN')
   `);
 
