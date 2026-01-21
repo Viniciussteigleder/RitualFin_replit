@@ -87,6 +87,7 @@ export interface DiagnosticResult {
     categorization: CategoryResult;
     financial: CategoryResult;
     taxonomy: CategoryResult;
+    lineage: CategoryResult;
   };
   issues: DiagnosticIssue[];
 }
@@ -139,6 +140,12 @@ const CATEGORIES = {
     name: "Estrutura Taxonômica",
     icon: "GitBranch",
     description: "Valida hierarquia de categorias e relacionamentos"
+  },
+  lineage: {
+    id: "lineage",
+    name: "Rastreabilidade de Dados",
+    icon: "Link",
+    description: "Verifica cadeia de evidências e origem das transações"
   }
 } as const;
 
@@ -160,17 +167,19 @@ export async function runFullDiagnostics(scope: DiagnosticsScope = { kind: "all_
     ruleIssues,
     categorizationIssues,
     financialIssues,
-    taxonomyIssues
+    taxonomyIssues,
+    lineageIssues
   ] = await Promise.all([
     runImportDiagnostics(userId, scope),
     runRuleDiagnostics(userId),
     runCategorizationDiagnostics(userId),
     runFinancialDiagnostics(userId),
-    runTaxonomyDiagnostics(userId)
+    runTaxonomyDiagnostics(userId),
+    runDataLineageDiagnostics(userId)
   ]);
 
   issues.push(...importIssues.issues, ...ruleIssues.issues, ...categorizationIssues.issues,
-              ...financialIssues.issues, ...taxonomyIssues.issues);
+              ...financialIssues.issues, ...taxonomyIssues.issues, ...lineageIssues.issues);
 
   const enrichedIssues = issues.map(enrichIssueFromCatalog);
 
@@ -211,7 +220,8 @@ export async function runFullDiagnostics(scope: DiagnosticsScope = { kind: "all_
       rules: ruleIssues.categoryResult,
       categorization: categorizationIssues.categoryResult,
       financial: financialIssues.categoryResult,
-      taxonomy: taxonomyIssues.categoryResult
+      taxonomy: taxonomyIssues.categoryResult,
+      lineage: lineageIssues.categoryResult
     },
     issues: enrichedIssues
   };
@@ -1230,6 +1240,213 @@ async function runFinancialDiagnostics(userId: string) {
     checksPassed++;
   }
 
+  // Check 5: Statistical Anomaly Detection (Z-score outliers)
+  // W. Edwards Deming: Statistical process control for transaction values
+  checksRun++;
+  const statsResult = await db.execute(sql`
+    SELECT AVG(ABS(amount)) as avg_amount,
+           STDDEV(ABS(amount)) as stddev_amount
+    FROM transactions
+    WHERE user_id = ${userId}
+    AND ABS(amount) > 1
+  `);
+
+  const avgAmount = parseFloat((statsResult.rows[0] as any)?.avg_amount || "0");
+  const stddevAmount = parseFloat((statsResult.rows[0] as any)?.stddev_amount || "0");
+
+  if (avgAmount > 0 && stddevAmount > 0) {
+    // Find transactions more than 4 standard deviations from mean (extreme outliers)
+    const zScoreThreshold = avgAmount + (4 * stddevAmount);
+    const extremeOutliers = await db.execute(sql`
+      SELECT id, key_desc, amount, payment_date, source,
+             (ABS(amount) - ${avgAmount}) / ${stddevAmount} as z_score
+      FROM transactions
+      WHERE user_id = ${userId}
+      AND ABS(amount) > ${zScoreThreshold}
+      ORDER BY ABS(amount) DESC
+      LIMIT 20
+    `);
+
+    if (extremeOutliers.rows.length > 0) {
+      issues.push({
+        id: "FIN-005",
+        category: CATEGORIES.financial,
+        severity: "critical",
+        title: "Outliers Estatísticos Extremos",
+        description: `Transações > 4σ da média (média: €${avgAmount.toFixed(2)}, threshold: €${zScoreThreshold.toFixed(2)})`,
+        affectedCount: extremeOutliers.rows.length,
+        samples: extremeOutliers.rows.slice(0, 5).map((r: any) => ({
+          id: r.id,
+          keyDesc: r.key_desc?.substring(0, 50),
+          amount: r.amount,
+          date: r.payment_date,
+          source: r.source,
+          zScore: parseFloat(r.z_score || "0").toFixed(2)
+        })),
+        recommendation: "Verifique se os valores estão corretos - possível erro de parsing",
+        autoFixable: false
+      });
+    } else {
+      checksPassed++;
+    }
+  } else {
+    checksPassed++;
+  }
+
+  // Check 6: Supermarket/Retail Category-Value Validation
+  // Michael Stonebraker: Schema enforcement on parsed amounts
+  checksRun++;
+  const suspiciousRetail = await db.execute(sql`
+    SELECT id, key_desc, amount, payment_date, source, app_category_name
+    FROM transactions
+    WHERE user_id = ${userId}
+    AND ABS(amount) > 500
+    AND (
+      LOWER(key_desc) LIKE '%rewe%'
+      OR LOWER(key_desc) LIKE '%lidl%'
+      OR LOWER(key_desc) LIKE '%aldi%'
+      OR LOWER(key_desc) LIKE '%edeka%'
+      OR LOWER(key_desc) LIKE '%netto%'
+      OR LOWER(key_desc) LIKE '%dm drogerie%'
+      OR LOWER(key_desc) LIKE '%rossmann%'
+      OR LOWER(key_desc) LIKE '%mueller%'
+    )
+    ORDER BY ABS(amount) DESC
+    LIMIT 20
+  `);
+
+  if (suspiciousRetail.rows.length > 0) {
+    issues.push({
+      id: "FIN-006",
+      category: CATEGORIES.financial,
+      severity: "critical",
+      title: "Supermercado/Varejo com Valor Anômalo",
+      description: "Transações > €500 em supermercados/drogarias (valor típico: €10-€150)",
+      affectedCount: suspiciousRetail.rows.length,
+      samples: suspiciousRetail.rows.slice(0, 5).map((r: any) => ({
+        id: r.id,
+        keyDesc: r.key_desc?.substring(0, 50),
+        amount: r.amount,
+        date: r.payment_date,
+        source: r.source
+      })),
+      recommendation: "CRÍTICO: Verifique se o valor foi parseado corretamente do CSV original",
+      autoFixable: false
+    });
+  } else {
+    checksPassed++;
+  }
+
+  // Check 7: Merchant-based Outlier Detection
+  // Gene Kim: Observability into transaction patterns per merchant
+  checksRun++;
+  const merchantOutliers = await db.execute(sql`
+    WITH merchant_stats AS (
+      SELECT
+        CASE
+          WHEN LOWER(key_desc) LIKE '%rewe%' THEN 'REWE'
+          WHEN LOWER(key_desc) LIKE '%lidl%' THEN 'LIDL'
+          WHEN LOWER(key_desc) LIKE '%aldi%' THEN 'ALDI'
+          WHEN LOWER(key_desc) LIKE '%edeka%' THEN 'EDEKA'
+          WHEN LOWER(key_desc) LIKE '%amazon%' THEN 'AMAZON'
+          WHEN LOWER(key_desc) LIKE '%paypal%' THEN 'PAYPAL'
+          ELSE 'OTHER'
+        END as merchant,
+        AVG(ABS(amount)) as avg_amount,
+        MAX(ABS(amount)) as max_amount,
+        COUNT(*) as tx_count
+      FROM transactions
+      WHERE user_id = ${userId}
+      GROUP BY 1
+      HAVING COUNT(*) >= 3
+    )
+    SELECT t.id, t.key_desc, t.amount, t.payment_date, t.source,
+           ms.merchant, ms.avg_amount as merchant_avg, ms.max_amount as merchant_max
+    FROM transactions t
+    JOIN merchant_stats ms ON (
+      CASE
+        WHEN LOWER(t.key_desc) LIKE '%rewe%' THEN 'REWE'
+        WHEN LOWER(t.key_desc) LIKE '%lidl%' THEN 'LIDL'
+        WHEN LOWER(t.key_desc) LIKE '%aldi%' THEN 'ALDI'
+        WHEN LOWER(t.key_desc) LIKE '%edeka%' THEN 'EDEKA'
+        WHEN LOWER(t.key_desc) LIKE '%amazon%' THEN 'AMAZON'
+        WHEN LOWER(t.key_desc) LIKE '%paypal%' THEN 'PAYPAL'
+        ELSE 'OTHER'
+      END = ms.merchant
+    )
+    WHERE t.user_id = ${userId}
+    AND ms.merchant != 'OTHER'
+    AND ABS(t.amount) > ms.avg_amount * 10
+    ORDER BY ABS(t.amount) DESC
+    LIMIT 20
+  `);
+
+  if (merchantOutliers.rows.length > 0) {
+    issues.push({
+      id: "FIN-007",
+      category: CATEGORIES.financial,
+      severity: "high",
+      title: "Transação 10x Acima da Média do Estabelecimento",
+      description: "Transações muito acima do padrão histórico para o mesmo comerciante",
+      affectedCount: merchantOutliers.rows.length,
+      samples: merchantOutliers.rows.slice(0, 5).map((r: any) => ({
+        id: r.id,
+        keyDesc: r.key_desc?.substring(0, 50),
+        amount: r.amount,
+        merchant: r.merchant,
+        merchantAvg: parseFloat(r.merchant_avg || "0").toFixed(2),
+        ratio: (Math.abs(r.amount) / parseFloat(r.merchant_avg || "1")).toFixed(1) + "x"
+      })),
+      recommendation: "Compare com o CSV original - possível erro de parsing",
+      autoFixable: false
+    });
+  } else {
+    checksPassed++;
+  }
+
+  // Check 8: Description pattern anomalies (fabricated patterns)
+  // Dr. Edgar Codd: Data integrity validation
+  checksRun++;
+  const suspiciousPatterns = await db.execute(sql`
+    SELECT id, key_desc, amount, payment_date, source
+    FROM transactions
+    WHERE user_id = ${userId}
+    AND (
+      -- Pattern: "SAGT DANKE" not matching typical sources
+      (LOWER(key_desc) LIKE '%sagt danke%'
+       AND LOWER(key_desc) NOT LIKE '%lidl sagt danke%'
+       AND LOWER(key_desc) NOT LIKE '%dm %sagt danke%')
+      -- Pattern: Date pattern in key_desc (column shift indicator)
+      OR key_desc ~ '^\d{2}/\d{2}/\d{4}'
+      OR key_desc ~ '^\d{2}\.\d{2}\.\d{4}'
+      -- Pattern: Account numbers in description
+      OR key_desc ~ '^-\d{5,}'
+    )
+    LIMIT 20
+  `);
+
+  if (suspiciousPatterns.rows.length > 0) {
+    issues.push({
+      id: "FIN-008",
+      category: CATEGORIES.financial,
+      severity: "critical",
+      title: "Padrão de Descrição Suspeito",
+      description: "Descrições com padrões anômalos (possível parsing incorreto)",
+      affectedCount: suspiciousPatterns.rows.length,
+      samples: suspiciousPatterns.rows.slice(0, 5).map((r: any) => ({
+        id: r.id,
+        keyDesc: r.key_desc?.substring(0, 80),
+        amount: r.amount,
+        date: r.payment_date,
+        source: r.source
+      })),
+      recommendation: "CRÍTICO: Revalide o CSV fonte - provável corrupção no parsing",
+      autoFixable: false
+    });
+  } else {
+    checksPassed++;
+  }
+
   const status: CategoryResult["status"] = issues.some(i => i.severity === "critical") ? "critical"
                : issues.some(i => i.severity === "high") ? "warning" : "healthy";
 
@@ -1711,5 +1928,736 @@ export async function autoFixIssue(issueId: string): Promise<{ success: boolean;
 
     default:
       return { success: false, message: `Correção automática não disponível para ${issueId}`, fixed: 0 };
+  }
+}
+
+// ============================================================================
+// DATA LINEAGE & TRANSACTION INVESTIGATION (TOP 5 IMMEDIATE ACTIONS)
+// ============================================================================
+
+/**
+ * ACTION 1: Query database for suspicious transaction and trace its lineage
+ * Dr. Edgar Codd: Full data provenance tracking
+ */
+export interface TransactionLineage {
+  transaction: {
+    id: string;
+    keyDesc: string;
+    amount: number;
+    date: string;
+    source: string;
+    key: string;
+    descRaw: string;
+    uploadId: string | null;
+    importedAt: string;
+  } | null;
+  ingestionItem: {
+    id: string;
+    batchId: string;
+    fingerprint: string;
+    status: string;
+    rawPayload: any;
+    parsedPayload: any;
+  } | null;
+  ingestionBatch: {
+    id: string;
+    filename: string;
+    sourceType: string;
+    sourceFormat: string;
+    status: string;
+    importedAt: string;
+    diagnosticsJson: any;
+  } | null;
+  evidenceChain: string[];
+  anomalies: string[];
+}
+
+export async function investigateTransaction(transactionId: string): Promise<TransactionLineage> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const userId = session.user.id;
+  const anomalies: string[] = [];
+  const evidenceChain: string[] = [];
+
+  // Step 1: Get transaction details
+  const txResult = await db.execute(sql`
+    SELECT id, key_desc, amount, payment_date, source, key, desc_raw, upload_id, imported_at
+    FROM transactions
+    WHERE id = ${transactionId} AND user_id = ${userId}
+  `);
+
+  const tx = txResult.rows[0] as any;
+  if (!tx) {
+    return { transaction: null, ingestionItem: null, ingestionBatch: null, evidenceChain: [], anomalies: ["Transaction not found"] };
+  }
+
+  evidenceChain.push(`Transaction found: ${tx.id}`);
+
+  // Step 2: Find evidence link
+  const evidenceLinkResult = await db.execute(sql`
+    SELECT tel.ingestion_item_id, tel.match_confidence, tel.is_primary
+    FROM transaction_evidence_link tel
+    WHERE tel.transaction_id = ${transactionId}
+  `);
+
+  let ingestionItem = null;
+  let ingestionBatch = null;
+
+  if (evidenceLinkResult.rows.length > 0) {
+    const link = evidenceLinkResult.rows[0] as any;
+    evidenceChain.push(`Evidence link found: ${link.ingestion_item_id} (confidence: ${link.match_confidence}%)`);
+
+    // Step 3: Get ingestion item
+    const itemResult = await db.execute(sql`
+      SELECT id, batch_id, item_fingerprint, status, raw_payload, parsed_payload, source
+      FROM ingestion_items
+      WHERE id = ${link.ingestion_item_id}
+    `);
+
+    if (itemResult.rows.length > 0) {
+      const item = itemResult.rows[0] as any;
+      ingestionItem = {
+        id: item.id,
+        batchId: item.batch_id,
+        fingerprint: item.item_fingerprint,
+        status: item.status,
+        rawPayload: item.raw_payload,
+        parsedPayload: item.parsed_payload
+      };
+      evidenceChain.push(`Ingestion item found: ${item.id}`);
+
+      // Validate raw vs parsed
+      if (item.raw_payload && item.parsed_payload) {
+        const rawAmount = item.raw_payload?.amount || item.raw_payload?.Betrag;
+        const parsedAmount = item.parsed_payload?.amount;
+        if (rawAmount && parsedAmount && Math.abs(parseFloat(rawAmount) - parseFloat(parsedAmount)) > 0.01) {
+          anomalies.push(`Amount mismatch: raw=${rawAmount}, parsed=${parsedAmount}`);
+        }
+      }
+
+      // Step 4: Get ingestion batch
+      const batchResult = await db.execute(sql`
+        SELECT id, filename, source_type, source_format, status, imported_at, diagnostics_json
+        FROM ingestion_batches
+        WHERE id = ${item.batch_id}
+      `);
+
+      if (batchResult.rows.length > 0) {
+        const batch = batchResult.rows[0] as any;
+        ingestionBatch = {
+          id: batch.id,
+          filename: batch.filename,
+          sourceType: batch.source_type,
+          sourceFormat: batch.source_format,
+          status: batch.status,
+          importedAt: batch.imported_at,
+          diagnosticsJson: batch.diagnostics_json
+        };
+        evidenceChain.push(`Batch found: ${batch.filename} (${batch.source_format})`);
+      } else {
+        anomalies.push(`Batch not found for item ${item.batch_id} - ORPHAN ITEM`);
+      }
+    } else {
+      anomalies.push(`Ingestion item not found: ${link.ingestion_item_id} - BROKEN LINK`);
+    }
+  } else {
+    anomalies.push("No evidence link found - transaction may have been created without CSV import");
+  }
+
+  // Additional anomaly checks
+  if (Math.abs(tx.amount) > 1000 && tx.key_desc?.toLowerCase().includes("rewe")) {
+    anomalies.push(`SUSPICIOUS: REWE transaction with €${Math.abs(tx.amount)} (typical: €10-€150)`);
+  }
+
+  return {
+    transaction: {
+      id: tx.id,
+      keyDesc: tx.key_desc,
+      amount: tx.amount,
+      date: tx.payment_date,
+      source: tx.source,
+      key: tx.key,
+      descRaw: tx.desc_raw,
+      uploadId: tx.upload_id,
+      importedAt: tx.imported_at
+    },
+    ingestionItem,
+    ingestionBatch,
+    evidenceChain,
+    anomalies
+  };
+}
+
+/**
+ * ACTION 2 & 3: Find suspicious transactions and trace to source
+ */
+export async function findSuspiciousTransactions(options: {
+  minAmount?: number;
+  merchantPattern?: string;
+  dateRange?: { from: string; to: string };
+}): Promise<any[]> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const userId = session.user.id;
+  const { minAmount = 500, merchantPattern, dateRange } = options;
+
+  let query = sql`
+    SELECT t.id, t.key_desc, t.amount, t.payment_date, t.source, t.key,
+           t.desc_raw, t.upload_id, t.imported_at,
+           tel.ingestion_item_id,
+           ib.filename as batch_filename,
+           ib.source_format
+    FROM transactions t
+    LEFT JOIN transaction_evidence_link tel ON t.id = tel.transaction_id
+    LEFT JOIN ingestion_items ii ON tel.ingestion_item_id = ii.id
+    LEFT JOIN ingestion_batches ib ON ii.batch_id = ib.id
+    WHERE t.user_id = ${userId}
+    AND ABS(t.amount) >= ${minAmount}
+  `;
+
+  if (merchantPattern) {
+    query = sql`${query} AND LOWER(t.key_desc) LIKE ${`%${merchantPattern.toLowerCase()}%`}`;
+  }
+
+  query = sql`${query} ORDER BY ABS(t.amount) DESC LIMIT 50`;
+
+  const result = await db.execute(query);
+  return result.rows;
+}
+
+/**
+ * ACTION 4: Data Lineage Diagnostic Check
+ * Finds transactions without proper evidence chain
+ */
+export async function runDataLineageDiagnostics(userId: string) {
+  const issues: DiagnosticIssue[] = [];
+  let checksRun = 0;
+  let checksPassed = 0;
+
+  // Check 1: Transactions without evidence link
+  checksRun++;
+  const orphanTransactions = await db.execute(sql`
+    SELECT t.id, t.key_desc, t.amount, t.payment_date, t.source, t.imported_at
+    FROM transactions t
+    LEFT JOIN transaction_evidence_link tel ON t.id = tel.transaction_id
+    WHERE t.user_id = ${userId}
+    AND tel.transaction_id IS NULL
+    ORDER BY t.imported_at DESC
+    LIMIT 50
+  `);
+
+  if (orphanTransactions.rows.length > 0) {
+    issues.push({
+      id: "LIN-001",
+      category: { id: "lineage", name: "Rastreabilidade", icon: "Link", description: "Rastreabilidade de dados" },
+      severity: "high",
+      title: "Transações sem Vínculo de Evidência",
+      description: "Transações sem link para ingestion_item (não rastreáveis ao CSV original)",
+      affectedCount: orphanTransactions.rows.length,
+      samples: orphanTransactions.rows.slice(0, 5).map((r: any) => ({
+        id: r.id,
+        keyDesc: r.key_desc?.substring(0, 50),
+        amount: r.amount,
+        source: r.source,
+        importedAt: r.imported_at
+      })),
+      recommendation: "Estas transações não podem ser verificadas contra o CSV original",
+      autoFixable: false
+    });
+  } else {
+    checksPassed++;
+  }
+
+  // Check 2: Broken evidence links
+  checksRun++;
+  const brokenLinks = await db.execute(sql`
+    SELECT tel.transaction_id, tel.ingestion_item_id
+    FROM transaction_evidence_link tel
+    LEFT JOIN ingestion_items ii ON tel.ingestion_item_id = ii.id
+    WHERE ii.id IS NULL
+    LIMIT 20
+  `);
+
+  if (brokenLinks.rows.length > 0) {
+    issues.push({
+      id: "LIN-002",
+      category: { id: "lineage", name: "Rastreabilidade", icon: "Link", description: "Rastreabilidade de dados" },
+      severity: "critical",
+      title: "Links de Evidência Quebrados",
+      description: "Links apontando para ingestion_items inexistentes",
+      affectedCount: brokenLinks.rows.length,
+      samples: brokenLinks.rows.slice(0, 5),
+      recommendation: "Dados corrompidos - links órfãos precisam ser removidos",
+      autoFixable: true
+    });
+  } else {
+    checksPassed++;
+  }
+
+  // Check 3: Ingestion items without transactions
+  checksRun++;
+  const uncommittedItems = await db.execute(sql`
+    SELECT ii.id, ii.batch_id, ii.item_fingerprint, ii.status,
+           ib.filename, ib.source_format
+    FROM ingestion_items ii
+    JOIN ingestion_batches ib ON ii.batch_id = ib.id
+    LEFT JOIN transaction_evidence_link tel ON ii.id = tel.ingestion_item_id
+    WHERE ib.user_id = ${userId}
+    AND ib.status = 'committed'
+    AND tel.ingestion_item_id IS NULL
+    LIMIT 50
+  `);
+
+  if (uncommittedItems.rows.length > 0) {
+    issues.push({
+      id: "LIN-003",
+      category: { id: "lineage", name: "Rastreabilidade", icon: "Link", description: "Rastreabilidade de dados" },
+      severity: "medium",
+      title: "Itens de Ingestão não Vinculados",
+      description: "Itens do CSV commitados mas sem transação correspondente",
+      affectedCount: uncommittedItems.rows.length,
+      samples: uncommittedItems.rows.slice(0, 5).map((r: any) => ({
+        itemId: r.id,
+        filename: r.filename,
+        format: r.source_format
+      })),
+      recommendation: "Possível falha no commitBatch - itens perdidos",
+      autoFixable: false
+    });
+  } else {
+    checksPassed++;
+  }
+
+  // Check 4: Batches with parsing errors
+  checksRun++;
+  const errorBatches = await db.execute(sql`
+    SELECT id, filename, source_format, status, diagnostics_json, imported_at
+    FROM ingestion_batches
+    WHERE user_id = ${userId}
+    AND (status = 'error' OR diagnostics_json::text LIKE '%error%')
+    ORDER BY imported_at DESC
+    LIMIT 20
+  `);
+
+  if (errorBatches.rows.length > 0) {
+    issues.push({
+      id: "LIN-004",
+      category: { id: "lineage", name: "Rastreabilidade", icon: "Link", description: "Rastreabilidade de dados" },
+      severity: "high",
+      title: "Batches com Erros de Parsing",
+      description: "Lotes de importação que falharam ou tiveram erros",
+      affectedCount: errorBatches.rows.length,
+      samples: errorBatches.rows.slice(0, 5).map((r: any) => ({
+        id: r.id,
+        filename: r.filename,
+        format: r.source_format,
+        status: r.status
+      })),
+      recommendation: "Revise os arquivos CSV e tente reimportar",
+      autoFixable: false
+    });
+  } else {
+    checksPassed++;
+  }
+
+  const status: CategoryResult["status"] = issues.some(i => i.severity === "critical") ? "critical"
+               : issues.some(i => i.severity === "high") ? "warning" : "healthy";
+
+  return {
+    issues,
+    categoryResult: {
+      name: "Rastreabilidade",
+      icon: "Link",
+      status,
+      issueCount: issues.length,
+      checksRun,
+      checksPassed
+    }
+  };
+}
+
+// ============================================================================
+// PRE-COMMIT VALIDATION (ACTION 5)
+// ============================================================================
+
+export interface PreCommitValidationResult {
+  valid: boolean;
+  warnings: Array<{ code: string; message: string; severity: Severity; sample?: any }>;
+  errors: Array<{ code: string; message: string; sample?: any }>;
+  stats: {
+    totalItems: number;
+    suspiciousItems: number;
+    outlierItems: number;
+    duplicateRisk: number;
+  };
+}
+
+/**
+ * Validates parsed transactions BEFORE committing to database
+ * W. Edwards Deming: Quality gate before data enters the system
+ */
+export async function validatePreCommit(parsedTransactions: any[]): Promise<PreCommitValidationResult> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const userId = session.user.id;
+  const warnings: PreCommitValidationResult["warnings"] = [];
+  const errors: PreCommitValidationResult["errors"] = [];
+
+  // Get user's historical stats for comparison
+  const statsResult = await db.execute(sql`
+    SELECT
+      AVG(ABS(amount)) as avg_amount,
+      STDDEV(ABS(amount)) as stddev_amount,
+      MAX(ABS(amount)) as max_amount,
+      COUNT(*) as total_count
+    FROM transactions
+    WHERE user_id = ${userId}
+    AND ABS(amount) > 1
+  `);
+
+  const userStats = statsResult.rows[0] as any;
+  const avgAmount = parseFloat(userStats?.avg_amount || "100");
+  const stddevAmount = parseFloat(userStats?.stddev_amount || "200");
+  const maxHistorical = parseFloat(userStats?.max_amount || "5000");
+
+  let suspiciousCount = 0;
+  let outlierCount = 0;
+  let duplicateRiskCount = 0;
+
+  for (const tx of parsedTransactions) {
+    const amount = Math.abs(tx.amount || 0);
+    const keyDesc = (tx.keyDesc || tx.description || "").toLowerCase();
+
+    // Check 1: Statistical outlier (> 4σ)
+    if (stddevAmount > 0 && amount > avgAmount + (4 * stddevAmount)) {
+      outlierCount++;
+      warnings.push({
+        code: "PRE-001",
+        message: `Outlier estatístico: €${amount.toFixed(2)} (média: €${avgAmount.toFixed(2)}, 4σ: €${(avgAmount + 4*stddevAmount).toFixed(2)})`,
+        severity: "high",
+        sample: { keyDesc: tx.keyDesc?.substring(0, 50), amount }
+      });
+    }
+
+    // Check 2: Retail value anomaly
+    const retailPatterns = ["rewe", "lidl", "aldi", "edeka", "netto", "dm ", "rossmann", "mueller"];
+    const isRetail = retailPatterns.some(p => keyDesc.includes(p));
+    if (isRetail && amount > 500) {
+      suspiciousCount++;
+      errors.push({
+        code: "PRE-002",
+        message: `Supermercado com valor suspeito: €${amount.toFixed(2)} (máx típico: €150)`,
+        sample: { keyDesc: tx.keyDesc?.substring(0, 50), amount }
+      });
+    }
+
+    // Check 3: Exceeds historical max by 2x
+    if (amount > maxHistorical * 2) {
+      warnings.push({
+        code: "PRE-003",
+        message: `Valor 2x maior que histórico máximo: €${amount.toFixed(2)} (máx histórico: €${maxHistorical.toFixed(2)})`,
+        severity: "medium",
+        sample: { keyDesc: tx.keyDesc?.substring(0, 50), amount }
+      });
+    }
+
+    // Check 4: Suspicious description patterns
+    if (keyDesc.match(/^\d{2}[./]\d{2}[./]\d{2,4}/) || keyDesc.match(/^-\d{5,}/)) {
+      errors.push({
+        code: "PRE-004",
+        message: "Descrição começa com padrão de data ou número negativo - possível column shift",
+        sample: { keyDesc: tx.keyDesc?.substring(0, 80) }
+      });
+    }
+
+    // Check 5: Duplicate fingerprint risk
+    if (tx.key) {
+      const existingResult = await db.execute(sql`
+        SELECT id FROM transactions WHERE user_id = ${userId} AND key = ${tx.key} LIMIT 1
+      `);
+      if (existingResult.rows.length > 0) {
+        duplicateRiskCount++;
+        warnings.push({
+          code: "PRE-005",
+          message: "Transação com fingerprint já existente - possível duplicata",
+          severity: "medium",
+          sample: { keyDesc: tx.keyDesc?.substring(0, 50), key: tx.key?.substring(0, 30) }
+        });
+      }
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    warnings,
+    errors,
+    stats: {
+      totalItems: parsedTransactions.length,
+      suspiciousItems: suspiciousCount,
+      outlierItems: outlierCount,
+      duplicateRisk: duplicateRiskCount
+    }
+  };
+}
+
+// ============================================================================
+// RE-IMPORT SIMULATION
+// ============================================================================
+
+export interface ReimportSimulationResult {
+  safe: boolean;
+  currentState: {
+    totalTransactions: number;
+    totalBatches: number;
+    uniqueFingerprints: number;
+  };
+  projectedImpact: {
+    transactionsToDelete: number;
+    batchesToDelete: number;
+    orphanRulesAffected: number;
+  };
+  warnings: string[];
+  recommendations: string[];
+}
+
+/**
+ * Simulates what would happen if user deletes all data and reimports
+ * Barbara Liskov: Contract verification before destructive operations
+ */
+export async function simulateReimport(): Promise<ReimportSimulationResult> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const userId = session.user.id;
+  const warnings: string[] = [];
+  const recommendations: string[] = [];
+
+  // Get current state
+  const txCountResult = await db.execute(sql`
+    SELECT COUNT(*) as count FROM transactions WHERE user_id = ${userId}
+  `);
+  const totalTransactions = parseInt((txCountResult.rows[0] as any)?.count || "0");
+
+  const batchCountResult = await db.execute(sql`
+    SELECT COUNT(*) as count FROM ingestion_batches WHERE user_id = ${userId}
+  `);
+  const totalBatches = parseInt((batchCountResult.rows[0] as any)?.count || "0");
+
+  const fingerprintResult = await db.execute(sql`
+    SELECT COUNT(DISTINCT key) as count FROM transactions WHERE user_id = ${userId}
+  `);
+  const uniqueFingerprints = parseInt((fingerprintResult.rows[0] as any)?.count || "0");
+
+  // Check for manual overrides that would be lost
+  const manualOverrideResult = await db.execute(sql`
+    SELECT COUNT(*) as count FROM transactions
+    WHERE user_id = ${userId} AND manual_override = true
+  `);
+  const manualOverrides = parseInt((manualOverrideResult.rows[0] as any)?.count || "0");
+
+  if (manualOverrides > 0) {
+    warnings.push(`${manualOverrides} transações com override manual serão perdidas`);
+    recommendations.push("Exporte as transações com manual_override antes de deletar");
+  }
+
+  // Check for rules that reference transactions
+  const rulesWithMatchesResult = await db.execute(sql`
+    SELECT COUNT(DISTINCT r.id) as count
+    FROM rules r
+    JOIN transactions t ON t.rule_id_applied = r.id
+    WHERE r.user_id = ${userId}
+  `);
+  const rulesWithMatches = parseInt((rulesWithMatchesResult.rows[0] as any)?.count || "0");
+
+  // Check for recurring groups
+  const recurringGroupsResult = await db.execute(sql`
+    SELECT COUNT(DISTINCT recurring_group_id) as count
+    FROM transactions
+    WHERE user_id = ${userId}
+    AND recurring_group_id IS NOT NULL
+  `);
+  const recurringGroups = parseInt((recurringGroupsResult.rows[0] as any)?.count || "0");
+
+  if (recurringGroups > 0) {
+    warnings.push(`${recurringGroups} grupos recorrentes serão perdidos`);
+    recommendations.push("Grupos recorrentes precisarão ser re-detectados após reimportação");
+  }
+
+  // Check for evidence links
+  const evidenceLinksResult = await db.execute(sql`
+    SELECT COUNT(*) as count FROM transaction_evidence_link tel
+    JOIN transactions t ON tel.transaction_id = t.id
+    WHERE t.user_id = ${userId}
+  `);
+  const evidenceLinks = parseInt((evidenceLinksResult.rows[0] as any)?.count || "0");
+
+  if (evidenceLinks < totalTransactions * 0.9) {
+    warnings.push(`Apenas ${((evidenceLinks/totalTransactions)*100).toFixed(0)}% das transações têm rastreabilidade completa`);
+  }
+
+  // Check for potential duplicates after reimport
+  const duplicateRiskResult = await db.execute(sql`
+    SELECT key, COUNT(*) as count
+    FROM transactions
+    WHERE user_id = ${userId}
+    GROUP BY key
+    HAVING COUNT(*) > 1
+  `);
+
+  if (duplicateRiskResult.rows.length > 0) {
+    warnings.push(`${duplicateRiskResult.rows.length} fingerprints duplicados existem - reimportação pode criar mais duplicatas`);
+    recommendations.push("Resolva duplicatas antes de reimportar");
+  }
+
+  const safe = warnings.length === 0;
+
+  if (safe) {
+    recommendations.push("Sistema está pronto para reimportação segura");
+    recommendations.push("Recomendado: faça backup das regras personalizadas primeiro");
+  }
+
+  return {
+    safe,
+    currentState: {
+      totalTransactions,
+      totalBatches,
+      uniqueFingerprints
+    },
+    projectedImpact: {
+      transactionsToDelete: totalTransactions,
+      batchesToDelete: totalBatches,
+      orphanRulesAffected: rulesWithMatches
+    },
+    warnings,
+    recommendations
+  };
+}
+
+// ============================================================================
+// EXTENDED DRILL-DOWN FOR NEW CHECKS
+// ============================================================================
+
+export async function getAffectedRecordsExtended(issueId: string, limit: number = 50): Promise<any[]> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const userId = session.user.id;
+
+  switch (issueId) {
+    case "FIN-005": // Statistical outliers
+      const statsResult = await db.execute(sql`
+        SELECT AVG(ABS(amount)) as avg, STDDEV(ABS(amount)) as std
+        FROM transactions WHERE user_id = ${userId} AND ABS(amount) > 1
+      `);
+      const avg = parseFloat((statsResult.rows[0] as any)?.avg || "0");
+      const std = parseFloat((statsResult.rows[0] as any)?.std || "0");
+      const threshold = avg + (4 * std);
+
+      const fin005 = await db.execute(sql`
+        SELECT t.id, t.key_desc, t.amount, t.payment_date, t.source,
+               tel.ingestion_item_id, ib.filename
+        FROM transactions t
+        LEFT JOIN transaction_evidence_link tel ON t.id = tel.transaction_id
+        LEFT JOIN ingestion_items ii ON tel.ingestion_item_id = ii.id
+        LEFT JOIN ingestion_batches ib ON ii.batch_id = ib.id
+        WHERE t.user_id = ${userId}
+        AND ABS(t.amount) > ${threshold}
+        ORDER BY ABS(t.amount) DESC
+        LIMIT ${limit}
+      `);
+      return fin005.rows;
+
+    case "FIN-006": // Retail anomalies
+      const fin006 = await db.execute(sql`
+        SELECT t.id, t.key_desc, t.amount, t.payment_date, t.source,
+               tel.ingestion_item_id, ib.filename, ii.raw_payload
+        FROM transactions t
+        LEFT JOIN transaction_evidence_link tel ON t.id = tel.transaction_id
+        LEFT JOIN ingestion_items ii ON tel.ingestion_item_id = ii.id
+        LEFT JOIN ingestion_batches ib ON ii.batch_id = ib.id
+        WHERE t.user_id = ${userId}
+        AND ABS(t.amount) > 500
+        AND (LOWER(t.key_desc) LIKE '%rewe%' OR LOWER(t.key_desc) LIKE '%lidl%'
+             OR LOWER(t.key_desc) LIKE '%aldi%' OR LOWER(t.key_desc) LIKE '%edeka%')
+        ORDER BY ABS(t.amount) DESC
+        LIMIT ${limit}
+      `);
+      return fin006.rows;
+
+    case "FIN-007": // Merchant outliers
+      const fin007 = await db.execute(sql`
+        WITH merchant_stats AS (
+          SELECT
+            CASE
+              WHEN LOWER(key_desc) LIKE '%rewe%' THEN 'REWE'
+              WHEN LOWER(key_desc) LIKE '%lidl%' THEN 'LIDL'
+              WHEN LOWER(key_desc) LIKE '%aldi%' THEN 'ALDI'
+              ELSE 'OTHER'
+            END as merchant,
+            AVG(ABS(amount)) as avg_amount
+          FROM transactions WHERE user_id = ${userId}
+          GROUP BY 1 HAVING COUNT(*) >= 3
+        )
+        SELECT t.id, t.key_desc, t.amount, t.payment_date, t.source,
+               ms.merchant, ms.avg_amount,
+               tel.ingestion_item_id, ib.filename
+        FROM transactions t
+        JOIN merchant_stats ms ON (
+          CASE
+            WHEN LOWER(t.key_desc) LIKE '%rewe%' THEN 'REWE'
+            WHEN LOWER(t.key_desc) LIKE '%lidl%' THEN 'LIDL'
+            WHEN LOWER(t.key_desc) LIKE '%aldi%' THEN 'ALDI'
+            ELSE 'OTHER'
+          END = ms.merchant
+        )
+        LEFT JOIN transaction_evidence_link tel ON t.id = tel.transaction_id
+        LEFT JOIN ingestion_items ii ON tel.ingestion_item_id = ii.id
+        LEFT JOIN ingestion_batches ib ON ii.batch_id = ib.id
+        WHERE t.user_id = ${userId}
+        AND ms.merchant != 'OTHER'
+        AND ABS(t.amount) > ms.avg_amount * 10
+        ORDER BY ABS(t.amount) DESC
+        LIMIT ${limit}
+      `);
+      return fin007.rows;
+
+    case "FIN-008": // Suspicious patterns
+      const fin008 = await db.execute(sql`
+        SELECT t.id, t.key_desc, t.amount, t.payment_date, t.source,
+               tel.ingestion_item_id, ib.filename, ii.raw_payload
+        FROM transactions t
+        LEFT JOIN transaction_evidence_link tel ON t.id = tel.transaction_id
+        LEFT JOIN ingestion_items ii ON tel.ingestion_item_id = ii.id
+        LEFT JOIN ingestion_batches ib ON ii.batch_id = ib.id
+        WHERE t.user_id = ${userId}
+        AND (
+          (LOWER(t.key_desc) LIKE '%sagt danke%'
+           AND LOWER(t.key_desc) NOT LIKE '%lidl sagt danke%')
+          OR t.key_desc ~ '^\d{2}/\d{2}/\d{4}'
+          OR t.key_desc ~ '^\d{2}\.\d{2}\.\d{4}'
+          OR t.key_desc ~ '^-\d{5,}'
+        )
+        LIMIT ${limit}
+      `);
+      return fin008.rows;
+
+    case "LIN-001": // Orphan transactions
+      const lin001 = await db.execute(sql`
+        SELECT t.id, t.key_desc, t.amount, t.payment_date, t.source, t.imported_at
+        FROM transactions t
+        LEFT JOIN transaction_evidence_link tel ON t.id = tel.transaction_id
+        WHERE t.user_id = ${userId}
+        AND tel.transaction_id IS NULL
+        ORDER BY t.imported_at DESC
+        LIMIT ${limit}
+      `);
+      return lin001.rows;
+
+    default:
+      // Fall back to original getAffectedRecords
+      return getAffectedRecords(issueId, limit);
   }
 }

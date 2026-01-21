@@ -38,7 +38,11 @@ import {
   Eye,
   CheckSquare,
   Square,
-  ChevronsUpDown
+  ChevronsUpDown,
+  Link2,
+  Database,
+  Trash2,
+  FileSearch
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -101,13 +105,19 @@ import {
   exportDiagnosticsCSV,
   exportDiagnosticsJSON,
   getAffectedRecords,
+  getAffectedRecordsExtended,
   getDiagnosticHistory,
   saveDiagnosticResult,
+  investigateTransaction,
+  findSuspiciousTransactions,
+  simulateReimport,
   getRecentBatchesForDiagnostics,
   type DiagnosticsScope,
   DiagnosticResult,
   DiagnosticIssue,
-  Severity
+  Severity,
+  TransactionLineage,
+  ReimportSimulationResult
 } from "@/lib/actions/diagnostics";
 import { DIAGNOSTIC_STAGES, type DiagnosticStage } from "@/lib/diagnostics/catalog";
 
@@ -203,7 +213,8 @@ const CATEGORY_CONFIG: Record<string, { icon: typeof FileUp; gradient: string }>
   Sparkles: { icon: Sparkles, gradient: "from-purple-500 to-pink-500" },
   Tags: { icon: Tags, gradient: "from-green-500 to-emerald-500" },
   DollarSign: { icon: DollarSign, gradient: "from-yellow-500 to-orange-500" },
-  GitBranch: { icon: GitBranch, gradient: "from-indigo-500 to-violet-500" }
+  GitBranch: { icon: GitBranch, gradient: "from-indigo-500 to-violet-500" },
+  Link: { icon: Link2, gradient: "from-rose-500 to-red-500" }
 };
 
 type SortOption = "severity" | "category" | "affected" | "title";
@@ -249,6 +260,21 @@ export function DiagnosticsClient() {
 
   // History dialog
   const [showHistory, setShowHistory] = useState(false);
+
+  // Investigation dialog
+  const [investigationTxId, setInvestigationTxId] = useState("");
+  const [investigationResult, setInvestigationResult] = useState<TransactionLineage | null>(null);
+  const [isInvestigating, setIsInvestigating] = useState(false);
+  const [showInvestigationDialog, setShowInvestigationDialog] = useState(false);
+
+  // Simulation dialog
+  const [simulationResult, setSimulationResult] = useState<ReimportSimulationResult | null>(null);
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [showSimulationDialog, setShowSimulationDialog] = useState(false);
+
+  // Suspicious transactions
+  const [suspiciousTxs, setSuspiciousTxs] = useState<any[]>([]);
+  const [isLoadingSuspicious, setIsLoadingSuspicious] = useState(false);
 
   // Active tab
   const [activeTab, setActiveTab] = useState("all");
@@ -398,6 +424,63 @@ export function DiagnosticsClient() {
     }
   }, [scope]);
 
+  // Investigate transaction
+  const handleInvestigate = useCallback(async () => {
+    if (!investigationTxId.trim()) return;
+
+    setIsInvestigating(true);
+    setInvestigationResult(null);
+
+    try {
+      const result = await investigateTransaction(investigationTxId.trim());
+      setInvestigationResult(result);
+      announce(result.anomalies.length > 0
+        ? `Investigação completa. ${result.anomalies.length} anomalias encontradas.`
+        : "Investigação completa. Nenhuma anomalia detectada."
+      );
+    } catch (error: any) {
+      console.error("Investigation failed:", error);
+      announce("Erro ao investigar transação");
+    } finally {
+      setIsInvestigating(false);
+    }
+  }, [investigationTxId, announce]);
+
+  // Find suspicious transactions
+  const handleFindSuspicious = useCallback(async () => {
+    setIsLoadingSuspicious(true);
+
+    try {
+      const txs = await findSuspiciousTransactions({ minAmount: 500 });
+      setSuspiciousTxs(txs);
+      announce(`${txs.length} transações suspeitas encontradas`);
+    } catch (error) {
+      console.error("Find suspicious failed:", error);
+    } finally {
+      setIsLoadingSuspicious(false);
+    }
+  }, [announce]);
+
+  // Run reimport simulation
+  const handleSimulation = useCallback(async () => {
+    setIsSimulating(true);
+    setSimulationResult(null);
+
+    try {
+      const result = await simulateReimport();
+      setSimulationResult(result);
+      announce(result.safe
+        ? "Simulação completa. Reimportação é segura."
+        : `Simulação completa. ${result.warnings.length} avisos encontrados.`
+      );
+    } catch (error: any) {
+      console.error("Simulation failed:", error);
+      announce("Erro ao executar simulação");
+    } finally {
+      setIsSimulating(false);
+    }
+  }, [announce]);
+
   // Filter and sort issues
   const filteredIssues = useMemo(() => {
     if (!result) return [];
@@ -546,6 +629,40 @@ export function DiagnosticsClient() {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Histórico ({history.length})</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          {/* Investigation Button */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setShowInvestigationDialog(true)}
+                  aria-label="Investigar transação"
+                >
+                  <FileSearch className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Investigar Transação</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          {/* Simulation Button */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => { setShowSimulationDialog(true); handleSimulation(); }}
+                  aria-label="Simular reimportação"
+                >
+                  <Database className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Simular Reimportação</TooltipContent>
             </Tooltip>
           </TooltipProvider>
 
@@ -1313,6 +1430,416 @@ export function DiagnosticsClient() {
               </div>
             ))}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Investigation Dialog */}
+      <Dialog open={showInvestigationDialog} onOpenChange={setShowInvestigationDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileSearch className="h-5 w-5" />
+              Investigar Transação - Rastreabilidade de Dados
+            </DialogTitle>
+            <DialogDescription>
+              Rastreia a origem completa de uma transação desde o CSV até o banco
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Search Input */}
+            <div className="flex gap-2">
+              <Input
+                placeholder="ID da Transação (ex: abc123...)"
+                value={investigationTxId}
+                onChange={(e) => setInvestigationTxId(e.target.value)}
+                className="flex-1"
+              />
+              <Button
+                onClick={handleInvestigate}
+                disabled={isInvestigating || !investigationTxId.trim()}
+              >
+                {isInvestigating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Investigando...
+                  </>
+                ) : (
+                  <>
+                    <Search className="h-4 w-4 mr-2" />
+                    Investigar
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* Suspicious Transactions List */}
+            {suspiciousTxs.length > 0 && (
+              <div className="border rounded-lg p-4 bg-yellow-50 dark:bg-yellow-950/20">
+                <h4 className="font-medium mb-2 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                  Transações Suspeitas Encontradas ({suspiciousTxs.length})
+                </h4>
+                <div className="space-y-2 max-h-40 overflow-auto">
+                  {suspiciousTxs.map((tx: any) => (
+                    <div
+                      key={tx.id}
+                      className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded border cursor-pointer hover:border-primary"
+                      onClick={() => setInvestigationTxId(tx.id)}
+                    >
+                      <div>
+                        <span className="font-mono text-xs">{tx.id.substring(0, 8)}...</span>
+                        <span className="ml-2">{tx.description}</span>
+                      </div>
+                      <div className="text-right">
+                        <Badge variant={tx.amount < -500 ? "destructive" : "outline"}>
+                          €{tx.amount?.toFixed(2)}
+                        </Badge>
+                        <span className="ml-2 text-xs text-muted-foreground">{tx.reason}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Investigation Result */}
+            {investigationResult && (
+              <div className="space-y-4">
+                {/* Transaction Info */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <DollarSign className="h-4 w-4" />
+                      Transação
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {investigationResult.transaction ? (
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">ID:</span>
+                          <span className="ml-2 font-mono">{investigationResult.transaction.id}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Valor:</span>
+                          <span className="ml-2 font-bold">€{investigationResult.transaction.amount?.toFixed(2)}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Descrição:</span>
+                          <span className="ml-2">{investigationResult.transaction.descRaw}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Data:</span>
+                          <span className="ml-2">{investigationResult.transaction.date ? new Date(investigationResult.transaction.date).toLocaleDateString("pt-BR") : "N/A"}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-muted-foreground">Key:</span>
+                          <span className="ml-2 font-mono text-xs break-all">{investigationResult.transaction.key}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground">Transação não encontrada</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Ingestion Item */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <FileUp className="h-4 w-4" />
+                      Item de Ingestão
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {investigationResult.ingestionItem ? (
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">ID:</span>
+                          <span className="ml-2 font-mono">{investigationResult.ingestionItem.id}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Status:</span>
+                          <Badge variant="outline" className="ml-2">{investigationResult.ingestionItem.status}</Badge>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Fingerprint:</span>
+                          <span className="ml-2 font-mono text-xs">{investigationResult.ingestionItem.fingerprint?.substring(0, 16)}...</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Batch ID:</span>
+                          <span className="ml-2 font-mono text-xs">{investigationResult.ingestionItem.batchId?.substring(0, 8)}...</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-yellow-600">⚠️ Sem item de ingestão vinculado - possível problema de rastreabilidade!</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Ingestion Batch */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Database className="h-4 w-4" />
+                      Batch de Importação
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {investigationResult.ingestionBatch ? (
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">ID:</span>
+                          <span className="ml-2 font-mono">{investigationResult.ingestionBatch.id}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Arquivo:</span>
+                          <span className="ml-2">{investigationResult.ingestionBatch.filename}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Formato:</span>
+                          <Badge variant="outline" className="ml-2">{investigationResult.ingestionBatch.sourceFormat}</Badge>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Tipo:</span>
+                          <Badge variant="outline" className="ml-2">{investigationResult.ingestionBatch.sourceType}</Badge>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Status:</span>
+                          <Badge variant="outline" className="ml-2">{investigationResult.ingestionBatch.status}</Badge>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Importado em:</span>
+                          <span className="ml-2">{investigationResult.ingestionBatch.importedAt ? new Date(investigationResult.ingestionBatch.importedAt).toLocaleString("pt-BR") : "N/A"}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-yellow-600">⚠️ Sem batch de importação vinculado - origem desconhecida!</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Anomalies Found */}
+                {investigationResult.anomalies && investigationResult.anomalies.length > 0 && (
+                  <Card className="border-red-200 dark:border-red-800">
+                    <CardHeader className="pb-2 bg-red-50 dark:bg-red-950/20">
+                      <CardTitle className="text-base flex items-center gap-2 text-red-700 dark:text-red-400">
+                        <AlertTriangle className="h-4 w-4" />
+                        Anomalias Identificadas ({investigationResult.anomalies.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      <ul className="space-y-2">
+                        {investigationResult.anomalies.map((anomaly: string, idx: number) => (
+                          <li key={idx} className="flex items-start gap-2 text-sm">
+                            <XCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                            {anomaly}
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Evidence Chain */}
+                {investigationResult.evidenceChain && investigationResult.evidenceChain.length > 0 && (
+                  <Card className="border-blue-200 dark:border-blue-800">
+                    <CardHeader className="pb-2 bg-blue-50 dark:bg-blue-950/20">
+                      <CardTitle className="text-base flex items-center gap-2 text-blue-700 dark:text-blue-400">
+                        <Link2 className="h-4 w-4" />
+                        Cadeia de Evidências ({investigationResult.evidenceChain.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      <ul className="space-y-2">
+                        {investigationResult.evidenceChain.map((evidence: string, idx: number) => (
+                          <li key={idx} className="flex items-start gap-2 text-sm">
+                            <CheckCircle2 className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                            {evidence}
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Chain Verified */}
+                {investigationResult.anomalies?.length === 0 && (
+                  <Card className="border-green-200 dark:border-green-800">
+                    <CardContent className="pt-4">
+                      <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                        <CheckCircle2 className="h-5 w-5" />
+                        <span className="font-medium">Cadeia de evidências verificada - Dados íntegros!</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Simulation Dialog */}
+      <Dialog open={showSimulationDialog} onOpenChange={setShowSimulationDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <RotateCcw className="h-5 w-5" />
+              Simulação de Re-importação
+            </DialogTitle>
+            <DialogDescription>
+              Analisa o impacto de apagar e reimportar todos os dados dos CSVs
+            </DialogDescription>
+          </DialogHeader>
+
+          {isSimulating ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              <p className="mt-4 text-muted-foreground">Simulando re-importação...</p>
+              <p className="text-sm text-muted-foreground">Isso pode levar alguns segundos</p>
+            </div>
+          ) : simulationResult ? (
+            <div className="space-y-4">
+              {/* Summary */}
+              <div className="grid grid-cols-3 gap-4">
+                <Card className={simulationResult.safe ? "border-green-300 bg-green-50 dark:bg-green-950/20" : "border-red-300 bg-red-50 dark:bg-red-950/20"}>
+                  <CardContent className="pt-4 text-center">
+                    {simulationResult.safe ? (
+                      <CheckCircle2 className="h-12 w-12 mx-auto text-green-600" />
+                    ) : (
+                      <AlertTriangle className="h-12 w-12 mx-auto text-red-600" />
+                    )}
+                    <p className="mt-2 font-bold text-lg">
+                      {simulationResult.safe ? "SEGURO" : "RISCO"}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {simulationResult.safe ? "Re-importação é segura" : "Re-importação pode causar perda de dados"}
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="pt-4 text-center">
+                    <p className="text-3xl font-bold">{simulationResult.currentState.totalTransactions}</p>
+                    <p className="text-sm text-muted-foreground">Transações Atuais</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="pt-4 text-center">
+                    <p className="text-3xl font-bold">{simulationResult.currentState.totalBatches}</p>
+                    <p className="text-sm text-muted-foreground">Batches de Importação</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Current State Details */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Estado Atual do Sistema</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                      <span>Total de Transações:</span>
+                      <span className="font-bold">{simulationResult.currentState.totalTransactions}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                      <span>Total de Batches:</span>
+                      <span className="font-bold">{simulationResult.currentState.totalBatches}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                      <span>Fingerprints Únicos:</span>
+                      <span className="font-bold">{simulationResult.currentState.uniqueFingerprints}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Projected Impact */}
+              <Card className={simulationResult.projectedImpact.transactionsToDelete > 0 ? "border-red-200" : "border-green-200"}>
+                <CardHeader className={simulationResult.projectedImpact.transactionsToDelete > 0 ? "bg-red-50 dark:bg-red-950/20" : "bg-green-50 dark:bg-green-950/20"}>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Trash2 className="h-4 w-4" />
+                    Impacto Projetado da Re-importação
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                      <span>Transações a Deletar:</span>
+                      <span className="font-bold text-red-600">{simulationResult.projectedImpact.transactionsToDelete}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                      <span>Batches a Deletar:</span>
+                      <span className="font-bold text-orange-600">{simulationResult.projectedImpact.batchesToDelete}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                      <span>Regras Órfãs Afetadas:</span>
+                      <span className="font-bold text-yellow-600">{simulationResult.projectedImpact.orphanRulesAffected}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Warnings */}
+              {simulationResult.warnings && simulationResult.warnings.length > 0 && (
+                <Card className="border-yellow-200">
+                  <CardHeader className="bg-yellow-50 dark:bg-yellow-950/20">
+                    <CardTitle className="text-base text-yellow-700 dark:text-yellow-400 flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4" />
+                      Avisos ({simulationResult.warnings.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <ul className="space-y-2">
+                      {simulationResult.warnings.map((warning: string, idx: number) => (
+                        <li key={idx} className="flex items-start gap-2 text-sm">
+                          <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                          {warning}
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Recommendations */}
+              {simulationResult.recommendations && simulationResult.recommendations.length > 0 && (
+                <Card className="border-blue-200">
+                  <CardHeader className="bg-blue-50 dark:bg-blue-950/20">
+                    <CardTitle className="text-base text-blue-700 dark:text-blue-400 flex items-center gap-2">
+                      <Info className="h-4 w-4" />
+                      Recomendações ({simulationResult.recommendations.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <ul className="space-y-2">
+                      {simulationResult.recommendations.map((rec: string, idx: number) => (
+                        <li key={idx} className="flex items-start gap-2 text-sm">
+                          <CheckCircle2 className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                          {rec}
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <Database className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>Clique em "Simular Re-importação" para iniciar a análise</p>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
