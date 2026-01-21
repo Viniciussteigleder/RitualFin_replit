@@ -4,8 +4,12 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/utils";
-import { Calendar, Building2, Tag, FileText, ExternalLink, Edit, Trash2, CheckCircle2, AlertTriangle } from "lucide-react";
+import { 
+  Calendar, Building2, Tag, FileText, ExternalLink, Edit, Trash2, CheckCircle2, AlertTriangle,
+  Hash, Database, Upload, Zap, Clock, Info
+} from "lucide-react";
 import { CATEGORY_CONFIGS } from "@/lib/constants/categories";
 import { useState } from "react";
 import { CategoryIcon } from "@/components/ui/category-icon";
@@ -13,20 +17,38 @@ import { CategoryIcon } from "@/components/ui/category-icon";
 type Transaction = {
   id: string;
   paymentDate: Date;
+  bookingDate?: Date | null;
+  importedAt?: Date | null;
+  createdAt?: Date | null;
   descRaw: string;
   descNorm: string;
+  keyDesc?: string | null;
   aliasDesc?: string | null;
   simpleDesc?: string | null;
   amount: number;
+  currency?: string | null;
+  foreignAmount?: number | null;
+  foreignCurrency?: string | null;
   category1?: string | null;
   category2?: string | null;
   category3?: string | null;
   type?: string | null;
   fixVar?: string | null;
+  recurring?: boolean | null;
   source?: string | null;
+  accountSource?: string | null;
+  status?: string | null;
   confidence?: number | null;
   needsReview: boolean;
   manualOverride: boolean;
+  classifiedBy?: string | null;
+  ruleIdApplied?: string | null;
+  leafId?: string | null;
+  uploadId?: string | null;
+  ingestionItemId?: string | null;
+  key?: string | null;
+  internalTransfer?: boolean | null;
+  excludeFromBudget?: boolean | null;
   accountId?: string | null;
   conflictFlag?: boolean | null;
   classificationCandidates?: any | null;
@@ -138,6 +160,17 @@ export function TransactionDrawer({
         </SheetHeader>
 
         <div className="space-y-6 py-6">
+          {/* Tabbed Interface for Comprehensive Data */}
+          <Tabs defaultValue="overview" className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="classification">Classificação</TabsTrigger>
+              <TabsTrigger value="rules">Regras & IA</TabsTrigger>
+              <TabsTrigger value="debug">Debug</TabsTrigger>
+            </TabsList>
+
+            {/* Tab 1: Overview */}
+            <TabsContent value="overview" className="space-y-4 mt-4">
           {/* Conflict Resolution Section */}
           {transaction.conflictFlag && transaction.classificationCandidates && (
             <div className="p-4 border border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 rounded-2xl space-y-3 animate-in fade-in slide-in-from-top-4">
@@ -311,6 +344,258 @@ export function TransactionDrawer({
               </div>
             </div>
           )}
+            </TabsContent>
+
+            {/* Tab 2: Classification */}
+            <TabsContent value="classification" className="space-y-4 mt-4">
+              <div className="space-y-3">
+                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  <Tag className="h-4 w-4" />
+                  Classificação Completa
+                </h3>
+                <div className="bg-secondary/30 rounded-2xl p-4 border border-border space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Tipo:</span>
+                    <Badge variant={transaction.type === 'Receita' ? 'default' : 'destructive'}>
+                      {transaction.type || 'NÃO DEFINIDO'}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Fixo/Variável:</span>
+                    <Badge variant="outline">{transaction.fixVar || 'Variável'}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Recorrente:</span>
+                    <Badge variant="outline">{transaction.recurring ? 'Sim' : 'Não'}</Badge>
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Categoria 1:</span>
+                    <span className="font-medium">{transaction.category1 || 'OPEN'}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Categoria 2:</span>
+                    <span className="font-medium">{transaction.category2 || 'OPEN'}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Categoria 3:</span>
+                    <span className="font-medium">{transaction.category3 || 'OPEN'}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">App Category:</span>
+                    <span className="font-medium">{transaction.appCategory || 'OPEN'}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Leaf ID:</span>
+                    <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
+                      {transaction.leafId?.substring(0, 8) || 'NULL'}
+                    </code>
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Status:</span>
+                    <Badge variant={transaction.status === 'FINAL' ? 'default' : 'secondary'}>
+                      {transaction.status || 'FINAL'}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Transferência Interna:</span>
+                    <span className="font-medium">{transaction.internalTransfer ? 'Sim' : 'Não'}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Excluir do Orçamento:</span>
+                    <span className="font-medium">{transaction.excludeFromBudget ? 'Sim' : 'Não'}</span>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Tab 3: Rules & Confidence */}
+            <TabsContent value="rules" className="space-y-4 mt-4">
+              <div className="space-y-3">
+                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  <Zap className="h-4 w-4" />
+                  Regras & Inteligência
+                </h3>
+                <div className="bg-secondary/30 rounded-2xl p-4 border border-border space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Classificado Por:</span>
+                    <Badge variant={transaction.classifiedBy === 'MANUAL' ? 'default' : 'secondary'}>
+                      {transaction.classifiedBy || 'NÃO CLASSIFICADO'}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Regra Aplicada:</span>
+                    <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
+                      {transaction.ruleIdApplied?.substring(0, 8) || 'Nenhuma'}
+                    </code>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Palavra-chave:</span>
+                    <code className="text-xs bg-primary/10 text-primary px-2 py-1 rounded font-mono font-bold">
+                      {transaction.matchedKeyword || 'N/A'}
+                    </code>
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Confiança:</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-24 h-2 bg-secondary rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full ${transaction.confidence >= 90 ? 'bg-emerald-500' : transaction.confidence >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                          style={{ width: `${transaction.confidence || 0}%` }}
+                        />
+                      </div>
+                      <span className="font-bold text-sm">{transaction.confidence || 0}%</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Precisa Revisão:</span>
+                    <Badge variant={transaction.needsReview ? 'destructive' : 'default'}>
+                      {transaction.needsReview ? 'Sim' : 'Não'}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Override Manual:</span>
+                    <Badge variant={transaction.manualOverride ? 'default' : 'outline'}>
+                      {transaction.manualOverride ? 'Sim' : 'Não'}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Tab 4: Debug/Technical */}
+            <TabsContent value="debug" className="space-y-4 mt-4">
+              <div className="space-y-3">
+                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  <Database className="h-4 w-4" />
+                  Informações Técnicas
+                </h3>
+                <div className="bg-secondary/30 rounded-2xl p-4 border border-border space-y-3">
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground">Transaction ID:</span>
+                    <code className="block text-xs bg-muted px-2 py-1 rounded font-mono break-all">
+                      {transaction.id}
+                    </code>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground">Fingerprint (Key):</span>
+                    <code className="block text-xs bg-muted px-2 py-1 rounded font-mono break-all">
+                      {transaction.key || 'N/A'}
+                    </code>
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                      <Upload className="h-3 w-3" />
+                      Upload (Batch) ID:
+                    </span>
+                    <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
+                      {transaction.uploadId?.substring(0, 8) || 'NULL'}
+                    </code>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                      <Hash className="h-3 w-3" />
+                      Ingestion Item ID:
+                    </span>
+                    <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
+                      {transaction.ingestionItemId?.substring(0, 8) || 'NULL'}
+                    </code>
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                      <Clock className="h-3 w-3" />
+                      Data de Pagamento:
+                    </span>
+                    <span className="text-xs font-mono">
+                      {new Date(transaction.paymentDate).toLocaleString('pt-PT')}
+                    </span>
+                  </div>
+                  {transaction.bookingDate && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Data de Reserva:</span>
+                      <span className="text-xs font-mono">
+                        {new Date(transaction.bookingDate).toLocaleString('pt-PT')}
+                      </span>
+                    </div>
+                  )}
+                  {transaction.importedAt && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Importado Em:</span>
+                      <span className="text-xs font-mono">
+                        {new Date(transaction.importedAt).toLocaleString('pt-PT')}
+                      </span>
+                    </div>
+                  )}
+                  {transaction.createdAt && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Criado Em:</span>
+                      <span className="text-xs font-mono">
+                        {new Date(transaction.createdAt).toLocaleString('pt-PT')}
+                      </span>
+                    </div>
+                  )}
+                  <Separator />
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground">Descrições:</span>
+                    <div className="space-y-1.5 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Raw:</span>
+                        <code className="font-mono bg-muted px-1.5 py-0.5 rounded max-w-[60%] truncate">
+                          {transaction.descRaw}
+                        </code>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Normalized:</span>
+                        <code className="font-mono bg-muted px-1.5 py-0.5 rounded max-w-[60%] truncate">
+                          {transaction.descNorm}
+                        </code>
+                      </div>
+                      {transaction.keyDesc && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Key Desc:</span>
+                          <code className="font-mono bg-muted px-1.5 py-0.5 rounded max-w-[60%] truncate">
+                            {transaction.keyDesc}
+                          </code>
+                        </div>
+                      )}
+                      {transaction.simpleDesc && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Simple:</span>
+                          <code className="font-mono bg-muted px-1.5 py-0.5 rounded max-w-[60%] truncate">
+                            {transaction.simpleDesc}
+                          </code>
+                        </div>
+                      )}
+                      {transaction.aliasDesc && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Alias:</span>
+                          <code className="font-mono bg-muted px-1.5 py-0.5 rounded max-w-[60%] truncate">
+                            {transaction.aliasDesc}
+                          </code>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {(transaction.foreignAmount || transaction.foreignCurrency) && (
+                    <>
+                      <Separator />
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Valor Estrangeiro:</span>
+                        <span className="font-mono">
+                          {transaction.foreignAmount} {transaction.foreignCurrency}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
 
           <Separator />
 
