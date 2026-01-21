@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "next dev",
     "analyze": "ANALYZE=true npm run build",
-    "build": "next build",
+    "build": "node scripts/migrate-on-vercel.mjs && next build",
     "start": "next start",
     "lint": "npm run check && npm run ui-perf:check && npm run lint:eslint",
     "lint:eslint": "eslint src next.config.ts drizzle.config.ts playwright.config.ts",
