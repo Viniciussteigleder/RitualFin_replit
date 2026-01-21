@@ -733,6 +733,8 @@ export function DiagnosticsClient() {
                   } else if (v === "date_range") {
                     const today = new Date().toISOString().slice(0, 10);
                     setScope({ kind: "date_range", from: today, to: today });
+                  } else if (v === "all_history") {
+                    setScope({ kind: "all_history" });
                   } else {
                     setScope({ kind: "all_recent", recentBatches: 10 });
                   }
@@ -744,6 +746,7 @@ export function DiagnosticsClient() {
                 <SelectContent>
                   <SelectItem value="all_recent">Últimos batches</SelectItem>
                   <SelectItem value="batch">Um batch</SelectItem>
+                  <SelectItem value="all_history">Todo o Histórico</SelectItem>
                   <SelectItem value="date_range">Período</SelectItem>
                 </SelectContent>
               </Select>
@@ -783,20 +786,24 @@ export function DiagnosticsClient() {
                     ))}
                   </SelectContent>
                 </Select>
-              ) : (
+              ) : scope.kind === "date_range" ? (
                 <div className="grid grid-cols-2 gap-2">
                   <Input
                     type="date"
-                    value={scope.from}
-                    onChange={(e) => setScope({ ...scope, from: e.target.value })}
+                    value={(scope as any).from}
+                    onChange={(e) => setScope({ kind: "date_range", from: e.target.value, to: (scope as any).to })}
                     className="rounded-xl"
                   />
                   <Input
                     type="date"
-                    value={scope.to}
-                    onChange={(e) => setScope({ ...scope, to: e.target.value })}
+                    value={(scope as any).to}
+                    onChange={(e) => setScope({ kind: "date_range", from: (scope as any).from, to: e.target.value })}
                     className="rounded-xl"
                   />
+                </div>
+              ) : (
+                <div className="h-10 flex items-center px-3 text-sm text-muted-foreground bg-muted/30 rounded-xl border border-dashed">
+                  Analisa todo o banco de dados
                 </div>
               )}
               <p className="text-[11px] text-muted-foreground">
@@ -1126,6 +1133,13 @@ export function DiagnosticsClient() {
                         {result.issues.filter(i => i.autoFixable && !fixResults[i.id]?.success).length}
                       </Badge>
                     </TabsTrigger>
+                    <TabsTrigger value="checks" className="gap-2">
+                      <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
+                      Checks
+                      <Badge variant="secondary">
+                        {Object.values(result.categories).reduce((acc, cat) => acc + cat.checksRun, 0)}
+                      </Badge>
+                    </TabsTrigger>
                   </TabsList>
 
                   {/* Bulk Actions */}
@@ -1177,6 +1191,30 @@ export function DiagnosticsClient() {
                     </label>
                   </div>
                 )}
+
+                <TabsContent value="checks" className="mt-0 space-y-4">
+                  <div className="space-y-6">
+                    {Object.entries(result.categories)
+                      .filter(([key]) => categoryFilter === "all" || categoryFilter === key)
+                      .map(([key, cat]) => (
+                        <div key={key} className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <div className={`p-1.5 rounded bg-gradient-to-br ${CATEGORY_CONFIG[cat.icon]?.gradient || CATEGORY_CONFIG.FileUp.gradient}`}>
+                              {(() => {
+                                const Icon = CATEGORY_CONFIG[cat.icon]?.icon || CATEGORY_CONFIG.FileUp.icon;
+                                return <Icon className="h-3 w-3 text-white" />;
+                              })()}
+                            </div>
+                            <h3 className="font-semibold text-sm">{cat.name}</h3>
+                            <Badge variant="outline" className="text-[10px] py-0 h-5">
+                              {cat.checksPassed}/{cat.checksRun} OK
+                            </Badge>
+                          </div>
+                          <CheckList checks={cat.checks} />
+                        </div>
+                    ))}
+                  </div>
+                </TabsContent>
 
                 <TabsContent value="all" className="mt-0">
                   <IssueList
@@ -2272,6 +2310,60 @@ function IssueCard({
         </div>
       </AccordionContent>
     </AccordionItem>
+  );
+}
+
+function CheckList({
+  checks
+}: {
+  checks: Array<{
+    id: string;
+    title: string;
+    passed: boolean;
+    skipped: boolean;
+    howWeKnow?: string;
+  }>;
+}) {
+  if (!checks || checks.length === 0) return null;
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+      {checks.map((check) => (
+        <div
+          key={check.id}
+          className={`flex items-start gap-3 p-3 rounded-xl border text-sm transition-all hover:shadow-sm ${
+            check.passed
+              ? "bg-green-50/50 dark:bg-green-950/10 border-green-100 dark:border-green-900/30"
+              : check.skipped
+              ? "bg-muted/30 border-muted-foreground/10"
+              : "bg-red-50/50 dark:bg-red-950/10 border-red-100 dark:border-red-900/30"
+          }`}
+        >
+          <div className="mt-1">
+            {check.passed ? (
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+            ) : check.skipped ? (
+              <Info className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <XCircle className="h-4 w-4 text-red-600" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold flex items-center justify-between gap-2">
+              <span className="truncate">{check.title}</span>
+              <span className="text-[10px] text-muted-foreground font-mono bg-muted/50 px-1.5 py-0.5 rounded border">
+                {check.id}
+              </span>
+            </div>
+            {check.howWeKnow && (
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                {check.howWeKnow}
+              </p>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 

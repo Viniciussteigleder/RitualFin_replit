@@ -99,12 +99,20 @@ export interface CategoryResult {
   issueCount: number;
   checksRun: number;
   checksPassed: number;
+  checks: Array<{
+    id: string;
+    title: string;
+    passed: boolean;
+    skipped: boolean;
+    howWeKnow?: string;
+  }>;
 }
 
 export type DiagnosticsScope =
   | { kind: "all_recent"; recentBatches?: number }
   | { kind: "batch"; batchId: string }
-  | { kind: "date_range"; from: string; to: string };
+  | { kind: "date_range"; from: string; to: string }
+  | { kind: "all_history" };
 
 // ============================================================================
 // DIAGNOSTIC CATEGORIES
@@ -154,21 +162,19 @@ const CATEGORIES = {
 // ============================================================================
 
 export async function runFullDiagnostics(scope: DiagnosticsScope = { kind: "all_recent", recentBatches: 10 }): Promise<DiagnosticResult> {
+  const startTime = Date.now();
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
-
   const userId = session.user.id;
-  const startTime = Date.now();
-  const issues: DiagnosticIssue[] = [];
 
   // Run all diagnostic checks in parallel
   const [
-    importIssues,
-    ruleIssues,
-    categorizationIssues,
-    financialIssues,
-    taxonomyIssues,
-    lineageIssues
+    importRes,
+    ruleRes,
+    catRes,
+    finRes,
+    taxRes,
+    linRes
   ] = await Promise.all([
     runImportDiagnostics(userId, scope),
     runRuleDiagnostics(userId),
@@ -178,10 +184,16 @@ export async function runFullDiagnostics(scope: DiagnosticsScope = { kind: "all_
     runDataLineageDiagnostics(userId)
   ]);
 
-  issues.push(...importIssues.issues, ...ruleIssues.issues, ...categorizationIssues.issues,
-              ...financialIssues.issues, ...taxonomyIssues.issues, ...lineageIssues.issues);
+  const rawIssues = [
+    ...importRes.issues,
+    ...ruleRes.issues,
+    ...catRes.issues,
+    ...finRes.issues,
+    ...taxRes.issues,
+    ...linRes.issues
+  ];
 
-  const enrichedIssues = issues.map(enrichIssueFromCatalog);
+  const enrichedIssues = rawIssues.map(enrichIssueFromCatalog);
 
   // Calculate summary
   const critical = enrichedIssues.filter(i => i.severity === "critical").length;
@@ -207,7 +219,7 @@ export async function runFullDiagnostics(scope: DiagnosticsScope = { kind: "all_
     timestamp: new Date().toISOString(),
     duration: Date.now() - startTime,
     summary: {
-      totalIssues: issues.length,
+      totalIssues: rawIssues.length,
       critical,
       high,
       medium,
@@ -216,12 +228,12 @@ export async function runFullDiagnostics(scope: DiagnosticsScope = { kind: "all_
       healthScore
     },
     categories: {
-      imports: importIssues.categoryResult,
-      rules: ruleIssues.categoryResult,
-      categorization: categorizationIssues.categoryResult,
-      financial: financialIssues.categoryResult,
-      taxonomy: taxonomyIssues.categoryResult,
-      lineage: lineageIssues.categoryResult
+      imports: importRes.categoryResult,
+      rules: ruleRes.categoryResult,
+      categorization: catRes.categoryResult,
+      financial: finRes.categoryResult,
+      taxonomy: taxRes.categoryResult,
+      lineage: linRes.categoryResult
     },
     issues: enrichedIssues
   };
@@ -233,14 +245,22 @@ export async function runFullDiagnostics(scope: DiagnosticsScope = { kind: "all_
 
 async function runImportDiagnostics(userId: string, scope: DiagnosticsScope) {
   const issues: DiagnosticIssue[] = [];
+  const checks: CategoryResult["checks"] = [];
   let checksRun = 0;
   let checksPassed = 0;
 
   const batchIds = await resolveScopeBatchIds(userId, scope);
   const primaryBatchId = batchIds[0];
 
+  // Helper to record check results
+  const recordCheck = (id: string, title: string, passed: boolean, skipped = false, howWeKnow?: string) => {
+    checksRun++;
+    if (passed) checksPassed++;
+    checks.push({ id, title, passed, skipped, howWeKnow });
+  };
+
   // FILE-001 (raw-backed): encoding suspicion via replacement char
-  checksRun++;
+  let file001Passed = true;
   if (primaryBatchId) {
     const rows = await db
       .select({
@@ -265,26 +285,24 @@ async function runImportDiagnostics(userId: string, scope: DiagnosticsScope) {
       }));
 
     if (hit.length > 0) {
+      file001Passed = false;
       issues.push({
         id: "FILE-001",
         category: CATEGORIES.imports,
         severity: "high",
         title: "Possível problema de encoding (caractere de substituição)",
-        description: "Algumas linhas parecem conter caracteres corrompidos (�), sugerindo encoding errado.",
+        description: "Algumas linhas parecem conter caracteres corrompidos (), sugerindo encoding errado.",
         affectedCount: hit.length,
         samples: hit,
         recommendation: "Reimportar/reprocessar com encoding correto.",
         autoFixable: false,
       });
-    } else {
-      checksPassed++;
     }
-  } else {
-    checksPassed++;
   }
+  recordCheck("FILE-001", "Verificação de encoding", file001Passed, !primaryBatchId);
 
   // FILE-003 (raw-backed): variable column counts (sample-based)
-  checksRun++;
+  let file003Passed = true;
   if (primaryBatchId) {
     const rows = await db
       .select({
@@ -307,6 +325,7 @@ async function runImportDiagnostics(userId: string, scope: DiagnosticsScope) {
     const nonZero = counts.filter((c) => c.columnCount > 0);
     const distinct = new Set(nonZero.map((c) => c.columnCount));
     if (distinct.size > 1) {
+      file003Passed = false;
       const sorted = [...distinct].sort((a, b) => a - b);
       const min = sorted[0]!;
       const max = sorted[sorted.length - 1]!;
@@ -322,15 +341,12 @@ async function runImportDiagnostics(userId: string, scope: DiagnosticsScope) {
         recommendation: "Revisar delimitador/aspas e reprocessar; ver linhas outlier no diff viewer.",
         autoFixable: false,
       });
-    } else {
-      checksPassed++;
     }
-  } else {
-    checksPassed++;
   }
+  recordCheck("FILE-003", "Contagem de colunas constante", file003Passed, !primaryBatchId);
 
   // PAR-013 (raw-backed): locale number drift
-  checksRun++;
+  let par013Passed = true;
   if (primaryBatchId) {
     const rows = await db
       .select({
@@ -348,6 +364,7 @@ async function runImportDiagnostics(userId: string, scope: DiagnosticsScope) {
       .filter(Boolean);
     const drift = detectNumberLocaleDrift(amountStrings);
     if (drift.drift) {
+      par013Passed = false;
       const examples = rows
         .map((r) => ({
           ingestionItemId: r.id,
@@ -370,15 +387,12 @@ async function runImportDiagnostics(userId: string, scope: DiagnosticsScope) {
         recommendation: "Ajustar separadores decimais/milhares e reprocessar o batch.",
         autoFixable: false,
       });
-    } else {
-      checksPassed++;
     }
-  } else {
-    checksPassed++;
   }
+  recordCheck("PAR-013", "Drift de locale numérico", par013Passed, !primaryBatchId);
 
   // PAR-016 (raw-backed): date format drift
-  checksRun++;
+  let par016Passed = true;
   if (primaryBatchId) {
     const rows = await db
       .select({
@@ -399,6 +413,7 @@ async function runImportDiagnostics(userId: string, scope: DiagnosticsScope) {
 
     const drift = detectDateFormatDrift(dateStrings);
     if (drift.drift) {
+      par016Passed = false;
       const examples = rows
         .map((r) => ({
           ingestionItemId: r.id,
@@ -421,15 +436,12 @@ async function runImportDiagnostics(userId: string, scope: DiagnosticsScope) {
         recommendation: "Definir date_format e reprocessar; se necessário, separar o arquivo.",
         autoFixable: false,
       });
-    } else {
-      checksPassed++;
     }
-  } else {
-    checksPassed++;
   }
+  recordCheck("PAR-016", "Drift de formato de data", par016Passed, !primaryBatchId);
 
   // BCH-002 (raw-backed-ish): sum mismatch parsed vs DB, uses upload_id (batch id) on transactions
-  checksRun++;
+  let bch002Passed = true;
   if (primaryBatchId) {
     const sums = await db.execute(sql`
       SELECT
@@ -459,6 +471,7 @@ async function runImportDiagnostics(userId: string, scope: DiagnosticsScope) {
     const dbSum = Number(row?.db_sum ?? 0);
     const diff = Math.abs(parsedSum - dbSum);
     if (diff > 0.01 && (Math.abs(parsedSum) > 0.01 || Math.abs(dbSum) > 0.01)) {
+      bch002Passed = false;
       issues.push({
         id: "BCH-002",
         category: CATEGORIES.imports,
@@ -470,15 +483,12 @@ async function runImportDiagnostics(userId: string, scope: DiagnosticsScope) {
         recommendation: "Inspecionar exemplos no drill-down e reprocessar o batch (locale/sinal).",
         autoFixable: false,
       });
-    } else {
-      checksPassed++;
     }
-  } else {
-    checksPassed++;
   }
+  recordCheck("BCH-002", "Soma consistente (Parsed vs DB)", bch002Passed, !primaryBatchId);
 
   // BCH-003 (raw-backed): duplicate file hash across batches
-  checksRun++;
+  let bch003Passed = true;
   const dupBatches = await db.execute(sql`
     SELECT file_hash_sha256, COUNT(*)::int AS cnt
     FROM ingestion_batches
@@ -489,6 +499,7 @@ async function runImportDiagnostics(userId: string, scope: DiagnosticsScope) {
     LIMIT 20
   `);
   if (dupBatches.rows.length > 0) {
+    bch003Passed = false;
     issues.push({
       id: "BCH-003",
       category: CATEGORIES.imports,
@@ -500,12 +511,11 @@ async function runImportDiagnostics(userId: string, scope: DiagnosticsScope) {
       recommendation: "Identificar duplicados pelo hash e fazer rollback/quarentena do duplicado.",
       autoFixable: false,
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("BCH-003", "Arquivos únicos (sem hash duplicado)", bch003Passed);
 
   // Check 0: Missing provenance linkage (raw-backed via batch + fingerprint join)
-  checksRun++;
+  let bch001Passed = true;
   const missingLinks = await db.execute(sql`
     SELECT
       t.id AS transaction_id,
@@ -526,6 +536,7 @@ async function runImportDiagnostics(userId: string, scope: DiagnosticsScope) {
   `);
 
   if (missingLinks.rows.length > 0) {
+    bch001Passed = false;
     issues.push({
       id: "BCH-001",
       category: CATEGORIES.imports,
@@ -547,12 +558,11 @@ async function runImportDiagnostics(userId: string, scope: DiagnosticsScope) {
         "Execute o backfill de proveniência (admin) para preencher ingestion_item_id e criar transaction_evidence_link. Depois re-execute os diagnósticos.",
       autoFixable: false,
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("BCH-001", "Linkage de evidência raw", bch001Passed);
 
   // Check 1: Column shift detection (date in keyDesc)
-  checksRun++;
+  let imp001Passed = true;
   const dateInKeyDesc = await db.execute(sql`
     SELECT id, key_desc, amount, payment_date, source
     FROM transactions
@@ -563,6 +573,7 @@ async function runImportDiagnostics(userId: string, scope: DiagnosticsScope) {
   `);
 
   if (dateInKeyDesc.rows.length > 0) {
+    imp001Passed = false;
     issues.push({
       id: "IMP-001",
       category: CATEGORIES.imports,
@@ -579,12 +590,11 @@ async function runImportDiagnostics(userId: string, scope: DiagnosticsScope) {
       recommendation: "Re-exporte o CSV do banco e verifique alinhamento das colunas",
       autoFixable: false
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("IMP-001", "Sem deslocamento de colunas", imp001Passed);
 
   // Check 2: Amount mismatch in keyDesc
-  checksRun++;
+  let imp002Passed = true;
   const amountMismatch = await db.execute(sql`
     SELECT t.id, t.key_desc, t.amount, t.payment_date, t.source
     FROM transactions t
@@ -615,6 +625,7 @@ async function runImportDiagnostics(userId: string, scope: DiagnosticsScope) {
   }
 
   if (mismatchedAmounts.length > 0) {
+    imp002Passed = false;
     issues.push({
       id: "IMP-002",
       category: CATEGORIES.imports,
@@ -626,12 +637,11 @@ async function runImportDiagnostics(userId: string, scope: DiagnosticsScope) {
       recommendation: "Verifique se houve mistura de dados entre transações",
       autoFixable: false
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("IMP-002", "Valor em key_desc consistente", imp002Passed);
 
   // Check 3: Duplicate fingerprints
-  checksRun++;
+  let imp003Passed = true;
   const duplicates = await db.execute(sql`
     SELECT key, COUNT(*) as count, ARRAY_AGG(id) as ids
     FROM transactions
@@ -643,6 +653,7 @@ async function runImportDiagnostics(userId: string, scope: DiagnosticsScope) {
   `);
 
   if (duplicates.rows.length > 0) {
+    imp003Passed = false;
     issues.push({
       id: "IMP-003",
       category: CATEGORIES.imports,
@@ -658,9 +669,8 @@ async function runImportDiagnostics(userId: string, scope: DiagnosticsScope) {
       recommendation: "Revise transações duplicadas e remova se necessário",
       autoFixable: true
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("IMP-003", "Sem fingerprints duplicados", imp003Passed);
 
   const status: CategoryResult["status"] = issues.some(i => i.severity === "critical") ? "critical"
                : issues.some(i => i.severity === "high") ? "warning" : "healthy";
@@ -673,7 +683,8 @@ async function runImportDiagnostics(userId: string, scope: DiagnosticsScope) {
       status,
       issueCount: issues.length,
       checksRun,
-      checksPassed
+      checksPassed,
+      checks
     }
   };
 }
@@ -702,6 +713,16 @@ function enrichIssueFromCatalog(issue: DiagnosticIssue): DiagnosticIssue {
 async function resolveScopeBatchIds(userId: string, scope: DiagnosticsScope): Promise<string[]> {
   if (scope.kind === "batch") return [scope.batchId];
 
+  if (scope.kind === "all_history") {
+    const rows = await db.execute(sql`
+      SELECT id
+      FROM ingestion_batches
+      WHERE user_id = ${userId}
+      ORDER BY created_at DESC
+    `);
+    return (rows.rows as any[]).map((r) => r.id);
+  }
+
   if (scope.kind === "date_range") {
     const from = new Date(scope.from);
     const to = new Date(scope.to);
@@ -713,12 +734,12 @@ async function resolveScopeBatchIds(userId: string, scope: DiagnosticsScope): Pr
         AND t.payment_date >= ${from}
         AND t.payment_date <= ${to}
       ORDER BY ib.created_at DESC
-      LIMIT 50
+      LIMIT 100
     `);
     return (rows.rows as any[]).map((r) => r.id);
   }
 
-  const limit = Math.max(1, Math.min(50, scope.recentBatches ?? 10));
+  const limit = Math.max(1, Math.min(100, scope.recentBatches ?? 10));
   const rows = await db.execute(sql`
     SELECT id
     FROM ingestion_batches
@@ -757,11 +778,18 @@ export async function getRecentBatchesForDiagnostics(
 
 async function runRuleDiagnostics(userId: string) {
   const issues: DiagnosticIssue[] = [];
+  const checks: CategoryResult["checks"] = [];
   let checksRun = 0;
   let checksPassed = 0;
 
+  const recordCheck = (id: string, title: string, passed: boolean, skipped = false, howWeKnow?: string) => {
+    checksRun++;
+    if (passed) checksPassed++;
+    checks.push({ id, title, passed, skipped, howWeKnow });
+  };
+
   // Check 1: Rules without any matches
-  checksRun++;
+  let rul001Passed = true;
   const deadRules = await db.execute(sql`
     SELECT r.id, r.key_words, r.category_1, r.priority,
            (SELECT COUNT(*) FROM transactions t WHERE t.user_id = ${userId} AND t.rule_id_applied = r.id) as match_count
@@ -773,6 +801,7 @@ async function runRuleDiagnostics(userId: string) {
   `);
 
   if (deadRules.rows.length > 0) {
+    rul001Passed = false;
     issues.push({
       id: "RUL-001",
       category: CATEGORIES.rules,
@@ -788,12 +817,11 @@ async function runRuleDiagnostics(userId: string) {
       recommendation: "Considere desativar ou ajustar palavras-chave",
       autoFixable: false
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("RUL-001", "Regras com correspondências", rul001Passed);
 
   // Check 2: Rules with orphan leaf_id
-  checksRun++;
+  let rul002Passed = true;
   const orphanLeafRules = await db.execute(sql`
     SELECT r.id, r.key_words, r.leaf_id
     FROM rules r
@@ -806,6 +834,7 @@ async function runRuleDiagnostics(userId: string) {
   `);
 
   if (orphanLeafRules.rows.length > 0) {
+    rul002Passed = false;
     issues.push({
       id: "RUL-002",
       category: CATEGORIES.rules,
@@ -821,12 +850,11 @@ async function runRuleDiagnostics(userId: string) {
       recommendation: "Atualize leaf_id para valor válido ou OPEN",
       autoFixable: true
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("RUL-002", "Regras com leaf_id válido", rul002Passed);
 
   // Check 3: Overlapping keywords
-  checksRun++;
+  let rul003Passed = true;
   const allRules = await db.execute(sql`
     SELECT id, key_words, priority, category_1
     FROM rules
@@ -854,6 +882,7 @@ async function runRuleDiagnostics(userId: string) {
   }
 
   if (overlaps.length > 0) {
+    rul003Passed = false;
     issues.push({
       id: "RUL-003",
       category: CATEGORIES.rules,
@@ -865,12 +894,11 @@ async function runRuleDiagnostics(userId: string) {
       recommendation: "Revise prioridades ou especifique melhor as keywords",
       autoFixable: false
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("RUL-003", "Sem keywords sobrepostas", rul003Passed);
 
   // Check 4: Category mismatch between rule and leaf
-  checksRun++;
+  let rul004Passed = true;
   const categoryMismatch = await db.execute(sql`
     SELECT r.id, r.key_words, r.category_1 as rule_category,
            t1.nivel_1_pt as leaf_category, r.leaf_id
@@ -885,6 +913,7 @@ async function runRuleDiagnostics(userId: string) {
   `);
 
   if (categoryMismatch.rows.length > 0) {
+    rul004Passed = false;
     issues.push({
       id: "RUL-004",
       category: CATEGORIES.rules,
@@ -901,9 +930,8 @@ async function runRuleDiagnostics(userId: string) {
       recommendation: "Sincronize category_1 com a taxonomia do leaf_id",
       autoFixable: true
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("RUL-004", "Categoria sincronizada com taxonomia", rul004Passed);
 
   const status: CategoryResult["status"] = issues.some(i => i.severity === "critical") ? "critical"
                : issues.some(i => i.severity === "high") ? "warning" : "healthy";
@@ -916,7 +944,8 @@ async function runRuleDiagnostics(userId: string) {
       status,
       issueCount: issues.length,
       checksRun,
-      checksPassed
+      checksPassed,
+      checks
     }
   };
 }
@@ -927,11 +956,18 @@ async function runRuleDiagnostics(userId: string) {
 
 async function runCategorizationDiagnostics(userId: string) {
   const issues: DiagnosticIssue[] = [];
+  const checks: CategoryResult["checks"] = [];
   let checksRun = 0;
   let checksPassed = 0;
 
+  const recordCheck = (id: string, title: string, passed: boolean, skipped = false, howWeKnow?: string) => {
+    checksRun++;
+    if (passed) checksPassed++;
+    checks.push({ id, title, passed, skipped, howWeKnow });
+  };
+
   // Check 1: OPEN leaf with non-OPEN app_category_name
-  checksRun++;
+  let cat001Passed = true;
   const openLeafWrongCategory = await db.execute(sql`
     SELECT t.id, t.key_desc, t.leaf_id, t.app_category_name, t.category_1, tl.nivel_3_pt
     FROM transactions t
@@ -944,6 +980,7 @@ async function runCategorizationDiagnostics(userId: string) {
   `);
 
   if (openLeafWrongCategory.rows.length > 0) {
+    cat001Passed = false;
     issues.push({
       id: "CAT-001",
       category: CATEGORIES.categorization,
@@ -960,12 +997,11 @@ async function runCategorizationDiagnostics(userId: string) {
       recommendation: "Defina app_category_name como OPEN ou reclassifique",
       autoFixable: true
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("CAT-001", "OPEN consistente (leaf vs app_category)", cat001Passed);
 
   // Check 2: category_1 != OPEN but leaf is OPEN
-  checksRun++;
+  let cat002Passed = true;
   const category1LeafMismatch = await db.execute(sql`
     SELECT t.id, t.key_desc, t.leaf_id, t.category_1, tl.nivel_3_pt
     FROM transactions t
@@ -978,6 +1014,7 @@ async function runCategorizationDiagnostics(userId: string) {
   `);
 
   if (category1LeafMismatch.rows.length > 0) {
+    cat002Passed = false;
     issues.push({
       id: "CAT-002",
       category: CATEGORIES.categorization,
@@ -994,12 +1031,11 @@ async function runCategorizationDiagnostics(userId: string) {
       recommendation: "Rederive category_1 a partir do leaf_id",
       autoFixable: true
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("CAT-002", "Category_1 consistente com leaf", cat002Passed);
 
   // Check 3: NULL leaf_id
-  checksRun++;
+  let cat003Passed = true;
   const nullLeafId = await db.execute(sql`
     SELECT COUNT(*) as count
     FROM transactions
@@ -1009,6 +1045,7 @@ async function runCategorizationDiagnostics(userId: string) {
 
   const nullCount = parseInt((nullLeafId.rows[0] as any)?.count || "0");
   if (nullCount > 0) {
+    cat003Passed = false;
     issues.push({
       id: "CAT-003",
       category: CATEGORIES.categorization,
@@ -1020,12 +1057,11 @@ async function runCategorizationDiagnostics(userId: string) {
       recommendation: "Execute reclassificação ou atribua OPEN",
       autoFixable: true
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("CAT-003", "Todas transações com leaf_id", cat003Passed);
 
   // Check 4: Low confidence unreviewed
-  checksRun++;
+  let cat004Passed = true;
   const lowConfidence = await db.execute(sql`
     SELECT COUNT(*) as count
     FROM transactions
@@ -1037,6 +1073,7 @@ async function runCategorizationDiagnostics(userId: string) {
 
   const lowConfCount = parseInt((lowConfidence.rows[0] as any)?.count || "0");
   if (lowConfCount > 10) {
+    cat004Passed = false;
     issues.push({
       id: "CAT-004",
       category: CATEGORIES.categorization,
@@ -1048,12 +1085,11 @@ async function runCategorizationDiagnostics(userId: string) {
       recommendation: "Revise na página /confirm ou crie novas regras",
       autoFixable: false
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("CAT-004", "Baixa confiança sob controle", cat004Passed);
 
   // Check 5: Orphan leaf_id in transactions
-  checksRun++;
+  let cat005Passed = true;
   const orphanLeafTx = await db.execute(sql`
     SELECT t.id, t.key_desc, t.leaf_id
     FROM transactions t
@@ -1065,6 +1101,7 @@ async function runCategorizationDiagnostics(userId: string) {
   `);
 
   if (orphanLeafTx.rows.length > 0) {
+    cat005Passed = false;
     issues.push({
       id: "CAT-005",
       category: CATEGORIES.categorization,
@@ -1080,9 +1117,8 @@ async function runCategorizationDiagnostics(userId: string) {
       recommendation: "Reclassifique transações para leaf_id válido",
       autoFixable: true
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("CAT-005", "Sem leaf_id órfão em transações", cat005Passed);
 
   const status: CategoryResult["status"] = issues.some(i => i.severity === "critical") ? "critical"
                : issues.some(i => i.severity === "high") ? "warning" : "healthy";
@@ -1095,7 +1131,8 @@ async function runCategorizationDiagnostics(userId: string) {
       status,
       issueCount: issues.length,
       checksRun,
-      checksPassed
+      checksPassed,
+      checks
     }
   };
 }
@@ -1106,11 +1143,18 @@ async function runCategorizationDiagnostics(userId: string) {
 
 async function runFinancialDiagnostics(userId: string) {
   const issues: DiagnosticIssue[] = [];
+  const checks: CategoryResult["checks"] = [];
   let checksRun = 0;
   let checksPassed = 0;
 
+  const recordCheck = (id: string, title: string, passed: boolean, skipped = false, howWeKnow?: string) => {
+    checksRun++;
+    if (passed) checksPassed++;
+    checks.push({ id, title, passed, skipped, howWeKnow });
+  };
+
   // Check 1: GEHALT (salary) as expense
-  checksRun++;
+  let fin001Passed = true;
   const gehaltExpense = await db.execute(sql`
     SELECT id, key_desc, amount, payment_date
     FROM transactions
@@ -1121,6 +1165,7 @@ async function runFinancialDiagnostics(userId: string) {
   `);
 
   if (gehaltExpense.rows.length > 0) {
+    fin001Passed = false;
     issues.push({
       id: "FIN-001",
       category: CATEGORIES.financial,
@@ -1137,12 +1182,11 @@ async function runFinancialDiagnostics(userId: string) {
       recommendation: "Verifique sinal do valor ou classificação",
       autoFixable: false
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("FIN-001", "Identificação de salários", fin001Passed);
 
   // Check 2: Type/amount sign mismatch
-  checksRun++;
+  let fin002Passed = true;
   const typeMismatch = await db.execute(sql`
     SELECT id, key_desc, amount, type
     FROM transactions
@@ -1152,6 +1196,7 @@ async function runFinancialDiagnostics(userId: string) {
   `);
 
   if (typeMismatch.rows.length > 0) {
+    fin002Passed = false;
     issues.push({
       id: "FIN-002",
       category: CATEGORIES.financial,
@@ -1168,12 +1213,11 @@ async function runFinancialDiagnostics(userId: string) {
       recommendation: "Corrija o tipo ou o sinal do valor",
       autoFixable: true
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("FIN-002", "Consistência de sinal (Receita/Despesa)", fin002Passed);
 
   // Check 3: Large unreviewed transactions
-  checksRun++;
+  let fin003Passed = true;
   const largeUnreviewed = await db.execute(sql`
     SELECT id, key_desc, amount, payment_date, needs_review
     FROM transactions
@@ -1186,6 +1230,7 @@ async function runFinancialDiagnostics(userId: string) {
   `);
 
   if (largeUnreviewed.rows.length > 0) {
+    fin003Passed = false;
     issues.push({
       id: "FIN-003",
       category: CATEGORIES.financial,
@@ -1202,12 +1247,11 @@ async function runFinancialDiagnostics(userId: string) {
       recommendation: "Revise e confirme transações de alto valor",
       autoFixable: false
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("FIN-003", "Transações grandes revisadas", fin003Passed);
 
   // Check 4: Potential duplicates (same amount, date, similar description)
-  checksRun++;
+  let fin004Passed = true;
   const potentialDupes = await db.execute(sql`
     SELECT payment_date::date as tx_date, amount, COUNT(*) as count,
            ARRAY_AGG(DISTINCT SUBSTRING(key_desc, 1, 30)) as descriptions
@@ -1220,6 +1264,7 @@ async function runFinancialDiagnostics(userId: string) {
   `);
 
   if (potentialDupes.rows.length > 0) {
+    fin004Passed = false;
     issues.push({
       id: "FIN-004",
       category: CATEGORIES.financial,
@@ -1236,13 +1281,11 @@ async function runFinancialDiagnostics(userId: string) {
       recommendation: "Revise e remova duplicatas se confirmado",
       autoFixable: false
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("FIN-004", "Verificação de duplicatas", fin004Passed);
 
   // Check 5: Statistical Anomaly Detection (Z-score outliers)
-  // W. Edwards Deming: Statistical process control for transaction values
-  checksRun++;
+  let fin005Passed = true;
   const statsResult = await db.execute(sql`
     SELECT AVG(ABS(amount)) as avg_amount,
            STDDEV(ABS(amount)) as stddev_amount
@@ -1255,7 +1298,6 @@ async function runFinancialDiagnostics(userId: string) {
   const stddevAmount = parseFloat((statsResult.rows[0] as any)?.stddev_amount || "0");
 
   if (avgAmount > 0 && stddevAmount > 0) {
-    // Find transactions more than 4 standard deviations from mean (extreme outliers)
     const zScoreThreshold = avgAmount + (4 * stddevAmount);
     const extremeOutliers = await db.execute(sql`
       SELECT id, key_desc, amount, payment_date, source,
@@ -1268,6 +1310,7 @@ async function runFinancialDiagnostics(userId: string) {
     `);
 
     if (extremeOutliers.rows.length > 0) {
+      fin005Passed = false;
       issues.push({
         id: "FIN-005",
         category: CATEGORIES.financial,
@@ -1286,16 +1329,12 @@ async function runFinancialDiagnostics(userId: string) {
         recommendation: "Verifique se os valores estão corretos - possível erro de parsing",
         autoFixable: false
       });
-    } else {
-      checksPassed++;
     }
-  } else {
-    checksPassed++;
   }
+  recordCheck("FIN-005", "Detecção de outliers estatísticos", fin005Passed);
 
   // Check 6: Supermarket/Retail Category-Value Validation
-  // Michael Stonebraker: Schema enforcement on parsed amounts
-  checksRun++;
+  let fin006Passed = true;
   const suspiciousRetail = await db.execute(sql`
     SELECT id, key_desc, amount, payment_date, source, app_category_name
     FROM transactions
@@ -1316,6 +1355,7 @@ async function runFinancialDiagnostics(userId: string) {
   `);
 
   if (suspiciousRetail.rows.length > 0) {
+    fin006Passed = false;
     issues.push({
       id: "FIN-006",
       category: CATEGORIES.financial,
@@ -1333,13 +1373,11 @@ async function runFinancialDiagnostics(userId: string) {
       recommendation: "CRÍTICO: Verifique se o valor foi parseado corretamente do CSV original",
       autoFixable: false
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("FIN-006", "Varejo com valores típicos", fin006Passed);
 
   // Check 7: Merchant-based Outlier Detection
-  // Gene Kim: Observability into transaction patterns per merchant
-  checksRun++;
+  let fin007Passed = true;
   const merchantOutliers = await db.execute(sql`
     WITH merchant_stats AS (
       SELECT
@@ -1382,6 +1420,7 @@ async function runFinancialDiagnostics(userId: string) {
   `);
 
   if (merchantOutliers.rows.length > 0) {
+    fin007Passed = false;
     issues.push({
       id: "FIN-007",
       category: CATEGORIES.financial,
@@ -1400,32 +1439,28 @@ async function runFinancialDiagnostics(userId: string) {
       recommendation: "Compare com o CSV original - possível erro de parsing",
       autoFixable: false
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("FIN-007", "Consistência por comerciante", fin007Passed);
 
   // Check 8: Description pattern anomalies (fabricated patterns)
-  // Dr. Edgar Codd: Data integrity validation
-  checksRun++;
+  let fin008Passed = true;
   const suspiciousPatterns = await db.execute(sql`
     SELECT id, key_desc, amount, payment_date, source
     FROM transactions
     WHERE user_id = ${userId}
     AND (
-      -- Pattern: "SAGT DANKE" not matching typical sources
       (LOWER(key_desc) LIKE '%sagt danke%'
        AND LOWER(key_desc) NOT LIKE '%lidl sagt danke%'
        AND LOWER(key_desc) NOT LIKE '%dm %sagt danke%')
-      -- Pattern: Date pattern in key_desc (column shift indicator)
       OR key_desc ~ '^\d{2}/\d{2}/\d{4}'
       OR key_desc ~ '^\d{2}\.\d{2}\.\d{4}'
-      -- Pattern: Account numbers in description
       OR key_desc ~ '^-\d{5,}'
     )
     LIMIT 20
   `);
 
   if (suspiciousPatterns.rows.length > 0) {
+    fin008Passed = false;
     issues.push({
       id: "FIN-008",
       category: CATEGORIES.financial,
@@ -1443,9 +1478,8 @@ async function runFinancialDiagnostics(userId: string) {
       recommendation: "CRÍTICO: Revalide o CSV fonte - provável corrupção no parsing",
       autoFixable: false
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("FIN-008", "Padrões de descrição válidos", fin008Passed);
 
   const status: CategoryResult["status"] = issues.some(i => i.severity === "critical") ? "critical"
                : issues.some(i => i.severity === "high") ? "warning" : "healthy";
@@ -1458,7 +1492,8 @@ async function runFinancialDiagnostics(userId: string) {
       status,
       issueCount: issues.length,
       checksRun,
-      checksPassed
+      checksPassed,
+      checks
     }
   };
 }
@@ -1469,11 +1504,18 @@ async function runFinancialDiagnostics(userId: string) {
 
 async function runTaxonomyDiagnostics(userId: string) {
   const issues: DiagnosticIssue[] = [];
+  const checks: CategoryResult["checks"] = [];
   let checksRun = 0;
   let checksPassed = 0;
 
+  const recordCheck = (id: string, title: string, passed: boolean, skipped = false, howWeKnow?: string) => {
+    checksRun++;
+    if (passed) checksPassed++;
+    checks.push({ id, title, passed, skipped, howWeKnow });
+  };
+
   // Check 1: Broken hierarchy (leaf -> level2)
-  checksRun++;
+  let tax001Passed = true;
   const brokenLevel2 = await db.execute(sql`
     SELECT tl.leaf_id, tl.nivel_3_pt, tl.level_2_id
     FROM taxonomy_leaf tl
@@ -1484,6 +1526,7 @@ async function runTaxonomyDiagnostics(userId: string) {
   `);
 
   if (brokenLevel2.rows.length > 0) {
+    tax001Passed = false;
     issues.push({
       id: "TAX-001",
       category: CATEGORIES.taxonomy,
@@ -1499,12 +1542,11 @@ async function runTaxonomyDiagnostics(userId: string) {
       recommendation: "Recrie a hierarquia ou delete folhas órfãs",
       autoFixable: false
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("TAX-001", "Hierarquia íntegra (Leaf→Level2)", tax001Passed);
 
   // Check 2: Inconsistent OPEN chain
-  checksRun++;
+  let tax002Passed = true;
   const inconsistentOpen = await db.execute(sql`
     SELECT tl.leaf_id, tl.nivel_3_pt, t2.nivel_2_pt, t1.nivel_1_pt
     FROM taxonomy_leaf tl
@@ -1517,6 +1559,7 @@ async function runTaxonomyDiagnostics(userId: string) {
   `);
 
   if (inconsistentOpen.rows.length > 0) {
+    tax002Passed = false;
     issues.push({
       id: "TAX-002",
       category: CATEGORIES.taxonomy,
@@ -1533,12 +1576,11 @@ async function runTaxonomyDiagnostics(userId: string) {
       recommendation: "OPEN deve ser consistente em todos os níveis",
       autoFixable: true
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("TAX-002", "Cadeia OPEN consistente", tax002Passed);
 
   // Check 3: OPEN leaf linked to wrong app_category
-  checksRun++;
+  let tax003Passed = true;
   const openWrongAppCat = await db.execute(sql`
     SELECT acl.id as link_id, acl.leaf_id, ac.name as app_category_name
     FROM app_category_leaf acl
@@ -1553,6 +1595,7 @@ async function runTaxonomyDiagnostics(userId: string) {
   `);
 
   if (openWrongAppCat.rows.length > 0) {
+    tax003Passed = false;
     issues.push({
       id: "TAX-003",
       category: CATEGORIES.taxonomy,
@@ -1568,12 +1611,11 @@ async function runTaxonomyDiagnostics(userId: string) {
       recommendation: "Remova links incorretos ou corrija app_category",
       autoFixable: true
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("TAX-003", "Linkage OPEN íntegro", tax003Passed);
 
   // Check 4: Missing OPEN leaf
-  checksRun++;
+  let tax004Passed = true;
   const openLeaf = await db.execute(sql`
     SELECT COUNT(*) as count
     FROM taxonomy_leaf tl
@@ -1585,6 +1627,7 @@ async function runTaxonomyDiagnostics(userId: string) {
 
   const openCount = parseInt((openLeaf.rows[0] as any)?.count || "0");
   if (openCount === 0) {
+    tax004Passed = false;
     issues.push({
       id: "TAX-004",
       category: CATEGORIES.taxonomy,
@@ -1596,9 +1639,8 @@ async function runTaxonomyDiagnostics(userId: string) {
       recommendation: "Execute ensureOpenCategory() para criar",
       autoFixable: true
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("TAX-004", "Existência de categoria OPEN", tax004Passed);
 
   const status: CategoryResult["status"] = issues.some(i => i.severity === "critical") ? "critical"
                : issues.some(i => i.severity === "high") ? "warning" : "healthy";
@@ -1611,7 +1653,8 @@ async function runTaxonomyDiagnostics(userId: string) {
       status,
       issueCount: issues.length,
       checksRun,
-      checksPassed
+      checksPassed,
+      checks
     }
   };
 }
@@ -2133,11 +2176,18 @@ export async function findSuspiciousTransactions(options: {
  */
 export async function runDataLineageDiagnostics(userId: string) {
   const issues: DiagnosticIssue[] = [];
+  const checks: CategoryResult["checks"] = [];
   let checksRun = 0;
   let checksPassed = 0;
 
+  const recordCheck = (id: string, title: string, passed: boolean, skipped = false, howWeKnow?: string) => {
+    checksRun++;
+    if (passed) checksPassed++;
+    checks.push({ id, title, passed, skipped, howWeKnow });
+  };
+
   // Check 1: Transactions without evidence link
-  checksRun++;
+  let lin001Passed = true;
   const orphanTransactions = await db.execute(sql`
     SELECT t.id, t.key_desc, t.amount, t.payment_date, t.source, t.imported_at
     FROM transactions t
@@ -2149,6 +2199,7 @@ export async function runDataLineageDiagnostics(userId: string) {
   `);
 
   if (orphanTransactions.rows.length > 0) {
+    lin001Passed = false;
     issues.push({
       id: "LIN-001",
       category: { id: "lineage", name: "Rastreabilidade", icon: "Link", description: "Rastreabilidade de dados" },
@@ -2166,12 +2217,11 @@ export async function runDataLineageDiagnostics(userId: string) {
       recommendation: "Estas transações não podem ser verificadas contra o CSV original",
       autoFixable: false
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("LIN-001", "Rastreabilidade completa", lin001Passed);
 
   // Check 2: Broken evidence links
-  checksRun++;
+  let lin002Passed = true;
   const brokenLinks = await db.execute(sql`
     SELECT tel.transaction_id, tel.ingestion_item_id
     FROM transaction_evidence_link tel
@@ -2181,6 +2231,7 @@ export async function runDataLineageDiagnostics(userId: string) {
   `);
 
   if (brokenLinks.rows.length > 0) {
+    lin002Passed = false;
     issues.push({
       id: "LIN-002",
       category: { id: "lineage", name: "Rastreabilidade", icon: "Link", description: "Rastreabilidade de dados" },
@@ -2192,12 +2243,11 @@ export async function runDataLineageDiagnostics(userId: string) {
       recommendation: "Dados corrompidos - links órfãos precisam ser removidos",
       autoFixable: true
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("LIN-002", "Integridade dos links de evidência", lin002Passed);
 
   // Check 3: Ingestion items without transactions
-  checksRun++;
+  let lin003Passed = true;
   const uncommittedItems = await db.execute(sql`
     SELECT ii.id, ii.batch_id, ii.item_fingerprint, ii.status,
            ib.filename, ib.source_format
@@ -2211,6 +2261,7 @@ export async function runDataLineageDiagnostics(userId: string) {
   `);
 
   if (uncommittedItems.rows.length > 0) {
+    lin003Passed = false;
     issues.push({
       id: "LIN-003",
       category: { id: "lineage", name: "Rastreabilidade", icon: "Link", description: "Rastreabilidade de dados" },
@@ -2226,12 +2277,11 @@ export async function runDataLineageDiagnostics(userId: string) {
       recommendation: "Possível falha no commitBatch - itens perdidos",
       autoFixable: false
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("LIN-003", "Itens de ingestão vinculados", lin003Passed);
 
   // Check 4: Batches with parsing errors
-  checksRun++;
+  let lin004Passed = true;
   const errorBatches = await db.execute(sql`
     SELECT id, filename, source_format, status, diagnostics_json, imported_at
     FROM ingestion_batches
@@ -2242,6 +2292,7 @@ export async function runDataLineageDiagnostics(userId: string) {
   `);
 
   if (errorBatches.rows.length > 0) {
+    lin004Passed = false;
     issues.push({
       id: "LIN-004",
       category: { id: "lineage", name: "Rastreabilidade", icon: "Link", description: "Rastreabilidade de dados" },
@@ -2258,9 +2309,8 @@ export async function runDataLineageDiagnostics(userId: string) {
       recommendation: "Revise os arquivos CSV e tente reimportar",
       autoFixable: false
     });
-  } else {
-    checksPassed++;
   }
+  recordCheck("LIN-004", "Conclusão bem-sucedida de batches", lin004Passed);
 
   const status: CategoryResult["status"] = issues.some(i => i.severity === "critical") ? "critical"
                : issues.some(i => i.severity === "high") ? "warning" : "healthy";
@@ -2273,7 +2323,8 @@ export async function runDataLineageDiagnostics(userId: string) {
       status,
       issueCount: issues.length,
       checksRun,
-      checksPassed
+      checksPassed,
+      checks
     }
   };
 }
