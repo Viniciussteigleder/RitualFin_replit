@@ -25,6 +25,10 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Dependency Audit
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
   build:
     name: Build & Deploy Preview
     needs: lint

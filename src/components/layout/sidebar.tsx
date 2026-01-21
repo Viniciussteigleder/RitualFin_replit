@@ -25,7 +25,8 @@ import {
   Cog,
   LucideIcon,
   ListOrdered,
-  Shield
+  Shield,
+  BookOpen
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useState, useMemo } from "react";
@@ -236,6 +237,7 @@ export function Sidebar() {
                           { id: "uploads", icon: Receipt, href: "/uploads", label: "Importar Arquivos" },
                           { id: "ai-rules", icon: Bot, href: "/settings/rules", label: "Regras de IA" },
                           { id: "diagnostics", icon: Shield, href: "/admin/diagnostics", label: "Diagnóstico" },
+                          { id: "como-funciona", icon: BookOpen, href: "/ajuda/como-funciona", label: "Como funciona" },
                       ].map(item => renderNavItem(item, false))}
                   </CollapsibleContent>
                 </div>

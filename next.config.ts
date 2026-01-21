@@ -53,7 +53,7 @@ const nextConfig: NextConfig = {
             value: 'nosniff'
           },
           {
-            key: 'Content-Security-Policy-Report-Only',
+            key: process.env.NODE_ENV === 'production' ? 'Content-Security-Policy' : 'Content-Security-Policy-Report-Only',
             value: cspReportOnly,
           },
           {
