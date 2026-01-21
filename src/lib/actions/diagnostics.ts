@@ -1314,9 +1314,9 @@ async function runCategorizationDiagnostics(userId: string) {
     issues.push({
       id: "CAT-003",
       category: CATEGORIES.categorization,
-      severity: "medium",
-      title: "Transações sem leaf_id",
-      description: "Transações sem classificação taxonômica atribuída",
+      severity: "high",
+      title: "Transações Sem Classificação Taxonômica",
+      description: `${nullCount} transações não têm leaf_id atribuído. TODAS as transações devem ter classificação taxonômica para análises.`,
       affectedCount: nullCount,
       samples: [],
       recommendation: "Execute reclassificação ou atribua OPEN",
@@ -2005,6 +2005,45 @@ async function runFinancialDiagnostics(userId: string) {
   }
   recordCheck("FIN-015", "Palavras-chave de receita estão classificadas", fin015Passed);
 
+  // Check 16: ALL transactions must have type assigned (comprehensive check)
+  let fin016Passed = true;
+  const missingType = await db.execute(sql`
+    SELECT id, key_desc, amount, payment_date, category_1, confidence
+    FROM transactions
+    WHERE user_id = ${userId}
+    AND (type IS NULL OR type NOT IN ('Receita', 'Despesa'))
+    LIMIT 100
+  `);
+
+  if (missingType.rows.length > 0) {
+    fin016Passed = false;
+    const totalUntyped = parseInt(((await db.execute(sql`
+      SELECT COUNT(*) as count FROM transactions 
+      WHERE user_id = ${userId} 
+      AND (type IS NULL OR type NOT IN ('Receita', 'Despesa'))
+    `)).rows[0] as any)?.count || "0");
+    
+    issues.push({
+      id: "FIN-016",
+      category: CATEGORIES.financial,
+      severity: "critical",
+      title: "Transações Sem Tipo Definido",
+      description: `${totalUntyped} transações não têm tipo (Receita/Despesa) atribuído. TODAS as transações devem ser classificadas para aparecerem corretamente em relatórios e análises.`,
+      affectedCount: totalUntyped,
+      samples: missingType.rows.slice(0, 5).map((r: any) => ({
+        id: r.id,
+        keyDesc: r.key_desc?.substring(0, 80),
+        amount: r.amount,
+        paymentDate: r.payment_date,
+        category1: r.category_1 || 'NULL',
+        confidence: r.confidence || 0
+      })),
+      recommendation: "AÇÃO NECESSÁRIA: Classifique estas transações manualmente em 'Transações → Aguarda Revisão' ou configure regras de classificação automática.",
+      autoFixable: false
+    });
+  }
+  recordCheck("FIN-016", "Todas as transações têm tipo definido", fin016Passed);
+
   const status: CategoryResult["status"] = issues.some(i => i.severity === "critical") ? "critical"
                : issues.some(i => i.severity === "high") ? "warning" : "healthy";
 
@@ -2585,6 +2624,16 @@ export async function getAffectedRecords(
         LIMIT ${limit}
       `);
       return fin015.rows;
+
+    case "FIN-016":
+      const fin016 = await db.execute(sql`
+        SELECT id, key_desc, amount, payment_date, type, category_1, confidence
+        FROM transactions
+        WHERE user_id = ${userId}
+        AND (type IS NULL OR type NOT IN ('Receita', 'Despesa'))
+        LIMIT ${limit}
+      `);
+      return fin016.rows;
 
     default:
       return [];
