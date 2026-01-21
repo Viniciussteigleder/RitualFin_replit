@@ -936,13 +936,15 @@ async function runRuleDiagnostics(userId: string) {
   // Check 8: Redundancy check
   let rul008Passed = true;
   const redundantRules = await db.execute(sql`
-    SELECT r1.id as id1, r1.name as name1, r2.id as id2, r2.name as name2
+    SELECT r1.id as id1, r1.key_words as keywords1, r2.id as id2, r2.key_words as keywords2
     FROM rules r1
     JOIN rules r2 ON r1.user_id = r2.user_id 
       AND r1.id < r2.id
       AND r1.key_words = r2.key_words
-      AND r1.key_words_negative = r2.key_words_negative
+      AND COALESCE(r1.key_words_negative, '') = COALESCE(r2.key_words_negative, '')
     WHERE r1.user_id = ${userId}
+    AND r1.active = true
+    AND r2.active = true
     LIMIT 10
   `);
 
@@ -956,8 +958,9 @@ async function runRuleDiagnostics(userId: string) {
       description: "Múltiplas regras configuradas com os mesmos critérios de matching",
       affectedCount: redundantRules.rows.length,
       samples: redundantRules.rows.slice(0, 5).map((r: any) => ({
-        rule1: r.name1,
-        rule2: r.name2
+        rule1Id: r.id1?.substring(0, 8),
+        rule2Id: r.id2?.substring(0, 8),
+        keywords: r.keywords1?.substring(0, 50)
       })),
       recommendation: "Unifique regras redundantes para simplificar a manutenção",
       autoFixable: false
@@ -1890,6 +1893,7 @@ async function runFinancialDiagnostics(userId: string) {
     FROM transactions
     WHERE user_id = ${userId}
     AND (
+      -- Revenue keywords appearing in expenses
       (type = 'Despesa' AND (
         key_desc ILIKE '%GEHALT%'
         OR key_desc ILIKE '%SALÁRIO%'
@@ -1897,11 +1901,8 @@ async function runFinancialDiagnostics(userId: string) {
         OR key_desc ILIKE '%SALARY%'
         OR key_desc ILIKE '%LOHN%'
         OR key_desc ILIKE '%VENCIMENTO%'
-      ))
-      OR (type = 'Receita' AND (
-        key_desc ILIKE '%ALUGUEL PAGO%'
-        OR key_desc ILIKE '%PAGAMENTO%'
-        OR key_desc ILIKE '%COMPRA%'
+        OR key_desc ILIKE '%RENDIMENTO%'
+        OR key_desc ILIKE '%ORDENADO%'
       ))
     )
     LIMIT 20
@@ -1914,15 +1915,16 @@ async function runFinancialDiagnostics(userId: string) {
       category: CATEGORIES.financial,
       severity: "high",
       title: "Tipo Semântico Incorreto",
-      description: "Transações com palavras-chave que contradizem o tipo (ex: salário marcado como despesa)",
+      description: `Detectadas ${semanticTypeMismatch.rows.length} transações com palavras-chave que contradizem o tipo. Por exemplo: salário (GEHALT, SALÁRIO, LOHN) marcado como despesa em vez de receita. Isto afeta cálculos financeiros e relatórios.`,
       affectedCount: semanticTypeMismatch.rows.length,
       samples: semanticTypeMismatch.rows.slice(0, 5).map((r: any) => ({
         id: r.id,
         keyDesc: r.key_desc?.substring(0, 80),
         amount: r.amount,
-        type: r.type
+        type: r.type,
+        expectedType: 'Receita'
       })),
-      recommendation: "Corrija o tipo da transação ou verifique se há erro no parser de tipo",
+      recommendation: "AÇÃO NECESSÁRIA: Corrija o tipo destas transações manualmente ou verifique se há erro no parser de tipo do banco de dados. Palavras-chave detectadas: GEHALT, SALÁRIO, LOHN, VENCIMENTO, RENDIMENTO, ORDENADO.",
       autoFixable: true
     });
   }
