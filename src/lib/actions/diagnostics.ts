@@ -182,12 +182,30 @@ export async function runFullDiagnostics(scope: DiagnosticsScope = { kind: "all_
       taxRes,
       linRes
     ] = await Promise.all([
-      runImportDiagnostics(userId, scope),
-      runRuleDiagnostics(userId),
-      runCategorizationDiagnostics(userId),
-      runFinancialDiagnostics(userId),
-      runTaxonomyDiagnostics(userId),
-      runDataLineageDiagnostics(userId)
+      runImportDiagnostics(userId, scope).catch(e => {
+        console.error("[DIAGNOSTICS] Import check failed:", e);
+        return { issues: [], categoryResult: { ...CATEGORIES.imports, status: "critical", issueCount: 1, checksRun: 0, checksPassed: 0, checks: [] }, error: e.message }; 
+      }),
+      runRuleDiagnostics(userId).catch(e => {
+        console.error("[DIAGNOSTICS] Rule check failed:", e);
+        return { issues: [], categoryResult: { ...CATEGORIES.rules, status: "critical", issueCount: 1, checksRun: 0, checksPassed: 0, checks: [] }, error: e.message };
+      }),
+      runCategorizationDiagnostics(userId).catch(e => {
+        console.error("[DIAGNOSTICS] Categorization check failed:", e);
+        return { issues: [], categoryResult: { ...CATEGORIES.categorization, status: "critical", issueCount: 1, checksRun: 0, checksPassed: 0, checks: [] }, error: e.message };
+      }),
+      runFinancialDiagnostics(userId).catch(e => {
+        console.error("[DIAGNOSTICS] Financial check failed:", e);
+        return { issues: [], categoryResult: { ...CATEGORIES.financial, status: "critical", issueCount: 1, checksRun: 0, checksPassed: 0, checks: [] }, error: e.message };
+      }),
+      runTaxonomyDiagnostics(userId).catch(e => {
+        console.error("[DIAGNOSTICS] Taxonomy check failed:", e);
+        return { issues: [], categoryResult: { ...CATEGORIES.taxonomy, status: "critical", issueCount: 1, checksRun: 0, checksPassed: 0, checks: [] }, error: e.message };
+      }),
+      runDataLineageDiagnostics(userId).catch(e => {
+        console.error("[DIAGNOSTICS] Lineage check failed:", e);
+        return { issues: [], categoryResult: { ...CATEGORIES.lineage, status: "critical", issueCount: 1, checksRun: 0, checksPassed: 0, checks: [] }, error: e.message };
+      })
     ]);
 
     const rawIssues = [
