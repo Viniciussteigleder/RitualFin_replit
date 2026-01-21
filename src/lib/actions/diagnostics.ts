@@ -933,7 +933,7 @@ async function runRuleDiagnostics(userId: string) {
 
   recordCheck("RUL-001", "Regras sem correspondência", true);
 
-  // Check 8: Redundancy check
+  // Check 8: Redundancy check (Fixed: using key_words instead of name column)
   let rul008Passed = true;
   const redundantRules = await db.execute(sql`
     SELECT r1.id as id1, r1.key_words as keywords1, r2.id as id2, r2.key_words as keywords2
