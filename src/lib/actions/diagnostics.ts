@@ -1962,6 +1962,49 @@ async function runFinancialDiagnostics(userId: string) {
   }
   recordCheck("FIN-014", "Frequência de vendedores normalizada", fin014Passed);
 
+  // Check 15: Unclassified revenue keywords (NULL type)
+  let fin015Passed = true;
+  const unclassifiedRevenue = await db.execute(sql`
+    SELECT id, key_desc, amount, type, category_1, confidence
+    FROM transactions
+    WHERE user_id = ${userId}
+    AND (type IS NULL OR type NOT IN ('Receita', 'Despesa'))
+    AND (
+      key_desc ILIKE '%GEHALT%'
+      OR key_desc ILIKE '%SALÁRIO%'
+      OR key_desc ILIKE '%SALARIO%'
+      OR key_desc ILIKE '%SALARY%'
+      OR key_desc ILIKE '%LOHN%'
+      OR key_desc ILIKE '%VENCIMENTO%'
+      OR key_desc ILIKE '%RENDIMENTO%'
+      OR key_desc ILIKE '%ORDENADO%'
+    )
+    LIMIT 50
+  `);
+
+  if (unclassifiedRevenue.rows.length > 0) {
+    fin015Passed = false;
+    issues.push({
+      id: "FIN-015",
+      category: CATEGORIES.financial,
+      severity: "critical",
+      title: "Palavras-chave de Receita Sem Tipo Definido",
+      description: `Detectadas ${unclassifiedRevenue.rows.length} transações com palavras-chave de salário (GEHALT, SALÁRIO, LOHN) mas sem tipo (Receita/Despesa) atribuído. Estas transações estão completamente desclassificadas e não aparecem em relatórios.`,
+      affectedCount: unclassifiedRevenue.rows.length,
+      samples: unclassifiedRevenue.rows.slice(0, 5).map((r: any) => ({
+        id: r.id,
+        keyDesc: r.key_desc?.substring(0, 80),
+        amount: r.amount,
+        type: r.type || 'NULL',
+        category1: r.category_1 || 'NULL',
+        confidence: r.confidence || 0
+      })),
+      recommendation: "AÇÃO URGENTE: Estas transações precisam ser classificadas manualmente. Vá em Transações → filtrar por 'Aguarda Revisão' → classificar cada uma. Palavras-chave detectadas indicam RECEITA (salário).",
+      autoFixable: true
+    });
+  }
+  recordCheck("FIN-015", "Palavras-chave de receita estão classificadas", fin015Passed);
+
   const status: CategoryResult["status"] = issues.some(i => i.severity === "critical") ? "critical"
                : issues.some(i => i.severity === "high") ? "warning" : "healthy";
 
@@ -2522,6 +2565,26 @@ export async function getAffectedRecords(
         LIMIT ${limit}
       `);
       return fin012b.rows;
+
+    case "FIN-015":
+      const fin015 = await db.execute(sql`
+        SELECT id, key_desc, amount, type, category_1, confidence, needs_review
+        FROM transactions
+        WHERE user_id = ${userId}
+        AND (type IS NULL OR type NOT IN ('Receita', 'Despesa'))
+        AND (
+          key_desc ILIKE '%GEHALT%'
+          OR key_desc ILIKE '%SALÁRIO%'
+          OR key_desc ILIKE '%SALARIO%'
+          OR key_desc ILIKE '%SALARY%'
+          OR key_desc ILIKE '%LOHN%'
+          OR key_desc ILIKE '%VENCIMENTO%'
+          OR key_desc ILIKE '%RENDIMENTO%'
+          OR key_desc ILIKE '%ORDENADO%'
+        )
+        LIMIT ${limit}
+      `);
+      return fin015.rows;
 
     default:
       return [];
