@@ -672,6 +672,101 @@ async function runImportDiagnostics(userId: string, scope: DiagnosticsScope) {
   }
   recordCheck("IMP-003", "Sem fingerprints duplicados", imp003Passed);
 
+  // Check 4: Row count mismatch (Ingestion Items vs Transactions)
+  let imp004Passed = true;
+  if (batchIds.length > 0) {
+    const useBatchFilter = batchIds.length < 500;
+    const countMismatch = await db.execute(sql`
+      SELECT ib.id, ib.filename, 
+             (SELECT COUNT(*) FROM ingestion_items WHERE upload_id = ib.id) as item_count,
+             (SELECT COUNT(*) FROM transactions WHERE upload_id = ib.id) as tx_count
+      FROM ingestion_batches ib
+      WHERE ib.user_id = ${userId}
+      ${useBatchFilter ? sql`AND ib.id IN (${sql.join(batchIds, sql`, `)})` : sql``}
+      AND (SELECT COUNT(*) FROM ingestion_items WHERE upload_id = ib.id) != (SELECT COUNT(*) FROM transactions WHERE upload_id = ib.id)
+      LIMIT 10
+    `);
+
+    if (countMismatch.rows.length > 0) {
+      imp004Passed = false;
+      issues.push({
+        id: "IMP-004",
+        category: CATEGORIES.imports,
+        severity: "high",
+        title: "Divergência de Registros",
+        description: "Número de itens de ingestão não condiz com número de transações no batch",
+        affectedCount: countMismatch.rows.length,
+        samples: countMismatch.rows.slice(0, 5).map((r: any) => ({
+          batchId: r.id,
+          filename: r.filename,
+          items: r.item_count,
+          txs: r.tx_count
+        })),
+        recommendation: "Verifique se houve erro durante o commit do batch ou transações deletadas",
+        autoFixable: false
+      });
+    }
+  }
+  recordCheck("IMP-004", "Consistência de contagem de registros", imp004Passed);
+
+  // Check 5: Uncommitted or processing batches
+  let imp005Passed = true;
+  const processingBatches = await db.execute(sql`
+    SELECT id, filename, status, created_at
+    FROM ingestion_batches
+    WHERE user_id = ${userId}
+    AND status IN ('processing', 'pending')
+    AND created_at < NOW() - INTERVAL '30 minutes'
+    LIMIT 10
+  `);
+
+  if (processingBatches.rows.length > 0) {
+    imp005Passed = false;
+    issues.push({
+      id: "IMP-005",
+      category: CATEGORIES.imports,
+      severity: "medium",
+      title: "Batches Travados",
+      description: "Batches em status de processamento por muito tempo",
+      affectedCount: processingBatches.rows.length,
+      samples: processingBatches.rows.slice(0, 5).map((r: any) => ({
+        id: r.id,
+        filename: r.filename,
+        status: r.status,
+        createdAt: r.created_at
+      })),
+      recommendation: "Considere deletar o batch e re-importar se estiver travado",
+      autoFixable: false
+    });
+  }
+  recordCheck("IMP-005", "Sem batches travados", imp005Passed);
+
+  // Check 6: Encoding issues suspicion
+  let imp006Passed = true;
+  const encodingSuspicion = await db.execute(sql`
+    SELECT id, key_desc
+    FROM transactions
+    WHERE user_id = ${userId}
+    AND (key_desc ~ 'Ã[[:alnum:]]')
+    LIMIT 20
+  `);
+
+  if (encodingSuspicion.rows.length > 0) {
+    imp006Passed = false;
+    issues.push({
+      id: "IMP-006",
+      category: CATEGORIES.imports,
+      severity: "low",
+      title: "Suspeita de Erro de Encoding",
+      description: "Detectados caracteres que sugerem erro na decodificação do CSV (ex: UTF-8 vs ISO-8859-1)",
+      affectedCount: encodingSuspicion.rows.length,
+      samples: encodingSuspicion.rows.slice(0, 5),
+      recommendation: "Verifique o encoding original do arquivo CSV",
+      autoFixable: false
+    });
+  }
+  recordCheck("IMP-006", "Sem erros visíveis de encoding", imp006Passed);
+
   const status: CategoryResult["status"] = issues.some(i => i.severity === "critical") ? "critical"
                : issues.some(i => i.severity === "high") ? "warning" : "healthy";
 
@@ -787,6 +882,42 @@ async function runRuleDiagnostics(userId: string) {
     if (passed) checksPassed++;
     checks.push({ id, title, passed, skipped, howWeKnow });
   };
+
+  recordCheck("RUL-001", "Regras sem correspondência", true);
+
+  // Check 8: Redundancy check
+  let rul008Passed = true;
+  const redundantRules = await db.execute(sql`
+    SELECT r1.id as id1, r1.name as name1, r2.id as id2, r2.name as name2
+    FROM rules r1
+    JOIN rules r2 ON r1.user_id = r2.user_id 
+      AND r1.id < r2.id
+      AND r1.key_words = r2.key_words
+      AND r1.key_words_negative = r2.key_words_negative
+    WHERE r1.user_id = ${userId}
+    LIMIT 10
+  `);
+
+  if (redundantRules.rows.length > 0) {
+    rul008Passed = false;
+    issues.push({
+      id: "RUL-008",
+      category: CATEGORIES.rules,
+      severity: "medium",
+      title: "Regras Redundantes",
+      description: "Múltiplas regras configuradas com os mesmos critérios de matching",
+      affectedCount: redundantRules.rows.length,
+      samples: redundantRules.rows.slice(0, 5).map((r: any) => ({
+        rule1: r.name1,
+        rule2: r.name2
+      })),
+      recommendation: "Unifique regras redundantes para simplificar a manutenção",
+      autoFixable: false
+    });
+  }
+  recordCheck("RUL-008", "Sem regras redundantes", rul008Passed);
+
+
 
   // Check 1: Rules without any matches
   let rul001Passed = true;
@@ -933,6 +1064,60 @@ async function runRuleDiagnostics(userId: string) {
   }
   recordCheck("RUL-004", "Categoria sincronizada com taxonomia", rul004Passed);
 
+  // Check 5: Legacy rules detection (using old keywords field)
+  let rul005Passed = true;
+  const legacyRules = await db.execute(sql`
+    SELECT id, name
+    FROM rules
+    WHERE user_id = ${userId}
+    AND key_words IS NULL
+    AND keywords::text IS NOT NULL
+    LIMIT 10
+  `);
+
+  if (legacyRules.rows.length > 0) {
+    rul005Passed = false;
+    issues.push({
+      id: "RUL-005",
+      category: CATEGORIES.rules,
+      severity: "medium",
+      title: "Regras Legadas Detectadas",
+      description: "Regras usando campo de keywords antigo (deprecated)",
+      affectedCount: legacyRules.rows.length,
+      samples: legacyRules.rows.slice(0, 5),
+      recommendation: "Migre as keywords para o campo key_words (padrão M3)",
+      autoFixable: false
+    });
+  }
+  recordCheck("RUL-005", "Sem regras legadas", rul005Passed);
+
+  // Check 6: Negative keywords efficiency
+  let rul006Passed = true;
+  const broadNegativeKeywords = await db.execute(sql`
+    SELECT id, name, key_words_negative
+    FROM rules
+    WHERE user_id = ${userId}
+    AND key_words_negative IS NOT NULL
+    AND (LENGTH(key_words_negative) < 3 OR key_words_negative ~ '^[;,\\s]+$')
+    LIMIT 10
+  `);
+
+  if (broadNegativeKeywords.rows.length > 0) {
+    rul006Passed = false;
+    issues.push({
+      id: "RUL-006",
+      category: CATEGORIES.rules,
+      severity: "low",
+      title: "Keywords Negativas Muito Curtas/Ineficientes",
+      description: "Regras com palavras negativas que podem causar exclusão excessiva ou são inválidas",
+      affectedCount: broadNegativeKeywords.rows.length,
+      samples: broadNegativeKeywords.rows.slice(0, 5),
+      recommendation: "Use termos negativos mais específicos (mínimo 3 caracteres)",
+      autoFixable: false
+    });
+  }
+  recordCheck("RUL-006", "Keywords negativas eficientes", rul006Passed);
+
   const status: CategoryResult["status"] = issues.some(i => i.severity === "critical") ? "critical"
                : issues.some(i => i.severity === "high") ? "warning" : "healthy";
 
@@ -999,6 +1184,35 @@ async function runCategorizationDiagnostics(userId: string) {
     });
   }
   recordCheck("CAT-001", "OPEN consistente (leaf vs app_category)", cat001Passed);
+
+  // Check 6: High volume of manual overrides
+  let cat006Passed = true;
+  const manualOverrides = await db.execute(sql`
+    SELECT COUNT(*) as count
+    FROM transactions
+    WHERE user_id = ${userId}
+    AND rule_id IS NULL 
+    AND (category_1 != 'OPEN' OR app_category_name != 'OPEN')
+  `);
+
+  const manualCount = parseInt((manualOverrides.rows[0] as any)?.count || "0");
+  if (manualCount > 100) {
+    cat006Passed = false;
+    issues.push({
+      id: "CAT-006",
+      category: CATEGORIES.categorization,
+      severity: "medium",
+      title: "Alto Volume de Classificação Manual",
+      description: `Detectadas ${manualCount} transações classificadas sem uso de regras.`,
+      affectedCount: manualCount,
+      samples: [],
+      recommendation: "Crie novas regras para automatizar estas classificações",
+      autoFixable: false
+    });
+  }
+  recordCheck("CAT-006", "Eficiência da automação (regras vs manual)", cat006Passed);
+
+
 
   // Check 2: category_1 != OPEN but leaf is OPEN
   let cat002Passed = true;
@@ -1284,6 +1498,33 @@ async function runFinancialDiagnostics(userId: string) {
   }
   recordCheck("FIN-004", "Verificação de duplicatas", fin004Passed);
 
+  // Check 13: App Category Name consistency
+  let fin013Passed = true;
+  const appCatMismatch = await db.execute(sql`
+    SELECT t.id, t.app_category_name, ac.name as db_name
+    FROM transactions t
+    JOIN app_category ac ON t.app_category_id = ac.app_cat_id
+    WHERE t.user_id = ${userId}
+    AND t.app_category_name != ac.name
+    LIMIT 10
+  `);
+
+  if (appCatMismatch.rows.length > 0) {
+    fin013Passed = false;
+    issues.push({
+      id: "FIN-013",
+      category: CATEGORIES.financial,
+      severity: "medium",
+      title: "Consistência de App Category",
+      description: "Nome da app_category na transação diverge do cadastro mestre",
+      affectedCount: appCatMismatch.rows.length,
+      samples: appCatMismatch.rows.slice(0, 5),
+      recommendation: "Sincronize os nomes das categorias no banco",
+      autoFixable: true
+    });
+  }
+  recordCheck("FIN-013", "Nomes de app category consistentes", fin013Passed);
+
   // Check 5: Statistical Anomaly Detection (Z-score outliers)
   let fin005Passed = true;
   const statsResult = await db.execute(sql`
@@ -1481,6 +1722,151 @@ async function runFinancialDiagnostics(userId: string) {
   }
   recordCheck("FIN-008", "Padrões de descrição válidos", fin008Passed);
 
+  // Check 9: Positive amount for category "Interno" (should usually be transfers/expenses)
+  let fin009Passed = true;
+  const positiveInterno = await db.execute(sql`
+    SELECT id, key_desc, amount, category_1
+    FROM transactions
+    WHERE user_id = ${userId}
+    AND category_1 = 'Interno'
+    AND amount > 0
+    AND key_desc NOT LIKE '%ZAHLUNG ERHALTEN%'
+    LIMIT 10
+  `);
+
+  if (positiveInterno.rows.length > 0) {
+    fin009Passed = false;
+    issues.push({
+      id: "FIN-009",
+      category: CATEGORIES.financial,
+      severity: "medium",
+      title: "Transação Interna Positiva",
+      description: "Transferência interna com valor positivo sem ser recebimento confirmado",
+      affectedCount: positiveInterno.rows.length,
+      samples: positiveInterno.rows.slice(0, 5),
+      recommendation: "Verifique se é um estorno ou erro de sinal",
+      autoFixable: false
+    });
+  }
+  recordCheck("FIN-009", "Sinais de transações internas íntegros", fin009Passed);
+
+  // Check 10: Alias description consistency
+  let fin010Passed = true;
+  const aliasMismatch = await db.execute(sql`
+    SELECT t.id, t.key_desc, t.alias_desc, aa.alias_desc as expected_alias
+    FROM transactions t
+    JOIN alias_assets aa ON t.user_id = aa.user_id
+    WHERE t.user_id = ${userId}
+    AND t.alias_desc IS NOT NULL
+    AND t.alias_desc != aa.alias_desc
+    AND aa.key_words_alias IS NOT NULL
+    AND t.key_desc ILIKE '%' || aa.key_words_alias || '%'
+    LIMIT 10
+  `);
+
+  if (aliasMismatch.rows.length > 0) {
+    fin010Passed = false;
+    issues.push({
+      id: "FIN-010",
+      category: CATEGORIES.financial,
+      severity: "low",
+      title: "Consistência de Alias",
+      description: "Descrição de Alias na transação não condiz com o cadastro atual",
+      affectedCount: aliasMismatch.rows.length,
+      samples: aliasMismatch.rows.slice(0, 5),
+      recommendation: "Rode re-categorização para atualizar aliases",
+      autoFixable: true
+    });
+  }
+  recordCheck("FIN-010", "Descrições de alias consistentes", fin010Passed);
+
+  // Check 11: Missing key_desc check
+  let fin011Passed = true;
+  const missingKeyDesc = await db.execute(sql`
+    SELECT id, amount, payment_date
+    FROM transactions
+    WHERE user_id = ${userId}
+    AND (key_desc IS NULL OR key_desc = '')
+    LIMIT 10
+  `);
+
+  if (missingKeyDesc.rows.length > 0) {
+    fin011Passed = false;
+    issues.push({
+      id: "FIN-011",
+      category: CATEGORIES.financial,
+      severity: "critical",
+      title: "Transação sem key_desc",
+      description: "Transações sem identificador único de descrição (base de matching)",
+      affectedCount: missingKeyDesc.rows.length,
+      samples: missingKeyDesc.rows.slice(0, 5),
+      recommendation: "Regenere key_desc a partir do raw_payload",
+      autoFixable: true
+    });
+  }
+  recordCheck("FIN-011", "Existência de key_desc em todas as transações", fin011Passed);
+
+  // Check 12: Sign mismatch (Amount vs Type)
+  let fin012Passed = true;
+  const signMismatch = await db.execute(sql`
+    SELECT id, key_desc, amount, type
+    FROM transactions
+    WHERE user_id = ${userId}
+    AND (
+      (type = 'Despesa' AND amount > 0 AND key_desc NOT ILIKE '%REVERSAL%' AND key_desc NOT ILIKE '%ESTORNO%')
+      OR (type = 'Receita' AND amount < 0)
+    )
+    LIMIT 10
+  `);
+
+  if (signMismatch.rows.length > 0) {
+    fin012Passed = false;
+    issues.push({
+      id: "FIN-012",
+      category: CATEGORIES.financial,
+      severity: "high",
+      title: "Divergência de Sinal vs Tipo",
+      description: "Transações marcadas como Despesa com valor positivo (ou vice-versa)",
+      affectedCount: signMismatch.rows.length,
+      samples: signMismatch.rows.slice(0, 5),
+      recommendation: "Verifique a regra de normalização de sinais para este banco",
+      autoFixable: false
+    });
+  }
+  recordCheck("FIN-012", "Integridade de sinal vs tipo", fin012Passed);
+
+  // Check 14: Merchant name consistency (frequency anomaly)
+  let fin014Passed = true;
+  const merchantAnomaly = await db.execute(sql`
+    SELECT alias_desc, COUNT(*) as count, ARRAY_AGG(DISTINCT key_desc) as descriptions
+    FROM transactions 
+    WHERE user_id = ${userId}
+    AND alias_desc IS NOT NULL
+    GROUP BY alias_desc
+    HAVING COUNT(*) > 50 AND COUNT(DISTINCT key_desc) < 2
+    LIMIT 10
+  `);
+
+  if (merchantAnomaly.rows.length > 0) {
+    fin014Passed = false;
+    issues.push({
+      id: "FIN-014",
+      category: CATEGORIES.financial,
+      severity: "medium",
+      title: "Anomalia de Frequência de Vendedor",
+      description: "Mesmo alias_desc usado repetidamente (50+) para poucas descrições únicas. Possível falso positivo no matching.",
+      affectedCount: merchantAnomaly.rows.length,
+      samples: merchantAnomaly.rows.slice(0, 5).map((r: any) => ({
+        alias: r.alias_desc,
+        count: r.count,
+        descriptions: r.descriptions?.slice(0, 2)
+      })),
+      recommendation: "Verifique se o alias_desc está excessivamente abrangente",
+      autoFixable: false
+    });
+  }
+  recordCheck("FIN-014", "Frequência de vendedores normalizada", fin014Passed);
+
   const status: CategoryResult["status"] = issues.some(i => i.severity === "critical") ? "critical"
                : issues.some(i => i.severity === "high") ? "warning" : "healthy";
 
@@ -1641,6 +2027,94 @@ async function runTaxonomyDiagnostics(userId: string) {
     });
   }
   recordCheck("TAX-004", "Existência de categoria OPEN", tax004Passed);
+
+  // Check 5: Display logic consistency
+  let tax005Passed = true;
+  const incorrectDisplay = await db.execute(sql`
+    SELECT id, category_1, category_2, display, internal_transfer
+    FROM transactions
+    WHERE user_id = ${userId}
+    AND (
+      (category_1 = 'Interno' AND (display != 'no' OR internal_transfer = false))
+      OR (category_2 = 'Karlsruhe' AND display != 'Casa Karlsruhe')
+      OR (category_1 != 'Interno' AND category_2 != 'Karlsruhe' AND display = 'no')
+    )
+    LIMIT 10
+  `);
+
+  if (incorrectDisplay.rows.length > 0) {
+    tax005Passed = false;
+    issues.push({
+      id: "TAX-005",
+      category: CATEGORIES.taxonomy,
+      severity: "medium",
+      title: "Lógica de Exibição Inconsistente",
+      description: "Campo 'display' ou 'internal_transfer' não condiz com a categoria",
+      affectedCount: incorrectDisplay.rows.length,
+      samples: incorrectDisplay.rows.slice(0, 5),
+      recommendation: "Corrija a lógica de exibição (M2 rules)",
+      autoFixable: true
+    });
+  }
+  recordCheck("TAX-005", "Lógica de exibição íntegra", tax005Passed);
+
+  // Check 6: Transaction leaf_id verification
+  let tax006Passed = true;
+  const missingLeafTx = await db.execute(sql`
+    SELECT t.id, t.key_desc, t.leaf_id
+    FROM transactions t
+    LEFT JOIN taxonomy_leaf tl ON t.leaf_id = tl.leaf_id
+    WHERE t.user_id = ${userId}
+    AND (t.leaf_id IS NULL OR tl.leaf_id IS NULL)
+    LIMIT 20
+  `);
+
+  if (missingLeafTx.rows.length > 0) {
+    tax006Passed = false;
+    issues.push({
+      id: "TAX-006",
+      category: CATEGORIES.taxonomy,
+      severity: "critical",
+      title: "Transação sem Leaf ID Válido",
+      description: "Transações apontando para folhas inexistentes ou nulas",
+      affectedCount: missingLeafTx.rows.length,
+      samples: missingLeafTx.rows.slice(0, 5),
+      recommendation: "Re-categorize ou mova para OPEN",
+      autoFixable: true
+    });
+  }
+  recordCheck("TAX-006", "Vínculo de leaf_id íntegro", tax006Passed);
+
+  // Check 7: Inactive Categories (last 90 days)
+  let tax007Passed = true;
+  const inactiveCategories = await db.execute(sql`
+    SELECT tl.leaf_id, tl.nivel_3_pt
+    FROM taxonomy_leaf tl
+    LEFT JOIN transactions t ON tl.leaf_id = t.leaf_id AND t.payment_date > NOW() - INTERVAL '90 days'
+    WHERE tl.user_id = ${userId}
+    GROUP BY tl.leaf_id, tl.nivel_3_pt
+    HAVING COUNT(t.id) = 0
+    LIMIT 10
+  `);
+
+  if (inactiveCategories.rows.length > 0) {
+    tax007Passed = false;
+    issues.push({
+      id: "TAX-007",
+      category: CATEGORIES.taxonomy,
+      severity: "info",
+      title: "Categorias Inativas",
+      description: "Folhas da taxonomia sem transações vinculadas nos últimos 90 dias",
+      affectedCount: inactiveCategories.rows.length,
+      samples: inactiveCategories.rows.slice(0, 5).map((r: any) => ({
+        leafId: r.leaf_id,
+        name: r.nivel_3_pt
+      })),
+      recommendation: "Considere arquivar categorias não utilizadas para reduzir poluição visual",
+      autoFixable: false
+    });
+  }
+  recordCheck("TAX-007", "Otimização de taxonomia (uso recente)", tax007Passed);
 
   const status: CategoryResult["status"] = issues.some(i => i.severity === "critical") ? "critical"
                : issues.some(i => i.severity === "high") ? "warning" : "healthy";
@@ -2280,8 +2754,39 @@ export async function runDataLineageDiagnostics(userId: string) {
   }
   recordCheck("LIN-003", "Itens de ingestão vinculados", lin003Passed);
 
-  // Check 4: Batches with parsing errors
+  // Check 4: Transactions without batch ID
   let lin004Passed = true;
+  const missingBatchTx = await db.execute(sql`
+    SELECT id, key_desc, amount, payment_date
+    FROM transactions
+    WHERE user_id = ${userId}
+    AND upload_id IS NULL
+    LIMIT 10
+  `);
+
+  if (missingBatchTx.rows.length > 0) {
+    lin004Passed = false;
+    issues.push({
+      id: "LIN-004",
+      category: { id: "lineage", name: "Rastreabilidade", icon: "Link", description: "Rastreabilidade de dados" },
+      severity: "high",
+      title: "Transações sem Origem (upload_id null)",
+      description: "Transações persistidas que não estão vinculadas a nenhum batch de ingestão",
+      affectedCount: missingBatchTx.rows.length,
+      samples: missingBatchTx.rows.slice(0, 5).map((r: any) => ({
+        id: r.id,
+        keyDesc: r.key_desc?.substring(0, 50),
+        amount: r.amount,
+        date: r.payment_date
+      })),
+      recommendation: "Investigue a origem manual ou erro na ingestão",
+      autoFixable: false
+    });
+  }
+  recordCheck("LIN-004", "Todas transações vinculadas a batches", lin004Passed);
+
+  // Check 5: Batches with parsing errors
+  let lin005Passed = true;
   const errorBatches = await db.execute(sql`
     SELECT id, filename, source_format, status, diagnostics_json, imported_at
     FROM ingestion_batches
@@ -2292,9 +2797,9 @@ export async function runDataLineageDiagnostics(userId: string) {
   `);
 
   if (errorBatches.rows.length > 0) {
-    lin004Passed = false;
+    lin005Passed = false;
     issues.push({
-      id: "LIN-004",
+      id: "LIN-005",
       category: { id: "lineage", name: "Rastreabilidade", icon: "Link", description: "Rastreabilidade de dados" },
       severity: "high",
       title: "Batches com Erros de Parsing",
@@ -2310,7 +2815,7 @@ export async function runDataLineageDiagnostics(userId: string) {
       autoFixable: false
     });
   }
-  recordCheck("LIN-004", "Conclusão bem-sucedida de batches", lin004Passed);
+  recordCheck("LIN-005", "Conclusão bem-sucedida de batches", lin005Passed);
 
   const status: CategoryResult["status"] = issues.some(i => i.severity === "critical") ? "critical"
                : issues.some(i => i.severity === "high") ? "warning" : "healthy";

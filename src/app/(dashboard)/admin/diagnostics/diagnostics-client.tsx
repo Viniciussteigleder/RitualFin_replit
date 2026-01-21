@@ -50,6 +50,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -238,10 +239,13 @@ export function DiagnosticsClient() {
 
   // Search, filter, sort
   const [searchQuery, setSearchQuery] = useState("");
-  const [severityFilter, setSeverityFilter] = useState<Severity | "all">("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<SortOption>("severity");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+
+  // Filter states
+  const [showOnlyFailedChecks, setShowOnlyFailedChecks] = useState(false);
+  const [severityFilter, setSeverityFilter] = useState<Severity | "all">("all");
 
   // Scope + stage
   const [scope, setScope] = useState<DiagnosticsScope>({ kind: "all_recent", recentBatches: 10 });
@@ -1193,26 +1197,50 @@ export function DiagnosticsClient() {
                 )}
 
                 <TabsContent value="checks" className="mt-0 space-y-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs text-muted-foreground">
+                      {showOnlyFailedChecks 
+                        ? "Mostrando apenas checks que falharam" 
+                        : "Mostrando todos os procedimentos de auditoria"}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <label htmlFor="failed-only" className="text-xs font-medium cursor-pointer">Apenas falhas</label>
+                      <Switch 
+                        id="failed-only" 
+                        checked={showOnlyFailedChecks} 
+                        onCheckedChange={setShowOnlyFailedChecks} 
+                      />
+                    </div>
+                  </div>
+
                   <div className="space-y-6">
                     {Object.entries(result.categories)
                       .filter(([key]) => categoryFilter === "all" || categoryFilter === key)
-                      .map(([key, cat]) => (
-                        <div key={key} className="space-y-3">
-                          <div className="flex items-center gap-2">
-                            <div className={`p-1.5 rounded bg-gradient-to-br ${CATEGORY_CONFIG[cat.icon]?.gradient || CATEGORY_CONFIG.FileUp.gradient}`}>
-                              {(() => {
-                                const Icon = CATEGORY_CONFIG[cat.icon]?.icon || CATEGORY_CONFIG.FileUp.icon;
-                                return <Icon className="h-3 w-3 text-white" />;
-                              })()}
+                      .map(([key, cat]) => {
+                        const filteredChecks = showOnlyFailedChecks 
+                          ? cat.checks.filter(c => !c.passed && !c.skipped) 
+                          : cat.checks;
+                        
+                        if (showOnlyFailedChecks && filteredChecks.length === 0) return null;
+
+                        return (
+                          <div key={key} className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <div className={`p-1.5 rounded bg-gradient-to-br ${CATEGORY_CONFIG[cat.icon]?.gradient || CATEGORY_CONFIG.FileUp.gradient}`}>
+                                {(() => {
+                                  const Icon = CATEGORY_CONFIG[cat.icon]?.icon || CATEGORY_CONFIG.FileUp.icon;
+                                  return <Icon className="h-3 w-3 text-white" />;
+                                })()}
+                              </div>
+                              <h3 className="font-semibold text-sm">{cat.name}</h3>
+                              <Badge variant="outline" className="text-[10px] py-0 h-5">
+                                {cat.checksPassed}/{cat.checksRun} OK
+                              </Badge>
                             </div>
-                            <h3 className="font-semibold text-sm">{cat.name}</h3>
-                            <Badge variant="outline" className="text-[10px] py-0 h-5">
-                              {cat.checksPassed}/{cat.checksRun} OK
-                            </Badge>
+                            <CheckList checks={filteredChecks} />
                           </div>
-                          <CheckList checks={cat.checks} />
-                        </div>
-                    ))}
+                        );
+                    })}
                   </div>
                 </TabsContent>
 
