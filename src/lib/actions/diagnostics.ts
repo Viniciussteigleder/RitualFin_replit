@@ -841,6 +841,213 @@ async function runFinancialDiagnostics(userId: string) {
     checksPassed++;
   }
 
+  // Check 5: Statistical Anomaly Detection (Z-score outliers)
+  // W. Edwards Deming: Statistical process control for transaction values
+  checksRun++;
+  const statsResult = await db.execute(sql`
+    SELECT AVG(ABS(amount)) as avg_amount,
+           STDDEV(ABS(amount)) as stddev_amount
+    FROM transactions
+    WHERE user_id = ${userId}
+    AND ABS(amount) > 1
+  `);
+
+  const avgAmount = parseFloat((statsResult.rows[0] as any)?.avg_amount || "0");
+  const stddevAmount = parseFloat((statsResult.rows[0] as any)?.stddev_amount || "0");
+
+  if (avgAmount > 0 && stddevAmount > 0) {
+    // Find transactions more than 4 standard deviations from mean (extreme outliers)
+    const zScoreThreshold = avgAmount + (4 * stddevAmount);
+    const extremeOutliers = await db.execute(sql`
+      SELECT id, key_desc, amount, payment_date, source,
+             (ABS(amount) - ${avgAmount}) / ${stddevAmount} as z_score
+      FROM transactions
+      WHERE user_id = ${userId}
+      AND ABS(amount) > ${zScoreThreshold}
+      ORDER BY ABS(amount) DESC
+      LIMIT 20
+    `);
+
+    if (extremeOutliers.rows.length > 0) {
+      issues.push({
+        id: "FIN-005",
+        category: CATEGORIES.financial,
+        severity: "critical",
+        title: "Outliers Estatísticos Extremos",
+        description: `Transações > 4σ da média (média: €${avgAmount.toFixed(2)}, threshold: €${zScoreThreshold.toFixed(2)})`,
+        affectedCount: extremeOutliers.rows.length,
+        samples: extremeOutliers.rows.slice(0, 5).map((r: any) => ({
+          id: r.id,
+          keyDesc: r.key_desc?.substring(0, 50),
+          amount: r.amount,
+          date: r.payment_date,
+          source: r.source,
+          zScore: parseFloat(r.z_score || "0").toFixed(2)
+        })),
+        recommendation: "Verifique se os valores estão corretos - possível erro de parsing",
+        autoFixable: false
+      });
+    } else {
+      checksPassed++;
+    }
+  } else {
+    checksPassed++;
+  }
+
+  // Check 6: Supermarket/Retail Category-Value Validation
+  // Michael Stonebraker: Schema enforcement on parsed amounts
+  checksRun++;
+  const suspiciousRetail = await db.execute(sql`
+    SELECT id, key_desc, amount, payment_date, source, app_category_name
+    FROM transactions
+    WHERE user_id = ${userId}
+    AND ABS(amount) > 500
+    AND (
+      LOWER(key_desc) LIKE '%rewe%'
+      OR LOWER(key_desc) LIKE '%lidl%'
+      OR LOWER(key_desc) LIKE '%aldi%'
+      OR LOWER(key_desc) LIKE '%edeka%'
+      OR LOWER(key_desc) LIKE '%netto%'
+      OR LOWER(key_desc) LIKE '%dm drogerie%'
+      OR LOWER(key_desc) LIKE '%rossmann%'
+      OR LOWER(key_desc) LIKE '%mueller%'
+    )
+    ORDER BY ABS(amount) DESC
+    LIMIT 20
+  `);
+
+  if (suspiciousRetail.rows.length > 0) {
+    issues.push({
+      id: "FIN-006",
+      category: CATEGORIES.financial,
+      severity: "critical",
+      title: "Supermercado/Varejo com Valor Anômalo",
+      description: "Transações > €500 em supermercados/drogarias (valor típico: €10-€150)",
+      affectedCount: suspiciousRetail.rows.length,
+      samples: suspiciousRetail.rows.slice(0, 5).map((r: any) => ({
+        id: r.id,
+        keyDesc: r.key_desc?.substring(0, 50),
+        amount: r.amount,
+        date: r.payment_date,
+        source: r.source
+      })),
+      recommendation: "CRÍTICO: Verifique se o valor foi parseado corretamente do CSV original",
+      autoFixable: false
+    });
+  } else {
+    checksPassed++;
+  }
+
+  // Check 7: Merchant-based Outlier Detection
+  // Gene Kim: Observability into transaction patterns per merchant
+  checksRun++;
+  const merchantOutliers = await db.execute(sql`
+    WITH merchant_stats AS (
+      SELECT
+        CASE
+          WHEN LOWER(key_desc) LIKE '%rewe%' THEN 'REWE'
+          WHEN LOWER(key_desc) LIKE '%lidl%' THEN 'LIDL'
+          WHEN LOWER(key_desc) LIKE '%aldi%' THEN 'ALDI'
+          WHEN LOWER(key_desc) LIKE '%edeka%' THEN 'EDEKA'
+          WHEN LOWER(key_desc) LIKE '%amazon%' THEN 'AMAZON'
+          WHEN LOWER(key_desc) LIKE '%paypal%' THEN 'PAYPAL'
+          ELSE 'OTHER'
+        END as merchant,
+        AVG(ABS(amount)) as avg_amount,
+        MAX(ABS(amount)) as max_amount,
+        COUNT(*) as tx_count
+      FROM transactions
+      WHERE user_id = ${userId}
+      GROUP BY 1
+      HAVING COUNT(*) >= 3
+    )
+    SELECT t.id, t.key_desc, t.amount, t.payment_date, t.source,
+           ms.merchant, ms.avg_amount as merchant_avg, ms.max_amount as merchant_max
+    FROM transactions t
+    JOIN merchant_stats ms ON (
+      CASE
+        WHEN LOWER(t.key_desc) LIKE '%rewe%' THEN 'REWE'
+        WHEN LOWER(t.key_desc) LIKE '%lidl%' THEN 'LIDL'
+        WHEN LOWER(t.key_desc) LIKE '%aldi%' THEN 'ALDI'
+        WHEN LOWER(t.key_desc) LIKE '%edeka%' THEN 'EDEKA'
+        WHEN LOWER(t.key_desc) LIKE '%amazon%' THEN 'AMAZON'
+        WHEN LOWER(t.key_desc) LIKE '%paypal%' THEN 'PAYPAL'
+        ELSE 'OTHER'
+      END = ms.merchant
+    )
+    WHERE t.user_id = ${userId}
+    AND ms.merchant != 'OTHER'
+    AND ABS(t.amount) > ms.avg_amount * 10
+    ORDER BY ABS(t.amount) DESC
+    LIMIT 20
+  `);
+
+  if (merchantOutliers.rows.length > 0) {
+    issues.push({
+      id: "FIN-007",
+      category: CATEGORIES.financial,
+      severity: "high",
+      title: "Transação 10x Acima da Média do Estabelecimento",
+      description: "Transações muito acima do padrão histórico para o mesmo comerciante",
+      affectedCount: merchantOutliers.rows.length,
+      samples: merchantOutliers.rows.slice(0, 5).map((r: any) => ({
+        id: r.id,
+        keyDesc: r.key_desc?.substring(0, 50),
+        amount: r.amount,
+        merchant: r.merchant,
+        merchantAvg: parseFloat(r.merchant_avg || "0").toFixed(2),
+        ratio: (Math.abs(r.amount) / parseFloat(r.merchant_avg || "1")).toFixed(1) + "x"
+      })),
+      recommendation: "Compare com o CSV original - possível erro de parsing",
+      autoFixable: false
+    });
+  } else {
+    checksPassed++;
+  }
+
+  // Check 8: Description pattern anomalies (fabricated patterns)
+  // Dr. Edgar Codd: Data integrity validation
+  checksRun++;
+  const suspiciousPatterns = await db.execute(sql`
+    SELECT id, key_desc, amount, payment_date, source
+    FROM transactions
+    WHERE user_id = ${userId}
+    AND (
+      -- Pattern: "SAGT DANKE" not matching typical sources
+      (LOWER(key_desc) LIKE '%sagt danke%'
+       AND LOWER(key_desc) NOT LIKE '%lidl sagt danke%'
+       AND LOWER(key_desc) NOT LIKE '%dm %sagt danke%')
+      -- Pattern: Date pattern in key_desc (column shift indicator)
+      OR key_desc ~ '^\d{2}/\d{2}/\d{4}'
+      OR key_desc ~ '^\d{2}\.\d{2}\.\d{4}'
+      -- Pattern: Account numbers in description
+      OR key_desc ~ '^-\d{5,}'
+    )
+    LIMIT 20
+  `);
+
+  if (suspiciousPatterns.rows.length > 0) {
+    issues.push({
+      id: "FIN-008",
+      category: CATEGORIES.financial,
+      severity: "critical",
+      title: "Padrão de Descrição Suspeito",
+      description: "Descrições com padrões anômalos (possível parsing incorreto)",
+      affectedCount: suspiciousPatterns.rows.length,
+      samples: suspiciousPatterns.rows.slice(0, 5).map((r: any) => ({
+        id: r.id,
+        keyDesc: r.key_desc?.substring(0, 80),
+        amount: r.amount,
+        date: r.payment_date,
+        source: r.source
+      })),
+      recommendation: "CRÍTICO: Revalide o CSV fonte - provável corrupção no parsing",
+      autoFixable: false
+    });
+  } else {
+    checksPassed++;
+  }
+
   const status: CategoryResult["status"] = issues.some(i => i.severity === "critical") ? "critical"
                : issues.some(i => i.severity === "high") ? "warning" : "healthy";
 
