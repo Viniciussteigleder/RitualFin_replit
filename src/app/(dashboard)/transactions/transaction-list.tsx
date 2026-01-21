@@ -67,7 +67,10 @@ export function TransactionList({
     aliasMap = {},
     initialHasMore = false,
     initialNextCursor = null,
-    allCategories = [],
+    appCategories = [],
+    categories1 = [],
+    categories2 = [],
+    categories3 = [],
     allAccounts = []
 }: {
     transactions: any[],
@@ -75,7 +78,10 @@ export function TransactionList({
     aliasMap?: Record<string, string>,
     initialHasMore?: boolean,
     initialNextCursor?: string | null,
-    allCategories?: string[],
+    appCategories?: string[],
+    categories1?: string[],
+    categories2?: string[],
+    categories3?: string[],
     allAccounts?: string[]
 }) {
     const [transactions, setTransactions] = useState(initialTransactions);
@@ -144,11 +150,16 @@ export function TransactionList({
                 limit: 50,
                 sources: filters.accounts,
                 search: debouncedSearch || undefined,
-                categories: filters.categories,
+                appCategories: filters.appCategories,
+                categories1: filters.categories1,
+                categories2: filters.categories2,
+                categories3: filters.categories3,
                 minAmount: filters.minAmount,
                 maxAmount: filters.maxAmount,
                 dateFrom: filters.dateFrom,
                 dateTo: filters.dateTo,
+                fixVar: filters.fixVar,
+                recurring: filters.recurring,
             });
 
             setTransactions(result.items.map(tx => ({
@@ -244,13 +255,6 @@ export function TransactionList({
                 : new Date(a).getTime() - new Date(b).getTime()
         );
     }, [groupedTransactions, sortDirection]);
-
-    // Memoize available categories/accounts
-    const availableCategories = useMemo(() => {
-        return allCategories.length > 0
-            ? allCategories
-            : Array.from(new Set(transactions.map(t => t.category1).filter(Boolean)));
-    }, [allCategories, transactions]);
 
     const availableAccounts = useMemo(() => {
         return allAccounts.length > 0
@@ -371,11 +375,16 @@ export function TransactionList({
                 cursor: nextCursor,
                 sources: filters.accounts,
                 search: debouncedSearch || undefined,
-                categories: filters.categories,
+                appCategories: filters.appCategories,
+                categories1: filters.categories1,
+                categories2: filters.categories2,
+                categories3: filters.categories3,
                 minAmount: filters.minAmount,
                 maxAmount: filters.maxAmount,
                 dateFrom: filters.dateFrom,
                 dateTo: filters.dateTo,
+                fixVar: filters.fixVar,
+                recurring: filters.recurring,
             });
 
             setTransactions(prev => [...prev, ...result.items.map(tx => ({
@@ -454,7 +463,10 @@ export function TransactionList({
                 search={search}
                 onSearchChange={setSearch}
                 onFilterChange={setFilters}
-                availableCategories={availableCategories}
+                appCategories={appCategories}
+                categories1={categories1}
+                categories2={categories2}
+                categories3={categories3}
                 availableAccounts={availableAccounts}
                 isCompact={isCompact}
                 onToggleCompact={() => setIsCompact(!isCompact)}
@@ -463,6 +475,7 @@ export function TransactionList({
                 onExport={handleBulkExport}
                 viewMode={viewMode}
                 onViewModeChange={setViewMode}
+                initialFilters={filters}
             />
 
             {/* Table Header (Desktop Only) */}

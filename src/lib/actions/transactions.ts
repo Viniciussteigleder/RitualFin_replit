@@ -613,24 +613,41 @@ export async function getSpendAveragesAllPeriods(
  */
 export async function getFilterOptions() {
   const session = await auth();
-  if (!session?.user?.id) return { categories: [], accounts: [] };
+  if (!session?.user?.id) return { 
+    categories: [], 
+    accounts: [],
+    appCategories: [],
+    categories2: [],
+    categories3: []
+  };
 
   const userId = session.user.id;
 
   const result = await db.execute(sql`
     SELECT DISTINCT
-      category_1 as category,
+      app_category_name as app_category,
+      category_1 as category1,
+      category_2 as category2,
+      category_3 as category3,
       source as account
     FROM transactions
     WHERE user_id = ${userId}
     AND display != 'no'
-    AND (category_1 IS NOT NULL OR source IS NOT NULL)
   `);
 
-  const categories = [...new Set(result.rows.map((r: any) => r.category).filter(Boolean))].sort();
-  const accounts = [...new Set(result.rows.map((r: any) => r.account).filter(Boolean))].sort();
+  const appCategories = [...new Set(result.rows.map((r: any) => r.app_category).filter(Boolean))].sort() as string[];
+  const categories1 = [...new Set(result.rows.map((r: any) => r.category1).filter(Boolean))].sort() as string[];
+  const categories2 = [...new Set(result.rows.map((r: any) => r.category2).filter(Boolean))].sort() as string[];
+  const categories3 = [...new Set(result.rows.map((r: any) => r.category3).filter(Boolean))].sort() as string[];
+  const accounts = [...new Set(result.rows.map((r: any) => r.account).filter(Boolean))].sort() as string[];
 
-  return { categories, accounts };
+  return { 
+    appCategories,
+    categories1,
+    categories2,
+    categories3,
+    accounts 
+  };
 }
 
 export async function getTransactionsForList(
@@ -639,11 +656,16 @@ export async function getTransactionsForList(
     sources?: string[];
     cursor?: string;
     search?: string;
-    categories?: string[];
+    appCategories?: string[]; // Multiple app categories
+    categories1?: string[];
+    categories2?: string[];
+    categories3?: string[];
     minAmount?: number;
     maxAmount?: number;
     dateFrom?: Date;
     dateTo?: Date;
+    fixVar?: "Fixo" | "Variável";
+    recurring?: boolean;
   } = {}
 ) {
   const session = await auth();
@@ -651,7 +673,20 @@ export async function getTransactionsForList(
 
   const userId = session.user.id;
   const limit = input.limit ?? 50;
-  const { sources, search, categories, minAmount, maxAmount, dateFrom, dateTo } = input;
+  const { 
+    sources, 
+    search, 
+    appCategories,
+    categories1, 
+    categories2, 
+    categories3, 
+    minAmount, 
+    maxAmount, 
+    dateFrom, 
+    dateTo,
+    fixVar,
+    recurring
+  } = input;
 
   // Build dynamic WHERE clauses
   const sourceClause = sources?.length
@@ -672,9 +707,32 @@ export async function getTransactionsForList(
       )`
     : sql``;
 
-  // Category filter
-  const categoryClause = categories?.length
-    ? sql`AND t.category_1 IN (${sql.join(categories.map((c) => sql`${c}`), sql`, `)})`
+  // appCategoryName filter
+  const appCategoryClause = appCategories?.length
+    ? sql`AND t.app_category_name IN (${sql.join(appCategories.map((c) => sql`${c}`), sql`, `)})`
+    : sql``;
+
+  // Category filters
+  const category1Clause = categories1?.length
+    ? sql`AND t.category_1 IN (${sql.join(categories1.map((c) => sql`${c}`), sql`, `)})`
+    : sql``;
+
+  const category2Clause = categories2?.length
+    ? sql`AND t.category_2 IN (${sql.join(categories2.map((c) => sql`${c}`), sql`, `)})`
+    : sql``;
+
+  const category3Clause = categories3?.length
+    ? sql`AND t.category_3 IN (${sql.join(categories3.map((c) => sql`${c}`), sql`, `)})`
+    : sql``;
+
+  // Fix/Var filter
+  const fixVarClause = fixVar
+    ? sql`AND t.fix_var = ${fixVar}`
+    : sql``;
+
+  // Recurring filter
+  const recurringClause = recurring !== undefined
+    ? sql`AND t.recurring_flag = ${recurring}`
     : sql``;
 
   // Amount range filter
@@ -719,7 +777,12 @@ export async function getTransactionsForList(
     AND t.display != 'no'
     ${sourceClause}
     ${searchClause}
-    ${categoryClause}
+    ${appCategoryClause}
+    ${category1Clause}
+    ${category2Clause}
+    ${category3Clause}
+    ${fixVarClause}
+    ${recurringClause}
     ${minAmountClause}
     ${maxAmountClause}
     ${dateFromClause}

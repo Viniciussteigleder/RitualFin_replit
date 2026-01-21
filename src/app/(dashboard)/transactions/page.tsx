@@ -70,7 +70,10 @@ export default async function TransactionsPage({
           aliasMap={aliasMap}
           initialHasMore={hasMore}
           initialNextCursor={nextCursor}
-          allCategories={filterOptions.categories as string[]}
+          appCategories={filterOptions.appCategories}
+          categories1={filterOptions.categories1}
+          categories2={filterOptions.categories2}
+          categories3={filterOptions.categories3}
           allAccounts={filterOptions.accounts as string[]}
         />
       </PageContainer>
