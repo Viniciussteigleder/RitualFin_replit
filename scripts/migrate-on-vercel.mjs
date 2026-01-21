@@ -7,17 +7,20 @@ const shouldMigrate =
   process.env.VERCEL === "true";
 
 if (!shouldMigrate) {
-  console.log("[db] Skipping migrations (not Vercel; set RUN_DB_MIGRATIONS=1 to force).");
+  console.log("[db] Skipping schema sync (not Vercel; set RUN_DB_MIGRATIONS=1 to force).");
   process.exit(0);
 }
 
 if (!process.env.DATABASE_URL) {
-  console.warn("[db] Skipping migrations (DATABASE_URL not set).");
+  console.warn("[db] Skipping schema sync (DATABASE_URL not set).");
   process.exit(0);
 }
 
-console.log("[db] Running drizzle migrations...");
-const res = spawnSync("npx", ["drizzle-kit", "migrate"], {
+// Use drizzle-kit push instead of migrate - push is idempotent and won't fail
+// on existing types/tables. Per CLAUDE.md: "This project uses drizzle-kit push
+// for schema updates, NOT traditional migrations."
+console.log("[db] Running drizzle-kit push (schema sync)...");
+const res = spawnSync("npx", ["drizzle-kit", "push", "--force"], {
   stdio: "inherit",
   env: process.env,
 });
