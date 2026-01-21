@@ -443,8 +443,8 @@ export function TransactionDrawer({
                     <div className="flex items-center gap-2">
                       <div className="w-24 h-2 bg-secondary rounded-full overflow-hidden">
                         <div 
-                          className={`h-full ${transaction.confidence >= 90 ? 'bg-emerald-500' : transaction.confidence >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                          style={{ width: `${transaction.confidence || 0}%` }}
+                          className={`h-full ${(transaction.confidence ?? 0) >= 90 ? 'bg-emerald-500' : (transaction.confidence ?? 0) >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                          style={{ width: `${transaction.confidence ?? 0}%` }}
                         />
                       </div>
                       <span className="font-bold text-sm">{transaction.confidence || 0}%</span>
