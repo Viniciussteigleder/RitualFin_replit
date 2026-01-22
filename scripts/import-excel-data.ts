@@ -1,6 +1,6 @@
 import XLSX from 'xlsx';
 import { config } from 'dotenv';
-import { db } from '../src/lib/db/index.js';
+import { db } from '../src/lib/db/db.js';
 import { rules, taxonomyLevel1, taxonomyLevel2, taxonomyLeaf } from '../src/lib/db/schema.js';
 import { eq } from 'drizzle-orm';
 

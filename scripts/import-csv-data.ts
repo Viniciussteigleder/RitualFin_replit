@@ -45,7 +45,7 @@ async function importCSVData() {
   console.log('📊 Starting CSV import...\n');
 
   // Dynamic import to ensure env vars are loaded first
-  const { db } = await import('../src/lib/db/index.js');
+  const { db } = await import('../src/lib/db/db.js');
   const { transactions, accounts } = await import('../src/lib/db/schema.js');
 
   let totalStats = {

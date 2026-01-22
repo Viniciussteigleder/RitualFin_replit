@@ -8,7 +8,7 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 async function main() {
   console.log("🚀 STARTING FULL RE-IMPORT (PROD LOGIC) 🚀\n");
 
-  const { db } = await import("../src/lib/db/index");
+  const { db } = await import("../src/lib/db/db");
   const { transactions, ingestionBatches, ingestionItems, users } = await import("../src/lib/db/schema");
   const { uploadIngestionFileCore, commitBatchCore } = await import("../src/lib/actions/ingest");
   

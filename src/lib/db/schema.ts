@@ -490,8 +490,8 @@ export const sourceCsvSparkasse = pgTable("source_csv_sparkasse", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
   accountId: varchar("account_id").references(() => accounts.id),
-  batchId: varchar("batch_id").references(() => ingestionBatches.id),
-  ingestionItemId: varchar("ingestion_item_id").references(() => ingestionItems.id),
+  batchId: varchar("batch_id").references(() => ingestionBatches.id, { onDelete: "cascade" }),
+  ingestionItemId: varchar("ingestion_item_id").references(() => ingestionItems.id, { onDelete: "cascade" }),
   // Columns matching Sparkasse CSV
   auftragskonto: text("auftragskonto"),
   buchungstag: date("buchungstag", { mode: "date" }),
@@ -525,8 +525,8 @@ export const sourceCsvMm = pgTable("source_csv_mm", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
   accountId: varchar("account_id").references(() => accounts.id),
-  batchId: varchar("batch_id").references(() => ingestionBatches.id),
-  ingestionItemId: varchar("ingestion_item_id").references(() => ingestionItems.id),
+  batchId: varchar("batch_id").references(() => ingestionBatches.id, { onDelete: "cascade" }),
+  ingestionItemId: varchar("ingestion_item_id").references(() => ingestionItems.id, { onDelete: "cascade" }),
   // Columns matching M&M
   authorisedOn: date("authorised_on", { mode: "date" }),
   processedOn: date("processed_on", { mode: "date" }),
@@ -550,8 +550,8 @@ export const sourceCsvAmex = pgTable("source_csv_amex", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
   accountId: varchar("account_id").references(() => accounts.id),
-  batchId: varchar("batch_id").references(() => ingestionBatches.id),
-  ingestionItemId: varchar("ingestion_item_id").references(() => ingestionItems.id),
+  batchId: varchar("batch_id").references(() => ingestionBatches.id, { onDelete: "cascade" }),
+  ingestionItemId: varchar("ingestion_item_id").references(() => ingestionItems.id, { onDelete: "cascade" }),
   // Columns matching Amex
   datum: date("datum", { mode: "date" }),
   beschreibung: text("beschreibung"),

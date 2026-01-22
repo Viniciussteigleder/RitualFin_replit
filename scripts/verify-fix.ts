@@ -15,7 +15,7 @@ async function verify() {
   }
 
   // 2. Importações Dinâmicas
-  const { db } = await import("../src/lib/db/index");
+  const { db } = await import("../src/lib/db/db");
   const { rules, aliasAssets } = await import("../src/lib/db/schema");
   const { parseIngestionFile } = await import("../src/lib/ingest/index");
   const { categorizeTransaction, matchAlias, AI_SEED_RULES } = await import("../src/lib/rules/engine");

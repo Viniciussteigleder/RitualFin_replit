@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 
 async function seedUser() {
-  const { db } = await import("../src/lib/db/index.js");
+  const { db } = await import("../src/lib/db/db.js");
   const { users } = await import("../src/lib/db/schema.js");
 
   const email = "vinicius.steigleder@gmail.com";

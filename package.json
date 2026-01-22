@@ -25,6 +25,7 @@
     "db:ensure-open": "npx tsx scripts/ensure-open-all-users.ts",
     "db:backfill-categorization": "npx tsx scripts/backfill-categorization-all-users.ts",
     "release:gate": "npx tsx scripts/pre-deploy-check.ts",
+    "test:diagnostics": "node --import tsx/esm scripts/diagnostics-suite.ts",
     "test:unit": "npx tsx tests/unit/*.test.ts",
     "test:e2e": "playwright test"
   },
