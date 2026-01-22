@@ -94,6 +94,8 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
+  DialogFooter
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
@@ -120,7 +122,9 @@ import {
   TransactionLineage,
   ReimportSimulationResult
 } from "@/lib/actions/diagnostics";
+import { resetDatabase } from "@/lib/actions/system";
 import { DIAGNOSTIC_STAGES, type DiagnosticStage } from "@/lib/diagnostics/catalog";
+import { toast } from "sonner";
 
 /**
  * DIAGNOSTICS CLIENT COMPONENT v2.0
@@ -220,6 +224,77 @@ const CATEGORY_CONFIG: Record<string, { icon: typeof FileUp; gradient: string }>
 
 type SortOption = "severity" | "category" | "affected" | "title";
 type SortDirection = "asc" | "desc";
+
+function ResetDbDialog() {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [confirmation, setConfirmation] = useState("");
+
+  const handleReset = async () => {
+    if (confirmation !== "APAGAR TUDO") return;
+    setLoading(true);
+    try {
+      const res = await resetDatabase();
+      if (res.success) {
+        toast.error("Base de dados resetada com sucesso."); // Use error style for attention, or success
+        setOpen(false);
+        window.location.reload();
+      } else {
+        toast.error(res.message);
+      }
+    } catch (e) {
+      toast.error("Erro ao resetar banco de dados.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="destructive" size="icon" aria-label="Resetar Banco de Dados">
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="border-red-500 border-2">
+        <DialogHeader>
+          <DialogTitle className="text-red-500 flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5" />
+            PERIGO: Resetar Banco de Dados
+          </DialogTitle>
+          <DialogDescription className="space-y-3 pt-2">
+            <p className="font-bold text-foreground">
+              Esta ação apagará TODAS as transações, importações e dados brutos.
+            </p>
+            <p>
+              Isso não pode ser desfeito. Você precisará re-importar seus arquivos CSV.
+              Use isso apenas se precisar reiniciar completamente o sistema.
+            </p>
+            <div className="bg-red-50 dark:bg-red-950/30 p-3 rounded-md border border-red-200 dark:border-red-900 text-xs">
+              Para confirmar, digite <strong>APAGAR TUDO</strong> abaixo:
+            </div>
+            <Input 
+              value={confirmation}
+              onChange={(e) => setConfirmation(e.target.value)}
+              placeholder="Digite APAGAR TUDO"
+              className="border-red-300 focus-visible:ring-red-500"
+            />
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex justify-end gap-2 mt-2">
+          <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
+          <Button 
+            variant="destructive" 
+            onClick={handleReset}
+            disabled={confirmation !== "APAGAR TUDO" || loading}
+          >
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apagar Tudo e Resetar"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 // ============================================================================
 // MAIN COMPONENT
@@ -615,8 +690,24 @@ export function DiagnosticsClient() {
           </p>
         </div>
 
-	        <div className="flex items-center gap-2">
-	          <ReRunRulesButton />
+
+        
+        <div className="flex items-center gap-2">
+            {/* Reset DB Button (Danger Zone) */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div><ResetDbDialog /></div>
+                </TooltipTrigger>
+                <TooltipContent className="bg-red-600 text-white border-red-700">
+                  Perigo: Resetar Banco de Dados
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <div className="w-px h-8 bg-border mx-1" />
+
+            <ReRunRulesButton />
 
 	          {/* History Button */}
 	          <TooltipProvider>
