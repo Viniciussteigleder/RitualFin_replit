@@ -684,10 +684,7 @@ export async function commitBatch(batchId: string) {
     return result;
 }
 
-export async function rollbackBatch(batchId: string) {
-    const session = await auth();
-    if (!session?.user?.id) return { error: "Unauthorized" };
-
+export async function rollbackBatchCore(userId: string, batchId: string) {
     const batch = await db.query.ingestionBatches.findFirst({
         where: eq(ingestionBatches.id, batchId),
         with: { items: true }
@@ -721,7 +718,18 @@ export async function rollbackBatch(batchId: string) {
         .set({ status: "preview" }) // Ready to be committed again
         .where(eq(ingestionBatches.id, batch.id));
 
-    revalidatePath("/uploads");
-    revalidatePath("/transactions");
     return { success: true, rolledBackCount: txIds.length };
+}
+
+export async function rollbackBatch(batchId: string) {
+    const session = await auth();
+    if (!session?.user?.id) return { error: "Unauthorized" };
+
+    const result = await rollbackBatchCore(session.user.id, batchId);
+
+    if (result.success) {
+        revalidatePath("/uploads");
+        revalidatePath("/transactions");
+    }
+    return result;
 }

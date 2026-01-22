@@ -1,0 +1,4 @@
+Auftragskonto;Buchungstag;Valutadatum;Buchungstext;Verwendungszweck;Glaeubiger ID;Mandatsreferenz;Kundenreferenz;Sammlerreferenz;Lastschrift Ursprungsbetrag;Auslagenersatz Ruecklastschrift;Beguenstigter/Zahlungspflichtiger;IBAN;BIC;Betrag;Waehrung;Info
+123456;05.01.25;05.01.25;LASTSCHRIFT;REWE SAGT DANKE;;;;;;;REWE Markt GmbH;;; -25,00;EUR;Umsatz gebucht
+123456;05.01.25;05.01.25;LASTSCHRIFT;REWE SAGT DANKE;;;;;;;REWE Markt GmbH;;; -25,00;EUR;Umsatz gebucht
+123456;06.01.25;06.01.25;DAUERAUFTRAG;MIETE JANUAR;;;;;;;Vermieter;;;-1.250,50;EUR;Umsatz gebucht
