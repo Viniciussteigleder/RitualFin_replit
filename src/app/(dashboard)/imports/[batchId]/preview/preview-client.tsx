@@ -127,6 +127,7 @@ export function PreviewClient({ batchId, initialItems, diagnostics, canProceed }
     setVisibleCount(prev => prev + 100);
   };
 
+
   const handleConfirm = async () => {
     setIsSubmitting(true);
     try {
@@ -141,15 +142,58 @@ export function PreviewClient({ batchId, initialItems, diagnostics, canProceed }
       alert("Erro ao processar solicitação.");
     } finally {
       setIsSubmitting(false);
+      // Wait a bit to prevent double clicks if redirect is slow
+      setTimeout(() => setIsSubmitting(false), 2000); 
     }
   };
 
   const isAllDuplicates = diagnostics?.newCount === 0 && diagnostics?.duplicates > 0;
 
+  const ActionsBar = () => (
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+       <Button variant="secondary" className="h-14 w-full sm:w-auto px-8 rounded-2xl font-bold text-muted-foreground hover:text-foreground transition-[background-color,color,box-shadow,opacity] duration-150" asChild>
+          <Link href="/uploads">
+             ← Sair
+          </Link>
+       </Button>
+         {canProceed && (
+           <Button 
+             onClick={handleConfirm}
+             disabled={isSubmitting || isAllDuplicates}
+             className={cn(
+               "w-full sm:max-w-md h-14 text-white transition-[background-color,box-shadow,transform,opacity] duration-150 rounded-2xl font-bold shadow-xl gap-3 text-base border-none",
+               isAllDuplicates 
+                 ? "bg-muted cursor-not-allowed opacity-50" 
+                 : "bg-primary hover:scale-105 active:scale-95 shadow-primary/20"
+             )}
+           >
+             {isSubmitting ? (
+               <span className="flex items-center gap-2 animate-pulse">Processando...</span>
+             ) : isAllDuplicates ? (
+               <>
+                 <XCircle className="h-5 w-5" />
+                 Nada a Importar
+               </>
+             ) : (
+               <>
+                 <CheckCircle2 className="h-5 w-5" />
+                 Confirmar {diagnostics.newCount} Novas
+               </>
+             )}
+           </Button>
+         )}
+    </div>
+  );
+
+
   return (
     <div className="space-y-10">
       
-      {/* State Callout for Duplicates */}
+      {/* Top Actions for Quick Access */}
+      <div className="bg-card border border-border p-4 rounded-[2rem] shadow-sm sticky top-4 z-50 backdrop-blur-md bg-opacity-90">
+         <ActionsBar />
+      </div>
+
       {isAllDuplicates && (
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-[2rem] p-8 flex items-start gap-6 animate-fade-in">
           <div className="w-14 h-14 bg-amber-500 rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/20">
@@ -337,40 +381,11 @@ export function PreviewClient({ batchId, initialItems, diagnostics, canProceed }
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-6 px-2">
-	      <Button variant="secondary" className="h-16 w-full sm:w-auto px-10 rounded-2xl font-bold text-muted-foreground hover:text-foreground transition-[background-color,color,box-shadow,opacity] duration-150" asChild>
-	         <Link href="/uploads">
-	            ← Sair sem Salvar
-	         </Link>
-	      </Button>
-	        {canProceed && (
-	          <Button 
-	            onClick={handleConfirm}
-	            disabled={isSubmitting || isAllDuplicates}
-	            className={cn(
-	              "w-full sm:max-w-md h-16 text-white transition-[background-color,box-shadow,transform,opacity] duration-150 rounded-2xl font-bold shadow-2xl gap-3 text-lg border-none",
-	              isAllDuplicates 
-	                ? "bg-muted cursor-not-allowed opacity-50" 
-	                : "bg-primary hover:scale-105 active:scale-95 shadow-primary/20"
-	            )}
-	          >
-            {isSubmitting ? (
-              <span className="flex items-center gap-2 animate-pulse">Processando...</span>
-            ) : isAllDuplicates ? (
-              <>
-                <XCircle className="h-6 w-6" />
-                Nada a Importar
-              </>
-            ) : (
-              <>
-                <CheckCircle2 className="h-6 w-6" />
-                Confirmar {diagnostics.newCount} Novas
-              </>
-            )}
-          </Button>
-        )}
+      {/* Actions (Bottom) */}
+      <div className="opacity-50 hover:opacity-100 transition-opacity">
+        <ActionsBar />
       </div>
+
     </div>
   );
 }
