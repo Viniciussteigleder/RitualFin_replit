@@ -1,524 +1,391 @@
 "use client";
 
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter, SheetClose } from "@/components/ui/sheet";
-import { Badge } from "@/components/ui/badge";
+import { useEffect, useState, useTransition, useMemo } from "react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { formatCurrency } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { 
-  Calendar, Building2, Tag, FileText, ExternalLink, Edit, Trash2, CheckCircle2, AlertTriangle,
-  Hash, Database, Upload, Zap, Clock, Info, Loader2, Save, X
+    Calendar, 
+    Trash2, 
+    Save, 
+    X, 
+    Loader2, 
+    TrendingUp, 
+    TrendingDown,
+    Repeat,
+    Search,
+    ChevronRight,
+    Ban,
+    Sparkles,
+    CheckCircle2
 } from "lucide-react";
-import { CATEGORY_CONFIGS } from "@/lib/constants/categories";
-import { useState, useEffect } from "react";
-import { CategoryIcon } from "@/components/ui/category-icon";
-import { diagnoseTransaction, TransactionDiagnosticResult } from "@/lib/actions/diagnostics";
 import { updateTransactionDetails } from "@/lib/actions/transactions";
 import { toast } from "sonner";
-
-type Transaction = {
-  id: string;
-  paymentDate: Date;
-  bookingDate?: Date | null;
-  importedAt?: Date | null;
-  createdAt?: Date | null;
-  descRaw: string;
-  descNorm: string;
-  keyDesc?: string | null;
-  aliasDesc?: string | null;
-  simpleDesc?: string | null;
-  amount: number;
-  currency?: string | null;
-  foreignAmount?: number | null;
-  foreignCurrency?: string | null;
-  category1?: string | null;
-  category2?: string | null;
-  category3?: string | null;
-  type?: string | null;
-  fixVar?: string | null;
-  recurring?: boolean | null;
-  source?: string | null;
-  accountSource?: string | null;
-  status?: string | null;
-  confidence?: number | null;
-  needsReview: boolean;
-  manualOverride: boolean;
-  classifiedBy?: string | null;
-  ruleIdApplied?: string | null;
-  leafId?: string | null;
-  uploadId?: string | null;
-  ingestionItemId?: string | null;
-  key?: string | null;
-  internalTransfer?: boolean | null;
-  excludeFromBudget?: boolean | null;
-  accountId?: string | null;
-  conflictFlag?: boolean | null;
-  classificationCandidates?: any | null;
-  // Taxonomy fields
-  level1?: string | null;
-  level2?: string | null;
-  level3?: string | null;
-  appCategory?: string | null;
-  matchedKeyword?: string | null;
-};
+import { cn, formatCurrency } from "@/lib/utils";
+import { CategoryIcon } from "@/components/ui/category-icon";
+import { getCategoryConfig } from "@/lib/constants/categories";
+import { TaxonomyOption } from "@/lib/actions/discovery";
 
 interface TransactionDrawerProps {
-  transaction: Transaction | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onEdit?: (transaction: Transaction) => void;
-  onDelete?: (transactionId: string) => void;
-  onConfirm?: (transactionId: string) => void;
-  onLeafChange?: (transactionId: string, leafId: string) => void;
-  // Options
-  appCategories?: string[];
-  categories1?: string[];
-  categories2?: string[];
-  categories3?: string[];
+  transaction: any;
+  onUpdate?: (transaction: any) => void; // Optional callback for local state update
+  onConfirm?: (id: string, updates: any) => Promise<any>;
+  onDelete?: (id: string) => Promise<any>;
+  onLeafChange?: (id: string, leafId: string) => Promise<any>;
+  appCategories: string[];
+  categories1: string[];
+  categories2: string[];
+  categories3: string[];
+  taxonomyOptions?: TaxonomyOption[];
 }
 
-export function TransactionDrawer({ 
-  transaction, 
-  open, 
+export function TransactionDrawer({
+  open,
   onOpenChange,
-  onEdit,
-  onDelete,
+  transaction,
+  onUpdate,
   onConfirm,
+  onDelete,
   onLeafChange,
-  appCategories = [],
-  categories1 = [],
-  categories2 = [],
-  categories3 = []
+  taxonomyOptions = []
 }: TransactionDrawerProps) {
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isDiagnosing, setIsDiagnosing] = useState(false);
-  const [diagnosticResult, setDiagnosticResult] = useState<TransactionDiagnosticResult | null>(null);
-
+  const [isPending, startTransition] = useTransition();
+  const [categorySearch, setCategorySearch] = useState("");
+  
   // Form State
   const [formData, setFormData] = useState({
-    type: "",
-    fixVar: "",
+    type: "Despesa",
+    fixVar: "Variável",
     recurring: false,
     appCategory: "",
     category1: "",
     category2: "",
     category3: "",
+    leafId: "",
   });
 
-  // Initialize form when transaction changes
+  // Derived state for keywords (visual only for now, mapped to description if needed in future)
+  // For this component, we focus on the categorization and properties. 
+  // We can show the description as "Keywords" context.
+
   useEffect(() => {
     if (transaction) {
       setFormData({
-        type: transaction.type || "Despesa",
+        type: transaction.type || (transaction.amount > 0 ? "Receita" : "Despesa"),
         fixVar: transaction.fixVar || "Variável",
         recurring: transaction.recurring || false,
-        appCategory: transaction.appCategory || transaction.appCategory || "OPEN",
-        category1: transaction.category1 || "OPEN",
-        category2: transaction.category2 || "OPEN",
-        category3: transaction.category3 || "OPEN",
+        appCategory: transaction.appCategory || "Outros",
+        category1: transaction.category1 || "Outros",
+        category2: transaction.category2 || "",
+        category3: transaction.category3 || "",
+        leafId: transaction.leafId || "",
       });
+      setCategorySearch("");
     }
   }, [transaction]);
 
-  const handleDiagnostic = async () => {
+  // Filter taxonomy options
+  const filteredOptions = useMemo(() => {
+    if (!categorySearch) return taxonomyOptions;
+    const search = categorySearch.toLowerCase();
+    return taxonomyOptions.filter(opt =>
+      opt.label.toLowerCase().includes(search) ||
+      opt.category1.toLowerCase().includes(search) ||
+      (opt.category2 && opt.category2.toLowerCase().includes(search)) ||
+      (opt.category3 && opt.category3.toLowerCase().includes(search))
+    );
+  }, [taxonomyOptions, categorySearch]);
+
+  const selectedOption = taxonomyOptions.find(o => o.leafId === formData.leafId);
+
+  const handleSave = () => {
     if (!transaction) return;
-    setIsDiagnosing(true);
-    try {
-      const result = await diagnoseTransaction(transaction.id);
-      setDiagnosticResult(result);
-    } catch (error) {
-      console.error("Diagnostic failed", error);
-    } finally {
-      setIsDiagnosing(false);
-    }
+    
+    startTransition(async () => {
+      try {
+        const result = await updateTransactionDetails(transaction.id, {
+          transactionId: transaction.id,
+          type: formData.type as any,
+          fixVar: formData.fixVar as any,
+          recurring: formData.recurring,
+          appCategory: formData.appCategory,
+          category1: formData.category1,
+          category2: formData.category2,
+          category3: formData.category3,
+          leafId: formData.leafId, // Include leafId for precision
+        });
+
+        if (result.success) {
+          toast.success("Transação atualizada!");
+          onOpenChange(false);
+          // If onConfirm is passed (like on confirm page), call it to confirm the transaction
+          if (onConfirm) {
+             await onConfirm(transaction.id, {});
+          }
+          if (onUpdate) {
+            onUpdate({ ...transaction, ...formData });
+          }
+        } else {
+          toast.error("Erro ao atualizar", { description: result.error });
+        }
+      } catch (error) {
+        toast.error("Erro inesperado ao salvar");
+      }
+    });
+  };
+
+  const handleCategorySelect = (opt: TaxonomyOption) => {
+    setFormData(prev => ({
+      ...prev,
+      leafId: opt.leafId,
+      appCategory: opt.appCategory,
+      category1: opt.category1,
+      category2: opt.category2 || "",
+      category3: opt.category3 || "",
+      // Auto-switch type based on category heuristic
+      type: (opt.category1 === "Renda Extra" || opt.category1 === "Trabalho" || opt.category1.toLowerCase().includes("receita")) 
+            ? "Receita" 
+            : prev.type
+    }));
+    setCategorySearch("");
   };
 
   if (!transaction) return null;
 
-  const displayName = transaction.aliasDesc || transaction.simpleDesc || transaction.descNorm || transaction.descRaw;
-  const categoryConfig = transaction.category1 ? CATEGORY_CONFIGS[transaction.category1] : null;
-
-  const handleDelete = async () => {
-    if (!confirm("Tem certeza que deseja eliminar esta transação?")) return;
-    
-    setIsDeleting(true);
-    try {
-      if (onDelete) {
-        await onDelete(transaction.id);
-        onOpenChange(false);
-      }
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const handleSaveAndConfirm = async () => {
-    setIsSaving(true);
-    try {
-      // 1. Update details
-      const result = await updateTransactionDetails(transaction.id, {
-        transactionId: transaction.id,
-        type: formData.type as any,
-        fixVar: formData.fixVar as any,
-        recurring: formData.recurring,
-        appCategory: formData.appCategory,
-        category1: formData.category1,
-        category2: formData.category2,
-        category3: formData.category3,
-      });
-
-      if (!result.success) {
-        toast.error("Erro ao salvar alterações: " + result.error);
-        return;
-      }
-
-      toast.success("Transação atualizada e confirmada!");
-      
-      // 2. Refresh parent list (via simple close + optimistic update if provided, but confirm calls refresh)
-      onOpenChange(false);
-      
-      // If parent passed onConfirm, call it purely for list state update side-effects if needed
-      // But updateTransactionDetails already marks as reviewed.
-      // We can trigger router refresh or rely on result.
-    } catch (error) {
-      toast.error("Erro inesperado ao salvar");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
+  const amount = transaction.amount || 0;
+  // Handle various date formats (string or Date object)
+  const dateObj = transaction.date ? new Date(transaction.date) : (transaction.paymentDate ? new Date(transaction.paymentDate) : new Date());
+  const dateLabel = !isNaN(dateObj.getTime()) ? dateObj.toLocaleDateString("pt-BR") : "Data desconhecida";
+  
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto sm:w-[800px]">
-        <SheetHeader className="space-y-4 pb-6 border-b">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 space-y-2">
-              <SheetTitle className="text-2xl font-display leading-tight">
-                {displayName}
-              </SheetTitle>
-              {transaction.descRaw !== displayName && (
-                <SheetDescription className="text-xs font-mono text-muted-foreground break-all">
-                  {transaction.descRaw}
-                </SheetDescription>
-              )}
-            </div>
-            <div className="text-right shrink-0">
-              <div className={`text-2xl font-bold font-mono ${
-                transaction.amount < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'
-              }`}>
-                {formatCurrency(transaction.amount)}
-              </div>
-              <div className="text-xs text-muted-foreground mt-1 text-right">
-                {formData.type || transaction.type || 'Despesa'}
-              </div>
-            </div>
-          </div>
-
-          {/* Status Badges */}
-          <div className="flex flex-wrap items-center gap-2">
-            {transaction.needsReview && (
-              <Badge variant="outline" className="bg-orange-50 text-orange-600 border-orange-200">
-                Aguarda Revisão
-              </Badge>
-            )}
-            {transaction.manualOverride && (
-              <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200">
-                Editado Manualmente
-              </Badge>
-            )}
-            {transaction.confidence !== null && transaction.confidence !== undefined && transaction.confidence < 90 && (
-              <Badge variant="outline" className="bg-yellow-50 text-yellow-600 border-yellow-200">
-                Confiança: {transaction.confidence}%
-              </Badge>
-            )}
-          </div>
-        </SheetHeader>
-
-        <div className="space-y-6 py-6">
-          <Tabs defaultValue="classification" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="classification">Classificação</TabsTrigger>
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="rules">Regras & IA</TabsTrigger>
-              <TabsTrigger value="debug">Debug</TabsTrigger>
-            </TabsList>
-
-            {/* Tab 1: Classification (Editable) */}
-            <TabsContent value="classification" className="space-y-6 mt-6">
-              <div className="grid grid-cols-2 gap-6">
-                
-                {/* Lado Esquerdo: Categorias */}
-                <div className="space-y-4">
-                  <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                    <Tag className="h-4 w-4" />
-                    Categorização
-                  </h3>
-                  
-                  <div className="space-y-3">
-                    <div className="space-y-1">
-                       <Label className="text-xs text-muted-foreground">App Category</Label>
-                       <Select 
-                          value={formData.appCategory} 
-                          onValueChange={(v) => setFormData(p => ({ ...p, appCategory: v }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                             <SelectItem value="OPEN">OPEN</SelectItem>
-                             {appCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                          </SelectContent>
-                       </Select>
-                    </div>
-
-                    <div className="space-y-1">
-                       <Label className="text-xs text-muted-foreground">Categoria 1</Label>
-                       <Select 
-                          value={formData.category1} 
-                          onValueChange={(v) => setFormData(p => ({ ...p, category1: v }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                             <SelectItem value="OPEN">OPEN</SelectItem>
-                             {categories1.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                          </SelectContent>
-                       </Select>
-                    </div>
-
-                    <div className="space-y-1">
-                       <Label className="text-xs text-muted-foreground">Categoria 2</Label>
-                       <Select 
-                          value={formData.category2} 
-                          onValueChange={(v) => setFormData(p => ({ ...p, category2: v }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                             <SelectItem value="OPEN">OPEN</SelectItem>
-                             {categories2.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                          </SelectContent>
-                       </Select>
-                    </div>
-
-                    <div className="space-y-1">
-                       <Label className="text-xs text-muted-foreground">Categoria 3</Label>
-                       <Select 
-                          value={formData.category3} 
-                          onValueChange={(v) => setFormData(p => ({ ...p, category3: v }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                             <SelectItem value="OPEN">OPEN</SelectItem>
-                             {categories3.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                          </SelectContent>
-                       </Select>
-                    </div>
-                  </div>
+      <SheetContent className="w-full sm:max-w-[800px] p-0 gap-0 bg-background overflow-hidden flex flex-col">
+          <SheetHeader className="p-6 pb-2 border-b border-border/50">
+            <div className="flex items-start justify-between">
+                <div className="space-y-1 pr-8">
+                    <SheetTitle className="text-xl font-bold font-display break-words">{transaction.descNorm || transaction.descRaw}</SheetTitle>
+                    <SheetDescription className="font-mono text-xs">
+                        {transaction.id} • {transaction.source || "Conta não identificada"}
+                    </SheetDescription>
                 </div>
-
-                {/* Lado Direito: Flags e Tipo */}
-                <div className="space-y-4">
-                   <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                    <Zap className="h-4 w-4" />
-                    Propriedades
-                  </h3>
-
-                  <div className="bg-secondary/20 p-4 rounded-xl space-y-4 border border-border/50">
-                    <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Tipo</Label>
-                        <Select 
-                            value={formData.type} 
-                            onValueChange={(v) => setFormData(p => ({ ...p, type: v }))}
-                        >
-                            <SelectTrigger>
-                            <SelectValue placeholder="Selecione..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="Despesa">Despesa</SelectItem>
-                                <SelectItem value="Receita">Receita</SelectItem>
-                            </SelectContent>
-                        </Select>
+                <div className="text-right shrink-0">
+                    <div className={cn("text-2xl font-bold tracking-tight", amount < 0 ? "text-red-600" : "text-emerald-600")}>
+                        {formatCurrency(amount)}
                     </div>
-
-                    <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Fixo / Variável</Label>
-                        <Select 
-                            value={formData.fixVar} 
-                            onValueChange={(v) => setFormData(p => ({ ...p, fixVar: v }))}
-                        >
-                            <SelectTrigger>
-                            <SelectValue placeholder="Selecione..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="Fixo">Fixo</SelectItem>
-                                <SelectItem value="Variável">Variável</SelectItem>
-                            </SelectContent>
-                        </Select>
+                    <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">
+                         {dateLabel}
                     </div>
+                </div>
+            </div>
+          </SheetHeader>
 
-                    <div className="flex items-center justify-between pt-2">
-                        <div className="space-y-0.5">
-                            <Label className="text-sm">Recorrente</Label>
-                            <p className="text-xs text-muted-foreground">Repete mensalmente</p>
+          <div className="flex-1 overflow-y-auto p-6">
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                 {/* Left Column: Properties */}
+                 <div className="space-y-6">
+                    <div className="space-y-4">
+                        <h4 className="text-sm font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-primary" /> Propriedades
+                        </h4>
+                        
+                        {/* Type Toggle */}
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-muted-foreground uppercase">Fluxo</label>
+                            <div className="flex rounded-xl border border-border overflow-hidden p-1 bg-secondary/30">
+                                <button
+                                    onClick={() => setFormData(prev => ({ ...prev, type: "Despesa" }))}
+                                    className={cn(
+                                    "flex-1 py-2 px-3 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2",
+                                    formData.type === "Despesa"
+                                        ? "bg-white dark:bg-zinc-800 text-red-600 shadow-sm"
+                                        : "text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5"
+                                    )}
+                                >
+                                    <TrendingDown className="w-4 h-4" /> Despesa
+                                </button>
+                                <button
+                                    onClick={() => setFormData(prev => ({ ...prev, type: "Receita" }))}
+                                    className={cn(
+                                    "flex-1 py-2 px-3 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2",
+                                    formData.type === "Receita"
+                                        ? "bg-white dark:bg-zinc-800 text-emerald-600 shadow-sm"
+                                        : "text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5"
+                                    )}
+                                >
+                                    <TrendingUp className="w-4 h-4" /> Receita
+                                </button>
+                            </div>
                         </div>
-                        <Switch 
-                            checked={formData.recurring} 
-                            onCheckedChange={(c) => setFormData(p => ({ ...p, recurring: c }))} 
+
+                         {/* Frequency Toggle */}
+                         <div className="space-y-2">
+                            <label className="text-xs font-bold text-muted-foreground uppercase">Frequência</label>
+                            <div className="flex rounded-xl border border-border overflow-hidden p-1 bg-secondary/30">
+                                <button
+                                    onClick={() => setFormData(prev => ({ ...prev, fixVar: "Variável", recurring: false }))}
+                                    className={cn(
+                                    "flex-1 py-2 px-3 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2",
+                                    formData.fixVar === "Variável" && !formData.recurring
+                                        ? "bg-white dark:bg-zinc-800 text-amber-600 shadow-sm"
+                                        : "text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5"
+                                    )}
+                                >
+                                    <Calendar className="w-4 h-4" /> Variável
+                                </button>
+                                <button
+                                    onClick={() => setFormData(prev => ({ ...prev, fixVar: "Fixo", recurring: true }))}
+                                    className={cn(
+                                    "flex-1 py-2 px-3 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2",
+                                    formData.fixVar === "Fixo" || formData.recurring
+                                        ? "bg-white dark:bg-zinc-800 text-blue-600 shadow-sm"
+                                        : "text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5"
+                                    )}
+                                >
+                                    <Repeat className="w-4 h-4" /> Recorrente
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="h-px bg-border/50 w-full" />
+
+                    {/* Metadata Context */}
+                    <div className="space-y-2">
+                         <h4 className="text-sm font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                            <Search className="w-4 h-4" /> Contexto IA
+                        </h4>
+                        <div className="bg-secondary/30 rounded-xl p-4 space-y-3 border border-border/50">
+                            <div>
+                                <span className="text-[10px] text-muted-foreground uppercase font-bold block mb-1">Descrição Original</span>
+                                <p className="font-mono text-xs text-foreground bg-background/50 p-2 rounded-lg break-words">{transaction.descRaw}</p>
+                            </div>
+                            {transaction.aliasDesc && (
+                                <div>
+                                    <span className="text-[10px] text-muted-foreground uppercase font-bold block mb-1">Alias</span>
+                                    <p className="font-mono text-xs text-foreground bg-background/50 p-2 rounded-lg">{transaction.aliasDesc}</p>
+                                </div>
+                            )}
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">
+                            As alterações feitas aqui atualizarão apenas esta transação. Para criar regras automáticas, use a aba "Regras" no Discovery.
+                        </p>
+                    </div>
+                 </div>
+
+                 {/* Right Column: Categorization */}
+                 <div className="space-y-4 flex flex-col h-full bg-background/50">
+                    <h4 className="text-sm font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-primary" /> Classificação
+                    </h4>
+                    
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                            placeholder="Buscar categoria (ex: Uber, Mercado)..." 
+                            value={categorySearch}
+                            onChange={(e) => setCategorySearch(e.target.value)}
+                            className="pl-9 h-11 rounded-xl bg-secondary/20 border-border focus:ring-violet-500/20"
                         />
                     </div>
-                  </div>
-                </div>
 
-              </div>
-              
-              <Separator />
-
-              {/* Leaf ID Display (Read Only) */}
-              <div className="flex items-center justify-between text-xs text-muted-foreground bg-secondary/30 p-2 rounded-lg">
-                  <span className="font-mono">Leaf ID: {transaction.leafId || 'N/A'}</span>
-                  <span className="font-mono">{transaction.status || 'OPEN'}</span>
-              </div>
-            </TabsContent>
-
-            {/* Tab 2: Overview (Read Only Summary) */}
-            <TabsContent value="overview" className="space-y-4 mt-4">
-               {/* Keep original overview content mostly intact, but read-only */}
-               <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-card border border-border rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                        <Calendar className="h-4 w-4" />
-                        <span className="text-xs font-bold uppercase tracking-wider">Data</span>
-                    </div>
-                    <div className="font-mono font-bold text-foreground">
-                        {new Date(transaction.paymentDate).toLocaleDateString('pt-PT')}
-                    </div>
-                  </div>
-                  {transaction.source && (
-                    <div className="bg-card border border-border rounded-xl p-4">
-                      <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                        <Building2 className="h-4 w-4" />
-                        <span className="text-xs font-bold uppercase tracking-wider">Origem</span>
-                      </div>
-                      <div className="font-bold text-foreground">{transaction.source}</div>
-                    </div>
-                  )}
-               </div>
-               
-               {/* Original description box */}
-               {transaction.descNorm !== transaction.descRaw && (
-                <div className="space-y-3">
-                    <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Descrição Original</h3>
-                    <div className="bg-secondary/30 border border-border rounded-xl p-4">
-                        <p className="text-sm font-mono text-muted-foreground break-all">{transaction.descRaw}</p>
-                    </div>
-                </div>
-               )}
-            </TabsContent>
-
-             {/* Tab 3: Rules - Keep original content */}
-             <TabsContent value="rules" className="space-y-4 mt-4">
-                 {/* ... (Keep existing Rules & IA content) ... */}
-                 {/* Valid to replace with component or keep raw JSX. I'll paste back the relevant parts from original */}
-                 <div className="space-y-3">
-                    <div className="bg-secondary/30 rounded-2xl p-4 border border-border space-y-3">
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm text-muted-foreground">Classificado Por:</span>
-                            <Badge variant={transaction.classifiedBy === 'MANUAL' ? 'default' : 'secondary'}>
-                            {transaction.classifiedBy || 'NÃO CLASSIFICADO'}
-                            </Badge>
+                    {/* Current Selection Display */}
+                    <div className="p-3 bg-violet-50 dark:bg-violet-900/10 rounded-xl border border-violet-200 dark:border-violet-800/30">
+                        <div className="flex items-center gap-2 text-sm flex-wrap">
+                            <span className="font-black text-violet-700 dark:text-violet-300">
+                            {formData.appCategory || "App"}
+                            </span>
+                            <ChevronRight className="w-3 h-3 text-muted-foreground" />
+                            <span>{formData.category1 || "..."}</span>
+                            {formData.category2 && (
+                            <>
+                                <ChevronRight className="w-3 h-3 text-muted-foreground" />
+                                <span className="text-muted-foreground">{formData.category2}</span>
+                            </>
+                            )}
+                            {formData.category3 && (
+                            <>
+                                <ChevronRight className="w-3 h-3 text-muted-foreground" />
+                                <span className="text-muted-foreground">{formData.category3}</span>
+                            </>
+                            )}
                         </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm text-muted-foreground">Regra Aplicada:</span>
-                            <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
-                            {transaction.ruleIdApplied?.substring(0, 8) || 'Nenhuma'}
-                            </code>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm text-muted-foreground">Palavra-chave:</span>
-                            <code className="text-xs bg-primary/10 text-primary px-2 py-1 rounded font-mono font-bold">
-                            {transaction.matchedKeyword || 'N/A'}
-                            </code>
+                    </div>
+
+                    {/* List */}
+                    <div className="flex-1 border border-border rounded-xl bg-background overflow-hidden flex flex-col min-h-[300px] shadow-sm">
+                        <div className="overflow-y-auto flex-1 p-0">
+                        {filteredOptions.length === 0 ? (
+                            <div className="p-8 text-center flex flex-col items-center justify-center h-full text-muted-foreground space-y-2">
+                                <Search className="w-8 h-8 opacity-20" />
+                                <p className="text-sm">Nenhuma categoria encontrada.</p>
+                            </div>
+                        ) : (
+                            filteredOptions.slice(0, 100).map((opt) => {
+                                const catConfig = getCategoryConfig(opt.category1);
+                                const isSelected = formData.leafId === opt.leafId;
+                                return (
+                                    <button
+                                        key={opt.leafId}
+                                        onClick={() => handleCategorySelect(opt)}
+                                        className={cn(
+                                            "w-full px-4 py-3 text-left text-sm hover:bg-secondary/50 transition-colors border-b border-border/50 last:border-0 flex items-center gap-3",
+                                            isSelected && "bg-violet-50 dark:bg-violet-900/20"
+                                        )}
+                                    >
+                                        <CategoryIcon category={catConfig.name} size="sm" />
+                                        <div className="flex flex-col min-w-0 flex-1">
+                                            <span className={cn("font-medium truncate", isSelected && "text-violet-700 dark:text-violet-300 font-bold")}>
+                                                {opt.label}
+                                            </span>
+                                            <span className="text-[10px] text-muted-foreground truncate">
+                                                {opt.category1} {opt.category2 ? `> ${opt.category2}` : ""}
+                                            </span>
+                                        </div>
+                                        {isSelected && <CheckCircle2 className="w-4 h-4 text-violet-600 ml-auto flex-shrink-0" />}
+                                    </button>
+                                );
+                            })
+                        )}
                         </div>
                     </div>
                  </div>
-             </TabsContent>
+             </div>
+          </div>
 
-            {/* Tab 4: Debug - Keep original content */}
-            <TabsContent value="debug" className="space-y-4 mt-4">
-               {/* ... (Keep existing Debug content) ... */}
-               <Button 
-                    onClick={handleDiagnostic} 
-                    disabled={isDiagnosing} 
-                    variant="outline" 
-                    className="w-full bg-background/50 hover:bg-background border-dashed mb-4"
-                >
-                    {isDiagnosing ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <Zap className="h-4 w-4 mr-2"/>}
-                    Executar Diagnóstico Individual
-                </Button>
-                {diagnosticResult && (
-                    <div className="bg-secondary/30 p-4 rounded-lg text-xs font-mono space-y-2">
-                        {/* Short result display */}
-                        <div className={diagnosticResult.integrity.passed ? "text-green-600" : "text-red-600"}>
-                            {diagnosticResult.integrity.passed ? "Integridade OK" : "Falha na integridade"}
-                        </div>
-                    </div>
-                )}
-                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground bg-muted p-4 rounded-xl">
-                    <span>ID: {transaction.id}</span>
-                </div>
-            </TabsContent>
-
-          </Tabs>
-
-          <SheetFooter className="gap-2 sm:justify-between pt-4 border-t">
-              <div className="flex gap-2">
-                {onDelete && (
-                    <Button 
+          <div className="p-6 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+             <div className="flex items-center justify-between gap-4">
+                 {onDelete && (
+                     <Button 
                         variant="ghost" 
-                        onClick={handleDelete}
-                        disabled={isDeleting}
-                        className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                    >
-                        {isDeleting ? <Loader2 className="h-4 w-4 animate-spin"/> : <Trash2 className="h-4 w-4"/>}
-                        <span className="ml-2 hidden sm:inline">Eliminar</span>
-                    </Button>
-                )}
-              </div>
-              <div className="flex gap-2 w-full sm:w-auto">
-                 <SheetClose asChild>
-                    <Button variant="outline" className="flex-1 sm:flex-none">Cancelar</Button>
-                 </SheetClose>
-                 <Button 
-                    onClick={handleSaveAndConfirm} 
-                    disabled={isSaving}
-                    className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white min-w-[140px]"
-                >
-                    {isSaving ? (
-                        <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Salvando...
-                        </>
-                    ) : (
-                        <>
-                            <CheckCircle2 className="mr-2 h-4 w-4" />
-                            Confirmar
-                        </>
-                    )}
-                 </Button>
-              </div>
-          </SheetFooter>
-
-        </div>
+                        className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl"
+                        onClick={() => {
+                            if (confirm("Tem certeza que deseja excluir esta transação?")) {
+                                onDelete(transaction.id).then(() => onOpenChange(false));
+                            }
+                        }}
+                        disabled={isPending}
+                     >
+                         <Trash2 className="w-4 h-4 mr-2" /> Excluir
+                     </Button>
+                 )}
+                 <div className="flex items-center gap-3 ml-auto w-full sm:w-auto">
+                     <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl font-bold flex-1 sm:flex-none">
+                         Cancelar
+                     </Button>
+                     <Button 
+                        onClick={handleSave} 
+                        disabled={isPending}
+                        className="rounded-xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground px-8 flex-1 sm:flex-none shadow-lg shadow-primary/20"
+                     >
+                         {isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                         Salvar alterações
+                     </Button>
+                 </div>
+             </div>
+          </div>
       </SheetContent>
     </Sheet>
   );

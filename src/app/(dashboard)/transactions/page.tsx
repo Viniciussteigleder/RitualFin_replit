@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { getTransactionsForList, getAliasesForTransactions, getFilterOptions } from "@/lib/actions/transactions";
+import { getTaxonomyOptions } from "@/lib/actions/discovery";
 import { TransactionList } from "./transaction-list";
 import { AIAnalystChat } from "@/components/transactions/AIAnalystChat";
 import { ReRunRulesButton } from "@/components/transactions/re-run-rules-button";
@@ -25,10 +26,11 @@ export default async function TransactionsPage({
   const sources = params.accounts ? (Array.isArray(params.accounts) ? params.accounts : [params.accounts]) : undefined;
 
   // Fetch transactions and filter options in parallel - M1/M10 fix
-  const [transactionsResult, filterOptions, aliasMapResult] = await Promise.all([
+  const [transactionsResult, filterOptions, aliasMapResult, taxonomyOptions] = await Promise.all([
     getTransactionsForList({ limit: 50, sources }),
     getFilterOptions(),
-    Promise.resolve(null) // Placeholder, aliasMap fetched after
+    Promise.resolve(null), // Placeholder, aliasMap fetched after
+    getTaxonomyOptions()
   ]);
 
   const { items: transactions, hasMore, nextCursor } = transactionsResult;
@@ -75,6 +77,7 @@ export default async function TransactionsPage({
           categories2={filterOptions.categories2}
           categories3={filterOptions.categories3}
           allAccounts={filterOptions.accounts as string[]}
+          taxonomyOptions={taxonomyOptions}
         />
       </PageContainer>
     </div>

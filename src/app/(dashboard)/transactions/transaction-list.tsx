@@ -34,6 +34,7 @@ import { TransactionFilters } from "@/components/transactions/filter-panel";
 import { VirtualizedTransactionList } from "@/components/transactions/VirtualizedTransactionList";
 import { FlickerProfiler } from "@/components/perf/flicker-profiler";
 import { isDebugFlickerEnabledRuntime } from "@/lib/perf/ui-perf-flags";
+import { TaxonomyOption } from "@/lib/actions/discovery";
 
 type SortField = "date" | "amount" | "category" | "confidence";
 type SortDirection = "asc" | "desc";
@@ -71,7 +72,8 @@ export function TransactionList({
     categories1 = [],
     categories2 = [],
     categories3 = [],
-    allAccounts = []
+    allAccounts = [],
+    taxonomyOptions = []
 }: {
     transactions: any[],
     initialFilters?: TransactionFilters,
@@ -82,7 +84,8 @@ export function TransactionList({
     categories1?: string[],
     categories2?: string[],
     categories3?: string[],
-    allAccounts?: string[]
+    allAccounts?: string[],
+    taxonomyOptions?: TaxonomyOption[]
 }) {
     const [transactions, setTransactions] = useState(initialTransactions);
     const [hasMore, setHasMore] = useState(initialHasMore);
@@ -587,6 +590,7 @@ export function TransactionList({
                 categories1={categories1}
                 categories2={categories2}
                 categories3={categories3}
+                taxonomyOptions={taxonomyOptions}
             />
 
             <BulkActionsBarComp
