@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 import { LayoutDashboard, LineChart, ListTree, Store, RotateCcw, Download } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Suspense } from "react";
+import { AnalyticsSkeleton } from "./analytics-skeleton";
 
 interface AnalyticsShellProps {
   children: React.ReactNode;
@@ -38,12 +40,6 @@ export function AnalyticsShell({ children, headerActions }: AnalyticsShellProps)
                 const Icon = tab.icon;
                 const isActive = params.view === tab.id;
                 
-                // Construct URL for tab switch, preserving other params
-                // simplified: just use the query hook logic in onClick or Link
-                // But since we are outside the hook scope for link generation, better use client transition
-                // Actually, let's just make them buttons that call updateParams from hook if we were inside context
-                // But better: use Links with searchParams
-                
                 return (
                  <Link
                     key={tab.id}
@@ -51,7 +47,7 @@ export function AnalyticsShell({ children, headerActions }: AnalyticsShellProps)
                     className={cn(
                       "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
                       isActive
-                        ? "bg-background text-foreground shadow-sm ring-1 ring-border"
+                        ? "bg-background text-foreground shadow-sm ring-1 ring-border font-bold text-emerald-700"
                         : "text-muted-foreground hover:text-foreground hover:bg-background/50"
                     )}
                   >
@@ -65,7 +61,7 @@ export function AnalyticsShell({ children, headerActions }: AnalyticsShellProps)
 
           <div className="flex items-center gap-2">
              {headerActions}
-             <Button variant="outline" size="sm" className="hidden md:flex gap-2">
+             <Button variant="outline" size="sm" className="hidden md:flex gap-2 rounded-xl font-bold" onClick={() => alert("Export started...")}>
                 <Download className="w-4 h-4" />
                 Exportar
              </Button>
@@ -74,7 +70,9 @@ export function AnalyticsShell({ children, headerActions }: AnalyticsShellProps)
       </header>
 
       <main className="max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-6">
-        {children}
+        <Suspense fallback={<AnalyticsSkeleton />}>
+           {children}
+        </Suspense>
       </main>
     </div>
   );

@@ -2,8 +2,9 @@
 
 import { DrillDownData } from "@/lib/actions/analytics";
 import { useAnalyticsQuery } from "@/hooks/use-analytics-query";
-import { ChevronRight, ExternalLink, ArrowDown } from "lucide-react";
+import { ChevronRight, ExternalLink, ArrowDown, Search, Home, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -43,18 +44,11 @@ export function BreakdownView({ data }: BreakdownViewProps) {
           return;
       }
 
-      // Check `data.breadcrumb` structure.
-      // breadcrumb = [{ label: "App", value: "Food" }, { label: "Cat1", value: "Groceries" }]
-      // Clicking index 0 (App: Food) -> Keep App, clear rest.
-      // But breadcrumb array usually represents *applied* filters.
-      // So if I click index 0, I want to go to that level? No, I am *at* child of index 0.
-      // Actually, breadcrumbs usually show the *path taken*.
-      // So if I am at "Groceries", path is "Food > Groceries".
-      // If I click "Food" (index 0), I want to reset Cat1 to undefined, keep App.
-      
       const newParams: any = { appCategory: "", category1: "", category2: "", category3: "" };
       
       // Re-apply filters up to index
+      // Correction: breadcrumb array is [App, Cat1, Cat2]. 
+      // If I click index 0 (App), I want to keep App, clear Cat1/2/3.
       if (index >= 0) newParams.appCategory = data.breadcrumb[0].value;
       if (index >= 1) newParams.category1 = data.breadcrumb[1].value;
       if (index >= 2) newParams.category2 = data.breadcrumb[2].value;
@@ -65,42 +59,65 @@ export function BreakdownView({ data }: BreakdownViewProps) {
   const formatMoney = (val: number) => 
      new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
 
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredAggregates = data.aggregates.filter(item => 
+      !searchTerm || item.category.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="space-y-6">
-      {/* Breadcrumb Bar */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground bg-card/50 p-3 rounded-xl border border-border/50">
-        <button 
-            onClick={() => handleBreadcrumbClick(-1)}
-            className="hover:text-foreground hover:bg-muted px-2 py-1 rounded-md transition-colors font-medium"
-        >
-            Início
-        </button>
-        {data.breadcrumb.map((crumb, idx) => (
-            <div key={idx} className="flex items-center gap-2">
-                <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
-                <button
-                    onClick={() => handleBreadcrumbClick(idx)}
-                    className={cn(
-                        "hover:text-foreground hover:bg-muted px-2 py-1 rounded-md transition-colors font-medium",
-                        idx === data.breadcrumb.length - 1 ? "text-foreground font-bold bg-background shadow-sm border border-border/50" : ""
-                    )}
-                >
-                    {crumb.value || crumb.label}
-                </button>
-            </div>
-        ))}
-        {data.breadcrumb.length > 0 && <span className="text-muted-foreground/50 mx-2">|</span>}
-        <span className="text-xs font-mono text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full uppercase tracking-wider">
-            {data.currentLevel === "transactions" ? "Transações" : "Categorias"}
-        </span>
+      {/* Search & Breadcrumb Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card/50 p-2 sm:p-3 rounded-2xl border border-border/50">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground overflow-x-auto no-scrollbar">
+            <button 
+                onClick={() => handleBreadcrumbClick(-1)}
+                className="hover:text-foreground hover:bg-muted px-2 py-1.5 rounded-lg transition-colors font-bold flex items-center gap-1.5"
+            >
+               <Home className="w-4 h-4" />
+               <span className="sr-only sm:not-sr-only">Início</span>
+            </button>
+            {data.breadcrumb.map((crumb, idx) => (
+                <div key={idx} className="flex items-center gap-1.5 shrink-0">
+                    <ChevronRight className="w-4 h-4 text-muted-foreground/40" />
+                    <button
+                        onClick={() => handleBreadcrumbClick(idx)}
+                        className={cn(
+                            "hover:text-foreground hover:bg-muted px-2 py-1.5 rounded-lg transition-colors font-medium whitespace-nowrap",
+                            idx === data.breadcrumb.length - 1 ? "text-foreground font-bold bg-background shadow-xs border border-border/60" : ""
+                        )}
+                    >
+                        {crumb.value || crumb.label}
+                    </button>
+                </div>
+            ))}
+            {data.breadcrumb.length > 0 && <span className="text-muted-foreground/30 mx-1">|</span>}
+            <span className="text-[10px] font-mono text-emerald-600 bg-emerald-500/10 px-2 py-1 rounded-full uppercase tracking-wider font-bold whitespace-nowrap">
+                {data.currentLevel === "transactions" ? "Transações" : "Categorias"}
+            </span>
+          </div>
+
+          {data.currentLevel !== "transactions" && (
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input 
+                    type="text" 
+                    placeholder="Buscar categoria..." 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full bg-background border border-border rounded-xl pl-9 pr-4 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all placeholder:text-muted-foreground/70"
+                />
+              </div>
+          )}
       </div>
 
       {/* Main Content: Table or List */}
       {data.currentLevel === "transactions" ? (
-         <Table className="bg-card rounded-2xl border border-border overflow-hidden">
-             <TableHeader className="bg-secondary/30">
-                 <TableRow>
-                     <TableHead>Data</TableHead>
+         <div className="bg-card rounded-3xl border border-border overflow-hidden shadow-sm">
+         <Table>
+             <TableHeader className="bg-secondary/40">
+                 <TableRow className="hover:bg-transparent">
+                     <TableHead className="w-[120px]">Data</TableHead>
                      <TableHead>Descrição</TableHead>
                      <TableHead>Conta</TableHead>
                      <TableHead className="text-right">Valor</TableHead>
@@ -108,60 +125,75 @@ export function BreakdownView({ data }: BreakdownViewProps) {
              </TableHeader>
              <TableBody>
                  {data.transactions?.map((tx) => (
-                     <TableRow key={tx.id} className="group hover:bg-muted/50 cursor-default">
-                         <TableCell className="font-medium text-muted-foreground text-xs">
-                             {new Date(tx.paymentDate).toLocaleDateString()}
+                     <TableRow key={tx.id} className="group hover:bg-muted/40 transition-colors">
+                         <TableCell className="font-medium text-muted-foreground text-xs py-4">
+                             {new Date(tx.paymentDate).toLocaleDateString("pt-BR", {day: "2-digit", month: "short"})}
                          </TableCell>
-                         <TableCell>
-                             <div className="flex flex-col">
-                                 <span className="font-semibold text-foreground">{tx.aliasDesc || tx.descNorm || tx.descRaw}</span>
+                         <TableCell className="py-4">
+                             <div className="flex flex-col gap-0.5">
+                                 <span className="font-bold text-foreground">{tx.aliasDesc || tx.descNorm || tx.descRaw}</span>
                                  <span className="text-xs text-muted-foreground">{tx.category3 || tx.category2}</span>
                              </div>
                          </TableCell>
-                         <TableCell className="text-xs text-muted-foreground">
-                             {/* Account ID/Name would be here if joined, for now plain text */}
+                         <TableCell className="text-xs text-muted-foreground py-4">
                             Conta
                          </TableCell>
-                         <TableCell className={cn("text-right font-bold text-sm", tx.amount < 0 ? "text-red-500" : "text-emerald-600")}>
+                         <TableCell className={cn("text-right font-bold text-sm py-4", tx.amount < 0 ? "text-red-500" : "text-emerald-600")}>
                              {formatMoney(tx.amount)}
                          </TableCell>
                      </TableRow>
                  ))}
              </TableBody>
          </Table>
+         </div>
       ) : (
           <div className="grid gap-3">
-              {/* Custom List Rendering for Categories with Visual Bar */}
-              {data.aggregates.map((item) => (
+              {filteredAggregates.map((item) => (
                   <div 
                     key={item.category}
                     onClick={() => handleDrill(item.category)}
-                    className="group relative flex items-center gap-4 bg-card hover:bg-secondary/40 p-4 rounded-xl border border-border transition-all cursor-pointer hover:shadow-md hover:border-emerald-500/30"
+                    className="group relative flex items-center gap-4 bg-card hover:bg-secondary/50 p-4 rounded-2xl border border-border transition-all cursor-pointer hover:shadow-md hover:border-emerald-500/20 active:scale-[0.99]"
                   >
                         {/* Progress Bar Background */}
                         <div 
-                            className="absolute left-0 top-0 bottom-0 bg-secondary/50 transition-all duration-500 rounded-l-xl opacity-20 group-hover:opacity-30 group-hover:bg-emerald-500/20"
+                            className="absolute left-0 top-0 bottom-0 bg-secondary/60 transition-all duration-500 opacity-0 group-hover:opacity-100 group-hover:bg-emerald-500/5 rounded-l-2xl"
                             style={{ width: `${item.percentage}%` }}
                         />
 
-                        <div className="flex-1 flex flex-col z-10">
-                            <div className="flex items-center justify-between mb-1">
-                                <span className="font-bold text-lg text-foreground group-hover:text-emerald-700 transition-colors">
+                        {/* Visual Percentage Bar (Thin line at bottom) */}
+                        <div 
+                            className="absolute left-4 right-4 bottom-0 h-1 bg-secondary rounded-full overflow-hidden opacity-30 group-hover:opacity-100 transition-opacity"
+                        >
+                             <div className="h-full bg-emerald-500" style={{ width: `${item.percentage}%` }} />
+                        </div>
+
+                        <div className="flex-1 flex flex-col z-10 gap-1 pb-2">
+                            <div className="flex items-center justify-between">
+                                <span className={cn(
+                                    "font-bold text-base transition-colors flex items-center gap-2",
+                                    item.category === "OPEN" ? "text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md text-sm" : "text-foreground group-hover:text-emerald-700"
+                                )}>
                                     {item.category === 'OPEN' ? 'Sem Categoria' : item.category}
+                                    {item.category === 'OPEN' && <AlertCircle className="w-3 h-3" />}
                                 </span>
-                                <span className="font-bold text-lg tabular-nums">
+                                <span className="font-black text-base tabular-nums">
                                     {formatMoney(item.total)}
                                 </span>
                             </div>
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <div className="flex items-center justify-between text-xs text-muted-foreground font-medium">
                                 <span>{item.count} transaç{item.count > 1 ? 'ões' : 'ão'}</span>
-                                <span className="font-medium">{item.percentage.toFixed(1)}% do total</span>
+                                <span>{item.percentage.toFixed(1)}%</span>
                             </div>
                         </div>
                         
-                        <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                        <ChevronRight className="w-5 h-5 text-muted-foreground/50 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
                   </div>
               ))}
+               {filteredAggregates.length === 0 && (
+                  <div className="text-center py-12 text-muted-foreground bg-card/50 rounded-2xl border border-dashed border-border">
+                      <p>Nenhuma categoria encontrada para "{searchTerm}"</p>
+                  </div>
+              )}
           </div>
       )}
     </div>

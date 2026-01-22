@@ -6,6 +6,8 @@ import { FilterBar } from "@/components/analytics-next/filter-bar";
 import { KpiGrid } from "@/components/analytics-next/kpi-grid";
 import { TrendView } from "@/components/analytics-next/trend-view";
 import { BreakdownView } from "@/components/analytics-next/breakdown-view";
+import { MerchantList } from "@/components/analytics-next/merchant-list";
+import { RecurringList } from "@/components/analytics-next/recurring-list";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -71,11 +73,11 @@ export default async function AnalyticsNextPage(props: PageProps) {
         break;
     case "merchants":
         const merchantData = await getAnalyticsTopMerchants(filters as any, 50);
-        content = <div className="p-4 border rounded">Merchant List Component (TODO)</div>;
+        content = <MerchantList data={merchantData} />;
         break;
     case "recurring":
         const recurringData = await getAnalyticsRecurringSummary(filters as any, 50);
-        content = <div className="p-4 border rounded">Recurring List Component (TODO)</div>
+        content = <RecurringList data={recurringData} />;
         break;
     case "overview":
     default:
