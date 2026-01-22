@@ -824,6 +824,7 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
           </div>
         )}
 
+        {/* Derived category lists for Drawer */}
         <TransactionDrawer
           transaction={selectedDrawerTx as any}
           open={!!selectedDrawerTx}
@@ -838,6 +839,12 @@ export function ConfirmTabs({ taxonomyOptions: initialTaxonomyOptions }: Props) 
             setSelectedConflict(null);
             loadConflicts(conflictFilters);
           }}
+          // Pass derived options
+          appCategories={useMemo(() => [...new Set(taxonomyOptions.map(t => t.appCategory).filter(Boolean))].sort(), [taxonomyOptions])}
+          categories1={useMemo(() => [...new Set(taxonomyOptions.map(t => t.category1).filter(Boolean))].sort(), [taxonomyOptions])}
+          categories2={useMemo(() => [...new Set(taxonomyOptions.map(t => t.category2).filter(Boolean))].sort(), [taxonomyOptions])}
+          categories3={useMemo(() => [...new Set(taxonomyOptions.map(t => t.category3).filter(Boolean))].sort(), [taxonomyOptions])}
+          taxonomyOptions={taxonomyOptions}
         />
 
         <Dialog
