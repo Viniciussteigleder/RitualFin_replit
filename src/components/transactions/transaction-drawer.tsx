@@ -543,7 +543,7 @@ export function TransactionDrawer({
                                          <div className="p-4 bg-secondary/20 rounded-xl border border-border flex items-center gap-3">
                                               {formData.leafId ? (
                                                   <>
-                                                    <CategoryIcon category={getCategoryConfig(formData.category1).name} size="default" />
+                                                    <CategoryIcon category={getCategoryConfig(formData.category1).name} />
                                                     <div>
                                                         <div className="font-bold text-foreground">{formData.category1}</div>
                                                         <div className="text-xs text-muted-foreground">
