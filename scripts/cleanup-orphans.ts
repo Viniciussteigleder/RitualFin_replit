@@ -1,9 +1,11 @@
 
 import dotenv from "dotenv";
-dotenv.config({ path: ".env.local" });
+const envPath = process.env.ENV_PATH || ".env.local";
+console.log(`📡 Loading environment from: ${envPath}`);
+dotenv.config({ path: envPath });
 dotenv.config({ path: ".env" });
 
-import { notInArray } from "drizzle-orm";
+import { notInArray, sql } from "drizzle-orm";
 
 async function cleanupOrphans() {
   console.log("🧹 Starting Orphan Cleanup...");
@@ -67,6 +69,18 @@ async function cleanupOrphans() {
            const res = await db.delete(tableObj);
            console.log(`- ${tableName}: Deleted ${(res as any).rowCount} rows (no committed batches exist).`);
       }
+
+      // 3. Delete "Zombies": Rows in source_csv that have no corresponding transaction link
+      // This happens if a batch was committed but transactions were later deleted manually.
+      const { transactionEvidenceLink } = await import("../src/lib/db/schema");
+      
+      const orphanedByTx = await db.delete(tableObj).where(
+          sql`NOT EXISTS (
+              SELECT 1 FROM ${transactionEvidenceLink} 
+              WHERE ${transactionEvidenceLink.ingestionItemId} = ${tableObj.ingestionItemId}
+          )`
+      );
+      console.log(`- ${tableName}: Deleted ${(orphanedByTx as any).rowCount} zombie rows (no linked transactions).`);
   };
 
   await cleanTable("source_csv_sparkasse", sourceCsvSparkasse);

@@ -30,6 +30,18 @@ export const TransactionUpdateSchema = z.object({
   leafId: z.string().uuid('Invalid leaf ID'),
 });
 
+export const TransactionDetailsUpdateSchema = z.object({
+  transactionId: z.string().uuid('Invalid transaction ID'),
+  leafId: z.string().uuid('Invalid leaf ID').optional(),
+  appCategory: z.string().optional(),
+  category1: z.string().optional(),
+  category2: z.string().optional(),
+  category3: z.string().optional(),
+  type: z.enum(['Despesa', 'Receita']).optional(),
+  fixVar: z.enum(['Fixo', 'Variável']).optional(),
+  recurring: z.boolean().optional(),
+});
+
 export const TransactionConfirmSchema = z.object({
   transactionId: z.string().uuid('Invalid transaction ID'),
 });

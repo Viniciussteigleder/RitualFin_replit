@@ -7,6 +7,7 @@ import { eq, desc, sql, and, gte, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { 
   TransactionUpdateSchema, 
+  TransactionDetailsUpdateSchema,
   TransactionConfirmSchema, 
   TransactionDeleteSchema,
   BulkConfirmSchema,
@@ -15,6 +16,7 @@ import {
   error,
   validate 
 } from "@/lib/validators";
+import { z } from "zod";
 import { Errors, logError, sanitizeError } from "@/lib/errors";
 import { ensureOpenCategory } from "@/lib/actions/setup-open";
 import { buildLeafHierarchyMaps } from "@/lib/taxonomy/hierarchy";
@@ -402,6 +404,49 @@ export async function updateTransactionCategory(
     return success(undefined);
   } catch (err) {
     const errorId = logError(err, { action: 'updateTransactionCategory', transactionId });
+    const sanitized = sanitizeError(err);
+    return error(sanitized.message, errorId, sanitized.code);
+  }
+}
+
+export async function updateTransactionDetails(
+  transactionId: string,
+  data: z.infer<typeof TransactionDetailsUpdateSchema>
+): Promise<Result<void>> {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) throw Errors.authRequired();
+
+    const validated = validate(TransactionDetailsUpdateSchema, { ...data, transactionId });
+
+    const update: any = {
+      manualOverride: true,
+      classifiedBy: "MANUAL",
+      needsReview: false,
+      conflictFlag: false,
+    };
+
+    if (validated.leafId) update.leafId = validated.leafId;
+    if (validated.appCategory) update.appCategoryName = validated.appCategory;
+    if (validated.category1) update.category1 = validated.category1;
+    if (validated.category2) update.category2 = validated.category2;
+    if (validated.category3) update.category3 = validated.category3;
+    if (validated.type) update.type = validated.type;
+    if (validated.fixVar) update.fixVar = validated.fixVar;
+    if (validated.recurring !== undefined) update.recurringFlag = validated.recurring;
+
+    await db.update(transactions)
+      .set(update)
+      .where(and(
+        eq(transactions.id, validated.transactionId),
+        eq(transactions.userId, session.user.id)
+      ));
+
+    revalidatePath("/transactions");
+    revalidatePath("/");
+    return success(undefined);
+  } catch (err) {
+    const errorId = logError(err, { action: 'updateTransactionDetails', transactionId });
     const sanitized = sanitizeError(err);
     return error(sanitized.message, errorId, sanitized.code);
   }

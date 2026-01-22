@@ -582,6 +582,11 @@ export function TransactionList({
                 onConfirm={handleConfirm}
                 onDelete={handleDelete}
                 onLeafChange={handleLeafUpdate}
+                // Options for editing
+                appCategories={appCategories}
+                categories1={categories1}
+                categories2={categories2}
+                categories3={categories3}
             />
 
             <BulkActionsBarComp
