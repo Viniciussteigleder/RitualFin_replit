@@ -12,7 +12,13 @@ import {
   printLineItems,
   ocrExtractions, // New
   attachments,    // New
-  accountBalanceSnapshots // New
+  accountBalanceSnapshots, // New
+  budgets,
+  calendarEvents,
+  goals,
+  categoryGoals,
+  rituals,
+  ritualGoals
 } from "@/lib/db/schema";
 // import { sql } from "drizzle-orm";
 
@@ -23,9 +29,14 @@ export async function resetDatabaseCore(db: any) {
     // 0. Delete Attachments & OCR (Deepest dependencies)
     await db.delete(ocrExtractions);
     
-    // accountBalanceSnapshots depends on attachments? Yes, attachmentId.
-    // If we delete attachments, we might need to clear snapshots or update them. 
-    // Let's wipe them for a full clean reset.
+    // Deleting planning/ritual data
+    await db.delete(categoryGoals);
+    await db.delete(goals);
+    await db.delete(budgets);
+    await db.delete(ritualGoals);
+    await db.delete(rituals);
+    await db.delete(calendarEvents);
+    
     await db.delete(accountBalanceSnapshots);
 
     await db.delete(attachments);
