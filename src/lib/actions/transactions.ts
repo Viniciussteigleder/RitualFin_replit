@@ -770,12 +770,13 @@ export async function getTransactionsForList(
     ? sql`AND (t.payment_date, t.id) < (${new Date(input.cursor.split('_')[0]!)}, ${input.cursor.split('_')[1]})`
     : sql``;
 
-  // Search clause (desc_norm, desc_raw, alias_desc, category)
+  // Search clause (desc_norm, desc_raw, alias_desc, key_desc, category)
   const searchClause = search
     ? sql`AND (
         LOWER(t.desc_norm) LIKE ${`%${search.toLowerCase()}%`} OR
         LOWER(t.desc_raw) LIKE ${`%${search.toLowerCase()}%`} OR
         LOWER(t.alias_desc) LIKE ${`%${search.toLowerCase()}%`} OR
+        LOWER(t.key_desc) LIKE ${`%${search.toLowerCase()}%`} OR
         LOWER(CAST(t.category_1 AS text)) LIKE ${`%${search.toLowerCase()}%`}
       )`
     : sql``;
