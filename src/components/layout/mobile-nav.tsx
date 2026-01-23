@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Receipt, Plus, Target, Settings } from "lucide-react";
+import { LayoutDashboard, Receipt, Plus, Target, Settings, LineChart } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/analyticsnextlevel", label: "Analytics", icon: LineChart },
   { href: "/transactions", label: "Transações", icon: Receipt },
   { href: "/add", label: "Adicionar", icon: Plus, isCenter: true },
   { href: "/goals", label: "Metas", icon: Target },
