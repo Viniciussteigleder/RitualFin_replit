@@ -14,18 +14,22 @@ export function FinancialHealthGauge({ score }: FinancialHealthGaugeProps) {
   // Calculate color based on score
   let color = "#ef4444"; // Red
   let status = "Crítico";
+  let nudge = "Atenção necessária";
+  
   if (clampedScore > 50) {
     color = "#f59e0b"; // Amber
     status = "Atenção";
+    nudge = "Continue melhorando";
   }
   if (clampedScore > 80) {
     color = "#10b981"; // Emerald
     status = "Saudável";
+    nudge = "Excelente trabalho!";
   }
 
-  // Circle properties
+  // Circle properties - Thinner stroke (8px)
   const radius = 80;
-  const stroke = 12;
+  const stroke = 8;
   const normalizedRadius = radius - stroke * 2;
   const circumference = normalizedRadius * 2 * Math.PI;
   // We want a semi-circle (50% of circumference)
@@ -33,7 +37,7 @@ export function FinancialHealthGauge({ score }: FinancialHealthGaugeProps) {
 
   return (
     <div className="flex flex-col items-center justify-center relative">
-      <h3 className="text-lg font-bold mb-4 tracking-tight text-white/90">Saúde Financeira</h3>
+      <h3 className="text-lg font-medium mb-4 tracking-tight text-white/90">Saúde Financeira</h3>
       
       <div className="relative w-[200px] h-[100px] overflow-hidden">
          {/* Background Arc (Gray) */}
@@ -43,13 +47,14 @@ export function FinancialHealthGauge({ score }: FinancialHealthGaugeProps) {
           className="absolute left-1/2 -translate-x-1/2 rotate-[180deg]"
         >
           <circle
-            stroke="rgba(255,255,255,0.1)"
+            stroke="rgba(255,255,255,0.05)"
             strokeWidth={stroke}
             fill="transparent"
             r={normalizedRadius}
             cx={radius}
             cy={radius}
             strokeDasharray={`${circumference / 2} ${circumference}`}
+            strokeLinecap="round"
           />
         </svg>
 
@@ -70,17 +75,17 @@ export function FinancialHealthGauge({ score }: FinancialHealthGaugeProps) {
             initial={{ strokeDashoffset: circumference }}
             animate={{ strokeDashoffset }}
             transition={{ duration: 1.5, ease: "easeOut" }}
-            strokeLinecap="round"
+            strokeLinecap="round" 
           />
         </svg>
         
          {/* Score Text */}
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-center">
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-center flex flex-col items-center">
             <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
-                className="text-4xl font-black text-white"
+                className="text-5xl font-black text-white tracking-tighter"
             >
                 {clampedScore}
             </motion.div>
@@ -91,10 +96,11 @@ export function FinancialHealthGauge({ score }: FinancialHealthGaugeProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1 }}
-            className="mt-2 text-sm font-medium px-3 py-1 rounded-full border border-white/10 bg-white/5"
+            className="mt-3 text-sm font-medium px-4 py-1.5 rounded-full border border-white/5 bg-white/5 flex flex-col items-center"
             style={{ color: color }}
         >
-            {status}
+            <span className="uppercase tracking-widest text-[10px] opacity-80 text-white mb-0.5">{status}</span>
+            <span className="text-xs font-bold">{nudge}</span>
         </motion.div>
     </div>
   );

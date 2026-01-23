@@ -1,7 +1,7 @@
 "use client";
 
 import { TopAggregateRow } from "@/lib/actions/analytics";
-import { formatCurrency } from "@/lib/utils"; // Assuming helper
+import { formatCurrency } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -24,39 +24,41 @@ export function MerchantList({ data, title = "Top Comerciantes" }: MerchantListP
      new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
 
   return (
-    <div className="bg-card rounded-3xl border border-border shadow-sm overflow-hidden">
-      <div className="p-6 border-b border-border/40">
-        <h3 className="font-bold text-lg">{title}</h3>
-      </div>
+    <div className="w-full">
       <Table>
-        <TableHeader className="bg-secondary/30">
+        <TableHeader className="opacity-0 h-0 pointer-events-none">
+           {/* Visual header handled in parent card, kept here for a11y */}
           <TableRow>
-            <TableHead className="w-[40%]">Nome</TableHead>
-            <TableHead className="w-[30%] text-right pr-4">Total</TableHead>
-            <TableHead className="text-right">Transações</TableHead>
+            <TableHead>Nome</TableHead>
+            <TableHead>Total</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {data.map((item, i) => (
-            <TableRow key={i} className="group hover:bg-muted/50 transition-colors">
-              <TableCell className="font-medium text-foreground">
-                {item.name}
-              </TableCell>
-              <TableCell className="text-right pr-4">
-                <div className="flex flex-col gap-1 items-end">
-                    <span className="font-bold">{formatMoney(item.total)}</span>
-                    <Progress value={(item.total / maxTotal) * 100} className="h-1.5 bg-secondary w-24" indicatorClassName="bg-emerald-500" />
+            <TableRow key={i} className="group hover:bg-white/5 transition-colors border-none">
+              <TableCell className="py-3 pl-2">
+                <div className="flex items-center gap-3">
+                    {/* Placeholder Avatar */}
+                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-white/70 ring-1 ring-white/10">
+                        {item.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="font-medium text-white/90 text-sm truncate max-w-[120px]" title={item.name}>
+                        {item.name}
+                    </span>
                 </div>
               </TableCell>
-              <TableCell className="text-right text-muted-foreground">
-                {item.count}
+              <TableCell className="text-right pr-2 py-3">
+                <div className="flex flex-col gap-1.5 items-end">
+                    <span className="font-bold text-white text-sm tabular-nums">{formatMoney(item.total)}</span>
+                    <Progress value={(item.total / maxTotal) * 100} className="h-1 bg-white/10 w-20" indicatorClassName="bg-emerald-500/80" />
+                </div>
               </TableCell>
             </TableRow>
           ))}
           {data.length === 0 && (
               <TableRow>
-                  <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
-                      Nenhum dado encontrado para este período.
+                  <TableCell colSpan={2} className="h-24 text-center text-muted-foreground text-sm">
+                      Nenhum movimento
                   </TableCell>
               </TableRow>
           )}
