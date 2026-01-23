@@ -76,84 +76,53 @@ export function PredictiveTrendChart({ data }: PredictiveTrendChartProps) {
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart
           data={chartData}
-          margin={{ top: 20, right: 10, bottom: 20, left: -20 }}
+          margin={{ top: 20, right: 10, bottom: 20, left: 0 }}
         >
-          {/* Tufte: No Grid Lines */}
-          <CartesianGrid vertical={false} horizontal={false} />
+          <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
           
-          <defs>
-             {/* Gradient for bars - Deep Neon */}
-            <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
-              <stop offset="95%" stopColor="#10B981" stopOpacity={0.1}/>
-            </linearGradient>
-            <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#EF4444" stopOpacity={0.8}/>
-              <stop offset="95%" stopColor="#EF4444" stopOpacity={0.1}/>
-            </linearGradient>
-            
-            {/* Glow Filter for Lines */}
-            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-                <feMerge>
-                    <feMergeNode in="coloredBlur" />
-                    <feMergeNode in="SourceGraphic" />
-                </feMerge>
-            </filter>
-          </defs>
-
           <XAxis 
             dataKey="month" 
-            tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 10, fontWeight: 500, fontFamily: "monospace" }} 
+            tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} 
             tickLine={false}
-            axisLine={false}
+            axisLine={{ stroke: "hsl(var(--border))" }}
             dy={10}
-            interval="preserveStartEnd"
+            minTickGap={30}
           />
           <YAxis 
-            tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 10, fontWeight: 500, fontFamily: "monospace" }} 
+            tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} 
             tickLine={false}
             axisLine={false}
-            tickFormatter={(value) => `k${(value / 1000).toFixed(0)}`} // Simplify to 'k'
-            dx={-10}
+            tickFormatter={(value) => `k${(value / 1000).toFixed(0)}`}
           />
           
           <Tooltip
-            cursor={{ stroke: 'rgba(255,255,255,0.2)', strokeWidth: 1, strokeDasharray: '4 4' }}
+            cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1, strokeDasharray: '3 3', opacity: 0.5 }}
             content={({ active, payload, label }) => {
               if (active && payload && payload.length) {
                 return (
-                  <div className="bg-black/90 backdrop-blur-xl border border-white/10 p-4 rounded-xl shadow-[0_0_30px_rgba(0,0,0,0.5)] min-w-[200px]">
-                    <p className="font-mono text-white mb-3 text-[10px] tracking-widest uppercase opacity-50 border-b border-white/10 pb-2">{label}</p>
+                  <div className="bg-popover border border-border p-3 rounded-lg shadow-md">
+                    <p className="font-semibold text-foreground mb-2 text-xs">{label}</p>
                     {payload.map((entry: any) => {
                       if (entry.dataKey === 'ciUpper' || entry.dataKey === 'ciLower' || entry.dataKey === 'trendLine') return null;
                       
                       const isExpense = entry.name === 'Despesa';
                       const isIncome = entry.name === 'Receita';
-                      const isForecast = entry.name === 'Previsão';
                       
                       return (
-                        <div key={entry.name} className="flex items-center justify-between gap-6 text-sm mb-2 last:mb-0">
+                        <div key={entry.name} className="flex items-center gap-4 text-sm mb-1 last:mb-0">
                           <div className="flex items-center gap-2">
                              <div 
-                                className="w-1.5 h-1.5 rounded-full shadow-[0_0_5px_currentColor]" 
-                                style={{ backgroundColor: entry.color, color: entry.color }}
+                                className="w-2 h-2 rounded-full" 
+                                style={{ backgroundColor: entry.color }}
                             />
-                            <span className="text-gray-400 text-xs uppercase tracking-wide font-medium">{entry.name}</span>
+                            <span className="text-muted-foreground capitalize">{entry.name}</span>
                           </div>
-                          <span className={isExpense ? "text-red-400 font-mono" : isIncome ? "text-emerald-400 font-mono" : "text-purple-400 font-mono"}>
+                          <span className={isExpense ? "text-red-600 dark:text-red-400 font-medium tabular-nums shadow-none" : isIncome ? "text-emerald-600 dark:text-emerald-400 font-medium tabular-nums shadow-none" : "text-foreground font-medium tabular-nums"}>
                              {formatCurrency(entry.value)}
                           </span>
                         </div>
                       )
                     })}
-                    {/* Add predictive insight text if forecast is present */}
-                    {label && label.toString().includes("*") && (
-                        <div className="mt-3 text-[10px] text-purple-300 font-medium border-t border-purple-500/20 pt-2 flex items-center gap-1 animate-pulse">
-                            <span>🔮</span>
-                            <span className="uppercase tracking-widest">AI Forecast</span>
-                        </div>
-                    )}
                   </div>
                 );
               }
@@ -161,23 +130,22 @@ export function PredictiveTrendChart({ data }: PredictiveTrendChartProps) {
             }}
           />
           
-          {/* Main Bars */}
-          <Bar dataKey="income" fill="url(#incomeGradient)" radius={[2, 2, 0, 0]} barSize={12} name="Receita" />
-          <Bar dataKey="outcome" fill="url(#expenseGradient)" radius={[2, 2, 0, 0]} barSize={12} name="Despesa" />
+          {/* Main Bars - Solid, contrasting colors */}
+          <Bar dataKey="income" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} barSize={20} name="Receita" fillOpacity={0.8} />
+          <Bar dataKey="outcome" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} barSize={20} name="Despesa" fillOpacity={0.8} />
           
-          {/* Forecast Line with Glow */}
+          {/* Forecast Line - Distinct but professional */}
           <Line 
             type="monotone" 
             dataKey="forecast" 
-            stroke="#A78BFA" 
+            stroke="hsl(var(--foreground))" 
             strokeWidth={2} 
-            strokeDasharray="4 4" 
-            strokeLinecap="round"
-            dot={{ r: 3, fill: "#A78BFA", strokeWidth: 0 }}
-            activeDot={{ r: 6, stroke: "#fff", strokeWidth: 2 }}
+            strokeDasharray="5 5"
+            dot={{ r: 3, fill: "hsl(var(--foreground))", strokeWidth: 0 }}
+            activeDot={{ r: 5 }}
             name="Previsão"
             connectNulls
-            filter="url(#glow)"
+            opacity={0.6}
           />
         </ComposedChart>
       </ResponsiveContainer>

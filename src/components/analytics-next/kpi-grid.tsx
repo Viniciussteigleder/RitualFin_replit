@@ -55,72 +55,91 @@ export function KpiGrid({ data, previousData }: KpiGridProps) {
      );
   };
 
+  // Tufte Principle: Clear, accessible data. No chartjunk.
+  // Norman Principle: Clear affordance. Green = Good, Red = Bad (standard mapping).
+  
   return (
-    <div className="flex flex-col gap-3">
-      {/* 1. Total Spend - The Hero Stat */}
-      <GlassCard className="p-5 relative overflow-hidden group bg-black/40 border-white/10 hover:border-emerald-500/50 transition-colors duration-500">
-         <div className="absolute right-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-emerald-500 to-transparent opacity-50" />
-         
-         <div className="flex flex-col gap-1 relative z-10">
-            <div className="flex justify-between items-start">
-                 <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.2em] mb-1">Net Flow</span>
-                 <Wallet className="w-4 h-4 text-emerald-500/50" />
-            </div>
-            <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-light text-white tracking-tighter tabular-nums text-glow">
-                    {formatCurrency(total)}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* 1. Net Result - The Bottom Line */}
+      <div className="rounded-2xl bg-card border border-border p-5 shadow-sm flex flex-col justify-between h-[120px] transition-all hover:shadow-md">
+         <div className="flex justify-between items-start">
+            <span className="text-sm font-medium text-muted-foreground">Resultado Líquido</span>
+            <Wallet className="h-4 w-4 text-muted-foreground/50" />
+         </div>
+         <div className="flex flex-col gap-1">
+             <span className={cn(
+                 "text-3xl font-bold tracking-tight",
+                 data.totalAmount >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
+             )}>
+                 {formatCurrency(Math.abs(data.totalAmount))}
+             </span>
+             <div className="flex items-center gap-2">
+                <span className={cn("text-xs font-medium px-1.5 py-0.5 rounded-md", 
+                    totalDeltaPercent > 0 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400" : "bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400"
+                )}>
+                   {totalDeltaPercent > 0 ? "+" : ""}{totalDeltaPercent.toFixed(1)}%
                 </span>
-            </div>
-            <div className="flex items-center gap-2 mt-2">
-                 {/* Mini sparkline or just delta text */}
-                 <div className="bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded text-[10px] font-mono text-emerald-300 flex items-center gap-1">
-                    {previousData ? renderDelta(totalDeltaPercent, true) : "N/A"}
-                 </div>
-            </div>
+                <span className="text-xs text-muted-foreground">vs anterior</span>
+             </div>
          </div>
-      </GlassCard>
+      </div>
 
-      {/* 2. Top Category - Compact */}
-      <GlassCard className="p-4 relative overflow-hidden group bg-white/5 border-white/5 hover:border-white/20">
-         <div className="flex flex-col gap-1 relative z-10 w-full">
-             <div className="flex justify-between w-full">
-                <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-widest">Highest Burn</span>
-                <TrendingDown className="w-3 h-3 text-red-400/70" />
-             </div>
-             
-             <div className="flex justify-between items-end mt-1">
-                 <span className="text-sm font-bold text-white max-w-[60%] truncate" title={topCategory?.category}>
-                    {topCategory?.category || "—"}
+      {/* 2. Top Spending Category */}
+      <div className="rounded-2xl bg-card border border-border p-5 shadow-sm flex flex-col justify-between h-[120px] transition-all hover:shadow-md">
+         <div className="flex justify-between items-start">
+            <span className="text-sm font-medium text-muted-foreground">Maior Despesa</span>
+            <TrendingDown className="h-4 w-4 text-muted-foreground/50" />
+         </div>
+         <div className="flex flex-col gap-1">
+             <span className="text-xl font-bold text-foreground truncate" title={topCategory?.category}>
+                 {topCategory?.category || "—"}
+             </span>
+             <div className="flex items-center justify-between mt-1">
+                 <span className="text-sm font-semibold text-red-500 dark:text-red-400">
+                    {topCategory ? formatCurrency(topCategory.total) : "—"}
                  </span>
-                 <span className="text-sm font-mono text-white/70">
-                    {topCategory ? `${topCategory.percentage.toFixed(0)}%` : "0%"}
+                 <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
+                    {topCategory?.percentage.toFixed(0)}% do total
                  </span>
              </div>
-             
-             {/* Micro-bar */}
-             <div className="w-full bg-white/10 h-0.5 mt-2 overflow-hidden">
-                <div 
-                    className="bg-red-500 h-full shadow-[0_0_10px_rgba(239,68,68,0.5)]" 
-                    style={{ width: `${topCategory?.percentage || 0}%` }}
-                />
+             {/* Simple clean bar */}
+             <div className="w-full h-1 bg-secondary rounded-full mt-2 overflow-hidden">
+                <div className="h-full bg-red-500" style={{ width: `${topCategory?.percentage || 0}%` }} />
              </div>
          </div>
-      </GlassCard>
-      
-      {/* 3. Small Grid for Count & Volume */}
-       <div className="grid grid-cols-2 gap-3">
-           <GlassCard className="p-3 flex flex-col items-center justify-center text-center bg-white/5 border-white/5">
-                <Activity className="w-4 h-4 text-blue-400 mb-1" />
-                <span className="text-xl font-bold text-white tabular-nums">{txCount}</span>
-                <span className="text-[8px] uppercase tracking-widest text-muted-foreground">Ops</span>
-           </GlassCard>
-           
-           <GlassCard className="p-3 flex flex-col items-center justify-center text-center bg-white/5 border-white/5">
-                 <AlertCircle className="w-4 h-4 text-purple-400 mb-1" />
-                <span className="text-xl font-bold text-white tabular-nums">{categoryCount}</span>
-                <span className="text-[8px] uppercase tracking-widest text-muted-foreground">Cats</span>
-           </GlassCard>
-       </div>
+      </div>
+
+       {/* 3. Transaction Volume */}
+      <div className="rounded-2xl bg-card border border-border p-5 shadow-sm flex flex-col justify-between h-[120px] transition-all hover:shadow-md">
+         <div className="flex justify-between items-start">
+            <span className="text-sm font-medium text-muted-foreground">Volume</span>
+            <Activity className="h-4 w-4 text-muted-foreground/50" />
+         </div>
+         <div className="flex flex-col gap-1">
+             <span className="text-3xl font-bold text-foreground">
+                 {txCount}
+             </span>
+             <div className="flex items-center gap-2">
+                 <span className="text-xs text-muted-foreground">transações processadas</span>
+             </div>
+         </div>
+      </div>
+
+      {/* 4. Category Diversity (Simple) */}
+      <div className="rounded-2xl bg-card border border-border p-5 shadow-sm flex flex-col justify-between h-[120px] transition-all hover:shadow-md">
+         <div className="flex justify-between items-start">
+            <span className="text-sm font-medium text-muted-foreground">Categorias</span>
+            <AlertCircle className="h-4 w-4 text-muted-foreground/50" />
+         </div>
+         <div className="flex flex-col gap-1">
+             <span className="text-3xl font-bold text-foreground">
+                 {categoryCount}
+             </span>
+             <div className="flex items-center gap-2">
+                 <span className="text-xs text-muted-foreground">áreas de consumo ativas</span>
+             </div>
+         </div>
+      </div>
     </div>
   );
 }
