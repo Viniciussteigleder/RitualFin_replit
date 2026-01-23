@@ -4,7 +4,7 @@ import { getAccounts, getAnalyticsData, getAnalyticsMonthByMonth, getAnalyticsTo
 import { AnalyticsShell } from "@/components/analytics-next/analytics-shell";
 import { FilterBar } from "@/components/analytics-next/filter-bar";
 import { KpiGrid } from "@/components/analytics-next/kpi-grid";
-import { TrendView } from "@/components/analytics-next/trend-view";
+
 import { BreakdownView } from "@/components/analytics-next/breakdown-view";
 import { MerchantList } from "@/components/analytics-next/merchant-list";
 import { RecurringList } from "@/components/analytics-next/recurring-list";
