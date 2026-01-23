@@ -36,7 +36,9 @@ export interface DrillDownData {
 
 export interface MonthByMonthRow {
   month: string; // YYYY-MM
-  total: number;
+  total: number; // Net
+  income: number;
+  outcome: number; // Absolute value of expense
   count: number;
 }
 
@@ -280,7 +282,9 @@ export async function getAnalyticsMonthByMonth(filters: AnalyticsFilters = {}): 
   const rows = await db
     .select({
       month: monthExpr,
-      total: sql<number>`COALESCE(ABS(SUM(${transactions.amount})), 0)`,
+      total: sql<number>`COALESCE(SUM(${transactions.amount}), 0)`, // Net total
+      income: sql<number>`COALESCE(SUM(CASE WHEN ${transactions.amount} > 0 THEN ${transactions.amount} ELSE 0 END), 0)`,
+      outcome: sql<number>`COALESCE(ABS(SUM(CASE WHEN ${transactions.amount} < 0 THEN ${transactions.amount} ELSE 0 END)), 0)`,
       count: sql<number>`COUNT(*)`,
     })
     .from(transactions)
@@ -291,6 +295,8 @@ export async function getAnalyticsMonthByMonth(filters: AnalyticsFilters = {}): 
   return rows.map((r) => ({
     month: String(r.month),
     total: Number(r.total),
+    income: Number(r.income),
+    outcome: Number(r.outcome),
     count: Number(r.count),
   }));
 }
