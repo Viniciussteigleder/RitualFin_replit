@@ -56,113 +56,71 @@ export function KpiGrid({ data, previousData }: KpiGridProps) {
   };
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-      {/* 1. Total Spend */}
-      <GlassCard className="p-6 relative overflow-hidden group">
-         <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-            <Wallet className="w-16 h-16" />
-         </div>
-         <div className="flex flex-col gap-2 relative z-10">
-            <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Total do Período</span>
-            <div className="flex items-end gap-3">
-                <span className="text-3xl font-bold tracking-tight text-foreground">
+    <div className="flex flex-col gap-3">
+      {/* 1. Total Spend - The Hero Stat */}
+      <GlassCard className="p-5 relative overflow-hidden group bg-black/40 border-white/10 hover:border-emerald-500/50 transition-colors duration-500">
+         <div className="absolute right-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-emerald-500 to-transparent opacity-50" />
+         
+         <div className="flex flex-col gap-1 relative z-10">
+            <div className="flex justify-between items-start">
+                 <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.2em] mb-1">Net Flow</span>
+                 <Wallet className="w-4 h-4 text-emerald-500/50" />
+            </div>
+            <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-light text-white tracking-tighter tabular-nums text-glow">
                     {formatCurrency(total)}
                 </span>
             </div>
             <div className="flex items-center gap-2 mt-2">
-                {previousData ? (
-                    <>
-                        <div className="bg-white/5 rounded-full px-2 py-1 flex items-center">
-                            {renderDelta(totalDeltaPercent)}
-                        </div>
-                        <span className="text-xs text-muted-foreground">vs período anterior</span>
-                    </>
-                ) : (
-                    <span className="text-xs text-muted-foreground">Sem dados anteriores</span>
-                )}
+                 {/* Mini sparkline or just delta text */}
+                 <div className="bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded text-[10px] font-mono text-emerald-300 flex items-center gap-1">
+                    {previousData ? renderDelta(totalDeltaPercent, true) : "N/A"}
+                 </div>
             </div>
          </div>
       </GlassCard>
 
-      {/* 2. Top Category */}
-      <GlassCard className="p-6 relative overflow-hidden group">
-         <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-            <TrendingDown className="w-16 h-16" />
-         </div>
-         <div className="flex flex-col gap-2 relative z-10">
-             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Maior Categoria</span>
-             <div className="flex items-end gap-3">
-                <span className="text-2xl font-bold tracking-tight text-foreground truncate max-w-[180px]" title={topCategory?.category}>
-                    {topCategory?.category || "—"}
-                </span>
+      {/* 2. Top Category - Compact */}
+      <GlassCard className="p-4 relative overflow-hidden group bg-white/5 border-white/5 hover:border-white/20">
+         <div className="flex flex-col gap-1 relative z-10 w-full">
+             <div className="flex justify-between w-full">
+                <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-widest">Highest Burn</span>
+                <TrendingDown className="w-3 h-3 text-red-400/70" />
              </div>
-             <div className="flex flex-col mt-1">
-                 <span className="text-lg font-mono text-emerald-400">
-                    {topCategory ? formatCurrency(topCategory.total) : formatCurrency(0)}
+             
+             <div className="flex justify-between items-end mt-1">
+                 <span className="text-sm font-bold text-white max-w-[60%] truncate" title={topCategory?.category}>
+                    {topCategory?.category || "—"}
                  </span>
-                 <div className="w-full bg-white/10 h-1.5 rounded-full mt-2 overflow-hidden">
-                    <div 
-                        className="bg-emerald-500 h-full rounded-full" 
-                        style={{ width: `${topCategory?.percentage || 0}%` }}
-                    />
-                 </div>
-                 <span className="text-[10px] text-muted-foreground mt-1 text-right">
-                    Representa {topCategory?.percentage.toFixed(1)}% do total
+                 <span className="text-sm font-mono text-white/70">
+                    {topCategory ? `${topCategory.percentage.toFixed(0)}%` : "0%"}
                  </span>
+             </div>
+             
+             {/* Micro-bar */}
+             <div className="w-full bg-white/10 h-0.5 mt-2 overflow-hidden">
+                <div 
+                    className="bg-red-500 h-full shadow-[0_0_10px_rgba(239,68,68,0.5)]" 
+                    style={{ width: `${topCategory?.percentage || 0}%` }}
+                />
              </div>
          </div>
       </GlassCard>
       
-      {/* 3. Active Categories */}
-       <GlassCard className="p-6 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-            <AlertCircle className="w-16 h-16" />
-         </div>
-         <div className="flex flex-col gap-2 relative z-10">
-            <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Diversificação</span>
-            <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-foreground">
-                    {categoryCount}
-                </span>
-                <span className="text-sm text-muted-foreground">categorias</span>
-            </div>
-             <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
-                Você consumiu em {categoryCount} áreas diferentes neste período.
-            </p>
-         </div>
-      </GlassCard>
-
-       {/* 4. Activity Volume */}
-       <GlassCard className="p-6 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-            <Activity className="w-16 h-16" />
-         </div>
-         <div className="flex flex-col gap-2 relative z-10">
-            <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Volume</span>
-            <div className="flex items-end gap-3">
-                <span className="text-3xl font-bold text-foreground">
-                    {txCount}
-                </span>
-                 <span className="text-sm text-muted-foreground mb-1">transações</span>
-            </div>
-             <div className="flex items-center gap-2 mt-2">
-                 {previousData ? (
-                    <>
-                        <div className="bg-white/5 rounded-full px-2 py-1 flex items-center">
-                             {/* Volume increase is technically neutral or just "Activity", so lets treat Increase as "active" (green) just for visualization? 
-                                 Or stick to: More spending tx = Red?
-                                 Actually, more txn usually means more activity. Let's color neutral or use Invert=True (Green is Up) 
-                             */}
-                             {renderDelta(txDeltaPercent, true)}
-                        </div>
-                        <span className="text-xs text-muted-foreground">vs período anterior</span>
-                    </>
-                 ) : (
-                    <span className="text-xs text-muted-foreground">Sem histórico</span>
-                 )}
-            </div>
-         </div>
-      </GlassCard>
+      {/* 3. Small Grid for Count & Volume */}
+       <div className="grid grid-cols-2 gap-3">
+           <GlassCard className="p-3 flex flex-col items-center justify-center text-center bg-white/5 border-white/5">
+                <Activity className="w-4 h-4 text-blue-400 mb-1" />
+                <span className="text-xl font-bold text-white tabular-nums">{txCount}</span>
+                <span className="text-[8px] uppercase tracking-widest text-muted-foreground">Ops</span>
+           </GlassCard>
+           
+           <GlassCard className="p-3 flex flex-col items-center justify-center text-center bg-white/5 border-white/5">
+                 <AlertCircle className="w-4 h-4 text-purple-400 mb-1" />
+                <span className="text-xl font-bold text-white tabular-nums">{categoryCount}</span>
+                <span className="text-[8px] uppercase tracking-widest text-muted-foreground">Cats</span>
+           </GlassCard>
+       </div>
     </div>
   );
 }

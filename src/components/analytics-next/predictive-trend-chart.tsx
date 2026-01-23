@@ -81,16 +81,37 @@ export function PredictiveTrendChart({ data }: PredictiveTrendChartProps) {
           {/* Tufte: No Grid Lines */}
           <CartesianGrid vertical={false} horizontal={false} />
           
+          <defs>
+             {/* Gradient for bars - Deep Neon */}
+            <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
+              <stop offset="95%" stopColor="#10B981" stopOpacity={0.1}/>
+            </linearGradient>
+            <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#EF4444" stopOpacity={0.8}/>
+              <stop offset="95%" stopColor="#EF4444" stopOpacity={0.1}/>
+            </linearGradient>
+            
+            {/* Glow Filter for Lines */}
+            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+                <feMerge>
+                    <feMergeNode in="coloredBlur" />
+                    <feMergeNode in="SourceGraphic" />
+                </feMerge>
+            </filter>
+          </defs>
+
           <XAxis 
             dataKey="month" 
-            tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 500 }} 
+            tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 10, fontWeight: 500, fontFamily: "monospace" }} 
             tickLine={false}
             axisLine={false}
             dy={10}
             interval="preserveStartEnd"
           />
           <YAxis 
-            tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 500 }} 
+            tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 10, fontWeight: 500, fontFamily: "monospace" }} 
             tickLine={false}
             axisLine={false}
             tickFormatter={(value) => `k${(value / 1000).toFixed(0)}`} // Simplify to 'k'
@@ -98,28 +119,29 @@ export function PredictiveTrendChart({ data }: PredictiveTrendChartProps) {
           />
           
           <Tooltip
-            cursor={{ stroke: 'rgba(255,255,255,0.2)', strokeWidth: 1, strokeDasharray: '3 3' }}
+            cursor={{ stroke: 'rgba(255,255,255,0.2)', strokeWidth: 1, strokeDasharray: '4 4' }}
             content={({ active, payload, label }) => {
               if (active && payload && payload.length) {
                 return (
-                  <div className="bg-black/80 backdrop-blur-3xl border border-white/5 p-4 rounded-2xl shadow-2xl">
-                    <p className="font-bold text-white mb-3 text-xs tracking-wider uppercase opacity-70">{label}</p>
+                  <div className="bg-black/90 backdrop-blur-xl border border-white/10 p-4 rounded-xl shadow-[0_0_30px_rgba(0,0,0,0.5)] min-w-[200px]">
+                    <p className="font-mono text-white mb-3 text-[10px] tracking-widest uppercase opacity-50 border-b border-white/10 pb-2">{label}</p>
                     {payload.map((entry: any) => {
                       if (entry.dataKey === 'ciUpper' || entry.dataKey === 'ciLower' || entry.dataKey === 'trendLine') return null;
                       
                       const isExpense = entry.name === 'Despesa';
                       const isIncome = entry.name === 'Receita';
+                      const isForecast = entry.name === 'Previsão';
                       
                       return (
-                        <div key={entry.name} className="flex items-center justify-between gap-6 text-sm mb-1 last:mb-0">
+                        <div key={entry.name} className="flex items-center justify-between gap-6 text-sm mb-2 last:mb-0">
                           <div className="flex items-center gap-2">
                              <div 
-                                className="w-1.5 h-1.5 rounded-full" 
-                                style={{ backgroundColor: entry.color }}
+                                className="w-1.5 h-1.5 rounded-full shadow-[0_0_5px_currentColor]" 
+                                style={{ backgroundColor: entry.color, color: entry.color }}
                             />
-                            <span className="text-gray-400">{entry.name}</span>
+                            <span className="text-gray-400 text-xs uppercase tracking-wide font-medium">{entry.name}</span>
                           </div>
-                          <span className={isExpense ? "text-red-400 font-bold tabular-nums" : isIncome ? "text-emerald-400 font-bold tabular-nums" : "text-white font-bold tabular-nums"}>
+                          <span className={isExpense ? "text-red-400 font-mono" : isIncome ? "text-emerald-400 font-mono" : "text-purple-400 font-mono"}>
                              {formatCurrency(entry.value)}
                           </span>
                         </div>
@@ -127,8 +149,9 @@ export function PredictiveTrendChart({ data }: PredictiveTrendChartProps) {
                     })}
                     {/* Add predictive insight text if forecast is present */}
                     {label && label.toString().includes("*") && (
-                        <div className="mt-3 text-[10px] text-indigo-300 font-medium border-t border-white/10 pt-2 flex items-center gap-1">
-                            <span>🤖</span> Estimativa Inteligente
+                        <div className="mt-3 text-[10px] text-purple-300 font-medium border-t border-purple-500/20 pt-2 flex items-center gap-1 animate-pulse">
+                            <span>🔮</span>
+                            <span className="uppercase tracking-widest">AI Forecast</span>
                         </div>
                     )}
                   </div>
@@ -138,42 +161,23 @@ export function PredictiveTrendChart({ data }: PredictiveTrendChartProps) {
             }}
           />
           
-          <defs>
-             {/* Gradient for bars */}
-            <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
-              <stop offset="95%" stopColor="#10B981" stopOpacity={0.3}/>
-            </linearGradient>
-            <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#EF4444" stopOpacity={0.8}/>
-              <stop offset="95%" stopColor="#EF4444" stopOpacity={0.3}/>
-            </linearGradient>
-            {/* Gradient for CI Area */}
-             <linearGradient id="ciGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.1}/>
-              <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0.01}/>
-            </linearGradient>
-          </defs>
-
-          {/* Confidence Interval (Area) */}
-          {/* We hack this by stacking two areas or using a range area if recharts supported it well. 
-              Here simplified: Just a shaded area under the trend line for visual depth */}
+          {/* Main Bars */}
+          <Bar dataKey="income" fill="url(#incomeGradient)" radius={[2, 2, 0, 0]} barSize={12} name="Receita" />
+          <Bar dataKey="outcome" fill="url(#expenseGradient)" radius={[2, 2, 0, 0]} barSize={12} name="Despesa" />
           
-          <Bar dataKey="income" fill="url(#incomeGradient)" radius={[4, 4, 0, 0]} barSize={24} name="Receita" />
-          <Bar dataKey="outcome" fill="url(#expenseGradient)" radius={[4, 4, 0, 0]} barSize={24} name="Despesa" />
-          
-          {/* Forecast Line (Dotted for lighter feel) */}
+          {/* Forecast Line with Glow */}
           <Line 
             type="monotone" 
             dataKey="forecast" 
-            stroke="#8B5CF6" 
-            strokeWidth={3} 
-            strokeDasharray="1 6" 
+            stroke="#A78BFA" 
+            strokeWidth={2} 
+            strokeDasharray="4 4" 
             strokeLinecap="round"
-            dot={{ r: 4, fill: "#8B5CF6", strokeWidth: 0 }}
-            activeDot={{ r: 6, strokeWidth: 0 }}
+            dot={{ r: 3, fill: "#A78BFA", strokeWidth: 0 }}
+            activeDot={{ r: 6, stroke: "#fff", strokeWidth: 2 }}
             name="Previsão"
             connectNulls
+            filter="url(#glow)"
           />
         </ComposedChart>
       </ResponsiveContainer>

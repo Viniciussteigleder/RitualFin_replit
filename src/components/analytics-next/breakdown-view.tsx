@@ -147,51 +147,60 @@ export function BreakdownView({ data }: BreakdownViewProps) {
          </Table>
          </div>
       ) : (
-          <div className="grid gap-3">
-              {filteredAggregates.map((item) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {filteredAggregates.map((item, idx) => (
                   <div 
                     key={item.category}
                     onClick={() => handleDrill(item.category)}
-                    className="group relative flex items-center gap-4 bg-card hover:bg-secondary/50 p-4 rounded-2xl border border-border transition-all cursor-pointer hover:shadow-md hover:border-emerald-500/20 active:scale-[0.99]"
+                    className="group relative flex flex-col justify-between bg-black/20 hover:bg-white/5 p-4 rounded-xl border border-white/5 hover:border-emerald-500/30 transition-all cursor-pointer overflow-hidden backdrop-blur-md"
+                    style={{ animationDelay: `${idx * 50}ms` }}
                   >
-                        {/* Progress Bar Background */}
-                        <div 
-                            className="absolute left-0 top-0 bottom-0 bg-secondary/60 transition-all duration-500 opacity-0 group-hover:opacity-100 group-hover:bg-emerald-500/5 rounded-l-2xl"
-                            style={{ width: `${item.percentage}%` }}
-                        />
+                        {/* Background Scan Line (On Hover) */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
 
-                        {/* Visual Percentage Bar (Thin line at bottom) */}
-                        <div 
-                            className="absolute left-4 right-4 bottom-0 h-1 bg-secondary rounded-full overflow-hidden opacity-30 group-hover:opacity-100 transition-opacity"
-                        >
-                             <div className="h-full bg-emerald-500" style={{ width: `${item.percentage}%` }} />
+                        <div className="flex items-start justify-between mb-3 relative z-10">
+                             <div className="flex flex-col">
+                                <span className={cn(
+                                    "font-medium text-sm transition-colors flex items-center gap-2",
+                                    item.category === "OPEN" ? "text-orange-400" : "text-white/90 group-hover:text-emerald-300"
+                                )}>
+                                    {item.category === 'OPEN' ? 'UNCLASSIFIED' : item.category}
+                                    {item.category === 'OPEN' && <AlertCircle className="w-3 h-3 text-orange-400" />}
+                                </span>
+                                <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono mt-0.5">
+                                    {item.count} OPS
+                                </span>
+                             </div>
+                             
+                             <span className="font-mono text-lg text-white font-light tracking-tight tabular-nums group-hover:text-glow transition-all">
+                                {formatMoney(item.total)}
+                             </span>
                         </div>
 
-                        <div className="flex-1 flex flex-col z-10 gap-1 pb-2">
-                            <div className="flex items-center justify-between">
-                                <span className={cn(
-                                    "font-bold text-base transition-colors flex items-center gap-2",
-                                    item.category === "OPEN" ? "text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md text-sm" : "text-foreground group-hover:text-emerald-700"
-                                )}>
-                                    {item.category === 'OPEN' ? 'Sem Categoria' : item.category}
-                                    {item.category === 'OPEN' && <AlertCircle className="w-3 h-3" />}
-                                </span>
-                                <span className="font-black text-base tabular-nums">
-                                    {formatMoney(item.total)}
-                                </span>
-                            </div>
-                            <div className="flex items-center justify-between text-xs text-muted-foreground font-medium">
-                                <span>{item.count} transaç{item.count > 1 ? 'ões' : 'ão'}</span>
+                        {/* Tech Progress Bar */}
+                        <div className="space-y-1 relative z-10">
+                            <div className="flex justify-between text-[9px] font-mono text-muted-foreground uppercase">
+                                <span>Impact</span>
                                 <span>{item.percentage.toFixed(1)}%</span>
+                            </div>
+                            <div className="w-full bg-white/10 h-1 rounded-sm overflow-hidden">
+                                <div 
+                                    className={cn(
+                                        "h-full shadow-[0_0_8px_rgba(16,185,129,0.4)] transition-all duration-700 ease-out",
+                                        item.category === "OPEN" ? "bg-orange-500" : "bg-emerald-500"
+                                    )}
+                                    style={{ width: `${item.percentage}%` }}
+                                />
                             </div>
                         </div>
                         
-                        <ChevronRight className="w-5 h-5 text-muted-foreground/50 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
+                        <ChevronRight className="absolute right-2 bottom-2 w-3 h-3 text-white/10 group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-all" />
                   </div>
               ))}
                {filteredAggregates.length === 0 && (
-                  <div className="text-center py-12 text-muted-foreground bg-card/50 rounded-2xl border border-dashed border-border">
-                      <p>Nenhuma categoria encontrada para "{searchTerm}"</p>
+                  <div className="col-span-full text-center py-20 text-muted-foreground bg-white/5 rounded-2xl border border-dashed border-white/10 flex flex-col items-center justify-center">
+                      <Search className="w-8 h-8 opacity-20 mb-2" />
+                      <p className="text-sm font-mono uppercase tracking-widest">No signals found for "{searchTerm}"</p>
                   </div>
               )}
           </div>
