@@ -18,6 +18,7 @@ import {
   RefreshCw,
   Bot,
   BarChart3,
+  LineChart,
   ChevronDown,
   ChevronRight,
   Activity,
@@ -63,6 +64,7 @@ export function Sidebar() {
     "transactions": "#6366F1", // Indigo
     "goals": "#10B981", // Emerald
     "analytics": "#8B5CF6", // Violet
+    "analytics-next": "#8B5CF6", // Violet (Reuse for brand consistency)
     "agenda": "#F59E0B", // Amber
     "rituals": "#EC4899", // Pink
     "budgets": "#3B82F6", // Blue
@@ -188,6 +190,7 @@ export function Sidebar() {
                       {[
                           { id: "dashboard", icon: LayoutDashboard, href: "/", label: "Dashboard" },
                           { id: "analytics", icon: BarChart3, href: "/analytics", label: "Análise Total" },
+                          { id: "analytics-next", icon: LineChart, href: "/analyticsnextlevel", label: "Analytics Next", badge: "BETA" },
                           { id: "transactions", icon: Receipt, href: "/transactions", label: "Extrato" },
                           { id: "confirm", icon: Sparkles, href: "/confirm", label: "Sugestões IA", badge: "Ação" },
                       ].map(item => renderNavItem(item, false))}
