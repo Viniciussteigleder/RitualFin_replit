@@ -1,4 +1,4 @@
-import { startOfMonth, endOfMonth, parseISO } from "date-fns";
+import { startOfMonth, endOfMonth, parseISO, subMonths, differenceInDays, subDays } from "date-fns";
 import { auth } from "@/auth";
 import { getAccounts, getAnalyticsData, getAnalyticsMonthByMonth, getAnalyticsTopMerchants, getAnalyticsRecurringSummary } from "@/lib/actions/analytics";
 import { AnalyticsShell } from "@/components/analytics-next/analytics-shell";
@@ -61,6 +61,18 @@ export default async function AnalyticsNextPage(props: PageProps) {
     getAnalyticsRecurringSummary(filters, 20) 
   ]);
 
+  // Calculate Previous Period for comparisons
+  const durationInDays = differenceInDays(endDate, startDate) + 1;
+  const isOneMonth = durationInDays >= 28 && durationInDays <= 31 && startDate.getDate() === 1;
+  
+  const prevStartDate = isOneMonth ? subMonths(startDate, 1) : subDays(startDate, durationInDays);
+  const prevEndDate = isOneMonth ? subMonths(endDate, 1) : subDays(endDate, durationInDays);
+
+  const prevFilters = { ...filters, startDate: prevStartDate, endDate: prevEndDate };
+  
+  // Fetch previous period data (fail-safe)
+  const previousPeriodData = await getAnalyticsData(prevFilters).catch(() => null);
+
   // Derived Health Score (using improved monthly data)
   const healthScore = calculateHealthScore(monthlyData);
 
@@ -70,7 +82,7 @@ export default async function AnalyticsNextPage(props: PageProps) {
         header={
           <FilterBar accounts={accounts} />
         }
-        kpiGrid={<KpiGrid data={kpis} />}
+        kpiGrid={<KpiGrid data={kpis} previousData={previousPeriodData} />}
         trendChart={<PredictiveTrendChart data={monthlyData} />}
         healthScore={<FinancialHealthGauge score={healthScore} />}
         breakdown={<BreakdownView data={kpis} />}
