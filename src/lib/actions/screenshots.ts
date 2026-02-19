@@ -1,3 +1,4 @@
+"use server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { ingestionBatches, ingestionItems, attachments, ocrExtractions, transactions, transactionEvidenceLink } from "@/lib/db/schema";
