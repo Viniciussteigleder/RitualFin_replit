@@ -2,14 +2,24 @@ import { ParseResult } from "./types";
 import { parseSparkasseCSV } from "./parsers/sparkasse";
 import { parseMilesMoreCSV } from "./parsers/miles-more";
 import { parseAmexActivityCSV } from "./parsers/amex";
+import { parseDkbMmCSV, DKB_MM_FORMAT } from "./parsers/dkb-mm";
 
 export async function parseIngestionFile(buffer: Buffer | string, filename?: string, userId?: string): Promise<ParseResult> {
     const decoded = typeof buffer === "string" ? { content: stripBom(buffer), encoding: undefined as string | undefined } : decodeBuffer(buffer);
     const fileContent = decoded.content;
     const headerLine = findHeaderLine(fileContent);
     const normalized = normalizeForDetect(headerLine ?? fileContent);
-    
-    // Simple heuristic detection
+
+    // --- DKB M&M (new format: CreditCardTransactions_*.csv) ---
+    // Detected first: filename is unambiguous; content scan as fallback.
+    const isDkbMmFilename = /^CreditCardTransactions_/i.test(filename ?? "");
+    const isDkbMmContent = normalized.includes("voucher date") && normalized.includes("date of receipt") && normalized.includes("reason for payment");
+    if (isDkbMmFilename || isDkbMmContent) {
+        const result = parseDkbMmCSV(fileContent, filename);
+        return attachEncoding(result, decoded.encoding);
+    }
+
+    // Simple heuristic detection (legacy formats)
     if (normalized.includes("miles & more gold credit card") || normalized.includes("authorised on") || normalized.includes("processed on") || filename?.toLowerCase().includes("miles")) {
         const result = await parseMilesMoreCSV(fileContent);
         return attachEncoding(result, decoded.encoding);
@@ -36,7 +46,7 @@ export async function parseIngestionFile(buffer: Buffer | string, filename?: str
     
     return attachEncoding({
         success: false,
-        errors: ["Unknown CSV format. Could not detect Sparkasse, M&M, or Amex headers."],
+        errors: ["Unknown CSV format. Could not detect Sparkasse, Amex, M&M, or DKB M&M headers."],
         transactions: [],
         rowsTotal: 0,
         rowsImported: 0,
@@ -98,7 +108,13 @@ function findHeaderLine(content: string): string | null {
     for (let i = 0; i < Math.min(lines.length, 50); i++) {
         const line = lines[i]?.trim();
         if (!line) continue;
-        if (line.includes("Auftragskonto") || line.includes("Authorised on") || line.includes("Datum")) return line;
+        if (
+            line.includes("Auftragskonto") ||
+            line.includes("Authorised on") ||
+            line.includes("Datum") ||
+            line.includes("Voucher date") ||
+            line.includes("Date of receipt")
+        ) return line;
     }
     return null;
 }

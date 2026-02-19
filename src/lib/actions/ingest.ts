@@ -1,7 +1,7 @@
 "use server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { ingestionBatches, ingestionItems, transactions, rules, aliasAssets, sourceCsvSparkasse, sourceCsvMm, sourceCsvAmex, transactionEvidenceLink } from "@/lib/db/schema";
+import { ingestionBatches, ingestionItems, transactions, rules, aliasAssets, sourceCsvSparkasse, sourceCsvMm, sourceCsvAmex, sourceCsvDkbMm, transactionEvidenceLink } from "@/lib/db/schema";
 import { parseIngestionFile } from "@/lib/ingest";
 import { generateFingerprint } from "@/lib/ingest/fingerprint";
 import { and, eq, inArray, sql } from "drizzle-orm";
@@ -214,6 +214,20 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
         columns: { rowFingerprint: true },
       });
       existingUniqueFingerprints = new Set(existing.map((row) => row.rowFingerprint));
+    } else if (result.format === "dkb_mm") {
+      const existing = await db.query.sourceCsvDkbMm.findMany({
+        where: (t, { and, eq }) => and(
+          eq(t.userId, userId),
+          // Use import_fingerprint for DKB-MM (the spec A9 SHA-256 key)
+          inArray(t.importFingerprint, fingerprints),
+          eq(t.uniqueRow, true)
+        ),
+        columns: { importFingerprint: true, rowFingerprint: true },
+      });
+      existingUniqueFingerprints = new Set([
+        ...existing.map((row) => row.importFingerprint),
+        ...existing.map((row) => row.rowFingerprint),
+      ]);
     } else if (result.format === "miles_and_more") {
       const existing = await db.query.sourceCsvMm.findMany({
         where: (t, { and, eq }) => and(eq(t.userId, userId), inArray(t.rowFingerprint, fingerprints), eq(t.uniqueRow, true)),
@@ -313,6 +327,59 @@ export async function uploadIngestionFileCore(userId: string, buffer: Buffer, fi
 
         for (const part of chunk(rows, 400)) {
           await txDb.insert(sourceCsvSparkasse).values(part).onConflictDoNothing();
+        }
+      } else if (result.format === "dkb_mm") {
+        const rows = commonFieldsByIdx.map(({ tx, base }) => {
+          // Extract the rich DKB-MM typed row stored in metadata.dkbMm by the parser
+          const dkbMm = (tx as any).metadata?.dkbMm as {
+            transaction_date: string;
+            posting_date: string;
+            description_raw: string;
+            original_currency: string | null;
+            original_amount: number | null;
+            fx_rate: number | null;
+            billing_amount: number;
+            billing_currency: string;
+            statement_billing_date: string | null;
+            source_row_number: number;
+            import_fingerprint: string;
+            metadata: { card_holder?: string; masked_card_number?: string; customer_number?: string; card_product?: string };
+          } | undefined;
+
+          const txDate = dkbMm?.transaction_date
+            ? new Date(dkbMm.transaction_date + "T00:00:00Z")
+            : (tx.date instanceof Date ? tx.date : null);
+          const postDate = dkbMm?.posting_date
+            ? new Date(dkbMm.posting_date + "T00:00:00Z")
+            : null;
+          const stmtDate = dkbMm?.statement_billing_date
+            ? new Date(dkbMm.statement_billing_date + "T00:00:00Z")
+            : null;
+
+          return {
+            ...base,
+            transactionDate: txDate as any,
+            postingDate: postDate as any,
+            descriptionRaw: dkbMm?.description_raw ?? tx.description,
+            originalCurrency: dkbMm?.original_currency ?? null,
+            originalAmount: dkbMm?.original_amount ?? null,
+            fxRate: dkbMm?.fx_rate ?? null,
+            billingAmount: dkbMm?.billing_amount ?? tx.amount,
+            billingCurrency: dkbMm?.billing_currency ?? tx.currency,
+            statementBillingDate: stmtDate as any,
+            sourceRowNumber: dkbMm?.source_row_number ?? null,
+            cardHolder: dkbMm?.metadata.card_holder ?? null,
+            maskedCardNumber: dkbMm?.metadata.masked_card_number ?? null,
+            customerNumber: dkbMm?.metadata.customer_number ?? null,
+            cardProduct: dkbMm?.metadata.card_product ?? null,
+            // Dedup keys
+            importFingerprint: dkbMm?.import_fingerprint ?? base.rowFingerprint,
+            rowFingerprint: base.rowFingerprint,
+          };
+        });
+
+        for (const part of chunk(rows, 400)) {
+          await txDb.insert(sourceCsvDkbMm).values(part).onConflictDoNothing();
         }
       } else if (result.format === "miles_and_more") {
         const rows = commonFieldsByIdx.map(({ tx, base }) => ({
@@ -617,7 +684,7 @@ export async function commitBatchCore(userId: string, batchId: string) {
             normalizationVersion: batch.normalizationVersion ?? null,
             rulesVersion,
             taxonomyVersion,
-            source: (["Sparkasse", "Amex", "M&M"].includes(data.source) ? data.source : null) as any,
+            source: (["Sparkasse", "Amex", "M&M", "DKB-MM"].includes(data.source) ? data.source : null) as any,
             key: data.key || item.itemFingerprint, 
             leafId: resolution.leafId,
             confidence: resolution.confidence,

@@ -360,3 +360,48 @@ Test files: `tests/e2e/csv-import.spec.ts`
 
 **Last Updated**: 2026-01-02
 **Maintained by**: RitualFin Development Team
+
+---
+
+## 4. DKB / Miles & More (New Format)
+
+**Added**: 2026-02-19
+
+### File Characteristics
+
+- **Delimiter**: Semicolon (`;`)
+- **Encoding**: UTF-8
+- **Date Format**: `M/D/YYYY` (e.g., `2/17/2026`)
+- **Number Format**: English (`.` decimal, `,` thousands)
+- **Preamble**: Variable number of metadata lines before the header row.
+- **Filename**: Starts with `CreditCardTransactions_`
+
+### Required Columns
+
+Header tokens detected (case-insensitive): `Voucher date`, `Date of receipt`, `Reason for payment`.
+
+| Position | Column Name | Type | Description | Example |
+|---|---|---|---|---|
+| 0 | `Voucher date` | Date | Transaction date | `2/17/2026` |
+| 1 | `Date of receipt` | Date | Posting date | `2/18/2026` |
+| 2 | `Reason for payment` | String | Description | `REWE MARKT...` |
+| 6 | `Amount` | Decimal | Billing amount | `-83.92` |
+| 7 | `Currency` | String | Billing currency | `EUR` |
+
+### Parsing Rules
+
+1. **Header Detection**: Scans for line with ≥6 columns containing required tokens.
+2. **Metadata**: Extracts `Billing date`, `Card holder`, `Card number` from preamble.
+3. **Amounts**: Normalizes English format (`-1,850.00` → `-1850.00`).
+4. **Idempotency**: Uses SHA-256 fingerprint of `(billing_date, tx_date, post_date, amount, currency, description)`.
+5. **Double Amount Columns**: Correctly maps the **second** Amount column (index 6) as the billing amount.
+
+### Example CSV
+
+```csv
+Credit card transactions
+...
+Billing date: 3/3/2026
+Voucher date;Date of receipt;Reason for payment;Foreign currency;Amount;Exchange rate;Amount;Currency
+2/17/2026;2/18/2026;REWE Markt;-;-;-;-83.92;EUR
+```

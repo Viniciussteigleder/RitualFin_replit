@@ -40,6 +40,12 @@ function generateTransactionKey(tx: any, accountName: string): string {
 }
 
 export async function importCSVData() {
+  // DISABLE IN PRODUCTION/WEB - Security Flag
+  console.error("❌ importCSVData is a dev-only script and has been disabled for security reasons.");
+  return { success: false, error: "Dev-only script disabled" };
+
+  /* 
+  // ORIGINAL CODE COMMENTED OUT FOR SECURITY
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, error: 'Not authenticated' };
@@ -195,4 +201,5 @@ export async function importCSVData() {
     success: totalStats.errors.length === 0,
     ...totalStats,
   };
+  */
 }

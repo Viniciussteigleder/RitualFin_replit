@@ -1,12 +1,13 @@
-"use server";
-
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { ingestionBatches, ingestionItems, attachments, ocrExtractions, transactions, transactionEvidenceLink } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { parseOCRText } from "@/lib/ingest/ocr-parser";
-import { generateFingerprint } from "@/lib/ingest/fingerprint"; // We might need a different fingerprint for images
+import { generateFingerprint } from "@/lib/ingest/fingerprint";
+// import { writeFile, mkdir } from "fs/promises"; // REMOVED: Vercel does not support persistent local files
+// import { join } from "path";
+// import { logger } from "@/lib/ingest/logger";
 
 export async function uploadScreenshot(formData: FormData) {
   const session = await auth();
@@ -21,7 +22,10 @@ export async function uploadScreenshot(formData: FormData) {
   const filename = file.name;
 
   try {
-    // 1. Create Ingestion Batch for this screenshot
+    // 0. Ensure upload directory exists (Local Storage Simulation)
+    // REMOVED: We are now storing in DB 'fileContent' column for Vercel compatibility without S3.
+    
+    // 1. Create Ingestion Batch
     const [batch] = await db.insert(ingestionBatches).values({
       userId: session.user.id,
       filename,
@@ -32,8 +36,7 @@ export async function uploadScreenshot(formData: FormData) {
     // 2. Parse OCR Text
     const ocrResult = parseOCRText(ocrText);
     
-    // 3. Create Ingestion Item
-    // We construct a pseudo-transaction from the OCR result
+    // 3. Create Ingestion Item -> Transaction -> Evidence
     const now = new Date();
     const txDate = ocrResult.date ?? now;
     const merchant = ocrResult.merchant || "Unknown Merchant";
@@ -62,7 +65,6 @@ export async function uploadScreenshot(formData: FormData) {
       simpleDesc: merchant,
     };
 
-    // Fingerprint (Weak for OCR, but useful)
     const fingerprint = generateFingerprint(fingerprintTx as any); 
 
     const [item] = await db.insert(ingestionItems).values({
@@ -74,14 +76,22 @@ export async function uploadScreenshot(formData: FormData) {
         source: "screenshot"
     }).returning();
 
-    // 4. Save Attachment (Image) - In real app, upload to S3/Blob
+    // 4. Save Attachment (DB Storage)
+    // We insert first to get the ID, then we update the storageKey with the route URL.
     const [attachment] = await db.insert(attachments).values({
         userId: session.user.id,
         batchId: batch.id,
-        storageKey: `screenshots/${batch.id}/${filename}`,
+        storageKey: "pending", // Will update below
         mimeType: file.type,
         sizeBytes: file.size,
+        fileContent: buffer, // Store binary data in DB
     }).returning();
+
+    // Update storageKey to point to our secure API route
+    const publicUrl = `/api/attachments/${attachment.id}`;
+    await db.update(attachments)
+      .set({ storageKey: publicUrl })
+      .where(eq(attachments.id, attachment.id));
 
     // 5. Save OCR Extraction
     await db.insert(ocrExtractions).values({
@@ -90,7 +100,7 @@ export async function uploadScreenshot(formData: FormData) {
         blocksJson: ocrResult as any,
     });
 
-    // 6. Create transaction immediately (screenshot flow does not have a preview screen yet)
+    // 6. Create transaction
     const [createdTx] = await db
       .insert(transactions)
       .values({

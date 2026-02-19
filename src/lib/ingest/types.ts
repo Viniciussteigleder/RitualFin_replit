@@ -1,4 +1,4 @@
-export type TransactionSource = "Sparkasse" | "Amex" | "M&M";
+export type TransactionSource = "Sparkasse" | "Amex" | "M&M" | "DKB-MM";
 
 export interface ParsedTransaction {
   source: TransactionSource;
@@ -39,13 +39,27 @@ export interface ParsedTransaction {
   waehrung?: string;
   info?: string;
   
-  // Miles & More
+  // Common FX / dual-amount fields (M&M, DKB-MM)
+  foreignAmount?: number;
+  foreignCurrency?: string;
+  exchangeRate?: number;
+
+  // Miles & More (old format)
   authorisedOn?: string;
   processedOn?: string;
   paymentType?: string;
   status?: string;
   // amount, currency, description exist in base
-  
+
+  // DKB M&M (new format – CreditCardTransactions_*.csv)
+  dkbMmStatementBillingDate?: string | null;
+  dkbMmPostingDate?: string | null;        // posting_date ISO
+  dkbMmOriginalAmount?: number | null;     // foreign amount
+  dkbMmOriginalCurrency?: string | null;   // foreign currency
+  dkbMmFxRate?: number | null;             // exchange rate
+  dkbMmImportFingerprint?: string;         // SHA-256 dedup key
+  dkbMmSourceRowNumber?: number;           // 1-based file row
+
   // Amex
   datum?: string;
   beschreibung?: string;
@@ -90,7 +104,7 @@ export interface ParseResult {
   rowsTotal: number;
   rowsImported: number;
   monthAffected: string;
-  format?: "miles_and_more" | "amex" | "sparkasse" | "unknown";
+  format?: "miles_and_more" | "amex" | "sparkasse" | "dkb_mm" | "unknown";
   diagnostics?: ParseDiagnostics;
   meta?: ParseMeta;
   sparkasseDiagnostics?: any;

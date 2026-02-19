@@ -1,8 +1,14 @@
 
 import { sql, relations } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, real, timestamp, pgEnum, date, jsonb, uniqueIndex, index } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, real, timestamp, pgEnum, date, jsonb, uniqueIndex, index, customType } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType() {
+    return "bytea";
+  },
+});
 
 // Enums
 export const transactionTypeEnum = pgEnum("transaction_type", ["Despesa", "Receita"]);
@@ -36,7 +42,7 @@ export const category1Enum = pgEnum("category_1", [
 ]);
 export const uploadStatusEnum = pgEnum("upload_status", ["processing", "ready", "duplicate", "error"]);
 export const accountTypeEnum = pgEnum("account_type", ["credit_card", "debit_card", "bank_account", "cash"]);
-export const transactionSourceEnum = pgEnum("transaction_source", ["Sparkasse", "Amex", "M&M"]);
+export const transactionSourceEnum = pgEnum("transaction_source", ["Sparkasse", "Amex", "M&M", "DKB-MM"]);
 export const transactionStatusEnum = pgEnum("transaction_status", ["FINAL", "OPEN"]);
 export const transactionClassifiedByEnum = pgEnum("transaction_classified_by", ["AUTO_KEYWORDS", "MANUAL", "AI_SUGGESTION"]);
 export const ingestionSourceTypeEnum = pgEnum("ingestion_source_type", ["csv", "screenshot"]);
@@ -245,6 +251,7 @@ export const attachments = pgTable("attachments", {
   storageKey: text("storage_key").notNull(), 
   mimeType: text("mime_type").notNull(),
   sizeBytes: integer("size_bytes").notNull(),
+  fileContent: bytea("file_content"), // Store file content in DB as fallback
   ocrStatus: text("ocr_status").default("pending"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -570,6 +577,51 @@ export const sourceCsvAmex = pgTable("source_csv_amex", {
   accDatumIdx: index("amex_acc_datum_idx").on(table.accountId, table.datum),
   accAmtIdx: index("amex_acc_amt_idx").on(table.accountId, table.betrag),
   uniqueKey: uniqueIndex("amex_user_key_idx").on(table.userId, table.key),
+}));
+
+// DKB / Miles & More (new format: CreditCardTransactions_*.csv)
+export const sourceCsvDkbMm = pgTable("source_csv_dkb_mm", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  accountId: varchar("account_id").references(() => accounts.id),
+  batchId: varchar("batch_id").references(() => ingestionBatches.id, { onDelete: "cascade" }),
+  ingestionItemId: varchar("ingestion_item_id").references(() => ingestionItems.id, { onDelete: "cascade" }),
+  // DKB-MM positional columns
+  transactionDate: date("transaction_date", { mode: "date" }),   // col 0 – Voucher date
+  postingDate: date("posting_date", { mode: "date" }),           // col 1 – Date of receipt
+  descriptionRaw: text("description_raw"),                       // col 2 – Reason for payment
+  originalCurrency: text("original_currency"),                   // col 3 – Foreign currency
+  originalAmount: real("original_amount"),                       // col 4 – Amount (foreign)
+  fxRate: real("fx_rate"),                                       // col 5 – Exchange rate
+  billingAmount: real("billing_amount"),                         // col 6 – Amount (billing)
+  billingCurrency: text("billing_currency"),                     // col 7 – Currency
+  // Statement-level metadata
+  statementBillingDate: date("statement_billing_date", { mode: "date" }),
+  sourceRowNumber: integer("source_row_number"),                  // 1-based file line number
+  cardHolder: text("card_holder"),
+  maskedCardNumber: text("masked_card_number"),
+  customerNumber: text("customer_number"),
+  cardProduct: text("card_product"),
+  // Dedup / provenance
+  importFingerprint: text("import_fingerprint").notNull(),       // SHA-256
+  rowFingerprint: text("row_fingerprint").notNull(),             // legacy compat
+  key: text("key"),
+  keyDesc: text("key_desc"),
+  uniqueRow: boolean("unique_row").default(false),
+  importedAt: timestamp("imported_at").notNull().defaultNow(),
+}, (table) => ({
+  accTxDateIdx: index("dkb_mm_acc_tx_date_idx").on(table.accountId, table.transactionDate),
+  accAmtIdx: index("dkb_mm_acc_amt_idx").on(table.accountId, table.billingAmount),
+  // Idempotency constraint: (source, import_fingerprint) scoped to user for multi-tenancy
+  uniqueFingerprint: uniqueIndex("dkb_mm_user_fingerprint_idx").on(table.userId, table.importFingerprint),
+  uniqueKey: uniqueIndex("dkb_mm_user_key_idx").on(table.userId, table.key),
+}));
+
+export const sourceCsvDkbMmRelations = relations(sourceCsvDkbMm, ({ one }) => ({
+  user: one(users, { fields: [sourceCsvDkbMm.userId], references: [users.id] }),
+  batch: one(ingestionBatches, { fields: [sourceCsvDkbMm.batchId], references: [ingestionBatches.id] }),
+  ingestionItem: one(ingestionItems, { fields: [sourceCsvDkbMm.ingestionItemId], references: [ingestionItems.id] }),
+  account: one(accounts, { fields: [sourceCsvDkbMm.accountId], references: [accounts.id] }),
 }));
 
 // Reconciliation Logging Tables
