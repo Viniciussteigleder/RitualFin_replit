@@ -565,10 +565,7 @@ export async function getHistoricalComparison(currentMonth: string): Promise<Mon
     .sort((a, b) => b.currentMonth - a.currentMonth);
 }
 
-/**
- * Apply budget proposals - creates budgets from the proposed values
- */
-export async function applyBudgetProposals(month: string, proposals: { category1: string; amount: number }[]) {
+export async function applyBudgetProposals(month: string, proposals: { category1: string; category2?: string | null; category3?: string | null; amount: number }[]) {
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, error: "Não autenticado" };
@@ -587,6 +584,8 @@ export async function applyBudgetProposals(month: string, proposals: { category1
           userId,
           month,
           category1: p.category1 as any,
+          category2: p.category2 || null,
+          category3: p.category3 || null,
           amount: p.amount,
         }))
       );
@@ -599,6 +598,7 @@ export async function applyBudgetProposals(month: string, proposals: { category1
     return { success: false, error: "Erro ao aplicar orçamentos" };
   }
 }
+
 
 /**
  * Get breakdown for a specific category1 into level 2 and 3
@@ -670,4 +670,57 @@ export async function getCategoryBreakdown(category1: string, months: number = 3
     avgMonthly,
     level2
   };
+}
+
+import { getAIBudgetRecommendations, type AIBudgetRecommendationResult } from "../ai/openai";
+
+export async function getAIBudgetRecommendationsAction(): Promise<{ success: boolean; data?: AIBudgetRecommendationResult | null; error?: string }> {
+  const session = await auth();
+  if (!session?.user?.id) return { success: false, error: "Não autenticado" };
+
+  try {
+    const now = new Date();
+    const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+    
+    const recentTransactions = await db.select({
+      category1: transactions.category1,
+      category2: transactions.category2,
+      category3: transactions.category3,
+      amount: transactions.amount,
+      month: sql<string>`to_char(${transactions.paymentDate}, 'YYYY-MM')`,
+    })
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.userId, session.user.id),
+        ne(transactions.display, "no"),
+        gte(transactions.paymentDate, threeMonthsAgo),
+        lte(transactions.paymentDate, now)
+      )
+    );
+
+    const reducedData: Record<string, Record<string, number>> = {};
+    
+    recentTransactions.forEach(t => {
+      const keyParts: string[] = [];
+      if (t.category1) keyParts.push(t.category1);
+      if (t.category2) keyParts.push(t.category2);
+      if (t.category3) keyParts.push(t.category3);
+      if (keyParts.length === 0) return;
+      const catKey = keyParts.join(" > ");
+      
+      if (!t.month) return;
+      if (!reducedData[t.month]) reducedData[t.month] = {};
+      
+      // expenses are usually positive in this app or negative. math.abs covers it
+      reducedData[t.month][catKey] = (reducedData[t.month][catKey] || 0) + Math.abs(t.amount); 
+    });
+
+    const aiResult = await getAIBudgetRecommendations(reducedData);
+    
+    return { success: true, data: aiResult };
+  } catch (error: any) {
+    console.error("Error generating AI recommendations:", error);
+    return { success: false, error: error?.message || "Erro desconhecido ao gerar orçamentos." };
+  }
 }

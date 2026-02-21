@@ -4,7 +4,6 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { format, addMonths, subMonths, parse } from "date-fns";
 import { pt } from "date-fns/locale";
-import { ReRunRulesButton } from "@/components/transactions/re-run-rules-button";
 
 export function DashboardHeader() {
   const router = useRouter();
@@ -26,11 +25,10 @@ export function DashboardHeader() {
     <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 px-1 animate-fade-in-up">
         <div className="flex flex-col gap-2">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight font-display">Dashboard</h2>
-          <p className="text-muted-foreground font-medium">Controle total do seu fluxo financeiro em tempo real.</p>
+          <p className="text-muted-foreground font-medium">Olá! Aqui está um resumo do seu mês.</p>
         </div>
 
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full xl:w-auto">
-          <ReRunRulesButton />
 
 	          <div className="flex items-center bg-card rounded-2xl shadow-sm p-1.5 border border-border w-full sm:w-auto justify-between sm:justify-start transition-[box-shadow,border-color,background-color,color,opacity] duration-150 hover:shadow-md">
 	            <button

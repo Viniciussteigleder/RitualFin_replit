@@ -3,7 +3,6 @@ import { auth } from "@/auth";
 import { AnalyticsContent } from "./analytics-content";
 import type { Metadata } from "next";
 import { BarChart3 } from "lucide-react";
-import { ReRunRulesButton } from "@/components/transactions/re-run-rules-button";
 
 export const metadata: Metadata = {
   title: "Análise Financeira | RitualFin",
@@ -31,18 +30,14 @@ export default async function AnalyticsPage() {
                 <BarChart3 className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
               </div>
               <h1 className="text-4xl font-bold text-foreground tracking-tight font-display">
-                Análise Total
+                Análise de Gastos
               </h1>
             </div>
             <p className="text-muted-foreground font-medium max-w-xl leading-relaxed">
-              Explore seus gastos com drill-down interativo e filtros avançados.
+              Entenda onde vai o seu dinheiro, por categoria e por período.
             </p>
           </div>
 
-          {/* Stats Preview - Premium badges */}
-          <div className="flex items-center gap-3">
-            <ReRunRulesButton />
-          </div>
         </div>
 
         {/* Content */}

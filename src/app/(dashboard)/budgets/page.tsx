@@ -29,11 +29,11 @@ export default async function BudgetsPage() {
               <Target className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
             </div>
             <h1 className="text-4xl font-bold text-foreground tracking-tight font-display">
-              Planejamento Orçamentário
+              Orçamentos
             </h1>
           </div>
           <p className="text-muted-foreground font-medium max-w-xl leading-relaxed">
-            Defina limites para cada categoria. O segredo da liberdade financeira é a intencionalidade.
+            Defina um limite de gastos para cada categoria e saiba quando está exagerando.
           </p>
         </div>
       </div>

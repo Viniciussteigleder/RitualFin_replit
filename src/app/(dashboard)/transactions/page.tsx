@@ -3,7 +3,6 @@ import { getTransactionsForList, getAliasesForTransactions, getFilterOptions } f
 import { getTaxonomyOptions } from "@/lib/actions/discovery";
 import { TransactionList } from "./transaction-list";
 import { AIAnalystChat } from "@/components/transactions/AIAnalystChat";
-import { ReRunRulesButton } from "@/components/transactions/re-run-rules-button";
 import { Wallet } from "lucide-react";
 import { PageHeader, PageContainer } from "@/components/ui/page-header";
 import { FlickerInstrumentation } from "@/components/perf/flicker-instrumentation";
@@ -55,7 +54,6 @@ export default async function TransactionsPage({
             subtitle="Explore, filtre e gerencie seu histórico financeiro com precisão."
             actions={
               <div className="flex items-center gap-3">
-                <ReRunRulesButton />
                 <AIAnalystChat />
               </div>
             }

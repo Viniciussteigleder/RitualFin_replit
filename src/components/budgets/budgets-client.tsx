@@ -40,10 +40,12 @@ import {
   getHistoricalComparison,
   applyBudgetProposals,
   getCategoryBreakdown,
+  getAIBudgetRecommendationsAction,
   type BudgetProposal,
   type MonthlyComparison,
   type CategoryBreakdown,
 } from "@/lib/actions/budgets";
+import type { AIBudgetRecommendationResult } from "@/lib/ai/openai";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -65,8 +67,10 @@ export function BudgetsClient({ budgets, currentMonth }: BudgetsClientProps) {
   const [isPending, startTransition] = useTransition();
   const [activeTab, setActiveTab] = useState<"budgets" | "proposals" | "comparison">("budgets");
   const [proposals, setProposals] = useState<BudgetProposal | null>(null);
+  const [aiProposals, setAiProposals] = useState<AIBudgetRecommendationResult | null>(null);
   const [comparison, setComparison] = useState<MonthlyComparison[]>([]);
   const [loadingProposals, setLoadingProposals] = useState(false);
+  const [loadingAiProposals, setLoadingAiProposals] = useState(false);
   const [loadingComparison, setLoadingComparison] = useState(false);
   const [applyingProposals, setApplyingProposals] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
@@ -131,18 +135,43 @@ export function BudgetsClient({ budgets, currentMonth }: BudgetsClientProps) {
     }
   }, [activeTab, selectedMonth]);
 
+  const handleGenerateAI = async () => {
+    setLoadingAiProposals(true);
+    try {
+      const result = await getAIBudgetRecommendationsAction();
+      if (result) {
+        setAiProposals(result);
+        toast.success("Sugestões IA geradas com sucesso!");
+      } else {
+        toast.error("Não foi possível gerar sugestões com IA.");
+      }
+    } catch (error) {
+      toast.error("Erro ao gerar sugestões.");
+    } finally {
+      setLoadingAiProposals(false);
+    }
+  };
+
   const handleApplyProposals = async () => {
-    if (!proposals) return;
+    const activeProposals = aiProposals
+      ? aiProposals.recommendations.map((r) => ({
+          category1: r.category1,
+          category2: r.category2,
+          category3: r.category3,
+          amount: r.proposedAmount,
+        }))
+      : proposals
+        ? proposals.categories.map((c) => ({
+            category1: c.category1,
+            amount: c.proposedBudget,
+          }))
+        : null;
+
+    if (!activeProposals) return;
 
     setApplyingProposals(true);
     try {
-      const result = await applyBudgetProposals(
-        selectedMonth,
-        proposals.categories.map((c) => ({
-          category1: c.category1,
-          amount: c.proposedBudget,
-        }))
-      );
+      const result = await applyBudgetProposals(selectedMonth, activeProposals);
       if (result.success) {
         toast.success("Orçamentos aplicados com sucesso!");
         router.refresh();
@@ -446,8 +475,47 @@ export function BudgetsClient({ budgets, currentMonth }: BudgetsClientProps) {
               </div>
             ) : proposals && proposals.categories.length > 0 ? (
               <div className="space-y-6">
+                {/* AI Recommendations */}
+                <div className="flex flex-col gap-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-bold text-foreground">Geração por IA Avançada</h4>
+                    <Button 
+                      onClick={handleGenerateAI}
+                      disabled={loadingAiProposals}
+                      className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl gap-2 font-bold transition-all shadow-md"
+                    >
+                      {loadingAiProposals ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Analisando...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-4 w-4" />
+                          Gerar Orçamentos detalhados (Cat 1 a 3)
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  {aiProposals && (
+                    <Card className="p-6 rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50/50 border-indigo-200/50">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center shrink-0">
+                          <Zap className="h-5 w-5 text-indigo-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-foreground mb-2">Visão Geral da IA</h4>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            {aiProposals.overallAdvice}
+                          </p>
+                        </div>
+                      </div>
+                    </Card>
+                  )}
+                </div>
+
                 {/* Recommendations */}
-                {proposals.recommendations.length > 0 && (
+                {!aiProposals && proposals.recommendations.length > 0 && (
                   <Card className="p-6 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50/50 border-amber-200/50">
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center shrink-0">
@@ -493,18 +561,43 @@ export function BudgetsClient({ budgets, currentMonth }: BudgetsClientProps) {
                         <Info className="h-4 w-4 text-muted-foreground" />
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
-                        <p>Baseado na média dos últimos 3 meses + 10% de margem de segurança</p>
+                        <p>{aiProposals ? "Baseado na análise da IA do seu histórico de gastos" : "Baseado na média dos últimos 3 meses + 10% de margem de segurança"}</p>
                       </TooltipContent>
                     </Tooltip>
                   </div>
 
-                  {proposals.categories.map((cat) => (
+                  {aiProposals ? aiProposals.recommendations.map((cat, idx) => (
                     <div
-	                      key={cat.category1}
-	                      className={cn(
-	                        "bg-card border border-border rounded-xl p-5 hover:shadow-md transition-[box-shadow,border-color,background-color,color,opacity] duration-150 cursor-pointer",
-	                        expandedCategory === cat.category1 && "border-primary/30 ring-1 ring-primary/10"
-	                      )}
+                      key={idx}
+                      className="bg-card border border-border rounded-xl p-5 hover:shadow-md transition-all duration-150"
+                    >
+                      <div className="flex flex-col gap-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-secondary rounded-xl flex items-center justify-center">
+                              <Target className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                            <div>
+                              <h5 className="font-bold text-foreground">
+                                {cat.category1} {cat.category2 ? `> ${cat.category2}` : ""} {cat.category3 ? `> ${cat.category3}` : ""}
+                              </h5>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-primary">{formatCurrency(cat.proposedAmount)}</p>
+                            <Badge variant="secondary" className="bg-amber-100 text-amber-700 text-[9px] px-1.5 py-0.5">IA</Badge>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{cat.rationale}</p>
+                      </div>
+                    </div>
+                  )) : proposals.categories.map((cat) => (
+                    <div
+                      key={cat.category1}
+                      className={cn(
+                        "bg-card border border-border rounded-xl p-5 hover:shadow-md transition-[box-shadow,border-color,background-color,color,opacity] duration-150 cursor-pointer",
+                        expandedCategory === cat.category1 && "border-primary/30 ring-1 ring-primary/10"
+                      )}
                       onClick={() => handleToggleBreakdown(cat.category1)}
                     >
                       <div className="flex items-center justify-between">

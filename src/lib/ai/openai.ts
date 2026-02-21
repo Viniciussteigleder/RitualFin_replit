@@ -184,3 +184,59 @@ Strictly follow the output schema.`,
     return null;
   }
 }
+
+export const AIBudgetRecommendationSchema = z.object({
+  recommendations: z.array(
+    z.object({
+      category1: z.string(),
+      category2: z.string().nullable(),
+      category3: z.string().nullable(),
+      proposedAmount: z.number().describe("The suggested monthly budget limit for this category level"),
+      rationale: z.string().describe("A brief, encouraging explanation of why this amount is recommended based on past spending and financial best practices.")
+    })
+  ),
+  overallAdvice: z.string().describe("General financial advice based on the user's spending habits.")
+});
+
+export type AIBudgetRecommendationResult = z.infer<typeof AIBudgetRecommendationSchema>;
+
+export async function getAIBudgetRecommendations(
+  spendingHistoricalData: any
+): Promise<AIBudgetRecommendationResult | null> {
+  if (!process.env.OPENAI_API_KEY) {
+    console.warn("AI budget recommendations skipped: OPENAI_API_KEY not found.");
+    return null;
+  }
+
+  try {
+    const response = await (openai.beta as any).chat.completions.parse({
+      model: AI_DESIGN.model,
+      messages: [
+        {
+          role: "system",
+          content: `You are an expert financial advisor and AI agent. 
+Your task is to analyze the user's past spending data, which is provided grouped by categories (level 1, 2, and 3) over recent months.
+
+Based on this historical data, seasonal patterns, and best-practice financial principles (like the 50/30/20 rule), generate an optimal, realistic monthly budget recommendation. 
+You must generate recommendations not just for root categories (category1), but also for any subcategories (category2 and category3) that appear in the spending history.
+
+For each recommendation:
+1. Provide a logical budget limit.
+2. Provide an encouraging rationale that explains why this amount makes sense, aimed at helping the user improve their financial health while maintaining a realistic lifestyle.`
+        },
+        {
+          role: "user",
+          content: `Here is the user's historical spending data:
+${JSON.stringify(spendingHistoricalData, null, 2)}`
+        },
+      ],
+      response_format: zodResponseFormat(AIBudgetRecommendationSchema, "budget_recommendation"),
+      temperature: AI_DESIGN.temperature,
+    });
+
+    return response.choices[0].message.parsed;
+  } catch (error) {
+    console.error("OpenAI Budget Recommendation Error:", error);
+    return null;
+  }
+}

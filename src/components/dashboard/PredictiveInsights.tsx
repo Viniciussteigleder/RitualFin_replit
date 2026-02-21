@@ -60,9 +60,8 @@ export function PredictiveInsights() {
       <div className="flex items-center justify-between px-1">
           <h3 className="text-2xl font-bold text-foreground font-display flex items-center gap-3">
             <Zap className="h-6 w-6 text-primary fill-primary/20" />
-            Neural Engine v2.0 <span className="text-muted-foreground/30 font-normal">| Insights</span>
+            Inteligência Financeira
           </h3>
-          <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-primary/20 text-primary bg-primary/5">P6 Engine</Badge>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -81,8 +80,8 @@ export function PredictiveInsights() {
                   {isHealthy ? <TrendingDown className="h-6 w-6 rotate-180" /> : <TrendingDown className="h-6 w-6" />}
                 </div>
                 <div>
-                  <h4 className="text-xl font-bold text-foreground font-display">Fluxo de Caixa</h4>
-                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Projeção do Mês</p>
+                  <h4 className="text-xl font-bold text-foreground font-display">Saúde Financeira</h4>
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Projeção para o fim do mês</p>
                 </div>
               </div>
 
@@ -112,7 +111,7 @@ export function PredictiveInsights() {
 
               <Link href="/goals" className="mt-auto">
                 <Button variant="ghost" className="w-full text-primary hover:bg-primary/5 rounded-xl font-bold gap-2 text-[10px] uppercase tracking-widest">
-                  Ver Detalhes da Projeção <ArrowRight className="h-3 w-3" />
+                  Ver Metas e Projeção <ArrowRight className="h-3 w-3" />
                 </Button>
               </Link>
             </CardContent>
@@ -133,8 +132,8 @@ export function PredictiveInsights() {
                 {alerts.length > 0 ? <AlertTriangle className="h-6 w-6" /> : <Lightbulb className="h-6 w-6" />}
               </div>
               <div>
-                <h4 className="text-xl font-bold font-display">Velocidade de Gasto</h4>
-                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Burn Rate Monitor</p>
+                <h4 className="text-xl font-bold font-display">Categorias em Alerta</h4>
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Orçamentos a superar</p>
               </div>
             </div>
 
@@ -164,7 +163,7 @@ export function PredictiveInsights() {
 
             <Link href="/budgets" className="block w-full">
               <Button variant="ghost" className="w-full rounded-xl font-bold gap-2 text-[10px] uppercase tracking-widest hover:bg-secondary">
-                Gerir Orçamentos <ArrowRight className="h-3 w-3" />
+                Ver Orçamentos <ArrowRight className="h-3 w-3" />
               </Button>
             </Link>
           </CardContent>
@@ -184,8 +183,8 @@ export function PredictiveInsights() {
                 {suggestions.length > 0 ? <BellRing className="h-6 w-6" /> : <CalendarClock className="h-6 w-6" />}
               </div>
               <div>
-                <h4 className="text-xl font-bold font-display">Assinaturas IA</h4>
-                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Smart Patterns</p>
+                <h4 className="text-xl font-bold font-display">Cobranças Recorrentes</h4>
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Detectadas automaticamente</p>
               </div>
             </div>
 
@@ -193,7 +192,7 @@ export function PredictiveInsights() {
               {suggestions.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center p-4">
                   <CheckCircle2 className="h-8 w-8 text-emerald-500/50 mb-2" />
-                  <p className="text-xs font-medium text-muted-foreground">Nenhuma assinatura oculta detectada recentemente.</p>
+                  <p className="text-xs font-medium text-muted-foreground">Nenhuma cobrança recorrente detectada recentemente.</p>
                 </div>
               ) : (
                 suggestions.slice(0, 2).map((pattern, idx) => (

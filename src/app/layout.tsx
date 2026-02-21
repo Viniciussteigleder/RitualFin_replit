@@ -1,11 +1,5 @@
 import type { Metadata } from "next";
-import { Sidebar } from "@/components/layout/sidebar";
-import { MonthProvider } from "@/lib/month-context";
-import { MobileNav } from "@/components/layout/mobile-nav";
-import { CommandPalette } from "@/components/ui/command-palette";
-import { FloatingAssistant } from "@/components/assistant/floating-assistant";
 import { Toaster } from "@/components/ui/sonner";
-import { UiPerfFixesRoot } from "@/components/perf/ui-perf-fixes-root";
 import "./globals.css";
 
 // Validate environment variables on startup
@@ -50,21 +44,10 @@ export default function RootLayout({
         className={`${roboto.className} ${roboto.variable} antialiased bg-background text-foreground flex min-h-screen`}
         suppressHydrationWarning
       >
-        <MonthProvider>
-          <UiPerfFixesRoot />
-          <Sidebar />
-          <main className="flex-1 lg:ml-0 pt-14 md:pt-0 pb-16 md:pb-0">
-            <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8">
-            <div className="animate-in fade-in duration-200">
-              {children}
-            </div>
-            </div>
-          </main>
-          <MobileNav />
-          <CommandPalette />
-          <FloatingAssistant />
-          <Toaster position="top-right" richColors closeButton />
-        </MonthProvider>
+        <div className="flex-1">
+          {children}
+        </div>
+        <Toaster position="top-right" richColors closeButton />
       </body>
     </html>
   );

@@ -7,25 +7,15 @@ import {
   Utensils,
   ShoppingCart,
   Briefcase,
-  HelpCircle,
+  CircleDashed,
   Dumbbell,
   ShoppingBag,
   Home,
-  ArrowLeftRight,
   Car,
-  Building2,
-  Heart,
-  Wallet,
-  Plane,
+  Landmark,
+  HeartPulse,
   GraduationCap,
-  Baby,
-  PiggyBank,
-  CreditCard,
-  Receipt,
-  Gift,
-  Coffee,
-  Wifi,
-  Smartphone,
+  Layers,
   type LucideIcon
 } from "lucide-react";
 
@@ -44,15 +34,15 @@ export const CATEGORY_CONFIGS: Record<string, CategoryConfig> = {
     displayName: 'Alimentação',
     icon: '🍽️',
     lucideIcon: Utensils,
-    color: '#F59E0B', // Amber/Food
+    color: '#F97316', // Orange-500 (Appetite/Energy)
     slug: 'food',
   },
   'Mercados': {
     name: 'Mercados',
     displayName: 'Mercados',
     icon: '🛒',
-    lucideIcon: ShoppingBag,
-    color: '#10B981', // Emerald/Market
+    lucideIcon: ShoppingCart, // Changed: Distinct from ShoppingBag
+    color: '#059669', // Emerald-600 (Freshness)
     slug: 'market',
   },
   'Moradia': {
@@ -60,7 +50,7 @@ export const CATEGORY_CONFIGS: Record<string, CategoryConfig> = {
     displayName: 'Moradia',
     icon: '🏠',
     lucideIcon: Home,
-    color: '#3B82F6', // Blue/Housing
+    color: '#0891B2', // Cyan-600 (Stability)
     slug: 'housing',
   },
   'Transporte': {
@@ -68,7 +58,7 @@ export const CATEGORY_CONFIGS: Record<string, CategoryConfig> = {
     displayName: 'Transporte',
     icon: '🚗',
     lucideIcon: Car,
-    color: '#6366F1', // Indigo/Transport
+    color: '#475569', // Slate-600 (Neutral/Utility)
     slug: 'transport',
   },
   'Lazer': {
@@ -76,7 +66,7 @@ export const CATEGORY_CONFIGS: Record<string, CategoryConfig> = {
     displayName: 'Lazer',
     icon: '🎬',
     lucideIcon: Dumbbell,
-    color: '#8B5CF6', // Violet/Leisure
+    color: '#9333EA', // Purple-600 (Vigor/Entertainment)
     slug: 'leisure',
   },
   'Compras': {
@@ -84,15 +74,15 @@ export const CATEGORY_CONFIGS: Record<string, CategoryConfig> = {
     displayName: 'Compras',
     icon: '🛍️',
     lucideIcon: ShoppingBag,
-    color: '#EC4899', // Pink/Shopping
+    color: '#DB2777', // Pink-600 (Expression)
     slug: 'shopping',
   },
   'Saúde': {
     name: 'Saúde',
     displayName: 'Saúde',
     icon: '❤️',
-    lucideIcon: Heart,
-    color: '#F43F5E', // Rose/Health
+    lucideIcon: HeartPulse, // Changed: More medical/specific
+    color: '#DC2626', // Red-600 (Vitality)
     slug: 'health',
   },
   'Trabalho': {
@@ -100,7 +90,7 @@ export const CATEGORY_CONFIGS: Record<string, CategoryConfig> = {
     displayName: 'Trabalho',
     icon: '💼',
     lucideIcon: Briefcase,
-    color: '#14B8A6', // Teal/Work
+    color: '#0D9488', // Teal-600 (Professional)
     slug: 'work',
   },
   'Educação': {
@@ -108,30 +98,38 @@ export const CATEGORY_CONFIGS: Record<string, CategoryConfig> = {
     displayName: 'Educação',
     icon: '📚',
     lucideIcon: GraduationCap,
-    color: '#EAB308', // Yellow/Education
+    color: '#4F46E5', // Indigo-600 (Knowledge)
     slug: 'education',
   },
   'Finanças': {
     name: 'Finanças',
     displayName: 'Finanças',
     icon: '🏦',
-    lucideIcon: Building2,
-    color: '#F59E0B',
+    lucideIcon: Landmark, // Changed: More stable/banking icon
+    color: '#D97706', // Amber-600 (Wealth)
     slug: 'finance',
   },
   'Outros': {
     name: 'Outros',
     displayName: 'Outros',
     icon: '📦',
-    lucideIcon: HelpCircle,
-    color: '#94A3B8',
+    lucideIcon: Layers, // Changed: To signify miscellaneous layers
+    color: '#78350F', // Brown-900 (Grounded/Miscellaneous)
     slug: 'others',
+  },
+  'OPEN': {
+    name: 'OPEN',
+    displayName: 'OPEN',
+    icon: '❓',
+    lucideIcon: CircleDashed, // Changed: To signify 'incomplete' or 'in-process'
+    color: '#94A3B8', // Gray-400 (Ghost/Inactive state)
+    slug: 'open',
   },
 };
 
 export function getCategoryConfig(categoryName: string | null): CategoryConfig {
-  if (!categoryName) {
-    return CATEGORY_CONFIGS['Outros'];
+  if (!categoryName || categoryName === 'OPEN') {
+    return CATEGORY_CONFIGS['OPEN'];
   }
   // Try direct match first
   if (CATEGORY_CONFIGS[categoryName]) {

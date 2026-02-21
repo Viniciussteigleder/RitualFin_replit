@@ -38,7 +38,8 @@ export const category1Enum = pgEnum("category_1", [
   "Férias",
   "Transferências",
   "Vendas",
-  "OPEN"
+  "OPEN",
+  "Geral"
 ]);
 export const uploadStatusEnum = pgEnum("upload_status", ["processing", "ready", "duplicate", "error"]);
 export const accountTypeEnum = pgEnum("account_type", ["credit_card", "debit_card", "bank_account", "cash"]);
@@ -683,6 +684,8 @@ export const budgets = pgTable("budgets", {
   userId: varchar("user_id").notNull().references(() => users.id),
   month: text("month").notNull(),
   category1: category1Enum("category_1").notNull(),
+  category2: text("category_2"),
+  category3: text("category_3"),
   amount: real("amount").notNull(),
 });
 

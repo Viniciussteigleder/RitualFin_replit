@@ -99,8 +99,8 @@ export function SpendAveragesChart({
     <div className="flex flex-col gap-6">
       <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-6">
         <div className="flex flex-col gap-1">
-          <h3 className="text-xl font-bold text-foreground font-display">Média de gastos (últimos {dataset.months} meses)</h3>
-          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{rangeLabel}</p>
+          <h3 className="text-xl font-bold text-foreground font-display">Média de Gastos por Categoria</h3>
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{rangeLabel} • últimos {dataset.months} meses</p>
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-end">
@@ -123,10 +123,10 @@ export function SpendAveragesChart({
 
           <div className="flex bg-secondary rounded-xl p-1 gap-1">
             {([
-              ["appCategory", "App"],
-              ["category1", "Cat 1"],
-              ["category2", "Cat 2"],
-              ["category3", "Cat 3"],
+              ["appCategory", "Geral"],
+              ["category1", "Tipo"],
+              ["category2", "Subcategoria"],
+              ["category3", "Detalhe"],
             ] as const).map(([key, label]) => (
 	              <button
                 key={key}
@@ -172,24 +172,12 @@ export function SpendAveragesChart({
                 placeholder="Buscar categoria…"
                 className="h-10 w-full lg:w-72 rounded-2xl bg-secondary/30 border-border font-medium"
               />
-	              <button
-                type="button"
-                onClick={() => setShowOpen((v) => !v)}
-	                className={cn(
-	                  "h-10 px-4 rounded-2xl border text-[10px] font-black uppercase tracking-widest transition-[background-color,border-color,color,box-shadow,opacity] duration-150",
-	                  showOpen
-	                    ? "bg-secondary border-border text-foreground"
-	                    : "bg-transparent border-border text-muted-foreground hover:text-foreground hover:bg-secondary/40"
-	                )}
-	              >
-                {showOpen ? "Mostrar OPEN" : "Ocultar OPEN"}
-              </button>
             </div>
 
             <div className="flex bg-secondary rounded-xl p-1 gap-1">
               {([
-                ["average", "Ordenar: Média"],
-                ["total", "Ordenar: Total"],
+                ["average", "Maior média"],
+                ["total", "Maior total"],
               ] as const).map(([k, label]) => (
 	                <button
                   key={k}

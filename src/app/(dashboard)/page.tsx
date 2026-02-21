@@ -166,7 +166,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                     />
                     <div className="flex flex-col">
                         <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Saldo Livre</span>
-                        <span className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-wider">Para o resto do mês</span>
+                        <span className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-wider">Quanto você ainda pode gastar</span>
                     </div>
                 </div>
                 <div className="text-right">
@@ -214,8 +214,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                     <div className="flex items-center gap-4">
                         <AppIcon icon={TrendingUp} color="#F59E0B" />
                         <div className="flex flex-col">
-                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Gasto acumulado no mês</span>
-                            <span className="text-[10px] text-muted-foreground/60 font-medium uppercase">Realizado até hoje</span>
+                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Gasto do Mês</span>
+                            <span className="text-[10px] text-muted-foreground/60 font-medium uppercase">Total já realizado</span>
                         </div>
                     </div>
                     <div>
@@ -237,8 +237,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                     <div className="flex items-center gap-4">
                         <AppIcon icon={Activity} color="#3B82F6" />
                         <div className="flex flex-col">
-                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Projeção do mês</span>
-                            <span className="text-[10px] text-muted-foreground/60 font-medium uppercase">Baseado no perfil IA</span>
+                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Projeção do Mês</span>
+                            <span className="text-[10px] text-muted-foreground/60 font-medium uppercase">Se continuar no ritmo atual</span>
                         </div>
                     </div>
                     <div>
@@ -299,9 +299,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                         </h3>
                     </div>
                     <div>
-                        <Badge variant="secondary" className="bg-[#3B82F6]/10 text-[#3B82F6] dark:bg-[#3B82F6]/20 dark:text-[#3B82F6]/90 border-none text-[9px] font-bold px-2 tracking-tight uppercase">
-                            Previsão estimada
-                        </Badge>
+                        <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">Estimativa calculada com base nos seus últimos gastos</span>
                     </div>
                 </CardContent>
                 </Card>
@@ -430,9 +428,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                     </div>
 
                     <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground">
-                      <span>Último upload: <span className="text-foreground/80">{lastUploadLabel}</span></span>
-                      <span>Última trans.: <span className="text-foreground/80">{lastTxLabel}</span></span>
-                    </div>
+                       <span>Upload: <span className="text-foreground/80">{lastUploadLabel}</span></span>
+                       <span>Última transação: <span className="text-foreground/80">{lastTxLabel}</span></span>
+                     </div>
 
                     <Link href={`/transactions?accounts=${encodeURIComponent(sourceFilter)}`} className="w-full pt-3 border-t border-border/50">
                       <Button variant="ghost" className="w-full text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-primary hover:bg-primary/5 p-0 h-10 group/btn">

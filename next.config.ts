@@ -31,6 +31,32 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: process.cwd(),
   },
+  images: {
+    remotePatterns: [
+      // Wikimedia / Wikipedia (brand logos)
+      { protocol: "https", hostname: "upload.wikimedia.org" },
+      { protocol: "https", hostname: "commons.wikimedia.org" },
+      // Clearbit logo API (common merchant logo source)
+      { protocol: "https", hostname: "logo.clearbit.com" },
+      // Brandfetch
+      { protocol: "https", hostname: "asset.brandfetch.io" },
+      // Portermetrics (from user error)
+      { protocol: "https", hostname: "portermetrics.com" },
+      // IHLE / Neo Koenigsbrunn (from user error)
+      { protocol: "https", hostname: "neo-koenigsbrunn.de" },
+      // Allow any HTTPS images (most flexible for merchant logos)
+      { protocol: "https", hostname: "**" },
+      // Google Favicons / logos
+      { protocol: "https", hostname: "www.google.com" },
+      { protocol: "https", hostname: "*.google.com" },
+      // GitHub
+      { protocol: "https", hostname: "github.com" },
+      { protocol: "https", hostname: "raw.githubusercontent.com" },
+      // Generic HTTPS sources (for any other external logos)
+      { protocol: "https", hostname: "*.cloudfront.net" },
+      { protocol: "https", hostname: "*.amazonaws.com" },
+    ],
+  },
   async headers() {
     return [
       {

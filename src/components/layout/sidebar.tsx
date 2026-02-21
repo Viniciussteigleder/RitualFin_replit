@@ -122,11 +122,11 @@ export function Sidebar() {
         data-testid="mobile-header"
       >
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center shadow-lg shadow-primary/5">
-             <Sparkles className="h-6 w-6 text-primary" />
+            <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center shadow-lg shadow-primary/10 ring-1 ring-primary/20 overflow-hidden relative">
+              <Image src="/logo.png" alt="RitualFin" fill sizes="40px" className="object-contain p-1" priority />
+            </div>
+            <span className="font-bold text-xl tracking-tighter text-foreground font-display">RitualFin</span>
           </div>
-          <span className="font-bold text-xl tracking-tighter text-foreground font-display">RitualFin</span>
-        </div>
         <Button 
           variant="ghost" 
           size="icon" 
@@ -149,25 +149,26 @@ export function Sidebar() {
       <aside
         data-testid="sidebar"
         className={cn(
-        "fixed md:sticky top-0 left-0 z-50 h-screen bg-sidebar border-r border-border transition-transform duration-300 ease-in-out md:translate-x-0 w-72 p-6 flex flex-col justify-between",
+        "fixed top-0 left-0 z-50 h-screen bg-sidebar border-r border-border transition-transform duration-300 ease-in-out md:translate-x-0 w-72 p-6 flex flex-col justify-between",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}
       >
         <div className="flex flex-col gap-8 h-full min-h-0">
           {/* Logo */}
           <div className="flex items-center gap-3 px-2 flex-shrink-0">
-	            <div className="h-12 w-12 rounded-2xl bg-transparent border border-border/50 flex items-center justify-center overflow-hidden relative shadow-sm">
-	              <Image 
-	                src="/RitualFin%20Logo.png" 
-	                alt="RitualFin Logo" 
-	                fill
-	                sizes="48px"
-	                className="object-contain p-1"
-	                priority
-	              />
-	            </div>
+            <div className="h-12 w-12 rounded-2xl bg-primary/5 ring-1 ring-primary/20 flex items-center justify-center overflow-hidden relative shadow-md shadow-primary/10">
+              <Image 
+                src="/logo.png" 
+                alt="RitualFin Logo" 
+                fill
+                sizes="48px"
+                className="object-contain p-1.5"
+                priority
+              />
+            </div>
             <div className="flex flex-col">
               <h1 className="text-foreground text-xl font-bold tracking-tight font-display">RitualFin</h1>
+              <span className="text-[10px] text-muted-foreground font-medium tracking-widest uppercase">Financial OS</span>
             </div>
           </div>
 
@@ -178,12 +179,12 @@ export function Sidebar() {
             <Collapsible open={coreOpen} onOpenChange={setCoreOpen}>
                 <div className="bg-secondary/30 rounded-xl p-3 border border-border/50">
                   <CollapsibleTrigger className="flex items-center justify-between w-full group">
-                      <div className="flex items-center gap-2.5">
-                        <div className="p-1.5 rounded-lg bg-emerald-500/10">
+                      <span className="flex items-center gap-2.5">
+                        <span className="p-1.5 rounded-lg bg-emerald-500/10 flex items-center justify-center">
                           <Activity className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                        </div>
+                        </span>
                         <span className="text-sm font-bold text-foreground tracking-wide">Monitoramento</span>
-                      </div>
+                      </span>
                       {coreOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-1 pt-3">
@@ -202,12 +203,12 @@ export function Sidebar() {
             <Collapsible open={strategyOpen} onOpenChange={setStrategyOpen}>
                 <div className="bg-secondary/30 rounded-xl p-3 border border-border/50">
                   <CollapsibleTrigger className="flex items-center justify-between w-full group">
-                      <div className="flex items-center gap-2.5">
-                        <div className="p-1.5 rounded-lg bg-blue-500/10">
+                      <span className="flex items-center gap-2.5">
+                        <span className="p-1.5 rounded-lg bg-blue-500/10 flex items-center justify-center">
                           <Compass className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                        </div>
+                        </span>
                         <span className="text-sm font-bold text-foreground tracking-wide">Planejamento</span>
-                      </div>
+                      </span>
                       {strategyOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-1 pt-3">
@@ -227,12 +228,12 @@ export function Sidebar() {
             <Collapsible open={adminOpen} onOpenChange={setAdminOpen}>
                 <div className="bg-secondary/30 rounded-xl p-3 border border-border/50">
                   <CollapsibleTrigger className="flex items-center justify-between w-full group">
-                      <div className="flex items-center gap-2.5">
-                        <div className="p-1.5 rounded-lg bg-violet-500/10">
+                      <span className="flex items-center gap-2.5">
+                        <span className="p-1.5 rounded-lg bg-violet-500/10 flex items-center justify-center">
                           <Cog className="h-4 w-4 text-violet-600 dark:text-violet-400" />
-                        </div>
+                        </span>
                         <span className="text-sm font-bold text-foreground tracking-wide">Configurações</span>
-                      </div>
+                      </span>
                       {adminOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-1 pt-3">

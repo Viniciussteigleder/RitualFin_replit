@@ -64,7 +64,7 @@ export default async function GoalsPage() {
             </h1>
           </div>
           <p className="text-muted-foreground font-medium leading-relaxed max-w-xl">
-            Projeção inteligente baseada no seu comportamento financeiro habitual.
+            Veja para onde o seu dinheiro vai e planeje o mês com antecedência.
           </p>
         </div>
       </div>

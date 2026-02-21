@@ -20,7 +20,7 @@ export default async function UploadsPage() {
         icon={Database}
         iconColor="emerald"
         title="Central de Importação"
-        subtitle="Arraste arquivos para alimentar o sistema. Suas faturas são processadas, padronizadas e enriquecidas automaticamente."
+        subtitle="Importe o extrato do seu banco ou cartão. Nós cuidamos do resto."
         badge={<StatusBadge status="success" label="Operacional" pulse />}
       />
 

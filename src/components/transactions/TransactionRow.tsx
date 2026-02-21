@@ -10,6 +10,7 @@ import {
     formatAmount
 } from "@/lib/utils/transaction-formatters";
 import { CategoryIcon } from "@/components/ui/category-icon";
+import { MerchantAvatar } from "@/components/ui/merchant-avatar";
 
 interface TransactionRowProps {
     transaction: any;
@@ -75,27 +76,13 @@ export const TransactionRow = memo(function TransactionRow({
                     />
                 </div>
 
-                {/* Logo/Avatar - Rectangle/flexible */}
+                {/* Logo/Avatar — Represents the MERCHANT identity (not category) */}
                 <div className="flex flex-row items-center gap-3 min-w-0 flex-1">
-                    {transaction.aliasDesc && aliasMap[transaction.aliasDesc] ? (
-                        <>
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                                src={aliasMap[transaction.aliasDesc]}
-                                alt={transaction.aliasDesc}
-                                loading="lazy"
-                                className={cn(
-                                    "object-contain border border-border bg-white flex-shrink-0 rounded-lg",
-                                    isCompact ? "w-8 h-8" : "w-10 h-8"
-                                )}
-                            />
-                        </>
-                    ) : (
-                        <CategoryIcon
-                            category={transaction.category1}
-                            size={isCompact ? "sm" : "md"}
-                        />
-                    )}
+                    <MerchantAvatar
+                        name={transaction.aliasDesc || transaction.description || transaction.descRaw || "?"}
+                        logoUrl={transaction.aliasDesc ? aliasMap[transaction.aliasDesc] : null}
+                        size={isCompact ? "sm" : "md"}
+                    />
 
                     {/* Description & Source */}
                     <div className="flex flex-col gap-0.5 min-w-0 flex-1">
